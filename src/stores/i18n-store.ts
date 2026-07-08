@@ -18,7 +18,7 @@ export const useI18n = create<I18nState>()(
       setLocale: (l) => set({ locale: l }),
       toggle: () => set((s) => ({ locale: s.locale === 'ar' ? 'en' : 'ar' })),
     }),
-    { name: 'alostaz-i18n' }
+    { name: 'alostaz-i18n', skipHydration: true }
   )
 )
 

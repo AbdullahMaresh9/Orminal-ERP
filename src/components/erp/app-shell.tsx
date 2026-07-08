@@ -6,11 +6,18 @@ import { SidebarNav } from './sidebar-nav'
 import { Topbar } from './topbar'
 import { moduleRegistry } from './module-registry'
 import { cn } from '@/lib/utils'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 export function AppShell() {
   const { activeModule, sidebarCollapsed } = useNav()
   const { locale } = useI18n()
+
+  // Compute year only on client to avoid SSR/CSR timezone mismatch
+  const [year, setYear] = useState(2026)
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setYear(new Date().getFullYear())
+  }, [])
 
   // Sync document dir/lang with locale
   useEffect(() => {
@@ -41,7 +48,7 @@ export function AppShell() {
           <ActiveModule />
           <footer className="mt-auto border-t bg-muted/30 py-4 px-6 text-center text-xs text-muted-foreground shrink-0">
             <span className="font-semibold text-foreground">الأستاذ</span> — نظام المحاسبة والإدارة المالية ·
-            جميع الحقوق محفوظة © {new Date().getFullYear()}
+            جميع الحقوق محفوظة © {year}
           </footer>
         </main>
       </div>

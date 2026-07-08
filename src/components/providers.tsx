@@ -2,7 +2,9 @@
 
 import { ThemeProvider } from "next-themes"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useI18n } from "@/stores/i18n-store"
+import { useNav } from "@/stores/nav-store"
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -17,6 +19,15 @@ export function Providers({ children }: { children: React.ReactNode }) {
         },
       })
   )
+
+  // Rehydrate persisted stores AFTER mount to avoid hydration mismatch.
+  // With skipHydration: true, the stores use default values during SSR and
+  // the first client render (matching the server), then load from localStorage
+  // after the component mounts.
+  useEffect(() => {
+    useI18n.persist.rehydrate()
+    useNav.persist.rehydrate()
+  }, [])
 
   return (
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>

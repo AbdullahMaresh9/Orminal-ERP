@@ -48,6 +48,7 @@ export const useNav = create<NavState>()(
     }),
     {
       name: 'alostaz-nav-v2',
+      skipHydration: true,
       partialize: (s) => ({ activeModule: s.activeModule, sidebarCollapsed: s.sidebarCollapsed }),
     }
   )

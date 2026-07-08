@@ -143,12 +143,13 @@ export function ProfileModule() {
   }
 
   // Preferences state — timezone mirrors profile.timezone when loaded;
-  // density is read once from localStorage (initialized lazily).
-  const [density, setDensity] = useState<'comfortable' | 'compact'>(
-    () => (typeof window !== 'undefined'
-      ? (localStorage.getItem('alostaz-density') as 'comfortable' | 'compact') || 'comfortable'
-      : 'comfortable')
-  )
+  // density is read from localStorage AFTER mount to avoid hydration mismatch.
+  const [density, setDensity] = useState<'comfortable' | 'compact'>('comfortable')
+  useEffect(() => {
+    const saved = localStorage.getItem('alostaz-density') as 'comfortable' | 'compact' | null
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (saved) setDensity(saved)
+  }, [])
   const [timezone, setTimezone] = useState('Asia/Riyadh')
   const [tzKey, setTzKey] = useState<string | null>(null)
   if (profile) {
