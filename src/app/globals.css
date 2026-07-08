@@ -172,3 +172,19 @@
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
+
+/* RTL table direction — ensures columns flow right-to-left in Arabic mode.
+   Radix ScrollArea sets dir="ltr" on its viewport wrapper, which would
+   make tables render LTR even in RTL mode. This rule forces RTL direction
+   on tables when the document is RTL. LTR is the default, no rule needed. */
+[dir="rtl"] table { direction: rtl !important; }
+table { text-align: start; }
+
+/* Numeric cells — always LTR for digits, aligned to end (left in RTL, right in LTR) */
+td.num-cell, th.num-cell {
+  text-align: end;
+}
+td.num-cell .num, th.num-cell .num {
+  direction: ltr;
+  unicode-bidi: embed;
+}

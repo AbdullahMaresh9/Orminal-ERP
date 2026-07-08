@@ -17,13 +17,13 @@ import { ArrowLeftRight, Download, Package, TrendingUp, Activity, Layers } from 
 export function StockMovesModule() {
   const { t } = useT()
   const [search, setSearch] = useState('')
-  const [stateFilter, setStateFilter] = useState('')
+  const [stateFilter, setStateFilter] = useState('all')
 
   const { data, isLoading } = useQuery<any>({
     queryKey: ['stock-moves', search, stateFilter],
     queryFn: async () => {
       const params = new URLSearchParams({ q: search })
-      if (stateFilter) params.set('state', stateFilter)
+      if (stateFilter && stateFilter !== 'all') params.set('state', stateFilter)
       const r = await fetch(`/api/erp/stock-moves?${params}`)
       if (!r.ok) throw new Error(); return r.json()
     },
@@ -42,7 +42,7 @@ export function StockMovesModule() {
   return (
     <ModuleShell title="حركات المخزون" description="سجل حركات المخزون (للقراءة فقط — سجل مُلحق)" icon={<ArrowLeftRight className="size-5" />} onSearch={setSearch} searchValue={search} onExport={handleExport}
       filters={<Select value={stateFilter} onValueChange={setStateFilter}><SelectTrigger className="w-36"><SelectValue placeholder="الحالة" /></SelectTrigger><SelectContent>
-        <SelectItem value="">الكل</SelectItem><SelectItem value="draft">مسودة</SelectItem><SelectItem value="done">مكتمل</SelectItem><SelectItem value="cancelled">ملغي</SelectItem>
+        <SelectItem value="all">الكل</SelectItem><SelectItem value="draft">مسودة</SelectItem><SelectItem value="done">مكتمل</SelectItem><SelectItem value="cancelled">ملغي</SelectItem>
       </SelectContent></Select>}>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {isLoading ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />) : (

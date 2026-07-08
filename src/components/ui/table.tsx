@@ -5,6 +5,21 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 
 function Table({ className, ...props }: React.ComponentProps<"table">) {
+  // Read the document direction to ensure table columns flow correctly.
+  // This is needed because Radix ScrollArea sets dir="ltr" on its viewport,
+  // which would make tables render LTR even in Arabic (RTL) mode.
+  const [dir, setDir] = React.useState<"rtl" | "ltr">("rtl")
+  React.useEffect(() => {
+    const updateDir = () => {
+      setDir(document.documentElement.getAttribute("dir") === "ltr" ? "ltr" : "rtl")
+    }
+    updateDir()
+    // Observe direction changes (when user switches language)
+    const observer = new MutationObserver(updateDir)
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["dir"] })
+    return () => observer.disconnect()
+  }, [])
+
   return (
     <div
       data-slot="table-container"
@@ -13,6 +28,7 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
       <table
         data-slot="table"
         className={cn("w-full caption-bottom text-sm", className)}
+        dir={dir}
         {...props}
       />
     </div>
@@ -70,7 +86,7 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
     <th
       data-slot="table-head"
       className={cn(
-        "text-foreground h-10 px-2 text-left align-middle font-medium whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+        "text-foreground h-11 px-3 text-start align-middle font-semibold whitespace-nowrap text-xs uppercase tracking-wide [&:has([role=checkbox])]:pe-0 [&>[role=checkbox]]:translate-y-[2px]",
         className
       )}
       {...props}
@@ -83,7 +99,7 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
     <td
       data-slot="table-cell"
       className={cn(
-        "p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+        "px-3 py-2.5 align-middle whitespace-nowrap text-sm [&:has([role=checkbox])]:pe-0 [&>[role=checkbox]]:translate-y-[2px]",
         className
       )}
       {...props}
