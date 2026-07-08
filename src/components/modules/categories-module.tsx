@@ -1,272 +1,132 @@
 'use client'
-
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useT } from '@/lib/i18n/use-t'
-import { formatDate } from '@/lib/format'
-import { exportToCSV } from '@/lib/export'
 import { ModuleShell } from '@/components/erp/module-shell'
 import { KpiCard } from '@/components/erp/kpi-card'
 import { StatusBadge } from '@/components/erp/status-badge'
+import { exportToCSV } from '@/lib/export'
+import { useT } from '@/lib/i18n/use-t'
+import { toast } from 'sonner'
+import { FolderTree, Plus, Pencil, Trash2, Download, Boxes, GitBranch, CheckCircle } from 'lucide-react'
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { Skeleton } from '@/components/ui/skeleton'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import {
-  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
-} from '@/components/ui/table'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from '@/components/ui/dialog'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from '@/components/ui/select'
-import {
-  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
-} from '@/components/ui/dropdown-menu'
-import { toast } from 'sonner'
-import { FolderTree, Folder, FolderPlus, MoreVertical, Pencil, Trash2, Boxes } from 'lucide-react'
-
-interface Category {
-  id: string
-  name: string
-  nameAr: string | null
-  parentId: string | null
-  active: boolean
-  createdAt: string
-  parent?: { id: string; name: string; nameAr: string | null } | null
-  _count?: { products: number }
-}
-
-const EMPTY_FORM = { name: '', nameAr: '', parentId: '', active: true }
 
 export function CategoriesModule() {
   const { t } = useT()
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [form, setForm] = useState<any>(EMPTY_FORM)
+  const [editId, setEditId] = useState<string | null>(null)
+  const [form, setForm] = useState({ code: '', nameAr: '', nameEn: '', parentId: '', type: 'product', active: true })
 
-  const { data, isLoading } = useQuery<{ data: Category[]; total: number }>({
+  const { data, isLoading } = useQuery<any>({
     queryKey: ['categories', search],
     queryFn: async () => {
-      const params = new URLSearchParams()
-      if (search) params.set('q', search)
-      const r = await fetch(`/api/erp/categories?${params}`)
-      if (!r.ok) throw new Error('fetch failed')
+      const r = await fetch(`/api/erp/categories?q=${encodeURIComponent(search)}`)
+      if (!r.ok) throw new Error('fetch')
       return r.json()
     },
   })
-
   const categories = data?.data ?? []
 
-  const saveMutation = useMutation({
-    mutationFn: async (payload: any) => {
-      const isEdit = !!editingId
-      const url = isEdit ? `/api/erp/categories/${editingId}` : '/api/erp/categories'
-      const r = await fetch(url, {
-        method: isEdit ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-      if (!r.ok) {
-        const err = await r.json()
-        throw new Error(err.error || 'save failed')
-      }
+  const saveMut = useMutation({
+    mutationFn: async () => {
+      const url = editId ? `/api/erp/categories/${editId}` : '/api/erp/categories'
+      const method = editId ? 'PUT' : 'POST'
+      const r = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...form, parentId: form.parentId || null }) })
+      if (!r.ok) { const e = await r.json(); throw new Error(e.error || 'error') }
       return r.json()
     },
-    onSuccess: () => {
-      toast.success('تم الحفظ بنجاح')
-      qc.invalidateQueries({ queryKey: ['categories'] })
-      qc.invalidateQueries({ queryKey: ['categories-for-products'] })
-      setDialogOpen(false)
-    },
+    onSuccess: () => { toast.success('تم الحفظ بنجاح'); qc.invalidateQueries({ queryKey: ['categories'] }); setDialogOpen(false); setEditId(null) },
     onError: (e: any) => toast.error(e.message || 'حدث خطأ'),
   })
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const r = await fetch(`/api/erp/categories/${id}`, { method: 'DELETE' })
-      if (!r.ok) {
-        const err = await r.json()
-        throw new Error(err.error || 'delete failed')
-      }
-    },
-    onSuccess: () => {
-      toast.success('تم الحذف بنجاح')
-      qc.invalidateQueries({ queryKey: ['categories'] })
-    },
-    onError: (e: any) => toast.error(e.message || 'حدث خطأ'),
+  const delMut = useMutation({
+    mutationFn: async (id: string) => { const r = await fetch(`/api/erp/categories/${id}`, { method: 'DELETE' }); if (!r.ok) throw new Error(); return r.json() },
+    onSuccess: () => { toast.success('تم الحذف'); qc.invalidateQueries({ queryKey: ['categories'] }) },
+    onError: () => toast.error('حدث خطأ'),
   })
 
-  function openAdd() {
-    setForm(EMPTY_FORM)
-    setEditingId(null)
-    setDialogOpen(true)
-  }
-  function openEdit(c: Category) {
-    setForm({
-      name: c.name,
-      nameAr: c.nameAr ?? '',
-      parentId: c.parentId ?? '',
-      active: c.active,
-    })
-    setEditingId(c.id)
-    setDialogOpen(true)
-  }
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!form.name.trim()) return toast.error('الاسم مطلوب')
-    saveMutation.mutate(form)
-  }
-  function handleExport() {
-    exportToCSV('categories', categories.map(c => ({
-      name: c.name,
-      nameAr: c.nameAr ?? '',
-      parent: c.parent?.name ?? '',
-      products: c._count?.products ?? 0,
-      active: c.active ? 'نعم' : 'لا',
-    })), [
-      { key: 'name', label: 'الاسم' },
-      { key: 'nameAr', label: 'الاسم العربي' },
-      { key: 'parent', label: 'الفئة الأب' },
-      { key: 'products', label: 'عدد المنتجات' },
-      { key: 'active', label: 'نشط' },
-    ])
-  }
+  const handleAdd = () => { setForm({ code: '', nameAr: '', nameEn: '', parentId: '', type: 'product', active: true }); setEditId(null); setDialogOpen(true) }
+  const handleEdit = (c: any) => { setForm({ code: c.code, nameAr: c.nameAr, nameEn: c.nameEn || '', parentId: c.parentId || '', type: c.type || 'product', active: c.active }); setEditId(c.id); setDialogOpen(true) }
+  const handleExport = () => exportToCSV('categories', categories.map((c: any) => ({ code: c.code, nameAr: c.nameAr, nameEn: c.nameEn || '', type: c.type, active: c.active ? 'نشط' : 'غير نشط' })))
 
-  const totalCats = categories.length
-  const rootCats = categories.filter(c => !c.parentId).length
-  const totalProducts = categories.reduce((s, c) => s + (c._count?.products ?? 0), 0)
-  const activeCats = categories.filter(c => c.active).length
+  const rootCount = categories.filter((c: any) => !c.parentId).length
+  const activeCount = categories.filter((c: any) => c.active).length
 
   return (
-    <ModuleShell
-      title={t('module.categories')}
-      description="إدارة فئات المنتجات (شجري)"
-      icon={<FolderTree className="size-5" />}
-      searchValue={search}
-      onSearch={setSearch}
-      searchPlaceholder="ابحث عن فئة..."
-      onAdd={openAdd}
-      addLabel="فئة جديدة"
-      onExport={handleExport}
-    >
+    <ModuleShell title="الفئات" description="إدارة فئات المنتجات والشركاء" icon={<FolderTree className="size-5" />} onSearch={setSearch} searchValue={search} onAdd={handleAdd} addLabel="فئة جديدة" onExport={handleExport}>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {isLoading ? (
-          Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />)
-        ) : (
+        {isLoading ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />) : (
           <>
-            <KpiCard title="إجمالي الفئات" value={String(totalCats)} icon={<FolderTree className="size-5" />} accent="emerald" />
-            <KpiCard title="فئات رئيسية" value={String(rootCats)} icon={<Folder className="size-5" />} accent="teal" />
-            <KpiCard title="إجمالي المنتجات" value={String(totalProducts)} icon={<Boxes className="size-5" />} accent="violet" />
-            <KpiCard title="فئات نشطة" value={String(activeCats)} icon={<FolderPlus className="size-5" />} accent="amber" />
+            <KpiCard title="إجمالي الفئات" value={String(categories.length)} icon={<Boxes className="size-5" />} accent="emerald" />
+            <KpiCard title="الفئات الجذرية" value={String(rootCount)} icon={<GitBranch className="size-5" />} accent="teal" />
+            <KpiCard title="النشطة" value={String(activeCount)} icon={<CheckCircle className="size-5" />} accent="violet" />
+            <KpiCard title="بالمنتجات" value={String(categories.filter((c:any)=>c._count?.products>0).length)} icon={<FolderTree className="size-5" />} accent="amber" />
           </>
         )}
       </div>
-
       <div className="rounded-xl border bg-card overflow-hidden">
         <ScrollArea className="max-h-[60vh]">
-          <Table>
+          <Table className="table-sticky">
             <TableHeader>
               <TableRow>
-                <TableHead>الاسم</TableHead>
-                <TableHead>الاسم العربي</TableHead>
-                <TableHead>الفئة الأب</TableHead>
-                <TableHead className="text-end">عدد المنتجات</TableHead>
-                <TableHead className="text-end">الحالة</TableHead>
-                <TableHead className="text-end">تاريخ الإنشاء</TableHead>
-                <TableHead className="text-end">إجراءات</TableHead>
+                <TableHead>الرمز</TableHead><TableHead>الاسم (عربي)</TableHead><TableHead>الاسم (إنجليزي)</TableHead><TableHead>النوع</TableHead><TableHead>الحالة</TableHead><TableHead className="text-end">إجراءات</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
-                Array.from({ length: 4 }).map((_, i) => (
-                  <TableRow key={i}>
-                    {Array.from({ length: 7 }).map((_, j) => <TableCell key={j}><Skeleton className="h-6" /></TableCell>)}
-                  </TableRow>
-                ))
-              ) : categories.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-16 text-muted-foreground">
-                    <FolderTree className="size-10 mx-auto mb-2 opacity-50" />
-                    لا توجد فئات. ابدأ بإضافة فئة جديدة.
-                  </TableCell>
-                </TableRow>
-              ) : categories.map(c => (
+              {isLoading ? Array.from({length:5}).map((_,i)=><TableRow key={i}>{Array.from({length:6}).map((_,j)=><TableCell key={j}><Skeleton className="h-6" /></TableCell>)}</TableRow>) :
+               !categories.length ? <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-12">لا توجد فئات</TableCell></TableRow> :
+               categories.map((c: any) => (
                 <TableRow key={c.id}>
-                  <TableCell className="font-medium">
-                    <div className="flex items-center gap-2">
-                      <Folder className="size-4 text-primary" />
-                      {c.name}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{c.nameAr ?? '—'}</TableCell>
-                  <TableCell className="text-sm">{c.parent?.name ?? '—'}</TableCell>
-                  <TableCell className="text-end tabular-nums">{c._count?.products ?? 0}</TableCell>
-                  <TableCell className="text-end"><StatusBadge status={c.active ? 'active' : 'inactive'} /></TableCell>
-                  <TableCell className="text-end text-xs text-muted-foreground">{formatDate(c.createdAt)}</TableCell>
-                  <TableCell className="text-end">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="size-8"><MoreVertical className="size-4" /></Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => openEdit(c)}><Pencil className="size-4 ms-2" /> تعديل</DropdownMenuItem>
-                        <DropdownMenuItem className="text-rose-600" onClick={() => {
-                          if (confirm(`حذف الفئة "${c.name}"؟`)) deleteMutation.mutate(c.id)
-                        }}><Trash2 className="size-4 ms-2" /> حذف</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+                  <TableCell className="font-mono text-xs font-semibold text-primary">{c.code}</TableCell>
+                  <TableCell className="font-medium text-sm">{c.nameAr}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{c.nameEn || '—'}</TableCell>
+                  <TableCell className="text-sm">{c.type === 'product' ? 'منتج' : c.type === 'partner' ? 'شريك' : c.type === 'expense' ? 'مصروف' : 'إيراد'}</TableCell>
+                  <TableCell><StatusBadge status={c.active ? 'active' : 'inactive'} /></TableCell>
+                  <TableCell><div className="flex items-center justify-end gap-0.5">
+                    <Button variant="ghost" size="icon" className="size-8" onClick={() => handleEdit(c)}><Pencil className="size-4" /></Button>
+                    <Button variant="ghost" size="icon" className="size-8 text-rose-600" onClick={() => delMut.mutate(c.id)}><Trash2 className="size-4" /></Button>
+                  </div></TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </ScrollArea>
       </div>
-
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{editingId ? 'تعديل فئة' : 'فئة جديدة'}</DialogTitle>
-            <DialogDescription>{editingId ? 'تحديث بيانات الفئة' : 'إضافة فئة جديدة'}</DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleSubmit} className="grid gap-4">
-            <div className="space-y-1.5">
-              <Label>الاسم *</Label>
-              <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
+        <DialogContent className="max-w-xl">
+          <DialogHeader><DialogTitle>{editId ? 'تعديل فئة' : 'فئة جديدة'}</DialogTitle><DialogDescription>أدخل بيانات الفئة</DialogDescription></DialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-2">
+            <div><Label className="text-xs mb-1.5 block">الرمز *</Label><Input value={form.code} onChange={e => setForm({...form, code: e.target.value})} placeholder="CAT-001" /></div>
+            <div><Label className="text-xs mb-1.5 block">النوع</Label>
+              <Select value={form.type} onValueChange={v => setForm({...form, type: v})}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+                <SelectItem value="product">منتج</SelectItem><SelectItem value="partner">شريك</SelectItem><SelectItem value="expense">مصروف</SelectItem><SelectItem value="revenue">إيراد</SelectItem>
+              </SelectContent></Select>
             </div>
-            <div className="space-y-1.5">
-              <Label>الاسم (عربي)</Label>
-              <Input value={form.nameAr} onChange={e => setForm({ ...form, nameAr: e.target.value })} dir="rtl" />
+            <div><Label className="text-xs mb-1.5 block">الاسم (عربي) *</Label><Input value={form.nameAr} onChange={e => setForm({...form, nameAr: e.target.value})} /></div>
+            <div><Label className="text-xs mb-1.5 block">الاسم (إنجليزي)</Label><Input value={form.nameEn} onChange={e => setForm({...form, nameEn: e.target.value})} /></div>
+            <div className="col-span-2"><Label className="text-xs mb-1.5 block">الفئة الأم</Label>
+              <Select value={form.parentId} onValueChange={v => setForm({...form, parentId: v})}><SelectTrigger><SelectValue placeholder="بدون" /></SelectTrigger><SelectContent>
+                {categories.filter((c:any)=>c.id!==editId).map((c:any)=><SelectItem key={c.id} value={c.id}>{c.code} — {c.nameAr}</SelectItem>)}
+              </SelectContent></Select>
             </div>
-            <div className="space-y-1.5">
-              <Label>الفئة الأب</Label>
-              <Select value={form.parentId || 'none'} onValueChange={v => setForm({ ...form, parentId: v === 'none' ? '' : v })}>
-                <SelectTrigger className="w-full"><SelectValue placeholder="بدون (فئة رئيسية)" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">بدون (فئة رئيسية)</SelectItem>
-                  {categories.filter(c => c.id !== editingId).map(c => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}{c.nameAr ? ' / ' + c.nameAr : ''}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center gap-2">
-              <Switch checked={form.active} onCheckedChange={c => setForm({ ...form, active: c })} id="cat-active" />
-              <Label htmlFor="cat-active">الفئة نشطة</Label>
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>إلغاء</Button>
-              <Button type="submit" disabled={saveMutation.isPending}>
-                {saveMutation.isPending ? 'جاري الحفظ...' : 'حفظ'}
-              </Button>
-            </DialogFooter>
-          </form>
+            <div className="col-span-2 flex items-center gap-2"><Switch checked={form.active} onCheckedChange={v => setForm({...form, active: v})} /><Label className="text-sm">نشط</Label></div>
+          </div>
+          <DialogFooter><Button variant="outline" onClick={() => setDialogOpen(false)}>إلغاء</Button><Button onClick={() => saveMut.mutate()} disabled={!form.code || !form.nameAr}>{editId ? 'حفظ' : 'إنشاء'}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </ModuleShell>

@@ -51,42 +51,46 @@ const PurchaseOrdersModule = lazy(() => import('@/components/modules/purchase-or
 const StockOnHandModule = lazy(() => import('@/components/modules/stock-on-hand-module'))
 const ReportsModule = lazy(() => import('@/components/modules/reports-module'))
 const SettingsModule = lazy(() => import('@/components/modules/settings-module'))
+const SalesQuotationsModule = lazy(() => import('@/components/modules/sales-quotations-module'))
+const SalesCreditNotesModule = lazy(() => import('@/components/modules/sales-credit-notes-module'))
+const SalesReturnsModule = lazy(() => import('@/components/modules/sales-returns-module'))
+const SalesPaymentsModule = lazy(() => import('@/components/modules/sales-payments-module'))
+const PurchaseRequestsModule = lazy(() => import('@/components/modules/purchase-requests-module'))
+const GoodsReceiptsModule = lazy(() => import('@/components/modules/goods-receipts-module'))
+const PurchaseInvoicesModule = lazy(() => import('@/components/modules/purchase-invoices-module'))
+const PurchaseCreditNotesModule = lazy(() => import('@/components/modules/purchase-credit-notes-module'))
+const PurchasePaymentsModule = lazy(() => import('@/components/modules/purchase-payments-module'))
+const PurchaseReturnsModule = lazy(() => import('@/components/modules/purchase-returns-module'))
+const UsersModule = lazy(() => import('@/components/modules/users-module'))
+const RolesModule = lazy(() => import('@/components/modules/roles-module'))
+const AuditLogsModule = lazy(() => import('@/components/modules/audit-logs-module'))
+const NotificationsModule = lazy(() => import('@/components/modules/notifications-module'))
+const ProfileModule = lazy(() => import('@/components/modules/profile-module'))
 
-// === Stubs (coming soon) ===
-const SalesQuotationsModule = stub('module.sales-quotations', 'عروض الأسعار للعملاء — قيد التطوير')
-const SalesCreditNotesModule = stub('module.sales-credit-notes', 'إشعارات دائنة للمبيعات — قيد التطوير')
-const SalesReturnsModule = stub('module.sales-returns', 'مرتجع المبيعات — قيد التطوير')
-const SalesPaymentsModule = stub('module.sales-payments', 'سندات قبض العملاء — قيد التطوير')
-const PurchaseRequestsModule = stub('module.purchase-requests', 'طلبات الشراء الداخلية — قيد التطوير')
-const GoodsReceiptsModule = stub('module.goods-receipts', 'استلام بضاعة الموردين — قيد التطوير')
-const PurchaseInvoicesModule = stub('module.purchase-invoices', 'فواتير المشتريات — قيد التطوير')
-const PurchaseCreditNotesModule = stub('module.purchase-credit-notes', 'إشعارات دائنة للمشتريات — قيد التطوير')
-const PurchasePaymentsModule = stub('module.purchase-payments', 'سندات صرف الموردين — قيد التطوير')
-const PurchaseReturnsModule = stub('module.purchase-returns', 'مرتجع المشتريات — قيد التطوير')
-const CategoriesModule = stub('module.categories', 'فئات المنتجات — قيد التطوير')
-const WarehousesModule = stub('module.warehouses', 'المستودعات ومواقع التخزين — قيد التطوير')
-const StockLocationsModule = stub('module.stock-locations', 'مواقع التخزين داخل المستودعات — قيد التطوير')
-const StockTransfersModule = stub('module.stock-transfers', 'تحويلات المخزون بين المستودعات — قيد التطوير')
-const DeliveriesModule = stub('module.deliveries', 'تسليمات المبيعات — قيد التطوير')
-const InventoryAdjustmentsModule = stub('module.inventory-adjustments', 'تسويات جرد المخزون — قيد التطوير')
-const StockMovesModule = stub('module.stock-moves', 'سجل حركات المخزون — قيد التطوير')
-const CostCentersModule = stub('module.cost-centers', 'مراكز التكلفة — قيد التطوير')
-const FiscalPeriodsModule = stub('module.fiscal-periods', 'الفترات المالية — قيد التطوير')
-const BankAccountsModule = stub('module.bank-accounts', 'الحسابات البنكية — قيد التطوير')
-const SafesModule = stub('module.safes', 'الخزائن النقدية — قيد التطوير')
-const BomsModule = stub('module.boms', 'قوائم التركيب (BOM) — قيد التطوير')
-const WorkCentersModule = stub('module.work-centers', 'مراكز العمل — قيد التطوير')
-const ProductionOrdersModule = stub('module.production-orders', 'أوامر الإنتاج — قيد التطوير')
-const EmployeesModule = stub('module.employees', 'إدارة الموظفين — قيد التطوير')
-const DepartmentsModule = stub('module.departments', 'الإدارات والأقسام — قيد التطوير')
-const AttendanceModule = stub('module.attendance', 'الحضور والانصراف — قيد التطوير')
-const LeaveRequestsModule = stub('module.leave-requests', 'طلبات الإجازات — قيد التطوير')
-const PayrollRunsModule = stub('module.payroll-runs', 'تشغيلات الرواتب — قيد التطوير')
-const UsersModule = stub('module.users', 'إدارة المستخدمين — قيد التطوير')
-const RolesModule = stub('module.roles', 'الأدوار والصلاحيات — قيد التطوير')
-const AuditLogsModule = stub('module.audit-logs', 'سجل التدقيق — قيد التطوير')
-const NotificationsModule = stub('module.notifications', 'الإشعارات — قيد التطوير')
-const ProfileModule = stub('module.profile', 'الملف الشخصي — قيد التطوير')
+// === Manufacturing modules ===
+const BomsModule = lazy(() => import('@/components/modules/boms-module'))
+const WorkCentersModule = lazy(() => import('@/components/modules/work-centers-module'))
+const ProductionOrdersModule = lazy(() => import('@/components/modules/production-orders-module'))
+
+// === HR modules ===
+const EmployeesModule = lazy(() => import('@/components/modules/employees-module'))
+const DepartmentsModule = lazy(() => import('@/components/modules/departments-module'))
+const AttendanceModule = lazy(() => import('@/components/modules/attendance-module'))
+const LeaveRequestsModule = lazy(() => import('@/components/modules/leave-requests-module'))
+const PayrollRunsModule = lazy(() => import('@/components/modules/payroll-runs-module'))
+
+// === Inventory & Finance (newly wired) ===
+const CategoriesModule = lazy(() => import('@/components/modules/categories-module'))
+const WarehousesModule = lazy(() => import('@/components/modules/warehouses-module'))
+const StockLocationsModule = lazy(() => import('@/components/modules/stock-locations-module'))
+const StockTransfersModule = lazy(() => import('@/components/modules/stock-transfers-module'))
+const DeliveriesModule = lazy(() => import('@/components/modules/deliveries-module'))
+const InventoryAdjustmentsModule = lazy(() => import('@/components/modules/inventory-adjustments-module'))
+const StockMovesModule = lazy(() => import('@/components/modules/stock-moves-module'))
+const CostCentersModule = lazy(() => import('@/components/modules/cost-centers-module'))
+const FiscalPeriodsModule = lazy(() => import('@/components/modules/fiscal-periods-module'))
+const BankAccountsModule = lazy(() => import('@/components/modules/bank-accounts-module'))
+const SafesModule = lazy(() => import('@/components/modules/safes-module'))
 
 export const moduleRegistry: Record<ModuleKey, React.ComponentType> = {
   // Overview
@@ -95,8 +99,8 @@ export const moduleRegistry: Record<ModuleKey, React.ComponentType> = {
   // Master Data
   partners: PartnersModule,
   products: ProductsModule,
-  categories: CategoriesModule as React.ComponentType,
-  warehouses: WarehousesModule as React.ComponentType,
+  categories: CategoriesModule,
+  warehouses: WarehousesModule,
 
   // Sales
   'sales-quotations': SalesQuotationsModule,

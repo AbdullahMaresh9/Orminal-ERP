@@ -1,342 +1,292 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
 import { ModuleShell } from '@/components/erp/module-shell'
 import { KpiCard } from '@/components/erp/kpi-card'
 import { StatusBadge } from '@/components/erp/status-badge'
 import { useT } from '@/lib/i18n/use-t'
-import { formatCurrency, formatDate, formatInt } from '@/lib/format'
+import { formatCurrency, formatInt, formatDate } from '@/lib/format'
 import { exportToCSV, printHTML } from '@/lib/export'
-import { Card } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { toast } from 'sonner'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
-} from '@/components/ui/dialog'
+import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import {
-  Undo2, Plus, Pencil, Trash2, Printer, FileX, CalendarDays, Receipt,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+} from '@/components/ui/dialog'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import {
+  FileMinus, Plus, Printer, Hash, CalendarDays, Coins,
 } from 'lucide-react'
 
-interface CreditNote {
+interface Partner { id: string; code: string; nameAr: string }
+interface Invoice { id: string; code: string; total: number; partnerId: string }
+interface PurchaseCreditNote {
   id: string
   code: string
-  supplierId: string
+  partnerId: string
   invoiceId?: string | null
+  date: string
+  reason?: string
   status: string
   subtotal: number
   taxTotal: number
   total: number
-  issueDate: string
-  reason?: string | null
-  note?: string | null
-  createdAt: string
-  supplier?: { id: string; name: string; code: string }
-  invoice?: { id: string; code: string } | null
+  notes?: string
+  partner?: Partner
 }
 
-const STATUSES = ['draft', 'posted', 'cancelled']
-
-function todayISO() {
-  return new Date().toISOString().slice(0, 10)
-}
-
-const empty = {
-  supplierId: '',
-  invoiceId: '',
-  total: 0,
-  reason: '',
-  note: '',
-  issueDate: todayISO(),
-  status: 'posted',
-}
+const REASON_OPTIONS = [
+  { value: 'returned', label: 'مرتجع بضاعة للمورد' },
+  { value: 'discount', label: 'خصم بعد الفوترة' },
+  { value: 'correction', label: 'تصحيح خطأ' },
+  { value: 'cancellation', label: 'إلغاء فاتورة' },
+  { value: 'other', label: 'أخرى' },
+]
+const REASON_LABELS: Record<string, string> = Object.fromEntries(REASON_OPTIONS.map((r) => [r.value, r.label]))
 
 export function PurchaseCreditNotesModule() {
   const { t } = useT()
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [open, setOpen] = useState(false)
-  const [editId, setEditId] = useState<string | null>(null)
-  const [form, setForm] = useState<any>(empty)
+  const [filterStatus, setFilterStatus] = useState('all')
+  const [addOpen, setAddOpen] = useState(false)
+  const [page, setPage] = useState(1)
+  const pageSize = 15
 
-  const { data, isLoading } = useQuery<{ data: CreditNote[]; total: number }>({
-    queryKey: ['purchase-credit-notes'],
+  const { data, isLoading } = useQuery<{ data: PurchaseCreditNote[]; meta: any }>({
+    queryKey: ['purchase-credit-notes', search, filterStatus, page],
     queryFn: async () => {
-      const r = await fetch('/api/erp/purchase-credit-notes')
-      if (!r.ok) throw new Error('fetch failed')
+      const params = new URLSearchParams()
+      if (search) params.set('q', search)
+      if (filterStatus !== 'all') params.set('status', filterStatus)
+      params.set('page', String(page))
+      params.set('pageSize', String(pageSize))
+      const r = await fetch(`/api/erp/purchase-credit-notes?${params}`)
+      if (!r.ok) throw new Error('Failed')
       return r.json()
     },
   })
 
-  const { data: suppliersData } = useQuery<{ data: any[] }>({
+  const { data: partnersData } = useQuery<{ data: Partner[] }>({
     queryKey: ['suppliers-for-pcn'],
     queryFn: async () => {
-      const r = await fetch('/api/erp/suppliers?active=true')
-      if (!r.ok) throw new Error('fetch failed')
+      const r = await fetch('/api/erp/partners?isSupplier=true&pageSize=200')
+      if (!r.ok) return { data: [] }
       return r.json()
     },
   })
 
-  const { data: invoicesData } = useQuery<{ data: any[] }>({
+  const { data: invoicesData } = useQuery<{ data: Invoice[] }>({
     queryKey: ['purchase-invoices-for-pcn'],
     queryFn: async () => {
-      const r = await fetch('/api/erp/purchase-invoices')
-      if (!r.ok) throw new Error('fetch failed')
+      const r = await fetch('/api/erp/purchase-invoices?pageSize=200')
+      if (!r.ok) return { data: [] }
       return r.json()
     },
   })
 
-  const suppliers = suppliersData?.data ?? []
+  const notes = data?.data ?? []
+  const total = data?.meta?.pagination?.total ?? 0
+  const totalPages = data?.meta?.pagination?.totalPages ?? 1
+  const partners = partnersData?.data ?? []
   const invoices = invoicesData?.data ?? []
-  const filteredInvoices = form.supplierId ? invoices.filter((i) => i.supplierId === form.supplierId) : invoices
 
-  const list = data?.data ?? []
-  const filtered = list.filter((o) => {
-    const q = search.trim().toLowerCase()
-    const matchesQ = !q || [o.code, o.reason, o.note, o.supplier?.name, o.supplier?.code].some((v) => (v ?? '').toLowerCase().includes(q))
-    const matchesStatus = statusFilter === 'all' || o.status === statusFilter
-    return matchesQ && matchesStatus
-  })
+  const stats = useMemo(() => {
+    const now = new Date()
+    const thisMonth = notes.filter((n) => {
+      const d = new Date(n.date)
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+    })
+    return {
+      total: notes.reduce((s, n) => s + n.total, 0),
+      count: notes.length,
+      thisMonthTotal: thisMonth.reduce((s, n) => s + n.total, 0),
+      thisMonthCount: thisMonth.length,
+    }
+  }, [notes])
 
-  const totalAmount = list.reduce((s, o) => s + (o.total ?? 0), 0)
-  const now = new Date()
-  const thisMonth = list.filter((o) => new Date(o.issueDate).getMonth() === now.getMonth() && new Date(o.issueDate).getFullYear() === now.getFullYear())
-  const thisMonthTotal = thisMonth.reduce((s, o) => s + (o.total ?? 0), 0)
+  // Form
+  const [partnerId, setPartnerId] = useState('')
+  const [invoiceId, setInvoiceId] = useState('')
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
+  const [reason, setReason] = useState('returned')
+  const [amount, setAmount] = useState('0')
+  const [notes_, setNotes] = useState('')
 
-  const saveMut = useMutation({
-    mutationFn: async (payload: any) => {
-      const url = editId ? `/api/erp/purchase-credit-notes/${editId}` : '/api/erp/purchase-credit-notes'
-      const r = await fetch(url, {
-        method: editId ? 'PUT' : 'POST',
+  const resetForm = () => {
+    setPartnerId(''); setInvoiceId(''); setDate(new Date().toISOString().slice(0, 10))
+    setReason('returned'); setAmount('0'); setNotes('')
+  }
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      if (!partnerId) throw new Error('اختر المورد')
+      const amt = Number(amount) || 0
+      if (amt <= 0) throw new Error('المبلغ يجب أن يكون أكبر من صفر')
+      const payload = {
+        partnerId,
+        invoiceId: invoiceId || null,
+        date,
+        reason: REASON_LABELS[reason] ?? reason,
+        subtotal: amt,
+        taxTotal: 0,
+        total: amt,
+        notes: notes_,
+      }
+      const r = await fetch('/api/erp/purchase-credit-notes', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
       if (!r.ok) {
-        const e = await r.json().catch(() => ({}))
-        throw new Error(e.error || 'request failed')
+        const err = await r.json().catch(() => ({}))
+        throw new Error(err?.error?.message ?? 'فشل الحفظ')
       }
       return r.json()
     },
     onSuccess: () => {
-      toast.success('تم الحفظ بنجاح')
-      setOpen(false)
+      toast.success('تم إنشاء الإشعار الدائن للمشتريات')
       qc.invalidateQueries({ queryKey: ['purchase-credit-notes'] })
-      qc.invalidateQueries({ queryKey: ['suppliers'] })
+      setAddOpen(false); resetForm()
     },
     onError: (e: any) => toast.error(e.message || 'حدث خطأ'),
   })
 
-  const delMut = useMutation({
-    mutationFn: async (id: string) => {
-      const r = await fetch(`/api/erp/purchase-credit-notes/${id}`, { method: 'DELETE' })
-      if (!r.ok) throw new Error('request failed')
-      return r.json()
-    },
-    onSuccess: () => {
-      toast.success('تم الحذف بنجاح')
-      qc.invalidateQueries({ queryKey: ['purchase-credit-notes'] })
-    },
-    onError: () => toast.error('حدث خطأ'),
-  })
-
-  function openAdd() {
-    setEditId(null)
-    setForm(empty)
-    setOpen(true)
+  const handleExport = () => {
+    const rows = notes.map((n) => ({
+      'الرمز': n.code,
+      'المورد': n.partner?.nameAr ?? '',
+      'الفاتورة': invoices.find((i) => i.id === n.invoiceId)?.code ?? '',
+      'التاريخ': formatDate(n.date),
+      'الإجمالي': n.total,
+      'الحالة': n.status,
+      'السبب': n.reason ?? '',
+    }))
+    exportToCSV('purchase-credit-notes', rows)
+    toast.success('تم تصدير الملف')
   }
 
-  function openEdit(o: CreditNote) {
-    setEditId(o.id)
-    setForm({
-      supplierId: o.supplierId,
-      invoiceId: o.invoiceId ?? '',
-      total: o.total,
-      reason: o.reason ?? '',
-      note: o.note ?? '',
-      issueDate: new Date(o.issueDate).toISOString().slice(0, 10),
-      status: o.status,
-    })
-    setOpen(true)
-  }
-
-  function submit() {
-    if (!form.supplierId) {
-      toast.error('المورد مطلوب')
-      return
-    }
-    const total = Number(form.total)
-    if (!total || total <= 0) {
-      toast.error('المبلغ يجب أن يكون أكبر من صفر')
-      return
-    }
-    saveMut.mutate(form)
-  }
-
-  function handleExport() {
-    exportToCSV(
-      'purchase-credit-notes',
-      filtered.map((o) => ({
-        code: o.code,
-        supplier: o.supplier?.name ?? '',
-        invoice: o.invoice?.code ?? '',
-        date: formatDate(o.issueDate),
-        total: o.total,
-        reason: o.reason ?? '',
-        status: o.status,
-      })),
-      [
-        { key: 'code', label: 'الكود' },
-        { key: 'supplier', label: 'المورد' },
-        { key: 'invoice', label: 'الفاتورة' },
-        { key: 'date', label: 'التاريخ' },
-        { key: 'total', label: 'المبلغ' },
-        { key: 'reason', label: 'السبب' },
-        { key: 'status', label: 'الحالة' },
-      ]
-    )
-  }
-
-  function handlePrint(o: CreditNote) {
+  const handlePrint = (n: PurchaseCreditNote) => {
+    const inv = invoices.find((i) => i.id === n.invoiceId)
     const html = `
       <div class="doc-header">
         <div class="company">
           <div class="logo">أ</div>
           <div class="info">
-            <h2>الأستاذ — نظام محاسبي</h2>
-            <p>إشعار دائن شراء</p>
+            <h2>الأستاذ</h2>
+            <p>نظام المحاسبة والإدارة المالية</p>
           </div>
         </div>
         <div class="doc-meta">
-          <div class="type">إشعار دائن</div>
-          <div class="code">${o.code}</div>
-          <div class="date">${formatDate(o.issueDate)}</div>
+          <div class="type">إشعار دائن مشتريات</div>
+          <div class="code">${n.code}</div>
+          <div class="date">${formatDate(n.date)}</div>
         </div>
       </div>
       <div class="party">
         <div class="label">المورد</div>
-        <div class="name">${o.supplier?.name ?? '—'}</div>
-        <div class="sub">الكود: ${o.supplier?.code ?? '—'} | الفاتورة المرتبطة: ${o.invoice?.code ?? '—'}</div>
+        <div class="name">${n.partner?.nameAr ?? ''}</div>
+        <div class="sub">رمز: ${n.partner?.code ?? ''}</div>
+        ${inv ? `<div class="sub">فاتورة مرتبطة: ${inv.code}</div>` : ''}
       </div>
       <table>
         <thead>
-          <tr><th>البيان</th><th>المبلغ</th></tr>
+          <tr>
+            <th>البيان</th>
+            <th>القيمة</th>
+          </tr>
         </thead>
         <tbody>
-          <tr><td>المجموع الفرعي</td><td>${o.subtotal.toFixed(2)}</td></tr>
-          <tr><td>الضريبة</td><td>${o.taxTotal.toFixed(2)}</td></tr>
-          <tr><td>السبب</td><td>${o.reason ?? '—'}</td></tr>
+          <tr><td>المبلغ</td><td>${formatCurrency(n.total)}</td></tr>
+          <tr><td>السبب</td><td>${n.reason ?? ''}</td></tr>
         </tbody>
-        <tfoot>
-          <tr><td style="text-align:right">الإجمالي</td><td style="text-align:left">${o.total.toFixed(2)}</td></tr>
-        </tfoot>
       </table>
-      ${o.note ? `<div class="notes"><strong>ملاحظات:</strong><br/>${o.note}</div>` : ''}
+      <div class="totals">
+        <div class="row grand"><span>الإجمالي:</span><span>${formatCurrency(n.total)}</span></div>
+      </div>
+      ${n.notes ? `<div class="notes">${n.notes}</div>` : ''}
       <div class="signatures">
         <div class="sig"><div class="line"></div><div class="label">المحاسب</div></div>
+        <div class="sig"><div class="line"></div><div class="label">المدير</div></div>
         <div class="sig"><div class="line"></div><div class="label">المورد</div></div>
-        <div class="sig"><div class="line"></div><div class="label">المدير المالي</div></div>
       </div>
     `
-    printHTML(html, `إشعار دائن ${o.code}`)
+    printHTML(html, `إشعار دائن مشتريات ${n.code}`)
   }
 
   return (
     <ModuleShell
       title={t('module.purchase-credit-notes')}
-      description="إدارة المرتجعات والإشعارات الدائنة للموردين مع عكس القيود المحاسبية"
-      icon={<Undo2 className="size-5" />}
+      description="إشعارات دائنة للمشتريات مع تقليل رصيد المورد"
+      icon={<FileMinus className="size-5" />}
       searchValue={search}
       onSearch={setSearch}
-      searchPlaceholder="ابحث بالكود أو المورد أو السبب..."
-      onAdd={openAdd}
-      addLabel="إشعار دائن"
+      searchPlaceholder="ابحث برمز الإشعار أو السبب..."
+      onAdd={() => { resetForm(); setAddOpen(true) }}
+      addLabel="إشعار دائن جديد"
       onExport={handleExport}
       filters={
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-40"><SelectValue placeholder="كل الحالات" /></SelectTrigger>
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <SelectTrigger className="w-40"><SelectValue placeholder="الحالة" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">كل الحالات</SelectItem>
-            {STATUSES.map((s) => <SelectItem key={s} value={s}>{t(`status.${s}`)}</SelectItem>)}
+            <SelectItem value="all">الكل</SelectItem>
+            <SelectItem value="draft">مسودة</SelectItem>
+            <SelectItem value="posted">مُرحّل</SelectItem>
+            <SelectItem value="cancelled">ملغي</SelectItem>
           </SelectContent>
         </Select>
       }
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {isLoading ? (
-          Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />)
-        ) : (
-          <>
-            <KpiCard title="إجمالي المرتجعات" value={formatCurrency(totalAmount)} icon={<Undo2 className="size-5" />} accent="rose" />
-            <KpiCard title="عدد الإشعارات" value={formatInt(list.length)} icon={<FileX className="size-5" />} accent="amber" />
-            <KpiCard title="مرتجعات هذا الشهر" value={formatCurrency(thisMonthTotal)} icon={<CalendarDays className="size-5" />} accent="teal" />
-            <KpiCard title="عدد مرتجعات الشهر" value={formatInt(thisMonth.length)} icon={<Receipt className="size-5" />} accent="violet" />
-          </>
-        )}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+        <KpiCard title="إجمالي الإشعارات" value={formatCurrency(stats.total)} icon={<Coins className="size-5" />} accent="emerald" />
+        <KpiCard title="عدد الإشعارات" value={formatInt(stats.count)} icon={<Hash className="size-5" />} accent="teal" />
+        <KpiCard title="هذا الشهر" value={formatCurrency(stats.thisMonthTotal)} icon={<CalendarDays className="size-5" />} accent="amber" />
+        <KpiCard title="عدد هذا الشهر" value={formatInt(stats.thisMonthCount)} icon={<FileMinus className="size-5" />} accent="violet" />
       </div>
 
-      <Card className="rounded-xl border bg-card">
+      <Card className="rounded-xl overflow-hidden">
         <ScrollArea className="max-h-[60vh]">
-          <Table className="table-sticky">
+          <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>الكود</TableHead>
+              <TableRow className="bg-muted/50">
+                <TableHead className="ps-4">الرمز</TableHead>
                 <TableHead>المورد</TableHead>
                 <TableHead>الفاتورة</TableHead>
                 <TableHead>التاريخ</TableHead>
-                <TableHead className="num-cell">المبلغ</TableHead>
-                <TableHead>السبب</TableHead>
+                <TableHead className="text-end num-cell">الإجمالي</TableHead>
                 <TableHead>الحالة</TableHead>
+                <TableHead>السبب</TableHead>
                 <TableHead className="text-end">إجراءات</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                Array.from({ length: 4 }).map((_, i) => (
-                  <TableRow key={i}><TableCell colSpan={8}><Skeleton className="h-10" /></TableCell></TableRow>
-                ))
-              ) : filtered.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-12">
-                    لا توجد إشعارات دائنة. ابدأ بإضافة أول إشعار.
-                  </TableCell>
-                </TableRow>
-              ) : filtered.map((o) => (
-                <TableRow key={o.id}>
-                  <TableCell className="font-mono text-xs font-semibold text-primary">{o.code}</TableCell>
-                  <TableCell className="font-medium text-sm">{o.supplier?.name ?? '—'}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{o.invoice?.code ?? '—'}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{formatDate(o.issueDate)}</TableCell>
-                  <TableCell className="num-cell font-semibold text-rose-600 dark:text-rose-400">
-                    <span className="num">{formatCurrency(o.total)}</span>
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground cell-truncate" title={o.reason ?? ''}>{o.reason || '—'}</TableCell>
-                  <TableCell><StatusBadge status={o.status} /></TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-end gap-0.5">
-                      <Button size="sm" variant="ghost" className="size-8 p-0" onClick={() => handlePrint(o)} title="طباعة">
-                        <Printer className="size-4" />
-                      </Button>
-                      <Button size="sm" variant="ghost" className="size-8 p-0" onClick={() => openEdit(o)} title="تعديل">
-                        <Pencil className="size-4" />
-                      </Button>
-                      <Button size="sm" variant="ghost" className="size-8 p-0 text-rose-600 hover:text-rose-700" onClick={() => {
-                        if (confirm('هل أنت متأكد من حذف هذا الإشعار؟')) delMut.mutate(o.id)
-                      }} title="حذف">
-                        <Trash2 className="size-4" />
-                      </Button>
-                    </div>
+                <TableRow><TableCell colSpan={8} className="text-center py-10 text-muted-foreground">جاري التحميل...</TableCell></TableRow>
+              ) : notes.length === 0 ? (
+                <TableRow><TableCell colSpan={8} className="text-center py-10 text-muted-foreground">لا توجد إشعارات دائنة.</TableCell></TableRow>
+              ) : notes.map((n) => (
+                <TableRow key={n.id} className="hover:bg-muted/40">
+                  <TableCell className="ps-4 font-mono text-xs" dir="ltr">{n.code}</TableCell>
+                  <TableCell className="font-medium">{n.partner?.nameAr ?? '—'}</TableCell>
+                  <TableCell className="font-mono text-xs" dir="ltr">{invoices.find((i) => i.id === n.invoiceId)?.code ?? '—'}</TableCell>
+                  <TableCell className="text-sm">{formatDate(n.date)}</TableCell>
+                  <TableCell className="text-end num-cell"><span className="num tabular-nums font-semibold" dir="ltr">{formatCurrency(n.total)}</span></TableCell>
+                  <TableCell><StatusBadge status={n.status} /></TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{n.reason ?? '—'}</TableCell>
+                  <TableCell className="text-end">
+                    <Button size="icon" variant="ghost" className="size-8" onClick={() => handlePrint(n)}>
+                      <Printer className="size-3.5" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -345,53 +295,89 @@ export function PurchaseCreditNotesModule() {
         </ScrollArea>
       </Card>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-xl">
+      <div className="flex items-center justify-between mt-4 text-sm">
+        <p className="text-muted-foreground">
+          عرض {notes.length === 0 ? 0 : (page - 1) * pageSize + 1}–{(page - 1) * pageSize + notes.length} من {total}
+        </p>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}>السابق</Button>
+          <span className="text-xs text-muted-foreground">صفحة {page} من {totalPages}</span>
+          <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>التالي</Button>
+        </div>
+      </div>
+
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{editId ? 'تعديل إشعار دائن' : 'إضافة إشعار دائن'}</DialogTitle>
-            <DialogDescription>سيتم تخفيض رصيد المورد وعكس القيد المحاسبي الأصلي تلقائياً.</DialogDescription>
+            <DialogTitle>إشعار دائن مشتريات جديد</DialogTitle>
+            <DialogDescription>إنشاء إشعار دائن لمورد — سيتم تقليل رصيد المورد تلقائياً</DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label>المورد *</Label>
-              <Select value={form.supplierId} onValueChange={(v) => setForm({ ...form, supplierId: v, invoiceId: '' })}>
-                <SelectTrigger className="w-full"><SelectValue placeholder="اختر المورد" /></SelectTrigger>
-                <SelectContent>
-                  {suppliers.map((s) => <SelectItem key={s.id} value={s.id}>{s.name} ({s.code})</SelectItem>)}
-                </SelectContent>
-              </Select>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>المورد *</Label>
+                <Select value={partnerId} onValueChange={setPartnerId}>
+                  <SelectTrigger><SelectValue placeholder="اختر المورد" /></SelectTrigger>
+                  <SelectContent>
+                    {partners.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        <span dir="ltr" className="font-mono text-xs">{p.code}</span> — {p.nameAr}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>الفاتورة المرتبطة (اختياري)</Label>
+                <Select value={invoiceId} onValueChange={(v) => {
+                  setInvoiceId(v)
+                  const inv = invoices.find((i) => i.id === v)
+                  if (inv) setAmount(String(inv.total))
+                }}>
+                  <SelectTrigger><SelectValue placeholder="بدون" /></SelectTrigger>
+                  <SelectContent>
+                    {invoices
+                      .filter((i) => !partnerId || i.partnerId === partnerId)
+                      .map((i) => (
+                        <SelectItem key={i.id} value={i.id}>
+                          <span dir="ltr" className="font-mono text-xs">{i.code}</span> — {formatCurrency(i.total)}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="date">التاريخ</Label>
+                <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="amount">المبلغ *</Label>
+                <Input id="amount" type="number" step="0.01" dir="ltr" value={amount} onChange={(e) => setAmount(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>السبب</Label>
+                <Select value={reason} onValueChange={setReason}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {REASON_OPTIONS.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
             <div className="space-y-1.5">
-              <Label>الفاتورة المرتبطة (اختياري)</Label>
-              <Select value={form.invoiceId || 'none'} onValueChange={(v) => setForm({ ...form, invoiceId: v === 'none' ? '' : v })}>
-                <SelectTrigger className="w-full"><SelectValue placeholder="بدون" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">بدون</SelectItem>
-                  {filteredInvoices.map((i) => <SelectItem key={i.id} value={i.id}>{i.code} — {formatCurrency(i.total)}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>التاريخ</Label>
-              <Input type="date" value={form.issueDate} onChange={(e) => setForm({ ...form, issueDate: e.target.value })} />
-            </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label>المبلغ *</Label>
-              <Input type="number" step="0.01" value={form.total} onChange={(e) => setForm({ ...form, total: Number(e.target.value) })} />
-            </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label>السبب</Label>
-              <Input value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} placeholder="سبب الإشعار الدائن" />
-            </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label>ملاحظات</Label>
-              <Textarea rows={2} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
+              <Label htmlFor="notes_">ملاحظات</Label>
+              <Textarea id="notes_" value={notes_} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="ملاحظات إضافية..." />
             </div>
           </div>
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>إلغاء</Button>
-            <Button onClick={submit} disabled={saveMut.isPending}>
-              {saveMut.isPending ? 'جاري الحفظ...' : editId ? 'تحديث' : 'إنشاء الإشعار'}
+            <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>إلغاء</Button>
+            <Button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
+              {saveMutation.isPending ? 'جاري الحفظ...' : 'إنشاء وترحيل'}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,373 +1,308 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
 import { ModuleShell } from '@/components/erp/module-shell'
 import { KpiCard } from '@/components/erp/kpi-card'
 import { StatusBadge } from '@/components/erp/status-badge'
 import { useT } from '@/lib/i18n/use-t'
-import { formatCurrency, formatDate, formatInt, formatNumber } from '@/lib/format'
+import { formatCurrency, formatInt, formatDate } from '@/lib/format'
 import { exportToCSV, printHTML } from '@/lib/export'
-import { Card } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { toast } from 'sonner'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
-} from '@/components/ui/dialog'
+import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import {
-  Banknote, Plus, Pencil, Trash2, Printer, Wallet, Receipt, CreditCard,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+} from '@/components/ui/dialog'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import {
+  Banknote, Plus, Printer, Hash, TrendingUp, CreditCard,
 } from 'lucide-react'
 
-interface Payment {
+interface Partner { id: string; code: string; nameAr: string }
+interface Invoice { id: string; code: string; total: number; paid: number; partnerId: string }
+interface PurchasePayment {
   id: string
   code: string
-  supplierId: string
+  partnerId: string
   invoiceId?: string | null
   amount: number
-  date: string
+  paymentDate: string
   method: string
-  reference?: string | null
+  reference?: string
   status: string
-  description?: string | null
-  createdAt: string
-  supplier?: { id: string; name: string; code: string }
-  invoice?: { id: string; code: string } | null
+  notes?: string
+  partner?: Partner
 }
 
-const STATUSES = ['completed', 'pending', 'cancelled', 'refunded']
-const METHODS = [
+const METHOD_OPTIONS = [
   { value: 'cash', label: 'نقد' },
   { value: 'card', label: 'بطاقة' },
   { value: 'transfer', label: 'تحويل' },
   { value: 'check', label: 'شيك' },
 ]
-
-function todayISO() {
-  return new Date().toISOString().slice(0, 10)
-}
-
-const empty = {
-  supplierId: '',
-  invoiceId: '',
-  amount: 0,
-  date: todayISO(),
-  method: 'cash',
-  reference: '',
-  description: '',
-  status: 'completed',
-}
+const METHOD_LABELS: Record<string, string> = Object.fromEntries(METHOD_OPTIONS.map((m) => [m.value, m.label]))
 
 export function PurchasePaymentsModule() {
   const { t } = useT()
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [methodFilter, setMethodFilter] = useState<string>('all')
-  const [open, setOpen] = useState(false)
-  const [editId, setEditId] = useState<string | null>(null)
-  const [form, setForm] = useState<any>(empty)
+  const [filterMethod, setFilterMethod] = useState('all')
+  const [filterStatus, setFilterStatus] = useState('all')
+  const [addOpen, setAddOpen] = useState(false)
+  const [page, setPage] = useState(1)
+  const pageSize = 15
 
-  const { data, isLoading } = useQuery<{ data: Payment[]; total: number }>({
-    queryKey: ['purchase-payments'],
+  const { data, isLoading } = useQuery<{ data: PurchasePayment[]; meta: any }>({
+    queryKey: ['purchase-payments', search, filterStatus, page],
     queryFn: async () => {
-      const r = await fetch('/api/erp/purchase-payments')
-      if (!r.ok) throw new Error('fetch failed')
+      const params = new URLSearchParams()
+      if (search) params.set('q', search)
+      if (filterStatus !== 'all') params.set('status', filterStatus)
+      params.set('page', String(page))
+      params.set('pageSize', String(pageSize))
+      const r = await fetch(`/api/erp/purchase-payments?${params}`)
+      if (!r.ok) throw new Error('Failed')
       return r.json()
     },
   })
 
-  const { data: suppliersData } = useQuery<{ data: any[] }>({
+  const { data: partnersData } = useQuery<{ data: Partner[] }>({
     queryKey: ['suppliers-for-pp'],
     queryFn: async () => {
-      const r = await fetch('/api/erp/suppliers?active=true')
-      if (!r.ok) throw new Error('fetch failed')
+      const r = await fetch('/api/erp/partners?isSupplier=true&pageSize=200')
+      if (!r.ok) return { data: [] }
       return r.json()
     },
   })
 
-  const { data: invoicesData } = useQuery<{ data: any[] }>({
+  const { data: invoicesData } = useQuery<{ data: Invoice[] }>({
     queryKey: ['purchase-invoices-for-pp'],
     queryFn: async () => {
-      const r = await fetch('/api/erp/purchase-invoices')
-      if (!r.ok) throw new Error('fetch failed')
+      const r = await fetch('/api/erp/purchase-invoices?pageSize=200')
+      if (!r.ok) return { data: [] }
       return r.json()
     },
   })
 
-  const suppliers = suppliersData?.data ?? []
+  const payments = (data?.data ?? []).filter((p) => filterMethod === 'all' || p.method === filterMethod)
+  const total = data?.meta?.pagination?.total ?? 0
+  const totalPages = data?.meta?.pagination?.totalPages ?? 1
+  const partners = partnersData?.data ?? []
   const invoices = invoicesData?.data ?? []
-  const filteredInvoices = form.supplierId ? invoices.filter((i) => i.supplierId === form.supplierId && i.status !== 'paid' && i.status !== 'cancelled') : invoices
 
-  const list = data?.data ?? []
-  const filtered = list.filter((o) => {
-    const q = search.trim().toLowerCase()
-    const matchesQ = !q || [o.code, o.reference, o.description, o.supplier?.name, o.supplier?.code].some((v) => (v ?? '').toLowerCase().includes(q))
-    const matchesStatus = statusFilter === 'all' || o.status === statusFilter
-    const matchesMethod = methodFilter === 'all' || o.method === methodFilter
-    return matchesQ && matchesStatus && matchesMethod
-  })
+  const stats = useMemo(() => {
+    const now = new Date()
+    const thisMonth = payments.filter((p) => {
+      const d = new Date(p.paymentDate)
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+    })
+    const byMethod: Record<string, number> = {}
+    for (const p of thisMonth) byMethod[p.method] = (byMethod[p.method] || 0) + p.amount
+    const topMethod = Object.entries(byMethod).sort((a, b) => b[1] - a[1])[0]
+    return {
+      monthTotal: thisMonth.reduce((s, p) => s + p.amount, 0),
+      count: thisMonth.length,
+      avg: thisMonth.length > 0 ? thisMonth.reduce((s, p) => s + p.amount, 0) / thisMonth.length : 0,
+      topMethod: topMethod ? METHOD_LABELS[topMethod[0]] ?? topMethod[0] : '—',
+    }
+  }, [payments])
 
-  // KPIs
-  const now = new Date()
-  const thisMonth = list.filter((o) => new Date(o.date).getMonth() === now.getMonth() && new Date(o.date).getFullYear() === now.getFullYear())
-  const thisMonthTotal = thisMonth.reduce((s, o) => s + (o.amount ?? 0), 0)
-  const avg = thisMonth.length ? thisMonthTotal / thisMonth.length : 0
-  const byMethod = new Map<string, number>()
-  for (const m of METHODS) {
-    byMethod.set(m.value, thisMonth.filter((o) => o.method === m.value).reduce((s, o) => s + o.amount, 0))
+  // Form
+  const [partnerId, setPartnerId] = useState('')
+  const [invoiceId, setInvoiceId] = useState('')
+  const [amount, setAmount] = useState('0')
+  const [paymentDate, setPaymentDate] = useState(new Date().toISOString().slice(0, 10))
+  const [method, setMethod] = useState('cash')
+  const [reference, setReference] = useState('')
+  const [notes, setNotes] = useState('')
+
+  const resetForm = () => {
+    setPartnerId(''); setInvoiceId(''); setAmount('0')
+    setPaymentDate(new Date().toISOString().slice(0, 10)); setMethod('cash')
+    setReference(''); setNotes('')
   }
-  const topMethod = Array.from(byMethod.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] ?? '—'
 
-  const saveMut = useMutation({
-    mutationFn: async (payload: any) => {
-      const url = editId ? `/api/erp/purchase-payments/${editId}` : '/api/erp/purchase-payments'
-      const r = await fetch(url, {
-        method: editId ? 'PUT' : 'POST',
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      if (!partnerId) throw new Error('اختر المورد')
+      const amt = Number(amount) || 0
+      if (amt <= 0) throw new Error('المبلغ يجب أن يكون أكبر من صفر')
+      const payload = {
+        partnerId,
+        invoiceId: invoiceId || undefined,
+        amount: amt,
+        paymentDate,
+        method,
+        reference,
+        notes,
+        status: 'posted',
+      }
+      const r = await fetch('/api/erp/purchase-payments', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
       if (!r.ok) {
-        const e = await r.json().catch(() => ({}))
-        throw new Error(e.error || 'request failed')
+        const err = await r.json().catch(() => ({}))
+        throw new Error(err?.error?.message ?? 'فشل الحفظ')
       }
       return r.json()
     },
     onSuccess: () => {
-      toast.success('تم الحفظ بنجاح')
-      setOpen(false)
+      toast.success('تم إنشاء سند الصرف بنجاح')
       qc.invalidateQueries({ queryKey: ['purchase-payments'] })
-      qc.invalidateQueries({ queryKey: ['suppliers'] })
       qc.invalidateQueries({ queryKey: ['purchase-invoices'] })
+      setAddOpen(false); resetForm()
     },
     onError: (e: any) => toast.error(e.message || 'حدث خطأ'),
   })
 
-  const delMut = useMutation({
-    mutationFn: async (id: string) => {
-      const r = await fetch(`/api/erp/purchase-payments/${id}`, { method: 'DELETE' })
-      if (!r.ok) throw new Error('request failed')
-      return r.json()
-    },
-    onSuccess: () => {
-      toast.success('تم الحذف بنجاح')
-      qc.invalidateQueries({ queryKey: ['purchase-payments'] })
-    },
-    onError: () => toast.error('حدث خطأ'),
-  })
-
-  function openAdd() {
-    setEditId(null)
-    setForm(empty)
-    setOpen(true)
+  const handleExport = () => {
+    const rows = payments.map((p) => ({
+      'الرمز': p.code,
+      'المورد': p.partner?.nameAr ?? '',
+      'الفاتورة': invoices.find((i) => i.id === p.invoiceId)?.code ?? '',
+      'التاريخ': formatDate(p.paymentDate),
+      'المبلغ': p.amount,
+      'الطريقة': METHOD_LABELS[p.method] ?? p.method,
+      'المرجع': p.reference ?? '',
+      'الحالة': p.status,
+    }))
+    exportToCSV('purchase-payments', rows)
+    toast.success('تم تصدير الملف')
   }
 
-  function openEdit(o: Payment) {
-    setEditId(o.id)
-    setForm({
-      supplierId: o.supplierId,
-      invoiceId: o.invoiceId ?? '',
-      amount: o.amount,
-      date: new Date(o.date).toISOString().slice(0, 10),
-      method: o.method,
-      reference: o.reference ?? '',
-      description: o.description ?? '',
-      status: o.status,
-    })
-    setOpen(true)
-  }
-
-  function submit() {
-    if (!form.supplierId) {
-      toast.error('المورد مطلوب')
-      return
-    }
-    const amount = Number(form.amount)
-    if (!amount || amount <= 0) {
-      toast.error('المبلغ يجب أن يكون أكبر من صفر')
-      return
-    }
-    saveMut.mutate(form)
-  }
-
-  function handleExport() {
-    exportToCSV(
-      'purchase-payments',
-      filtered.map((o) => ({
-        code: o.code,
-        supplier: o.supplier?.name ?? '',
-        invoice: o.invoice?.code ?? '',
-        date: formatDate(o.date),
-        amount: o.amount,
-        method: METHODS.find((m) => m.value === o.method)?.label ?? o.method,
-        reference: o.reference ?? '',
-        status: o.status,
-      })),
-      [
-        { key: 'code', label: 'الكود' },
-        { key: 'supplier', label: 'المورد' },
-        { key: 'invoice', label: 'الفاتورة' },
-        { key: 'date', label: 'التاريخ' },
-        { key: 'amount', label: 'المبلغ' },
-        { key: 'method', label: 'الطريقة' },
-        { key: 'reference', label: 'المرجع' },
-        { key: 'status', label: 'الحالة' },
-      ]
-    )
-  }
-
-  function handlePrint(o: Payment) {
-    const methodLabel = METHODS.find((m) => m.value === o.method)?.label ?? o.method
+  const handlePrint = (p: PurchasePayment) => {
+    const inv = invoices.find((i) => i.id === p.invoiceId)
     const html = `
       <div class="doc-header">
         <div class="company">
           <div class="logo">أ</div>
           <div class="info">
-            <h2>الأستاذ — نظام محاسبي</h2>
-            <p>سند صرف</p>
+            <h2>الأستاذ</h2>
+            <p>نظام المحاسبة والإدارة المالية</p>
           </div>
         </div>
         <div class="doc-meta">
           <div class="type">سند صرف</div>
-          <div class="code">${o.code}</div>
-          <div class="date">${formatDate(o.date)}</div>
+          <div class="code">${p.code}</div>
+          <div class="date">${formatDate(p.paymentDate)}</div>
         </div>
       </div>
       <div class="party">
-        <div class="label">صُرف إلى (المورد)</div>
-        <div class="name">${o.supplier?.name ?? '—'}</div>
-        <div class="sub">الكود: ${o.supplier?.code ?? '—'} | الفاتورة المرتبطة: ${o.invoice?.code ?? '—'}</div>
+        <div class="label">صرفنا إلى</div>
+        <div class="name">${p.partner?.nameAr ?? ''}</div>
+        <div class="sub">رمز: ${p.partner?.code ?? ''}</div>
+        ${inv ? `<div class="sub">فاتورة: ${inv.code}</div>` : ''}
       </div>
       <table>
         <thead>
-          <tr><th>البيان</th><th>القيمة</th></tr>
+          <tr>
+            <th>البيان</th>
+            <th>القيمة</th>
+          </tr>
         </thead>
         <tbody>
-          <tr><td>المبلغ</td><td>${formatNumber(o.amount)}</td></tr>
-          <tr><td>طريقة الدفع</td><td>${methodLabel}</td></tr>
-          <tr><td>المرجع</td><td>${o.reference ?? '—'}</td></tr>
-          <tr><td>الحالة</td><td>${o.status}</td></tr>
+          <tr><td>المبلغ المصروف</td><td>${formatCurrency(p.amount)}</td></tr>
+          <tr><td>طريقة الدفع</td><td>${METHOD_LABELS[p.method] ?? p.method}</td></tr>
+          ${p.reference ? `<tr><td>المرجع</td><td>${p.reference}</td></tr>` : ''}
         </tbody>
-        <tfoot>
-          <tr><td style="text-align:right">الإجمالي</td><td style="text-align:left">${o.amount.toFixed(2)} ر.س</td></tr>
-        </tfoot>
       </table>
-      ${o.description ? `<div class="notes"><strong>البيان:</strong><br/>${o.description}</div>` : ''}
+      <div class="totals">
+        <div class="row grand"><span>الإجمالي:</span><span>${formatCurrency(p.amount)}</span></div>
+      </div>
+      ${p.notes ? `<div class="notes">${p.notes}</div>` : ''}
       <div class="signatures">
         <div class="sig"><div class="line"></div><div class="label">المحاسب</div></div>
+        <div class="sig"><div class="line"></div><div class="label">العامل</div></div>
         <div class="sig"><div class="line"></div><div class="label">المستلم</div></div>
-        <div class="sig"><div class="line"></div><div class="label">المدير المالي</div></div>
       </div>
     `
-    printHTML(html, `سند صرف ${o.code}`)
+    printHTML(html, `سند صرف ${p.code}`)
   }
 
   return (
     <ModuleShell
       title={t('module.purchase-payments')}
-      description="إدارة سندات الصرف للموردين مع القيود المحاسبية التلقائية وتحديث الأرصدة"
+      description="سندات صرف الموردين وإيصالات الدفع"
       icon={<Banknote className="size-5" />}
       searchValue={search}
       onSearch={setSearch}
-      searchPlaceholder="ابحث بالكود أو المورد أو المرجع..."
-      onAdd={openAdd}
-      addLabel="سند صرف"
+      searchPlaceholder="ابحث برمز السند أو المرجع..."
+      onAdd={() => { resetForm(); setAddOpen(true) }}
+      addLabel="سند صرف جديد"
       onExport={handleExport}
       filters={
         <>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-36"><SelectValue placeholder="كل الحالات" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">كل الحالات</SelectItem>
-              {STATUSES.map((s) => <SelectItem key={s} value={s}>{t(`status.${s}`)}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select value={methodFilter} onValueChange={setMethodFilter}>
-            <SelectTrigger className="w-32"><SelectValue placeholder="كل الطرق" /></SelectTrigger>
+          <Select value={filterMethod} onValueChange={setFilterMethod}>
+            <SelectTrigger className="w-36"><SelectValue placeholder="الطريقة" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">كل الطرق</SelectItem>
-              {METHODS.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
+              {METHOD_OPTIONS.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-36"><SelectValue placeholder="الحالة" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">الكل</SelectItem>
+              <SelectItem value="draft">مسودة</SelectItem>
+              <SelectItem value="posted">مُرحّل</SelectItem>
+              <SelectItem value="cancelled">ملغي</SelectItem>
             </SelectContent>
           </Select>
         </>
       }
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {isLoading ? (
-          Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />)
-        ) : (
-          <>
-            <KpiCard title="مدفوعات هذا الشهر" value={formatCurrency(thisMonthTotal)} icon={<Banknote className="size-5" />} accent="emerald" />
-            <KpiCard title="عدد السندات" value={formatInt(thisMonth.length)} icon={<Receipt className="size-5" />} accent="teal" />
-            <KpiCard title="متوسط السند" value={formatCurrency(avg)} icon={<Wallet className="size-5" />} accent="amber" />
-            <KpiCard title="الأعلى طريقة" value={METHODS.find((m) => m.value === topMethod)?.label ?? topMethod} icon={<CreditCard className="size-5" />} accent="violet" />
-          </>
-        )}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+        <KpiCard title="صرف هذا الشهر" value={formatCurrency(stats.monthTotal)} icon={<Banknote className="size-5" />} accent="emerald" />
+        <KpiCard title="عدد السندات" value={formatInt(stats.count)} icon={<Hash className="size-5" />} accent="teal" />
+        <KpiCard title="متوسط السند" value={formatCurrency(stats.avg)} icon={<TrendingUp className="size-5" />} accent="violet" />
+        <KpiCard title="أعلى طريقة" value={stats.topMethod} icon={<CreditCard className="size-5" />} accent="amber" />
       </div>
 
-      <Card className="rounded-xl border bg-card">
+      <Card className="rounded-xl overflow-hidden">
         <ScrollArea className="max-h-[60vh]">
-          <Table className="table-sticky">
+          <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>الكود</TableHead>
+              <TableRow className="bg-muted/50">
+                <TableHead className="ps-4">الرمز</TableHead>
                 <TableHead>المورد</TableHead>
+                <TableHead>الفاتورة</TableHead>
                 <TableHead>التاريخ</TableHead>
-                <TableHead className="num-cell">المبلغ</TableHead>
+                <TableHead className="text-end num-cell">المبلغ</TableHead>
                 <TableHead>الطريقة</TableHead>
-                <TableHead>المرجع</TableHead>
                 <TableHead>الحالة</TableHead>
                 <TableHead className="text-end">إجراءات</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                Array.from({ length: 4 }).map((_, i) => (
-                  <TableRow key={i}><TableCell colSpan={8}><Skeleton className="h-10" /></TableCell></TableRow>
-                ))
-              ) : filtered.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-12">
-                    لا توجد سندات صرف. ابدأ بإضافة أول سند.
-                  </TableCell>
-                </TableRow>
-              ) : filtered.map((o) => (
-                <TableRow key={o.id}>
-                  <TableCell className="font-mono text-xs font-semibold text-primary">{o.code}</TableCell>
-                  <TableCell className="font-medium text-sm">{o.supplier?.name ?? '—'}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{formatDate(o.date)}</TableCell>
-                  <TableCell className="num-cell font-semibold text-emerald-600 dark:text-emerald-400">
-                    <span className="num">{formatCurrency(o.amount)}</span>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-xs px-2 py-0.5 rounded bg-muted">{METHODS.find((m) => m.value === o.method)?.label ?? o.method}</span>
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground font-mono" dir="ltr">{o.reference || '—'}</TableCell>
-                  <TableCell><StatusBadge status={o.status} /></TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-end gap-0.5">
-                      <Button size="sm" variant="ghost" className="size-8 p-0" onClick={() => handlePrint(o)} title="طباعة">
-                        <Printer className="size-4" />
-                      </Button>
-                      <Button size="sm" variant="ghost" className="size-8 p-0" onClick={() => openEdit(o)} title="تعديل">
-                        <Pencil className="size-4" />
-                      </Button>
-                      <Button size="sm" variant="ghost" className="size-8 p-0 text-rose-600 hover:text-rose-700" onClick={() => {
-                        if (confirm('هل أنت متأكد من حذف هذا السند؟')) delMut.mutate(o.id)
-                      }} title="حذف">
-                        <Trash2 className="size-4" />
-                      </Button>
-                    </div>
+                <TableRow><TableCell colSpan={8} className="text-center py-10 text-muted-foreground">جاري التحميل...</TableCell></TableRow>
+              ) : payments.length === 0 ? (
+                <TableRow><TableCell colSpan={8} className="text-center py-10 text-muted-foreground">لا توجد سندات صرف.</TableCell></TableRow>
+              ) : payments.map((p) => (
+                <TableRow key={p.id} className="hover:bg-muted/40">
+                  <TableCell className="ps-4 font-mono text-xs" dir="ltr">{p.code}</TableCell>
+                  <TableCell className="font-medium">{p.partner?.nameAr ?? '—'}</TableCell>
+                  <TableCell className="font-mono text-xs" dir="ltr">{invoices.find((i) => i.id === p.invoiceId)?.code ?? '—'}</TableCell>
+                  <TableCell className="text-sm">{formatDate(p.paymentDate)}</TableCell>
+                  <TableCell className="text-end num-cell"><span className="num tabular-nums font-semibold" dir="ltr">{formatCurrency(p.amount)}</span></TableCell>
+                  <TableCell><span className="text-xs">{METHOD_LABELS[p.method] ?? p.method}</span></TableCell>
+                  <TableCell><StatusBadge status={p.status} /></TableCell>
+                  <TableCell className="text-end">
+                    <Button size="icon" variant="ghost" className="size-8" onClick={() => handlePrint(p)}>
+                      <Printer className="size-3.5" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -376,64 +311,93 @@ export function PurchasePaymentsModule() {
         </ScrollArea>
       </Card>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-xl">
+      <div className="flex items-center justify-between mt-4 text-sm">
+        <p className="text-muted-foreground">
+          عرض {payments.length === 0 ? 0 : (page - 1) * pageSize + 1}–{(page - 1) * pageSize + payments.length} من {total}
+        </p>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}>السابق</Button>
+          <span className="text-xs text-muted-foreground">صفحة {page} من {totalPages}</span>
+          <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>التالي</Button>
+        </div>
+      </div>
+
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{editId ? 'تعديل سند صرف' : 'إضافة سند صرف'}</DialogTitle>
-            <DialogDescription>سيتم تحديث رصيد المورد وإنشاء قيد محاسبي (Dr ذمم دائنة / Cr النقدية) تلقائياً.</DialogDescription>
+            <DialogTitle>سند صرف جديد</DialogTitle>
+            <DialogDescription>إنشاء سند صرف لمورد — سيُرحّل القيد المحاسبي تلقائياً (من ح/ الذمم الدائنة إلى ح/ النقدية)</DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label>المورد *</Label>
-              <Select value={form.supplierId} onValueChange={(v) => setForm({ ...form, supplierId: v, invoiceId: '' })}>
-                <SelectTrigger className="w-full"><SelectValue placeholder="اختر المورد" /></SelectTrigger>
-                <SelectContent>
-                  {suppliers.map((s) => <SelectItem key={s.id} value={s.id}>{s.name} ({s.code}) — رصيد: {formatCurrency(s.balance)}</SelectItem>)}
-                </SelectContent>
-              </Select>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>المورد *</Label>
+                <Select value={partnerId} onValueChange={setPartnerId}>
+                  <SelectTrigger><SelectValue placeholder="اختر المورد" /></SelectTrigger>
+                  <SelectContent>
+                    {partners.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        <span dir="ltr" className="font-mono text-xs">{p.code}</span> — {p.nameAr}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>الفاتورة (اختياري)</Label>
+                <Select value={invoiceId} onValueChange={(v) => {
+                  setInvoiceId(v)
+                  const inv = invoices.find((i) => i.id === v)
+                  if (inv) setAmount(String(Math.max(0, inv.total - inv.paid)))
+                }}>
+                  <SelectTrigger><SelectValue placeholder="بدون" /></SelectTrigger>
+                  <SelectContent>
+                    {invoices
+                      .filter((i) => !partnerId || i.partnerId === partnerId)
+                      .map((i) => (
+                        <SelectItem key={i.id} value={i.id}>
+                          <span dir="ltr" className="font-mono text-xs">{i.code}</span> — متبقي {formatCurrency(i.total - i.paid)}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label>الفاتورة المرتبطة (اختياري)</Label>
-              <Select value={form.invoiceId || 'none'} onValueChange={(v) => setForm({ ...form, invoiceId: v === 'none' ? '' : v })}>
-                <SelectTrigger className="w-full"><SelectValue placeholder="بدون" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">بدون</SelectItem>
-                  {filteredInvoices.map((i) => (
-                    <SelectItem key={i.id} value={i.id}>{i.code} — متبقي: {formatCurrency(i.total - i.paid)}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="amount">المبلغ *</Label>
+                <Input id="amount" type="number" step="0.01" dir="ltr" value={amount} onChange={(e) => setAmount(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="paymentDate">التاريخ</Label>
+                <Input id="paymentDate" type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>طريقة الدفع</Label>
+                <Select value={method} onValueChange={setMethod}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {METHOD_OPTIONS.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="reference">المرجع</Label>
+                <Input id="reference" value={reference} onChange={(e) => setReference(e.target.value)} placeholder="رقم شيك / مرجع تحويل" />
+              </div>
             </div>
+
             <div className="space-y-1.5">
-              <Label>المبلغ *</Label>
-              <Input type="number" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>التاريخ</Label>
-              <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>طريقة الدفع</Label>
-              <Select value={form.method} onValueChange={(v) => setForm({ ...form, method: v })}>
-                <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {METHODS.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>المرجع</Label>
-              <Input value={form.reference} onChange={(e) => setForm({ ...form, reference: e.target.value })} placeholder="رقم الشيك/المرجع" />
-            </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label>البيان / الوصف</Label>
-              <Textarea rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+              <Label htmlFor="notes">ملاحظات</Label>
+              <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="ملاحظات إضافية..." />
             </div>
           </div>
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>إلغاء</Button>
-            <Button onClick={submit} disabled={saveMut.isPending}>
-              {saveMut.isPending ? 'جاري الحفظ...' : editId ? 'تحديث' : 'إنشاء السند'}
+            <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>إلغاء</Button>
+            <Button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
+              {saveMutation.isPending ? 'جاري الحفظ...' : 'إنشاء وترحيل'}
             </Button>
           </DialogFooter>
         </DialogContent>

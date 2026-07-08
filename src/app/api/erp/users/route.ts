@@ -1,47 +1,123 @@
-import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import {
+  list, created, badRequest, serverError,
+  parsePagination, parseSearch,
+} from '@/lib/erp/api-response'
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const { page, pageSize, skip } = parsePagination(req)
+    const q = parseSearch(req)
+    const url = new URL(req.url)
+    const active = url.searchParams.get('active')
+    const mfaEnabled = url.searchParams.get('mfaEnabled')
+
+    const where: any = {}
+    if (q) {
+      where.OR = [
+        { username: { contains: q } },
+        { nameAr: { contains: q } },
+        { nameEn: { contains: q } },
+        { email: { contains: q } },
+      ]
+    }
+    if (active === 'true' || active === 'false') where.active = active === 'true'
+    if (mfaEnabled === 'true' || mfaEnabled === 'false') where.mfaEnabled = mfaEnabled === 'true'
+
     const [data, total] = await Promise.all([
       db.user.findMany({
+        where,
         orderBy: { createdAt: 'desc' },
+        skip,
+        take: pageSize,
         select: {
-          id: true, email: true, name: true, role: true, phone: true,
-          avatar: true, branchId: true, active: true, createdAt: true, updatedAt: true,
-          branch: { select: { name: true, code: true } },
-          _count: { select: { auditLogs: true, notifications: true } },
+          id: true,
+          username: true,
+          email: true,
+          nameAr: true,
+          nameEn: true,
+          phone: true,
+          avatar: true,
+          active: true,
+          mfaEnabled: true,
+          defaultBranchId: true,
+          locale: true,
+          timezone: true,
+          lastLoginAt: true,
+          createdAt: true,
+          defaultBranch: {
+            select: { id: true, code: true, nameAr: true, nameEn: true },
+          },
+          userRoles: {
+            include: {
+              role: {
+                select: { id: true, code: true, nameAr: true, nameEn: true, isSystem: true },
+              },
+            },
+          },
+          _count: { select: { auditLogs: true } },
         },
       }),
-      db.user.count(),
+      db.user.count({ where }),
     ])
-    // Strip passwords from response (still SELECT no password)
-    return NextResponse.json({ data, total })
+
+    return list(data, total, page, pageSize)
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    return serverError(e.message)
   }
 }
 
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const count = await db.user.count()
-    // USR-XXXX is just an internal hint — users have no code field; skip
-    void count
-    const created = await db.user.create({
-      data: {
-        name: body.name,
-        email: body.email,
-        password: body.password ?? 'changeme123',
-        role: body.role ?? 'employee',
-        phone: body.phone ?? null,
-        branchId: body.branchId ?? null,
-        active: body.active ?? true,
-      },
-      select: { id: true, name: true, email: true, role: true, phone: true, branchId: true, active: true, createdAt: true },
+    if (!body.username) return badRequest('اسم المستخدم مطلوب', 'VALIDATION_ERROR')
+    if (!body.email) return badRequest('البريد الإلكتروني مطلوب', 'VALIDATION_ERROR')
+    if (!body.nameAr) return badRequest('الاسم بالعربية مطلوب', 'VALIDATION_ERROR')
+    if (!body.password) return badRequest('كلمة المرور مطلوبة', 'VALIDATION_ERROR')
+
+    // Duplicate username/email checks
+    const dup = await db.user.findFirst({
+      where: { OR: [{ username: body.username }, { email: body.email }] },
     })
-    return NextResponse.json(created, { status: 201 })
+    if (dup) {
+      if (dup.username === body.username) {
+        return badRequest('اسم المستخدم مستخدم بالفعل', 'DUPLICATE_USERNAME')
+      }
+      return badRequest('البريد الإلكتروني مستخدم بالفعل', 'DUPLICATE_EMAIL')
+    }
+
+    // NOTE: production would use bcrypt; sandbox uses a simple obfuscation
+    const passwordHash = `hashed$${Buffer.from(body.password).toString('base64')}`
+
+    const created_ = await db.user.create({
+      data: {
+        username: body.username,
+        email: body.email,
+        nameAr: body.nameAr,
+        nameEn: body.nameEn || null,
+        phone: body.phone || null,
+        avatar: body.avatar || null,
+        passwordHash,
+        defaultBranchId: body.defaultBranchId || null,
+        locale: body.locale || 'ar',
+        timezone: body.timezone || 'Asia/Riyadh',
+        mfaEnabled: body.mfaEnabled ?? false,
+        active: body.active ?? true,
+        ...(body.roleId
+          ? {
+              userRoles: {
+                create: [{ role: { connect: { id: body.roleId } } }],
+              },
+            }
+          : {}),
+      },
+      select: {
+        id: true, username: true, email: true, nameAr: true, nameEn: true,
+        active: true, mfaEnabled: true, createdAt: true,
+      },
+    })
+    return created(created_)
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    return serverError(e.message)
   }
 }

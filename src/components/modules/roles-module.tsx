@@ -1,131 +1,335 @@
 'use client'
 
+import { useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ModuleShell } from '@/components/erp/module-shell'
 import { KpiCard } from '@/components/erp/kpi-card'
+import { StatusBadge } from '@/components/erp/status-badge'
 import { useT } from '@/lib/i18n/use-t'
-import { ShieldCheck, Eye, X, Shield, Users, Crown, Code, Briefcase, Calculator, Wallet, UserCheck } from 'lucide-react'
+import { formatInt } from '@/lib/format'
+import { exportToCSV } from '@/lib/export'
+import { toast } from 'sonner'
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table'
 import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
+import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+} from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { cn } from '@/lib/utils'
+import {
+  Shield, ShieldCheck, Lock, Plus, Pencil, Trash2, Crown, KeyRound,
+} from 'lucide-react'
 
-// 8 roles as columns
-const ROLES = ['developer', 'owner', 'admin', 'manager', 'accountant', 'cashier', 'employee', 'viewer'] as const
-
-// Modules as rows — each row has the permission per role
-// Permissions: 'full' | 'view' | 'none'
-type Perm = 'full' | 'view' | 'none'
-
-const MODULE_ROWS: { key: string; label: string; perms: Record<typeof ROLES[number], Perm> }[] = [
-  { key: 'dashboard', label: 'لوحة التحكم', perms: { developer: 'full', owner: 'full', admin: 'full', manager: 'full', accountant: 'full', cashier: 'view', employee: 'view', viewer: 'view' } },
-  { key: 'pos', label: 'نقطة البيع', perms: { developer: 'full', owner: 'full', admin: 'full', manager: 'full', accountant: 'view', cashier: 'full', employee: 'view', viewer: 'none' } },
-  { key: 'sales', label: 'المبيعات', perms: { developer: 'full', owner: 'full', admin: 'full', manager: 'full', accountant: 'view', cashier: 'full', employee: 'view', viewer: 'view' } },
-  { key: 'purchases', label: 'المشتريات', perms: { developer: 'full', owner: 'full', admin: 'full', manager: 'full', accountant: 'view', cashier: 'none', employee: 'view', viewer: 'view' } },
-  { key: 'inventory', label: 'المخزون', perms: { developer: 'full', owner: 'full', admin: 'full', manager: 'full', accountant: 'view', cashier: 'view', employee: 'full', viewer: 'view' } },
-  { key: 'accounting', label: 'المحاسبة', perms: { developer: 'full', owner: 'full', admin: 'full', manager: 'view', accountant: 'full', cashier: 'none', employee: 'none', viewer: 'none' } },
-  { key: 'finance', label: 'المالية', perms: { developer: 'full', owner: 'full', admin: 'full', manager: 'view', accountant: 'full', cashier: 'view', employee: 'none', viewer: 'none' } },
-  { key: 'reports', label: 'التقارير', perms: { developer: 'full', owner: 'full', admin: 'full', manager: 'view', accountant: 'full', cashier: 'none', employee: 'none', viewer: 'view' } },
-  { key: 'branches', label: 'الفروع', perms: { developer: 'full', owner: 'full', admin: 'full', manager: 'view', accountant: 'none', cashier: 'none', employee: 'none', viewer: 'none' } },
-  { key: 'users', label: 'المستخدمون', perms: { developer: 'full', owner: 'full', admin: 'full', manager: 'view', accountant: 'none', cashier: 'none', employee: 'none', viewer: 'none' } },
-  { key: 'settings', label: 'الإعدادات', perms: { developer: 'full', owner: 'full', admin: 'full', manager: 'view', accountant: 'view', cashier: 'none', employee: 'none', viewer: 'none' } },
-  { key: 'audit', label: 'سجل التدقيق', perms: { developer: 'full', owner: 'full', admin: 'full', manager: 'none', accountant: 'none', cashier: 'none', employee: 'none', viewer: 'none' } },
-]
-
-const ROLE_ICONS: Record<typeof ROLES[number], React.ReactNode> = {
-  developer: <Code className="size-4" />,
-  owner: <Crown className="size-4" />,
-  admin: <ShieldCheck className="size-4" />,
-  manager: <Briefcase className="size-4" />,
-  accountant: <Calculator className="size-4" />,
-  cashier: <Wallet className="size-4" />,
-  employee: <UserCheck className="size-4" />,
-  viewer: <Eye className="size-4" />,
+interface RolePermission {
+  id: string
+  canCreate: boolean
+  canRead: boolean
+  canUpdate: boolean
+  canDelete: boolean
+  canApprove: boolean
+  canPost: boolean
+  canCancel: boolean
+  canReverse: boolean
+  canExport: boolean
+  permission: { id: string; moduleCode: string; actionCode: string; nameAr: string; nameEn: string }
+}
+interface Role {
+  id: string
+  code: string
+  nameAr: string
+  nameEn?: string
+  description?: string
+  isSystem: boolean
+  active: boolean
+  createdAt: string
+  rolePermissions?: RolePermission[]
+  _count?: { userRoles: number; rolePermissions: number }
 }
 
-function PermIcon({ perm }: { perm: Perm }) {
-  if (perm === 'full') return (
-    <span title="وصول كامل" className="inline-flex items-center justify-center size-7 rounded-md bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
-      <ShieldCheck className="size-4" />
-    </span>
-  )
-  if (perm === 'view') return (
-    <span title="عرض فقط" className="inline-flex items-center justify-center size-7 rounded-md bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400">
-      <Eye className="size-4" />
-    </span>
-  )
-  return (
-    <span title="ممنوع" className="inline-flex items-center justify-center size-7 rounded-md bg-muted text-muted-foreground">
-      <X className="size-4" />
-    </span>
-  )
+// Module codes used in the permission matrix (matches Permission.moduleCode)
+const MODULES = [
+  { code: 'FIN', nameAr: 'مالية', nameEn: 'Finance' },
+  { code: 'SAL', nameAr: 'مبيعات', nameEn: 'Sales' },
+  { code: 'PUR', nameAr: 'مشتريات', nameEn: 'Procurement' },
+  { code: 'INV', nameAr: 'مخزون', nameEn: 'Inventory' },
+  { code: 'MFG', nameAr: 'تصنيع', nameEn: 'Manufacturing' },
+  { code: 'HR', nameAr: 'موارد بشرية', nameEn: 'HR' },
+] as const
+
+const ACTIONS = [
+  { key: 'canCreate', label: 'إنشاء' },
+  { key: 'canRead', label: 'قراءة' },
+  { key: 'canUpdate', label: 'تحديث' },
+  { key: 'canDelete', label: 'حذف' },
+  { key: 'canApprove', label: 'اعتماد' },
+  { key: 'canPost', label: 'ترحيل' },
+  { key: 'canCancel', label: 'إلغاء' },
+  { key: 'canReverse', label: 'عكس' },
+  { key: 'canExport', label: 'تصدير' },
+] as const
+
+type ActionKey = typeof ACTIONS[number]['key']
+type PermMatrix = Record<string, Record<ActionKey, boolean>>
+
+function emptyMatrix(): PermMatrix {
+  const m: PermMatrix = {}
+  for (const mod of MODULES) {
+    m[mod.code] = {
+      canCreate: false, canRead: true, canUpdate: false, canDelete: false,
+      canApprove: false, canPost: false, canCancel: false, canReverse: false,
+      canExport: false,
+    }
+  }
+  return m
+}
+
+function matrixFromRole(role: Role): PermMatrix {
+  const m = emptyMatrix()
+  for (const rp of role.rolePermissions ?? []) {
+    const mc = rp.permission.moduleCode
+    if (m[mc]) {
+      m[mc] = {
+        canCreate: rp.canCreate, canRead: rp.canRead, canUpdate: rp.canUpdate,
+        canDelete: rp.canDelete, canApprove: rp.canApprove, canPost: rp.canPost,
+        canCancel: rp.canCancel, canReverse: rp.canReverse, canExport: rp.canExport,
+      }
+    }
+  }
+  return m
 }
 
 export function RolesModule() {
   const { t } = useT()
+  const qc = useQueryClient()
+  const [search, setSearch] = useState('')
+  const [filterType, setFilterType] = useState<'all' | 'system' | 'custom'>('all')
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [editing, setEditing] = useState<Role | null>(null)
+  const [matrix, setMatrix] = useState<PermMatrix>(emptyMatrix())
 
-  const fullCount = MODULE_ROWS.reduce((s, r) => s + ROLES.filter((role) => r.perms[role] === 'full').length, 0)
-  const viewCount = MODULE_ROWS.reduce((s, r) => s + ROLES.filter((role) => r.perms[role] === 'view').length, 0)
-  const noneCount = MODULE_ROWS.reduce((s, r) => s + ROLES.filter((role) => r.perms[role] === 'none').length, 0)
+  const { data, isLoading } = useQuery<{ data: Role[]; meta: any }>({
+    queryKey: ['roles', search, filterType],
+    queryFn: async () => {
+      const params = new URLSearchParams()
+      if (search) params.set('q', search)
+      params.set('pageSize', '200')
+      const r = await fetch(`/api/erp/roles?${params}`)
+      if (!r.ok) throw new Error('Failed')
+      return r.json()
+    },
+  })
+
+  const roles = (data?.data ?? []).filter((r) => {
+    if (filterType === 'system') return r.isSystem
+    if (filterType === 'custom') return !r.isSystem
+    return true
+  })
+
+  const stats = {
+    total: data?.data?.length ?? 0,
+    system: (data?.data ?? []).filter((r) => r.isSystem).length,
+    custom: (data?.data ?? []).filter((r) => !r.isSystem).length,
+    perms: (data?.data ?? []).reduce((s, r) => s + (r._count?.rolePermissions ?? 0), 0),
+  }
+
+  const saveMutation = useMutation({
+    mutationFn: async (payload: any) => {
+      const url = editing ? `/api/erp/roles/${editing.id}` : '/api/erp/roles'
+      const method = editing ? 'PUT' : 'POST'
+      const r = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({}))
+        throw new Error(err?.error?.message ?? 'Failed')
+      }
+      return r.json()
+    },
+    onSuccess: () => {
+      toast.success(editing ? 'تم تحديث الدور' : 'تم إنشاء الدور')
+      qc.invalidateQueries({ queryKey: ['roles'] })
+      setDialogOpen(false)
+      setEditing(null)
+      setMatrix(emptyMatrix())
+    },
+    onError: (e: any) => toast.error(e.message || 'حدث خطأ'),
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const r = await fetch(`/api/erp/roles/${id}`, { method: 'DELETE' })
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({}))
+        throw new Error(err?.error?.message ?? 'Failed')
+      }
+      return r.json()
+    },
+    onSuccess: () => {
+      toast.success('تم حذف الدور')
+      qc.invalidateQueries({ queryKey: ['roles'] })
+    },
+    onError: (e: any) => toast.error(e.message || 'حدث خطأ'),
+  })
+
+  // Load role detail (with rolePermissions) when editing
+  const loadRoleDetail = async (role: Role) => {
+    setEditing(role)
+    setDialogOpen(true)
+    setMatrix(emptyMatrix())
+    try {
+      const r = await fetch(`/api/erp/roles/${role.id}`)
+      if (!r.ok) throw new Error()
+      const json = await r.json()
+      const detailed: Role = json.data ?? json
+      setEditing(detailed)
+      setMatrix(matrixFromRole(detailed))
+    } catch {
+      toast.error('فشل تحميل تفاصيل الدور')
+    }
+  }
+
+  const togglePerm = (modCode: string, action: ActionKey) => {
+    setMatrix((prev) => ({
+      ...prev,
+      [modCode]: { ...prev[modCode], [action]: !prev[modCode][action] },
+    }))
+  }
+
+  const toggleAllForModule = (modCode: string, value: boolean) => {
+    setMatrix((prev) => {
+      const next = { ...prev }
+      const row: Record<ActionKey, boolean> = { ...next[modCode] }
+      for (const a of ACTIONS) row[a.key] = value
+      next[modCode] = row
+      return next
+    })
+  }
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const fd = new FormData(e.currentTarget)
+    const payload: any = {
+      code: editing ? undefined : fd.get('code'),
+      nameAr: fd.get('nameAr'),
+      nameEn: fd.get('nameEn') || fd.get('nameAr'),
+      description: fd.get('description') || undefined,
+      active: fd.get('active') === 'on',
+    }
+    if (editing) {
+      // Permission matrix payload
+      payload.permissions = MODULES.map((m) => ({
+        moduleCode: m.code,
+        ...matrix[m.code],
+      }))
+    }
+    saveMutation.mutate(payload)
+  }
+
+  const handleExport = () => {
+    const rows = (data?.data ?? []).map((r) => ({
+      'الكود': r.code,
+      'الاسم': r.nameAr,
+      'الاسم الإنجليزي': r.nameEn ?? '',
+      'النوع': r.isSystem ? 'نظام' : 'مخصص',
+      'نشط': r.active ? 'نعم' : 'لا',
+      'عدد المستخدمين': r._count?.userRoles ?? 0,
+      'عدد الصلاحيات': r._count?.rolePermissions ?? 0,
+    }))
+    exportToCSV('roles', rows)
+    toast.success('تم تصدير الملف')
+  }
 
   return (
     <ModuleShell
       title={t('module.roles')}
-      description="مصفوفة الأدوار والصلاحيات"
+      description="إدارة الأدوار والصلاحيات ومصفوفة الوصول للوحدات"
       icon={<Shield className="size-5" />}
+      searchValue={search}
+      onSearch={setSearch}
+      searchPlaceholder="ابحث برمز الدور أو الاسم..."
+      onAdd={() => { setEditing(null); setMatrix(emptyMatrix()); setDialogOpen(true) }}
+      addLabel={t('action.add')}
+      onExport={handleExport}
+      filters={
+        <>
+          <Button size="sm" variant={filterType === 'all' ? 'default' : 'outline'} onClick={() => setFilterType('all')}>الكل</Button>
+          <Button size="sm" variant={filterType === 'system' ? 'default' : 'outline'} onClick={() => setFilterType('system')}>نظام</Button>
+          <Button size="sm" variant={filterType === 'custom' ? 'default' : 'outline'} onClick={() => setFilterType('custom')}>مخصصة</Button>
+        </>
+      }
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard title="عدد الأدوار" value={String(ROLES.length)} icon={<Shield className="size-5" />} accent="emerald" />
-        <KpiCard title="وصول كامل" value={String(fullCount)} icon={<ShieldCheck className="size-5" />} accent="teal" />
-        <KpiCard title="عرض فقط" value={String(viewCount)} icon={<Eye className="size-5" />} accent="amber" />
-        <KpiCard title="ممنوع" value={String(noneCount)} icon={<X className="size-5" />} accent="rose" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+        <KpiCard title="إجمالي الأدوار" value={formatInt(stats.total)} icon={<Shield className="size-5" />} accent="emerald" />
+        <KpiCard title="أدوار النظام" value={formatInt(stats.system)} icon={<Crown className="size-5" />} accent="amber" />
+        <KpiCard title="أدوار مخصصة" value={formatInt(stats.custom)} icon={<KeyRound className="size-5" />} accent="teal" />
+        <KpiCard title="إجمالي الصلاحيات" value={formatInt(stats.perms)} icon={<ShieldCheck className="size-5" />} accent="violet" />
       </div>
 
-      {/* Roles legend */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
-        {ROLES.map((r) => (
-          <Card key={r} className="p-3 flex flex-col items-center text-center gap-1.5">
-            <div className="size-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center">{ROLE_ICONS[r]}</div>
-            <p className="text-xs font-semibold leading-tight">{t(`role.${r}` as any)}</p>
-          </Card>
-        ))}
-      </div>
-
-      {/* Permissions matrix */}
-      <Card className="rounded-xl border">
-        <div className="p-4 border-b flex items-center justify-between">
-          <h3 className="font-semibold">مصفوفة الصلاحيات</h3>
-          <div className="flex items-center gap-3 text-xs">
-            <span className="flex items-center gap-1"><PermIcon perm="full" /> وصول كامل</span>
-            <span className="flex items-center gap-1"><PermIcon perm="view" /> عرض فقط</span>
-            <span className="flex items-center gap-1"><PermIcon perm="none" /> ممنوع</span>
-          </div>
-        </div>
-        <ScrollArea className="max-h-[60vh] scrollbar-thin">
-          <Table className="table-sticky">
+      <Card className="rounded-xl overflow-hidden">
+        <ScrollArea className="max-h-[60vh]">
+          <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead className="min-w-[180px] sticky start-0 bg-card z-20">الوحدة</TableHead>
-                {ROLES.map((r) => (
-                  <TableHead key={r} className="text-center min-w-[100px] whitespace-nowrap">
-                    <div className="flex flex-col items-center gap-1">
-                      <div className="size-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">{ROLE_ICONS[r]}</div>
-                      <span className="text-[10px] font-semibold whitespace-nowrap">{t(`role.${r}` as any)}</span>
-                    </div>
-                  </TableHead>
-                ))}
+              <TableRow className="bg-muted/50">
+                <TableHead className="ps-4">الكود</TableHead>
+                <TableHead>الاسم</TableHead>
+                <TableHead>النوع</TableHead>
+                <TableHead>الوصف</TableHead>
+                <TableHead className="text-center">المستخدمون</TableHead>
+                <TableHead>الحالة</TableHead>
+                <TableHead className="text-end">إجراءات</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {MODULE_ROWS.map((row) => (
-                <TableRow key={row.key}>
-                  <TableCell className="font-medium sticky start-0 bg-card z-10 whitespace-nowrap">{row.label}</TableCell>
-                  {ROLES.map((role) => (
-                    <TableCell key={role} className="text-center">
-                      <div className="flex justify-center">
-                        <PermIcon perm={row.perms[role]} />
-                      </div>
-                    </TableCell>
-                  ))}
+              {isLoading ? (
+                <TableRow><TableCell colSpan={7} className="text-center py-10 text-muted-foreground">جاري التحميل...</TableCell></TableRow>
+              ) : roles.length === 0 ? (
+                <TableRow><TableCell colSpan={7} className="text-center py-10 text-muted-foreground">لا توجد أدوار. ابدأ بإضافة أول دور.</TableCell></TableRow>
+              ) : roles.map((r) => (
+                <TableRow key={r.id} className="hover:bg-muted/40">
+                  <TableCell className="ps-4 font-mono text-xs" dir="ltr">{r.code}</TableCell>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2">
+                      {r.nameAr}
+                      {r.isSystem && <Lock className="size-3 text-amber-600" />}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {r.isSystem ? (
+                      <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 text-[10px]">نظام</Badge>
+                    ) : (
+                      <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 text-[10px]">مخصص</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground line-clamp-1 max-w-xs">{r.description ?? '—'}</TableCell>
+                  <TableCell className="text-center num-cell">
+                    <span className="num font-semibold tabular-nums" dir="ltr">{r._count?.userRoles ?? 0}</span>
+                  </TableCell>
+                  <TableCell><StatusBadge status={r.active ? 'active' : 'inactive'} /></TableCell>
+                  <TableCell className="text-end">
+                    <div className="flex items-center justify-end gap-1">
+                      <Button size="icon" variant="ghost" className="size-8" onClick={() => loadRoleDetail(r)}>
+                        <Pencil className="size-3.5" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="size-8 text-rose-500 hover:text-rose-600 disabled:opacity-30"
+                        disabled={r.isSystem}
+                        onClick={() => deleteMutation.mutate(r.id)}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -133,32 +337,119 @@ export function RolesModule() {
         </ScrollArea>
       </Card>
 
-      {/* Role descriptions */}
-      <Card className="rounded-xl border p-5">
-        <h3 className="font-semibold mb-4 flex items-center gap-2"><Users className="size-4" /> وصف الأدوار</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {ROLES.map((r) => (
-            <div key={r} className={cn('flex items-start gap-3 p-3 rounded-lg border bg-muted/30')}>
-              <div className="size-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">{ROLE_ICONS[r]}</div>
-              <div>
-                <p className="font-semibold text-sm">{t(`role.${r}` as any)}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{ROLE_DESCRIPTIONS[r]}</p>
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-5xl">
+          <DialogHeader>
+            <DialogTitle>{editing ? `تعديل الدور: ${editing.nameAr}` : 'إضافة دور جديد'}</DialogTitle>
+            <DialogDescription>
+              {editing ? 'قم بتعديل بيانات الدور ومصفوفة الصلاحيات لكل وحدة' : 'أدخل بيانات الدور الجديد'}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit}>
+            <ScrollArea className="max-h-[68vh] pe-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-1 mb-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="code">الكود *</Label>
+                  <Input
+                    id="code"
+                    name="code"
+                    required
+                    defaultValue={editing?.code}
+                    disabled={!!editing}
+                    placeholder="ACCOUNTANT"
+                    dir="ltr"
+                    className="font-mono"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="nameAr">الاسم (عربي) *</Label>
+                  <Input id="nameAr" name="nameAr" defaultValue={editing?.nameAr} required />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="nameEn">الاسم (إنجليزي)</Label>
+                  <Input id="nameEn" name="nameEn" defaultValue={editing?.nameEn} dir="ltr" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="description">الوصف</Label>
+                  <Input id="description" name="description" defaultValue={editing?.description ?? ''} />
+                </div>
+                <div className="md:col-span-2 flex items-center gap-2 pt-1">
+                  <Switch id="active" name="active" defaultChecked={editing?.active ?? true} disabled={editing?.isSystem} />
+                  <Label htmlFor="active">نشط {editing?.isSystem && <span className="text-xs text-amber-600 ms-1">(دور نظام — لا يمكن تعطيله)</span>}</Label>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      </Card>
+
+              {editing && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-semibold text-sm">مصفوفة الصلاحيات</h4>
+                    <span className="text-xs text-muted-foreground">فعّل الصلاحيات لكل وحدة</span>
+                  </div>
+                  <div className="overflow-auto rounded-lg border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/40">
+                          <TableHead className="ps-3 sticky start-0 bg-background">الوحدة</TableHead>
+                          {ACTIONS.map((a) => (
+                            <TableHead key={a.key} className="text-center text-[11px]">{a.label}</TableHead>
+                          ))}
+                          <TableHead className="text-center text-[11px]">الكل</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {MODULES.map((mod) => {
+                          const allOn = ACTIONS.every((a) => matrix[mod.code][a.key])
+                          const allOff = ACTIONS.every((a) => !matrix[mod.code][a.key])
+                          return (
+                            <TableRow key={mod.code} className="hover:bg-muted/30">
+                              <TableCell className="ps-3 sticky start-0 bg-background font-medium">
+                                <div className="flex flex-col">
+                                  <span>{mod.nameAr}</span>
+                                  <span className="text-[10px] text-muted-foreground font-mono" dir="ltr">{mod.code}</span>
+                                </div>
+                              </TableCell>
+                              {ACTIONS.map((a) => (
+                                <TableCell key={a.key} className="text-center">
+                                  <Checkbox
+                                    checked={matrix[mod.code][a.key]}
+                                    onCheckedChange={() => togglePerm(mod.code, a.key)}
+                                  />
+                                </TableCell>
+                              ))}
+                              <TableCell className="text-center">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 text-[10px]"
+                                  onClick={() => toggleAllForModule(mod.code, !allOn)}
+                                >
+                                  {allOn ? 'إلغاء الكل' : 'تحديد الكل'}
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
+              {!editing && (
+                <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground bg-muted/20">
+                  💡 ستتمكن من ضبط مصفوفة الصلاحيات بعد إنشاء الدور (اضغط زر التعديل).
+                </div>
+              )}
+            </ScrollArea>
+            <DialogFooter className="mt-4">
+              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>إلغاء</Button>
+              <Button type="submit" disabled={saveMutation.isPending}>
+                {saveMutation.isPending ? 'جاري الحفظ...' : 'حفظ'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </ModuleShell>
   )
-}
-
-const ROLE_DESCRIPTIONS: Record<typeof ROLES[number], string> = {
-  developer: 'مطور النظام — صلاحية كاملة على جميع الوحدات والإعدادات والتطوير',
-  owner: 'مالك النظام — صلاحية كاملة على جميع العمليات والتقارير والإعدادات',
-  admin: 'مدير النظام — إدارة المستخدمين والفروع والإعدادات والوحدات',
-  manager: 'مدير العمليات — إدارة المبيعات والمشتريات والمخزون وعرض المحاسبة',
-  accountant: 'محاسب — إدارة القيود المحاسبية والتقارير المالية',
-  cashier: 'أمين الصندوق — نقطة البيع والمقبوضات والمدفوعات',
-  employee: 'موظف — إدارة المخزون والعمليات اليومية',
-  viewer: 'مشاهد — عرض البيانات فقط دون تعديل',
 }

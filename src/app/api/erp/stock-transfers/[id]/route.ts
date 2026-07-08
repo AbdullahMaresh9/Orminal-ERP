@@ -34,8 +34,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
     const { id: _id, lines, createdAt: _c, updatedAt: _u, ...rest } = body
 
-    // If transitioning to done: process stock moves
-    if (rest.status === 'done' && exists.status !== 'done') {
+    // If transitioning to done or received: process stock moves
+    if ((rest.status === 'done' || rest.status === 'received') &&
+        exists.status !== 'done' && exists.status !== 'received') {
       await db.$transaction(async (tx) => {
         for (const l of exists.lines) {
           // Out of source
@@ -97,7 +98,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
             })
           }
         }
-        await tx.stockTransfer.update({ where: { id }, data: { status: 'done' } })
+        await tx.stockTransfer.update({ where: { id }, data: { status: rest.status } })
       })
       const updated = await db.stockTransfer.findUnique({
         where: { id },

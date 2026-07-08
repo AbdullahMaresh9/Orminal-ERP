@@ -1,514 +1,414 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ModuleShell } from '@/components/erp/module-shell'
 import { KpiCard } from '@/components/erp/kpi-card'
 import { StatusBadge } from '@/components/erp/status-badge'
-import { exportToCSV, printHTML } from '@/lib/export'
-import { formatCurrency, formatDate } from '@/lib/format'
 import { useT } from '@/lib/i18n/use-t'
+import { formatCurrency, formatInt, formatDate } from '@/lib/format'
+import { exportToCSV, printHTML } from '@/lib/export'
 import { toast } from 'sonner'
 import {
-  Undo2, FileX, Calendar, Plus, Pencil, Trash2, Printer,
-} from 'lucide-react'
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table'
+import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
-} from '@/components/ui/dialog'
-import {
-  Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
-} from '@/components/ui/table'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Skeleton } from '@/components/ui/skeleton'
-import {
-  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+} from '@/components/ui/dialog'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import {
+  ReceiptText, Plus, Printer, Hash, CalendarDays, Coins, FileMinus,
+} from 'lucide-react'
 
-interface Client { id: string; code: string; name: string }
-interface Invoice { id: string; code: string; total: number; issueDate: string }
-interface CreditNote {
+interface Partner { id: string; code: string; nameAr: string }
+interface Invoice { id: string; code: string; total: number; partnerId: string }
+interface SalesCreditNote {
   id: string
   code: string
-  clientId: string
-  invoiceId: string | null
+  partnerId: string
+  invoiceId?: string | null
+  date: string
+  reason?: string
   status: string
-  issueDate: string
   subtotal: number
   taxTotal: number
   total: number
-  reason: string | null
-  note: string | null
-  createdAt: string
-  client: { id: string; name: string; code: string; phone: string | null }
-}
-interface CreditNoteResponse {
-  data: CreditNote[]
-  total: number
-  stats: { totalCredit: number; count: number; thisMonth: number }
-}
-
-const EMPTY_FORM = {
-  clientId: '',
-  invoiceId: '',
-  subtotal: 0,
-  taxRate: 15,
-  reason: '',
-  note: '',
+  notes?: string
+  partner?: Partner
 }
 
 const REASON_OPTIONS = [
-  'مرتجع بضاعة تالفة',
-  'مرتجع بضاعة',
-  'خصم بعد الفاتورة',
-  'إلغاء فاتورة',
-  'تصحيح خطأ',
-  'أخرى',
+  { value: 'returned', label: 'مرتجع بضاعة' },
+  { value: 'discount', label: 'خصم بعد الفوترة' },
+  { value: 'correction', label: 'تصحيح خطأ' },
+  { value: 'cancellation', label: 'إلغاء فاتورة' },
+  { value: 'other', label: 'أخرى' },
 ]
+
+const REASON_LABELS: Record<string, string> = Object.fromEntries(REASON_OPTIONS.map((r) => [r.value, r.label]))
 
 export function SalesCreditNotesModule() {
   const { t } = useT()
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [editId, setEditId] = useState<string | null>(null)
-  const [form, setForm] = useState<any>(EMPTY_FORM)
-  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [filterStatus, setFilterStatus] = useState('all')
+  const [addOpen, setAddOpen] = useState(false)
+  const [page, setPage] = useState(1)
+  const pageSize = 15
 
-  const { data, isLoading } = useQuery<CreditNoteResponse>({
-    queryKey: ['sales-credit-notes', search, statusFilter],
+  const { data, isLoading } = useQuery<{ data: SalesCreditNote[]; meta: any }>({
+    queryKey: ['sales-credit-notes', search, filterStatus, page],
     queryFn: async () => {
       const params = new URLSearchParams()
       if (search) params.set('q', search)
-      if (statusFilter && statusFilter !== 'all') params.set('status', statusFilter)
+      if (filterStatus !== 'all') params.set('status', filterStatus)
+      params.set('page', String(page))
+      params.set('pageSize', String(pageSize))
       const r = await fetch(`/api/erp/sales-credit-notes?${params}`)
-      if (!r.ok) throw new Error('fetch failed')
+      if (!r.ok) throw new Error('Failed')
       return r.json()
     },
-    staleTime: 30 * 1000,
   })
 
-  const { data: clientsData } = useQuery<{ data: Client[] }>({
-    queryKey: ['clients-for-select'],
+  const { data: partnersData } = useQuery<{ data: Partner[] }>({
+    queryKey: ['partners-for-scn'],
     queryFn: async () => {
-      const r = await fetch('/api/erp/clients?active=true')
-      if (!r.ok) throw new Error('fetch failed')
+      const r = await fetch('/api/erp/partners?isCustomer=true&pageSize=200')
+      if (!r.ok) return { data: [] }
       return r.json()
     },
-    staleTime: 60 * 1000,
   })
 
-  const clients = clientsData?.data ?? []
-
-  // Fetch invoices for selected client (when dialog open)
-  const { data: clientInvoices } = useQuery<{ data: Invoice[] }>({
-    queryKey: ['client-invoices', form.clientId],
+  const { data: invoicesData } = useQuery<{ data: Invoice[] }>({
+    queryKey: ['sales-invoices-for-scn'],
     queryFn: async () => {
-      const r = await fetch(`/api/erp/sales-invoices?q=${encodeURIComponent('')}`)
-      if (!r.ok) throw new Error('fetch failed')
-      const all = await r.json()
-      return { data: (all.data as Invoice[]).filter((inv) => inv.clientId === form.clientId) }
+      const r = await fetch('/api/erp/sales-invoices?pageSize=200')
+      if (!r.ok) return { data: [] }
+      return r.json()
     },
-    enabled: !!form.clientId && dialogOpen,
-    staleTime: 30 * 1000,
   })
 
-  const createMut = useMutation({
-    mutationFn: async (payload: any) => {
+  const notes = data?.data ?? []
+  const total = data?.meta?.pagination?.total ?? 0
+  const totalPages = data?.meta?.pagination?.totalPages ?? 1
+  const partners = partnersData?.data ?? []
+  const invoices = invoicesData?.data ?? []
+
+  const stats = useMemo(() => {
+    const now = new Date()
+    const thisMonth = notes.filter((n) => {
+      const d = new Date(n.date)
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+    })
+    return {
+      total: notes.reduce((s, n) => s + n.total, 0),
+      count: notes.length,
+      thisMonthTotal: thisMonth.reduce((s, n) => s + n.total, 0),
+      thisMonthCount: thisMonth.length,
+    }
+  }, [notes])
+
+  // Form state
+  const [partnerId, setPartnerId] = useState('')
+  const [invoiceId, setInvoiceId] = useState('')
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
+  const [reason, setReason] = useState('returned')
+  const [subtotal, setSubtotal] = useState('0')
+  const [taxRate, setTaxRate] = useState('15')
+  const [notes_, setNotes] = useState('')
+
+  const taxTotal = useMemo(() => (Number(subtotal) || 0) * (Number(taxRate) || 0) / 100, [subtotal, taxRate])
+  const total_ = useMemo(() => (Number(subtotal) || 0) + taxTotal, [subtotal, taxTotal])
+
+  const resetForm = () => {
+    setPartnerId(''); setInvoiceId(''); setDate(new Date().toISOString().slice(0, 10))
+    setReason('returned'); setSubtotal('0'); setTaxRate('15'); setNotes('')
+  }
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      if (!partnerId) throw new Error('اختر العميل')
+      const sub = Number(subtotal) || 0
+      if (sub <= 0) throw new Error('المبلغ يجب أن يكون أكبر من صفر')
+      const payload = {
+        partnerId,
+        invoiceId: invoiceId || undefined,
+        date,
+        reason: REASON_LABELS[reason] ?? reason,
+        status: 'posted',
+        subtotal: sub,
+        taxTotal,
+        total: total_,
+        notes: notes_,
+      }
       const r = await fetch('/api/erp/sales-credit-notes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
       if (!r.ok) {
-        const e = await r.json()
-        throw new Error(e.error || 'failed')
+        const err = await r.json().catch(() => ({}))
+        throw new Error(err?.error?.message ?? 'فشل الحفظ')
       }
       return r.json()
     },
     onSuccess: () => {
       toast.success('تم إنشاء الإشعار الدائن بنجاح')
       qc.invalidateQueries({ queryKey: ['sales-credit-notes'] })
-      qc.invalidateQueries({ queryKey: ['dashboard'] })
-      setDialogOpen(false)
+      setAddOpen(false)
+      resetForm()
     },
-    onError: (e: any) => toast.error(e.message || t('error.save')),
+    onError: (e: any) => toast.error(e.message || 'حدث خطأ'),
   })
 
-  const updateMut = useMutation({
-    mutationFn: async (payload: any) => {
-      const r = await fetch(`/api/erp/sales-credit-notes/${editId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-      if (!r.ok) {
-        const e = await r.json()
-        throw new Error(e.error || 'failed')
-      }
-      return r.json()
-    },
-    onSuccess: () => {
-      toast.success(t('success.updated'))
-      qc.invalidateQueries({ queryKey: ['sales-credit-notes'] })
-      setDialogOpen(false)
-    },
-    onError: (e: any) => toast.error(e.message || t('error.save')),
-  })
-
-  const deleteMut = useMutation({
-    mutationFn: async (id: string) => {
-      const r = await fetch(`/api/erp/sales-credit-notes/${id}`, { method: 'DELETE' })
-      if (!r.ok) {
-        const e = await r.json()
-        throw new Error(e.error || 'failed')
-      }
-      return r.json()
-    },
-    onSuccess: () => {
-      toast.success(t('success.deleted'))
-      qc.invalidateQueries({ queryKey: ['sales-credit-notes'] })
-      setDeleteId(null)
-    },
-    onError: (e: any) => toast.error(e.message || t('error.delete')),
-  })
-
-  const stats = data?.stats
-  const rows = data?.data ?? []
-
-  const formSubtotal = Number(form.subtotal) || 0
-  const formTax = formSubtotal * ((Number(form.taxRate) || 0) / 100)
-  const formTotal = formSubtotal + formTax
-
-  const handleAdd = () => {
-    setForm({ ...EMPTY_FORM })
-    setEditId(null)
-    setDialogOpen(true)
+  const handleExport = () => {
+    const rows = notes.map((n) => ({
+      'الرمز': n.code,
+      'العميل': n.partner?.nameAr ?? '',
+      'الفاتورة': invoices.find((i) => i.id === n.invoiceId)?.code ?? '',
+      'التاريخ': formatDate(n.date),
+      'الإجمالي': n.total,
+      'الحالة': n.status,
+      'السبب': n.reason ?? '',
+    }))
+    exportToCSV('sales-credit-notes', rows)
+    toast.success('تم تصدير الملف')
   }
 
-  const handleEdit = (cn: CreditNote) => {
-    setForm({
-      clientId: cn.clientId,
-      invoiceId: cn.invoiceId ?? '',
-      subtotal: cn.subtotal,
-      taxRate: cn.taxTotal > 0 && cn.subtotal > 0 ? (cn.taxTotal / cn.subtotal) * 100 : 15,
-      reason: cn.reason ?? '',
-      note: cn.note ?? '',
-    })
-    setEditId(cn.id)
-    setDialogOpen(true)
-  }
-
-  const handleSubmit = () => {
-    if (!form.clientId) {
-      toast.error('العميل مطلوب')
-      return
-    }
-    if (formSubtotal <= 0) {
-      toast.error('المبلغ يجب أن يكون أكبر من صفر')
-      return
-    }
-    const payload = {
-      clientId: form.clientId,
-      invoiceId: form.invoiceId || null,
-      subtotal: formSubtotal,
-      taxTotal: formTax,
-      total: formTotal,
-      reason: form.reason,
-      note: form.note,
-    }
-    if (editId) updateMut.mutate(payload)
-    else createMut.mutate(payload)
-  }
-
-  const handlePrint = (cn: CreditNote) => {
+  const handlePrint = (n: SalesCreditNote) => {
+    const inv = invoices.find((i) => i.id === n.invoiceId)
     const html = `
       <div class="doc-header">
         <div class="company">
           <div class="logo">أ</div>
           <div class="info">
-            <h2>الأستاذ للأنظمة المحاسبية</h2>
-            <p>إشعار دائن (مرتجع مبيعات)</p>
+            <h2>الأستاذ</h2>
+            <p>نظام المحاسبة والإدارة المالية</p>
           </div>
         </div>
         <div class="doc-meta">
-          <div class="type" style="color:#d97706">إشعار دائن</div>
-          <div class="code">${cn.code}</div>
-          <div class="date">${formatDate(cn.issueDate)}</div>
+          <div class="type">إشعار دائن</div>
+          <div class="code">${n.code}</div>
+          <div class="date">${formatDate(n.date)}</div>
         </div>
       </div>
-      <div class="party" style="background:#fff7ed;border-inline-start-color:#d97706">
-        <div class="label" style="color:#d97706">بيانات العميل</div>
-        <div class="name">${cn.client.name}</div>
-        <div class="sub">الرمز: ${cn.client.code}</div>
+      <div class="party">
+        <div class="label">العميل</div>
+        <div class="name">${n.partner?.nameAr ?? ''}</div>
+        <div class="sub">رمز: ${n.partner?.code ?? ''}</div>
+        ${inv ? `<div class="sub">فاتورة مرتبطة: ${inv.code}</div>` : ''}
       </div>
-      ${cn.reason ? `<div class="notes"><strong>السبب:</strong> ${cn.reason}</div>` : ''}
       <table>
         <thead>
-          <tr style="background:#d97706"><th>الوصف</th><th class="text-end">المبلغ</th></tr>
+          <tr>
+            <th>البيان</th>
+            <th>القيمة</th>
+          </tr>
         </thead>
         <tbody>
-          <tr><td>المجموع الفرعي</td><td>${formatCurrency(cn.subtotal)}</td></tr>
-          <tr><td>ضريبة القيمة المضافة</td><td>${formatCurrency(cn.taxTotal)}</td></tr>
+          <tr><td>المجموع الفرعي</td><td>${formatCurrency(n.subtotal)}</td></tr>
+          <tr><td>الضريبة</td><td>${formatCurrency(n.taxTotal)}</td></tr>
+          <tr><td>السبب</td><td>${n.reason ?? ''}</td></tr>
         </tbody>
-        <tfoot>
-          <tr><td>الإجمالي المعاد</td><td>${formatCurrency(cn.total)}</td></tr>
-        </tfoot>
       </table>
-      ${cn.note ? `<div class="notes"><strong>ملاحظات:</strong> ${cn.note}</div>` : ''}
+      <div class="totals">
+        <div class="row grand"><span>الإجمالي:</span><span>${formatCurrency(n.total)}</span></div>
+      </div>
+      ${n.notes ? `<div class="notes">${n.notes}</div>` : ''}
       <div class="signatures">
         <div class="sig"><div class="line"></div><div class="label">المحاسب</div></div>
         <div class="sig"><div class="line"></div><div class="label">العميل</div></div>
         <div class="sig"><div class="line"></div><div class="label">المدير</div></div>
       </div>
     `
-    printHTML(html, `إشعار دائن ${cn.code}`)
+    printHTML(html, `إشعار دائن ${n.code}`)
   }
-
-  const handleExport = () => {
-    if (!rows.length) {
-      toast.error('لا توجد بيانات للتصدير')
-      return
-    }
-    exportToCSV('sales-credit-notes', rows.map((r) => ({
-      code: r.code,
-      client: r.client.name,
-      date: formatDate(r.issueDate),
-      subtotal: r.subtotal,
-      tax: r.taxTotal,
-      total: r.total,
-      reason: r.reason ?? '',
-      status: r.status,
-    })), [
-      { key: 'code', label: 'الرمز' },
-      { key: 'client', label: 'العميل' },
-      { key: 'date', label: 'التاريخ' },
-      { key: 'subtotal', label: 'المجموع الفرعي' },
-      { key: 'tax', label: 'الضريبة' },
-      { key: 'total', label: 'الإجمالي' },
-      { key: 'reason', label: 'السبب' },
-      { key: 'status', label: 'الحالة' },
-    ])
-  }
-
-  const STATUS_OPTIONS = [
-    { value: 'all', label: 'الكل' },
-    { value: 'draft', label: 'مسودة' },
-    { value: 'posted', label: 'مُرحّل' },
-    { value: 'cancelled', label: 'ملغي' },
-  ]
 
   return (
     <ModuleShell
       title={t('module.sales-credit-notes')}
-      description="إدارة الإشعارات الدائنة (مرتجعات المبيعات) مع عكس القيود المحاسبية"
-      icon={<Undo2 className="size-5" />}
+      description="إشعارات دائنة للمبيعات مع عكس القيود تلقائياً"
+      icon={<FileMinus className="size-5" />}
       searchValue={search}
       onSearch={setSearch}
-      searchPlaceholder="ابحث برمز الإشعار أو العميل..."
-      onAdd={handleAdd}
+      searchPlaceholder="ابحث برمز الإشعار أو السبب..."
+      onAdd={() => { resetForm(); setAddOpen(true) }}
       addLabel="إشعار دائن جديد"
       onExport={handleExport}
       filters={
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger size="sm" className="w-40">
-            <SelectValue placeholder="الحالة" />
-          </SelectTrigger>
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <SelectTrigger className="w-40"><SelectValue placeholder="الحالة" /></SelectTrigger>
           <SelectContent>
-            {STATUS_OPTIONS.map((s) => (
-              <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-            ))}
+            <SelectItem value="all">الكل</SelectItem>
+            <SelectItem value="draft">مسودة</SelectItem>
+            <SelectItem value="posted">مُرحّل</SelectItem>
+            <SelectItem value="cancelled">ملغي</SelectItem>
           </SelectContent>
         </Select>
       }
     >
-      {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {isLoading ? (
-          Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />)
-        ) : (
-          <>
-            <KpiCard title="إجمالي المرتجعات" value={formatCurrency(stats?.totalCredit ?? 0)} icon={<Undo2 className="size-5" />} accent="rose" />
-            <KpiCard title="عدد الإشعارات" value={String(stats?.count ?? 0)} icon={<FileX className="size-5" />} accent="amber" />
-            <KpiCard title="مرتجعات هذا الشهر" value={formatCurrency(stats?.thisMonth ?? 0)} icon={<Calendar className="size-5" />} accent="violet" />
-            <KpiCard title="متوسط القيمة" value={formatCurrency(stats?.count ? (stats?.totalCredit ?? 0) / stats.count : 0)} icon={<FileX className="size-5" />} accent="teal" />
-          </>
-        )}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+        <KpiCard title="إجمالي الإشعارات" value={formatCurrency(stats.total)} icon={<Coins className="size-5" />} accent="emerald" />
+        <KpiCard title="عدد الإشعارات" value={formatInt(stats.count)} icon={<Hash className="size-5" />} accent="teal" />
+        <KpiCard title="هذا الشهر" value={formatCurrency(stats.thisMonthTotal)} icon={<CalendarDays className="size-5" />} accent="amber" />
+        <KpiCard title="عدد هذا الشهر" value={formatInt(stats.thisMonthCount)} icon={<ReceiptText className="size-5" />} accent="violet" />
       </div>
 
-      {/* Table */}
-      <div className="rounded-xl border bg-card overflow-hidden">
+      <Card className="rounded-xl overflow-hidden">
         <ScrollArea className="max-h-[60vh]">
-          <Table className="table-sticky">
+          <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>الرمز</TableHead>
+              <TableRow className="bg-muted/50">
+                <TableHead className="ps-4">الرمز</TableHead>
                 <TableHead>العميل</TableHead>
-                <TableHead>الفاتورة المرتبطة</TableHead>
+                <TableHead>الفاتورة</TableHead>
                 <TableHead>التاريخ</TableHead>
-                <TableHead className="num-cell">الإجمالي</TableHead>
-                <TableHead>السبب</TableHead>
+                <TableHead className="text-end num-cell">الإجمالي</TableHead>
                 <TableHead>الحالة</TableHead>
+                <TableHead>السبب</TableHead>
                 <TableHead className="text-end">إجراءات</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>
-                    {Array.from({ length: 8 }).map((_, j) => (
-                      <TableCell key={j}><Skeleton className="h-6" /></TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : !rows.length ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground py-12">{t('empty.noData')}</TableCell>
+                <TableRow><TableCell colSpan={8} className="text-center py-10 text-muted-foreground">جاري التحميل...</TableCell></TableRow>
+              ) : notes.length === 0 ? (
+                <TableRow><TableCell colSpan={8} className="text-center py-10 text-muted-foreground">لا توجد إشعارات دائنة.</TableCell></TableRow>
+              ) : notes.map((n) => (
+                <TableRow key={n.id} className="hover:bg-muted/40">
+                  <TableCell className="ps-4 font-mono text-xs" dir="ltr">{n.code}</TableCell>
+                  <TableCell className="font-medium">{n.partner?.nameAr ?? '—'}</TableCell>
+                  <TableCell className="font-mono text-xs" dir="ltr">{invoices.find((i) => i.id === n.invoiceId)?.code ?? '—'}</TableCell>
+                  <TableCell className="text-sm">{formatDate(n.date)}</TableCell>
+                  <TableCell className="text-end num-cell"><span className="num tabular-nums font-semibold" dir="ltr">{formatCurrency(n.total)}</span></TableCell>
+                  <TableCell><StatusBadge status={n.status} /></TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{n.reason ?? '—'}</TableCell>
+                  <TableCell className="text-end">
+                    <Button size="icon" variant="ghost" className="size-8" onClick={() => handlePrint(n)}>
+                      <Printer className="size-3.5" />
+                    </Button>
+                  </TableCell>
                 </TableRow>
-              ) : (
-                rows.map((cn) => (
-                  <TableRow key={cn.id}>
-                    <TableCell className="font-mono text-xs font-semibold text-primary">{cn.code}</TableCell>
-                    <TableCell className="font-medium text-sm">{cn.client.name}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{cn.invoiceId ? 'مرتبط' : '—'}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{formatDate(cn.issueDate)}</TableCell>
-                    <TableCell className="num-cell font-semibold text-rose-600 dark:text-rose-400">
-                      <span className="num">{formatCurrency(cn.total)}</span>
-                    </TableCell>
-                    <TableCell className="text-sm cell-truncate">{cn.reason ?? '—'}</TableCell>
-                    <TableCell><StatusBadge status={cn.status} /></TableCell>
-                    <TableCell>
-                      <div className="flex items-center justify-end gap-0.5">
-                        <Button variant="ghost" size="icon" className="size-8" onClick={() => handlePrint(cn)} title="طباعة">
-                          <Printer className="size-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="size-8" onClick={() => handleEdit(cn)} title="تعديل">
-                          <Pencil className="size-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="size-8 text-rose-600 hover:text-rose-700" onClick={() => setDeleteId(cn.id)} title="حذف">
-                          <Trash2 className="size-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
+              ))}
             </TableBody>
           </Table>
         </ScrollArea>
+      </Card>
+
+      <div className="flex items-center justify-between mt-4 text-sm">
+        <p className="text-muted-foreground">
+          عرض {notes.length === 0 ? 0 : (page - 1) * pageSize + 1}–{(page - 1) * pageSize + notes.length} من {total}
+        </p>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}>السابق</Button>
+          <span className="text-xs text-muted-foreground">صفحة {page} من {totalPages}</span>
+          <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>التالي</Button>
+        </div>
       </div>
 
-      {/* Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-xl">
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{editId ? 'تعديل إشعار دائن' : 'إشعار دائن جديد'}</DialogTitle>
-            <DialogDescription>سيتم عكس قيد الفاتورة الأصلية وتخفيض رصيد العميل تلقائياً.</DialogDescription>
+            <DialogTitle>إشعار دائن جديد</DialogTitle>
+            <DialogDescription>إنشاء إشعار دائن لعميل — سيتم عكس قيد الفاتورة الأصلية تلقائياً عند الترحيل</DialogDescription>
           </DialogHeader>
-
-          <div className="grid grid-cols-2 gap-4 py-2">
-            <div className="col-span-2">
-              <Label className="text-xs font-medium mb-1.5 block">العميل *</Label>
-              <Select value={form.clientId} onValueChange={(v) => setForm({ ...form, clientId: v, invoiceId: '' })}>
-                <SelectTrigger className="w-full"><SelectValue placeholder="اختر العميل" /></SelectTrigger>
-                <SelectContent>
-                  {clients.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>{c.name} ({c.code})</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="col-span-2">
-              <Label className="text-xs font-medium mb-1.5 block">الفاتورة المرتبطة (اختياري)</Label>
-              <Select value={form.invoiceId} onValueChange={(v) => {
-                const inv = clientInvoices?.data?.find((i) => i.id === v)
-                setForm({ ...form, invoiceId: v, subtotal: inv?.total ?? form.subtotal })
-              }}>
-                <SelectTrigger className="w-full"><SelectValue placeholder="بدون ربط" /></SelectTrigger>
-                <SelectContent>
-                  {(clientInvoices?.data ?? []).map((inv) => (
-                    <SelectItem key={inv.id} value={inv.id}>{inv.code} · {formatCurrency(inv.total)}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label className="text-xs font-medium mb-1.5 block">المبلغ قبل الضريبة *</Label>
-              <Input type="number" min="0" step="any" value={form.subtotal} onChange={(e) => setForm({ ...form, subtotal: e.target.value })} />
-            </div>
-            <div>
-              <Label className="text-xs font-medium mb-1.5 block">نسبة الضريبة %</Label>
-              <Input type="number" min="0" step="any" value={form.taxRate} onChange={(e) => setForm({ ...form, taxRate: e.target.value })} />
-            </div>
-
-            <div className="col-span-2">
-              <Label className="text-xs font-medium mb-1.5 block">السبب</Label>
-              <Select value={form.reason} onValueChange={(v) => setForm({ ...form, reason: v })}>
-                <SelectTrigger className="w-full"><SelectValue placeholder="اختر السبب" /></SelectTrigger>
-                <SelectContent>
-                  {REASON_OPTIONS.map((r) => (
-                    <SelectItem key={r} value={r}>{r}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="col-span-2">
-              <Label className="text-xs font-medium mb-1.5 block">ملاحظات</Label>
-              <Textarea value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} rows={2} />
-            </div>
-
-            <div className="col-span-2 rounded-lg border bg-muted/30 p-3 space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">المجموع الفرعي</span>
-                <span className="tabular-nums">{formatCurrency(formSubtotal)}</span>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>العميل *</Label>
+                <Select value={partnerId} onValueChange={setPartnerId}>
+                  <SelectTrigger><SelectValue placeholder="اختر العميل" /></SelectTrigger>
+                  <SelectContent>
+                    {partners.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        <span dir="ltr" className="font-mono text-xs">{p.code}</span> — {p.nameAr}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">ضريبة القيمة المضافة ({Number(form.taxRate) || 0}%)</span>
-                <span className="tabular-nums">{formatCurrency(formTax)}</span>
+              <div className="space-y-1.5">
+                <Label>الفاتورة المرتبطة (اختياري)</Label>
+                <Select value={invoiceId} onValueChange={(v) => {
+                  setInvoiceId(v)
+                  const inv = invoices.find((i) => i.id === v)
+                  if (inv) setSubtotal(String(inv.total))
+                }}>
+                  <SelectTrigger><SelectValue placeholder="بدون" /></SelectTrigger>
+                  <SelectContent>
+                    {invoices
+                      .filter((i) => !partnerId || i.partnerId === partnerId)
+                      .map((i) => (
+                        <SelectItem key={i.id} value={i.id}>
+                          <span dir="ltr" className="font-mono text-xs">{i.code}</span> — {formatCurrency(i.total)}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="flex justify-between pt-2 border-t font-bold text-base">
-                <span>الإجمالي المعاد</span>
-                <span className="tabular-nums text-rose-600 dark:text-rose-400">{formatCurrency(formTotal)}</span>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="date">التاريخ</Label>
+                <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
               </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="subtotal">المبلغ قبل الضريبة</Label>
+                <Input id="subtotal" type="number" step="0.01" dir="ltr" value={subtotal} onChange={(e) => setSubtotal(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="taxRate">نسبة الضريبة %</Label>
+                <Input id="taxRate" type="number" step="0.01" dir="ltr" value={taxRate} onChange={(e) => setTaxRate(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>السبب</Label>
+                <Select value={reason} onValueChange={setReason}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {REASON_OPTIONS.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 text-sm">
+              <div className="p-3 rounded-lg bg-muted/40">
+                <p className="text-xs text-muted-foreground">المجموع الفرعي</p>
+                <p className="font-bold tabular-nums" dir="ltr">{formatCurrency(Number(subtotal) || 0)}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-muted/40">
+                <p className="text-xs text-muted-foreground">الضريبة</p>
+                <p className="font-bold tabular-nums" dir="ltr">{formatCurrency(taxTotal)}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900">
+                <p className="text-xs text-emerald-700 dark:text-emerald-400">الإجمالي</p>
+                <p className="font-bold tabular-nums text-emerald-700 dark:text-emerald-400" dir="ltr">{formatCurrency(total_)}</p>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="notes_">ملاحظات</Label>
+              <Textarea id="notes_" value={notes_} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="ملاحظات إضافية..." />
             </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>{t('action.cancel')}</Button>
-            <Button onClick={handleSubmit} disabled={createMut.isPending || updateMut.isPending} className="gap-1.5">
-              {editId ? t('action.save') : <><Plus className="size-4" /> {t('action.create')}</>}
+            <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>إلغاء</Button>
+            <Button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
+              {saveMutation.isPending ? 'جاري الحفظ...' : 'إنشاء وترحيل'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
-            <AlertDialogDescription>سيتم حذف الإشعار الدائن والقيد المعاكس المرتبط به.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('action.cancel')}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deleteId && deleteMut.mutate(deleteId)}
-              className="bg-rose-600 hover:bg-rose-700 text-white"
-            >
-              حذف
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </ModuleShell>
   )
 }

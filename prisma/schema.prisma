@@ -432,10 +432,12 @@ model Partner {
   salesInvoices     SalesInvoice[]
   salesPayments     SalesPayment[]
   salesCreditNotes  SalesCreditNote[]
+  salesReturns      SalesReturn[]
   purchaseOrders    PurchaseOrder[]
   purchaseInvoices  PurchaseInvoice[]
   purchasePayments  PurchasePayment[]
   purchaseCreditNotes PurchaseCreditNote[]
+  purchaseReturns   PurchaseReturn[]
   goodsReceipts     GoodsReceipt[]
   deliveries        Delivery[]
   journalLines      JournalLine[]
@@ -551,6 +553,8 @@ model Product {
   inventoryAdjustmentLines InventoryAdjustmentLine[]
   salesQuotationLines   SalesQuotationLine[]
   purchaseRequestLines  PurchaseRequestLine[]
+  salesReturnLines      SalesReturnLine[]
+  purchaseReturnLines   PurchaseReturnLine[]
 }
 
 model Warehouse {
@@ -1613,4 +1617,84 @@ model Payslip {
 
   payrollRun PayrollRun @relation(fields: [payrollRunId], references: [id], onDelete: Cascade)
   employee   Employee   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+
+// =============================================================================
+// RETURNS — Sales Return (مرتجع مبيعات) + Purchase Return (مرتجع مشتريات)
+// =============================================================================
+
+model SalesReturn {
+  id                String   @id @default(cuid())
+  companyId         String
+  branchId          String?
+  code              String   @unique // SR-YYYY-NNNNN
+  partnerId         String
+  originalInvoiceId String?  // linked SalesInvoice.id (no FK to allow independent lifecycle)
+  date              DateTime @default(now())
+  reason            String?
+  status            String   @default("draft") // draft|approved|received|credited|closed|cancelled
+  subtotal          Float    @default(0)
+  taxTotal          Float    @default(0)
+  total             Float    @default(0)
+  journalEntryId    String?  // reversal journal entry created on "credit"
+  notes             String?
+  createdBy         String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  partner Partner          @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  lines   SalesReturnLine[]
+}
+
+model SalesReturnLine {
+  id          String  @id @default(cuid())
+  returnId    String
+  productId   String
+  description String?
+  quantity    Float
+  uomId       String?
+  unitPrice   Float
+  taxRate     Float    @default(0)
+  total       Float    @default(0)
+
+  return  SalesReturn @relation(fields: [returnId], references: [id], onDelete: Cascade)
+  product Product     @relation(fields: [productId], references: [id])
+}
+
+model PurchaseReturn {
+  id                String   @id @default(cuid())
+  companyId         String
+  branchId          String?
+  code              String   @unique // PR-YYYY-NNNNN
+  partnerId         String
+  originalInvoiceId String?  // linked PurchaseInvoice.id
+  date              DateTime @default(now())
+  reason            String?
+  status            String   @default("draft") // draft|approved|shipped|debited|closed|cancelled
+  subtotal          Float    @default(0)
+  taxTotal          Float    @default(0)
+  total             Float    @default(0)
+  journalEntryId    String?  // reversal journal entry created on "debit"
+  notes             String?
+  createdBy         String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  partner Partner            @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  lines   PurchaseReturnLine[]
+}
+
+model PurchaseReturnLine {
+  id          String  @id @default(cuid())
+  returnId    String
+  productId   String
+  description String?
+  quantity    Float
+  uomId       String?
+  unitCost    Float
+  taxRate     Float    @default(0)
+  total       Float    @default(0)
+
+  return  PurchaseReturn @relation(fields: [returnId], references: [id], onDelete: Cascade)
+  product Product        @relation(fields: [productId], references: [id])
 }

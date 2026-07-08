@@ -1,151 +1,294 @@
 'use client'
 
 import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { ModuleShell } from '@/components/erp/module-shell'
 import { KpiCard } from '@/components/erp/kpi-card'
 import { useT } from '@/lib/i18n/use-t'
-import { formatDateTime } from '@/lib/format'
+import { formatInt, formatDateTime } from '@/lib/format'
 import { exportToCSV } from '@/lib/export'
 import { toast } from 'sonner'
-import { ScrollText, Calendar, Plus, Pencil, Trash2, FileEdit, Eye, Download, Activity } from 'lucide-react'
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select'
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+} from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  ScrollText, CalendarClock, Activity, FileEdit, Eye,
+} from 'lucide-react'
 
-const ACTION_COLORS: Record<string, string> = {
-  create: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400',
-  update: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400',
-  delete: 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400',
-  login: 'bg-teal-50 text-teal-700 dark:bg-teal-950/40 dark:text-teal-400',
-  logout: 'bg-muted text-muted-foreground',
+interface AuditLog {
+  id: string
+  userId?: string
+  moduleCode: string
+  documentType: string
+  documentId?: string
+  action: string
+  oldValue?: string
+  newValue?: string
+  reason?: string
+  ipAddress?: string
+  deviceInfo?: string
+  correlationId?: string
+  createdAt: string
+  user?: { id: string; nameAr: string; nameEn?: string; username?: string; email?: string }
 }
 
-const ACTION_LABELS: Record<string, string> = {
-  create: 'إنشاء',
-  update: 'تحديث',
-  delete: 'حذف',
-  login: 'تسجيل دخول',
-  logout: 'تسجيل خروج',
+interface AuditResponse {
+  data: AuditLog[]
+  meta: {
+    pagination: { page: number; pageSize: number; total: number; totalPages: number }
+    extras?: {
+      today: number
+      byAction: { create: number; update: number; delete: number; post: number }
+      byModule: Record<string, number>
+    }
+  }
+}
+
+const ACTIONS = [
+  { value: 'all', label: 'كل الإجراءات' },
+  { value: 'create', label: 'إنشاء' },
+  { value: 'update', label: 'تحديث' },
+  { value: 'delete', label: 'حذف' },
+  { value: 'post', label: 'ترحيل' },
+  { value: 'reverse', label: 'عكس' },
+  { value: 'cancel', label: 'إلغاء' },
+  { value: 'approve', label: 'اعتماد' },
+  { value: 'login', label: 'دخول' },
+  { value: 'logout', label: 'خروج' },
+  { value: 'export', label: 'تصدير' },
+]
+
+const MODULES = [
+  { value: 'all', label: 'كل الوحدات' },
+  { value: 'FIN', label: 'مالية' },
+  { value: 'SAL', label: 'مبيعات' },
+  { value: 'PUR', label: 'مشتريات' },
+  { value: 'INV', label: 'مخزون' },
+  { value: 'MFG', label: 'تصنيع' },
+  { value: 'HR', label: 'موارد بشرية' },
+  { value: 'SYS', label: 'نظام' },
+]
+
+const ACTION_BADGE: Record<string, string> = {
+  create: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400',
+  update: 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/40 dark:text-sky-400',
+  delete: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-400',
+  post: 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/40 dark:text-violet-400',
+  reverse: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400',
+  cancel: 'bg-muted text-muted-foreground',
+  approve: 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/40 dark:text-teal-400',
+  login: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400',
+  logout: 'bg-muted text-muted-foreground',
+  export: 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/40 dark:text-violet-400',
+}
+
+function truncate(s?: string, n = 60): string {
+  if (!s) return '—'
+  return s.length > n ? s.slice(0, n) + '…' : s
+}
+
+function prettyJson(s?: string): string {
+  if (!s) return '—'
+  try {
+    return JSON.stringify(JSON.parse(s), null, 2)
+  } catch {
+    return s
+  }
 }
 
 export function AuditLogsModule() {
   const { t } = useT()
-  const qc = useQueryClient()
-  const [actionFilter, setActionFilter] = useState<string>('all')
-  const [entityFilter, setEntityFilter] = useState<string>('all')
-  const [detailsOpen, setDetailsOpen] = useState<any | null>(null)
+  const [search, setSearch] = useState('')
+  const [filterAction, setFilterAction] = useState('all')
+  const [filterModule, setFilterModule] = useState('all')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
+  const [viewOpen, setViewOpen] = useState(false)
+  const [viewing, setViewing] = useState<AuditLog | null>(null)
+  const [page, setPage] = useState(1)
+  const pageSize = 25
 
-  const { data, isLoading } = useQuery<any>({
-    queryKey: ['audit-logs', actionFilter, entityFilter],
+  const { data, isLoading } = useQuery<AuditResponse>({
+    queryKey: ['audit-logs', filterAction, filterModule, dateFrom, dateTo, page],
     queryFn: async () => {
       const params = new URLSearchParams()
-      if (actionFilter !== 'all') params.set('action', actionFilter)
-      if (entityFilter !== 'all') params.set('entity', entityFilter)
+      if (filterAction !== 'all') params.set('action', filterAction)
+      if (filterModule !== 'all') params.set('module', filterModule)
+      if (dateFrom) params.set('from', dateFrom)
+      if (dateTo) params.set('to', dateTo)
+      params.set('page', String(page))
+      params.set('pageSize', String(pageSize))
       const r = await fetch(`/api/erp/audit-logs?${params}`)
-      if (!r.ok) throw new Error()
+      if (!r.ok) throw new Error('Failed')
       return r.json()
     },
   })
 
   const logs = data?.data ?? []
-  const total = data?.total ?? 0
-  const today = data?.today ?? 0
-  const byAction = data?.byAction ?? {}
+  const total = data?.meta?.pagination?.total ?? 0
+  const totalPages = data?.meta?.pagination?.totalPages ?? 1
+  const extras = data?.meta?.extras
 
-  function handleExport() {
-    exportToCSV('audit-logs', logs.map((l: any) => ({
-      date: formatDateTime(l.createdAt),
-      user: l.user?.name ?? '—',
-      action: ACTION_LABELS[l.action] ?? l.action,
-      entity: l.entity,
-      entityId: l.entityId ?? '',
-      details: l.details ?? '',
-      ip: l.ipAddress ?? '',
-    })))
+  const filteredLogs = search
+    ? logs.filter((l) => {
+        const u = l.user?.nameAr || l.user?.username || ''
+        return (
+          u.includes(search) ||
+          l.documentType.includes(search) ||
+          (l.documentId ?? '').includes(search) ||
+          (l.reason ?? '').includes(search)
+        )
+      })
+    : logs
+
+  // Use global stats from API; fallback to filtered counts
+  const totalLogs = extras ? total : filteredLogs.length
+  const todayCount = extras?.today ?? 0
+  const byAction = extras?.byAction ?? { create: 0, update: 0, delete: 0, post: 0 }
+  const byModule = extras?.byModule ?? {}
+
+  // Pick the largest action count for "by action" KPI
+  const topActionEntry = Object.entries(byAction).sort((a, b) => b[1] - a[1])[0]
+  const topActionLabel = topActionEntry && topActionEntry[1] > 0
+    ? `${ACTIONS.find((a) => a.value === topActionEntry[0])?.label ?? topActionEntry[0]} (${topActionEntry[1]})`
+    : '—'
+
+  const topModuleEntry = Object.entries(byModule).sort((a, b) => b[1] - a[1])[0]
+  const topModuleLabel = topModuleEntry && topModuleEntry[1] > 0
+    ? `${MODULES.find((m) => m.value === topModuleEntry[0])?.label ?? topModuleEntry[0]} (${topModuleEntry[1]})`
+    : '—'
+
+  const handleExport = () => {
+    const rows = filteredLogs.map((l) => ({
+      'التاريخ': formatDateTime(l.createdAt),
+      'المستخدم': l.user?.nameAr ?? l.user?.username ?? '—',
+      'الوحدة': l.moduleCode,
+      'نوع المستند': l.documentType,
+      'معرف المستند': l.documentId ?? '',
+      'الإجراء': l.action,
+      'القيمة القديمة': l.oldValue ?? '',
+      'القيمة الجديدة': l.newValue ?? '',
+      'IP': l.ipAddress ?? '',
+    }))
+    exportToCSV('audit-logs', rows)
+    toast.success('تم تصدير الملف')
+  }
+
+  const openView = (log: AuditLog) => {
+    setViewing(log)
+    setViewOpen(true)
   }
 
   return (
     <ModuleShell
       title={t('module.audit-logs')}
-      description="سجل التدقيق وعمليات النظام"
+      description="سجل التدقيق الكامل لكل الإجراءات على النظام (للقراءة فقط — ADR-014)"
       icon={<ScrollText className="size-5" />}
+      searchValue={search}
+      onSearch={setSearch}
+      searchPlaceholder="ابحث في المستخدم أو نوع المستند..."
       onExport={handleExport}
       filters={
         <>
-          <Select value={actionFilter} onValueChange={setActionFilter}>
-            <SelectTrigger className="w-36 h-9"><SelectValue placeholder="الإجراء" /></SelectTrigger>
+          <Select value={filterAction} onValueChange={(v) => { setFilterAction(v); setPage(1) }}>
+            <SelectTrigger size="sm" className="w-36">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">كل الإجراءات</SelectItem>
-              <SelectItem value="create">إنشاء</SelectItem>
-              <SelectItem value="update">تحديث</SelectItem>
-              <SelectItem value="delete">حذف</SelectItem>
-              <SelectItem value="login">تسجيل دخول</SelectItem>
+              {ACTIONS.map((a) => (
+                <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
-          <Select value={entityFilter} onValueChange={setEntityFilter}>
-            <SelectTrigger className="w-36 h-9"><SelectValue placeholder="الكيان" /></SelectTrigger>
+          <Select value={filterModule} onValueChange={(v) => { setFilterModule(v); setPage(1) }}>
+            <SelectTrigger size="sm" className="w-32">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">كل الكيانات</SelectItem>
-              <SelectItem value="user">مستخدم</SelectItem>
-              <SelectItem value="branch">فرع</SelectItem>
-              <SelectItem value="product">منتج</SelectItem>
-              <SelectItem value="sales_order">أمر بيع</SelectItem>
-              <SelectItem value="purchase_order">أمر شراء</SelectItem>
-              <SelectItem value="journal_entry">قيد محاسبي</SelectItem>
+              {MODULES.map((m) => (
+                <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
+          <Input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(1) }} className="w-36" />
+          <Input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(1) }} className="w-36" />
         </>
       }
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard title="إجمالي العمليات" value={String(total)} icon={<Activity className="size-5" />} accent="emerald" />
-        <KpiCard title="اليوم" value={String(today)} icon={<Calendar className="size-5" />} accent="teal" />
-        <KpiCard title="إنشاء" value={String(byAction.create ?? 0)} icon={<Plus className="size-5" />} accent="violet" />
-        <KpiCard title="حذف" value={String(byAction.delete ?? 0)} icon={<Trash2 className="size-5" />} accent="rose" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+        <KpiCard title="إجمالي السجلات" value={formatInt(totalLogs)} icon={<ScrollText className="size-5" />} accent="emerald" />
+        <KpiCard title="سجلات اليوم" value={formatInt(todayCount)} icon={<CalendarClock className="size-5" />} accent="teal" />
+        <KpiCard title="الأكثر إجراءً" value={topActionLabel} icon={<Activity className="size-5" />} accent="amber" />
+        <KpiCard title="الأكثر وحدةً" value={topModuleLabel} icon={<FileEdit className="size-5" />} accent="violet" />
       </div>
 
-      <Card className="rounded-xl border bg-card overflow-hidden">
-        <ScrollArea className="max-h-[60vh] scrollbar-thin">
-          <Table className="table-sticky">
+      <Card className="rounded-xl overflow-hidden">
+        <ScrollArea className="max-h-[60vh]">
+          <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>التاريخ</TableHead>
+              <TableRow className="bg-muted/50">
+                <TableHead className="ps-4">التاريخ</TableHead>
                 <TableHead>المستخدم</TableHead>
+                <TableHead>الوحدة</TableHead>
+                <TableHead>نوع المستند</TableHead>
+                <TableHead>معرف المستند</TableHead>
                 <TableHead>الإجراء</TableHead>
-                <TableHead>الكيان</TableHead>
-                <TableHead className="hidden md:table-cell">التفاصيل</TableHead>
-                <TableHead className="hidden lg:table-cell">IP</TableHead>
-                <TableHead className="text-end w-16">عرض</TableHead>
+                <TableHead>القيمة القديمة</TableHead>
+                <TableHead>القيمة الجديدة</TableHead>
+                <TableHead>IP</TableHead>
+                <TableHead className="text-end">عرض</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">{t('loading')}</TableCell></TableRow>
-              ) : logs.length === 0 ? (
-                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">{t('empty.noData')}</TableCell></TableRow>
-              ) : logs.map((l: any) => (
-                <TableRow key={l.id} className="cursor-pointer" onClick={() => setDetailsOpen(l)}>
-                  <TableCell className="text-xs text-muted-foreground whitespace-nowrap"><span className="num">{formatDateTime(l.createdAt)}</span></TableCell>
-                  <TableCell className="font-medium text-sm">{l.user?.name ?? 'النظام'}</TableCell>
+                <TableRow><TableCell colSpan={10} className="text-center py-10 text-muted-foreground">جاري التحميل...</TableCell></TableRow>
+              ) : filteredLogs.length === 0 ? (
+                <TableRow><TableCell colSpan={10} className="text-center py-10 text-muted-foreground">لا توجد سجلات مطابقة للفلاتر المحددة.</TableCell></TableRow>
+              ) : filteredLogs.map((l) => (
+                <TableRow
+                  key={l.id}
+                  className="hover:bg-muted/40 cursor-pointer"
+                  onClick={() => openView(l)}
+                >
+                  <TableCell className="ps-4 text-xs whitespace-nowrap">
+                    <span className="num" dir="ltr">{formatDateTime(l.createdAt)}</span>
+                  </TableCell>
+                  <TableCell className="font-medium text-sm">
+                    {l.user?.nameAr ?? l.user?.username ?? <span className="text-muted-foreground">—</span>}
+                  </TableCell>
+                  <TableCell className="text-xs">
+                    <Badge variant="outline" className="font-mono text-[10px]">{l.moduleCode}</Badge>
+                  </TableCell>
+                  <TableCell className="text-xs font-mono" dir="ltr">{l.documentType}</TableCell>
+                  <TableCell className="text-xs font-mono text-muted-foreground" dir="ltr">{l.documentId ?? '—'}</TableCell>
                   <TableCell>
-                    <Badge variant="outline" className={`text-[10px] font-semibold ${ACTION_COLORS[l.action] ?? ''}`}>
-                      {ACTION_LABELS[l.action] ?? l.action}
+                    <Badge variant="outline" className={`text-[10px] ${ACTION_BADGE[l.action] ?? ''}`}>
+                      {ACTIONS.find((a) => a.value === l.action)?.label ?? l.action}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-sm">{l.entity}</TableCell>
-                  <TableCell className="hidden md:table-cell text-xs text-muted-foreground cell-truncate">{l.details ?? '—'}</TableCell>
-                  <TableCell className="hidden lg:table-cell font-mono text-[10px] text-muted-foreground"><span className="num">{l.ipAddress ?? '—'}</span></TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-end">
-                      <Button variant="ghost" size="icon" className="size-8" onClick={(e) => { e.stopPropagation(); setDetailsOpen(l) }}>
-                        <Eye className="size-4" />
-                      </Button>
-                    </div>
+                  <TableCell className="text-xs text-muted-foreground max-w-32 truncate" title={l.oldValue ?? ''}>
+                    {truncate(l.oldValue, 40)}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground max-w-32 truncate" title={l.newValue ?? ''}>
+                    {truncate(l.newValue, 40)}
+                  </TableCell>
+                  <TableCell className="text-xs font-mono text-muted-foreground" dir="ltr">{l.ipAddress ?? '—'}</TableCell>
+                  <TableCell className="text-end" onClick={(e) => e.stopPropagation()}>
+                    <Button size="icon" variant="ghost" className="size-8" onClick={() => openView(l)}>
+                      <Eye className="size-3.5" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -154,38 +297,73 @@ export function AuditLogsModule() {
         </ScrollArea>
       </Card>
 
-      <Dialog open={!!detailsOpen} onOpenChange={(o) => !o && setDetailsOpen(null)}>
-        <DialogContent className="sm:max-w-md">
+      <div className="flex items-center justify-between mt-4 text-sm">
+        <p className="text-muted-foreground">
+          عرض {filteredLogs.length === 0 ? 0 : (page - 1) * pageSize + 1}–{(page - 1) * pageSize + filteredLogs.length} من {total}
+        </p>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}>السابق</Button>
+          <span className="text-xs text-muted-foreground">صفحة <span className="num" dir="ltr">{page}</span> من <span className="num" dir="ltr">{totalPages}</span></span>
+          <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>التالي</Button>
+        </div>
+      </div>
+
+      {/* Read-only detail dialog */}
+      <Dialog open={viewOpen} onOpenChange={setViewOpen}>
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <DialogTitle>تفاصيل العملية</DialogTitle>
+            <DialogTitle>تفاصيل سجل التدقيق</DialogTitle>
+            <DialogDescription>
+              {viewing && <span>سجل بتاريخ <span className="num" dir="ltr">{formatDateTime(viewing.createdAt)}</span> — للقراءة فقط</span>}
+            </DialogDescription>
           </DialogHeader>
-          {detailsOpen && (
-            <div className="space-y-3 py-2">
-              <Row label="التاريخ" value={formatDateTime(detailsOpen.createdAt)} />
-              <Row label="المستخدم" value={detailsOpen.user?.name ?? 'النظام'} />
-              <Row label="الإجراء" value={ACTION_LABELS[detailsOpen.action] ?? detailsOpen.action} />
-              <Row label="الكيان" value={detailsOpen.entity} />
-              <Row label="المعرّف" value={detailsOpen.entityId ?? '—'} mono />
-              <Row label="IP" value={detailsOpen.ipAddress ?? '—'} mono />
-              {detailsOpen.details && (
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">التفاصيل</p>
-                  <div className="p-3 rounded-lg bg-muted/40 text-sm">{detailsOpen.details}</div>
+          {viewing && (
+            <ScrollArea className="max-h-[70vh] pe-2">
+              <div className="space-y-4 p-1">
+                <div className="grid grid-cols-2 gap-3">
+                  <DetailField label="المستخدم" value={viewing.user?.nameAr ?? viewing.user?.username ?? '—'} />
+                  <DetailField label="البريد" value={viewing.user?.email ?? '—'} dir="ltr" />
+                  <DetailField label="الوحدة" value={viewing.moduleCode} mono />
+                  <DetailField label="نوع المستند" value={viewing.documentType} mono />
+                  <DetailField label="معرف المستند" value={viewing.documentId ?? '—'} mono />
+                  <DetailField label="الإجراء" value={ACTIONS.find((a) => a.value === viewing.action)?.label ?? viewing.action} />
+                  <DetailField label="عنوان IP" value={viewing.ipAddress ?? '—'} mono />
+                  <DetailField label="معرف الارتباط" value={viewing.correlationId ?? '—'} mono />
                 </div>
-              )}
-            </div>
+                {viewing.reason && (
+                  <DetailField label="السبب" value={viewing.reason} />
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">القيمة القديمة ( oldValue )</Label>
+                    <pre className="text-xs font-mono bg-muted/40 rounded-md p-3 max-h-60 overflow-auto whitespace-pre-wrap break-all" dir="ltr">
+                      {prettyJson(viewing.oldValue)}
+                    </pre>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">القيمة الجديدة ( newValue )</Label>
+                    <pre className="text-xs font-mono bg-muted/40 rounded-md p-3 max-h-60 overflow-auto whitespace-pre-wrap break-all" dir="ltr">
+                      {prettyJson(viewing.newValue)}
+                    </pre>
+                  </div>
+                </div>
+              </div>
+            </ScrollArea>
           )}
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setViewOpen(false)}>إغلاق</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </ModuleShell>
   )
 }
 
-function Row({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+function DetailField({ label, value, mono, dir }: { label: string; value: string; mono?: boolean; dir?: 'ltr' | 'rtl' }) {
   return (
-    <div className="flex items-center justify-between gap-2">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <span className={`text-sm font-medium ${mono ? 'font-mono text-xs' : ''}`}>{value}</span>
+    <div className="space-y-1">
+      <Label className="text-xs text-muted-foreground">{label}</Label>
+      <div className={`text-sm bg-muted/30 rounded-md p-2 ${mono ? 'font-mono' : ''}`} dir={dir}>{value}</div>
     </div>
   )
 }

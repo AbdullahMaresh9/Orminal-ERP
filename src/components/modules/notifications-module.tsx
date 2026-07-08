@@ -5,155 +5,331 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ModuleShell } from '@/components/erp/module-shell'
 import { KpiCard } from '@/components/erp/kpi-card'
 import { useT } from '@/lib/i18n/use-t'
-import { relativeTime, formatDateTime } from '@/lib/format'
+import { formatInt, formatDateTime, relativeTime } from '@/lib/format'
+import { exportToCSV } from '@/lib/export'
 import { toast } from 'sonner'
-import { Bell, BellOff, CheckCheck, Trash2, Mail, AlertTriangle, CheckCircle, XCircle, Info } from 'lucide-react'
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import {
+  Bell, BellOff, CheckCheck, Trash2, Info, CheckCircle2, AlertTriangle, XCircle,
+  Mail, MailOpen,
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-const TYPE_META: Record<string, { icon: React.ReactNode; color: string; bg: string }> = {
-  info: { icon: <Info className="size-4" />, color: 'text-sky-600 dark:text-sky-400', bg: 'bg-sky-50 dark:bg-sky-950/40' },
-  success: { icon: <CheckCircle className="size-4" />, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/40' },
-  warning: { icon: <AlertTriangle className="size-4" />, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/40' },
-  error: { icon: <XCircle className="size-4" />, color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-950/40' },
+interface Notification {
+  id: string
+  userId: string
+  title: string
+  message: string
+  type: string // info|success|warning|error
+  category: string // system|finance|sales|purchase|inventory|hr|workflow
+  isRead: boolean
+  link?: string
+  createdAt: string
+  user?: { id: string; nameAr: string; username?: string }
 }
 
-const TYPE_LABELS: Record<string, string> = {
-  info: 'معلومة', success: 'نجاح', warning: 'تحذير', error: 'خطأ',
+interface NotificationResponse {
+  data: Notification[]
+  meta: {
+    timestamp: string
+    total: number
+    unread: number
+    byType: Record<string, number>
+    byCategory: Record<string, number>
+  }
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  system: 'نظام', inventory: 'مخزون', sales: 'مبيعات', purchases: 'مشتريات', finance: 'مالية', accounting: 'محاسبة',
+const TYPES = [
+  { value: 'all', label: 'كل الأنواع' },
+  { value: 'info', label: 'معلومات' },
+  { value: 'success', label: 'نجاح' },
+  { value: 'warning', label: 'تحذير' },
+  { value: 'error', label: 'خطأ' },
+]
+
+const CATEGORIES = [
+  { value: 'all', label: 'كل التصنيفات' },
+  { value: 'system', label: 'نظام' },
+  { value: 'finance', label: 'مالية' },
+  { value: 'sales', label: 'مبيعات' },
+  { value: 'purchase', label: 'مشتريات' },
+  { value: 'inventory', label: 'مخزون' },
+  { value: 'hr', label: 'موارد بشرية' },
+  { value: 'workflow', label: 'تدفقات عمل' },
+]
+
+const READ_FILTERS = [
+  { value: 'all', label: 'الكل' },
+  { value: 'unread', label: 'غير مقروء' },
+  { value: 'read', label: 'مقروء' },
+]
+
+const TYPE_META: Record<string, { icon: React.ReactNode; badge: string }> = {
+  info: { icon: <Info className="size-4" />, badge: 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/40 dark:text-sky-400' },
+  success: { icon: <CheckCircle2 className="size-4" />, badge: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400' },
+  warning: { icon: <AlertTriangle className="size-4" />, badge: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400' },
+  error: { icon: <XCircle className="size-4" />, badge: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-400' },
 }
 
 export function NotificationsModule() {
   const { t } = useT()
   const qc = useQueryClient()
-  const [typeFilter, setTypeFilter] = useState<string>('all')
+  const [search, setSearch] = useState('')
+  const [filterType, setFilterType] = useState('all')
+  const [filterCategory, setFilterCategory] = useState('all')
+  const [filterRead, setFilterRead] = useState('all')
 
-  const { data, isLoading } = useQuery<{ data: any[]; total: number }>({
-    queryKey: ['notifications', typeFilter],
+  const { data, isLoading } = useQuery<NotificationResponse>({
+    queryKey: ['notifications', filterType, filterCategory, filterRead],
     queryFn: async () => {
-      const r = await fetch('/api/erp/notifications')
-      if (!r.ok) throw new Error()
+      const params = new URLSearchParams()
+      if (filterType !== 'all') params.set('type', filterType)
+      if (filterCategory !== 'all') params.set('category', filterCategory)
+      if (filterRead !== 'all') params.set('isRead', filterRead === 'read' ? 'true' : 'false')
+      const r = await fetch(`/api/erp/notifications?${params}`)
+      if (!r.ok) throw new Error('Failed')
       return r.json()
     },
   })
 
+  const notifications = (data?.data ?? []).filter((n) =>
+    !search || n.title.includes(search) || n.message.includes(search)
+  )
+
+  const meta = data?.meta
+  const stats = {
+    total: meta?.total ?? notifications.length,
+    unread: meta?.unread ?? notifications.filter((n) => !n.isRead).length,
+    byType: meta?.byType ?? {},
+    byCategory: meta?.byCategory ?? {},
+  }
+
+  const topTypeEntry = Object.entries(stats.byType).sort((a, b) => b[1] - a[1])[0]
+  const topTypeLabel = topTypeEntry && topTypeEntry[1] > 0
+    ? `${TYPES.find((x) => x.value === topTypeEntry[0])?.label ?? topTypeEntry[0]} (${topTypeEntry[1]})`
+    : '—'
+
+  const topCategoryEntry = Object.entries(stats.byCategory).sort((a, b) => b[1] - a[1])[0]
+  const topCategoryLabel = topCategoryEntry && topCategoryEntry[1] > 0
+    ? `${CATEGORIES.find((x) => x.value === topCategoryEntry[0])?.label ?? topCategoryEntry[0]} (${topCategoryEntry[1]})`
+    : '—'
+
   const markReadMutation = useMutation({
     mutationFn: async (id: string) => {
-      await fetch(`/api/erp/notifications/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isRead: true }) })
+      const r = await fetch(`/api/erp/notifications/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isRead: true }),
+      })
+      if (!r.ok) throw new Error('Failed')
+      return r.json()
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications'] }),
+    onError: () => toast.error('حدث خطأ'),
   })
 
   const markAllReadMutation = useMutation({
     mutationFn: async () => {
-      const all = data?.data ?? []
-      await Promise.all(all.filter((n) => !n.isRead).map((n) =>
-        fetch(`/api/erp/notifications/${n.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isRead: true }) })
-      ))
+      const r = await fetch('/api/erp/notifications', { method: 'PATCH' })
+      if (!r.ok) throw new Error('Failed')
+      return r.json()
     },
-    onSuccess: () => {
-      toast.success('تم تحديد الكل كمقروء')
+    onSuccess: (res: any) => {
+      toast.success(`تم تعليم ${res?.data?.updated ?? 'الكل'} كمقروء`)
       qc.invalidateQueries({ queryKey: ['notifications'] })
     },
+    onError: () => toast.error('حدث خطأ'),
   })
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      await fetch(`/api/erp/notifications/${id}`, { method: 'DELETE' })
+      const r = await fetch(`/api/erp/notifications/${id}`, { method: 'DELETE' })
+      if (!r.ok) throw new Error('Failed')
+      return r.json()
     },
     onSuccess: () => {
-      toast.success(t('success.deleted'))
+      toast.success('تم حذف الإشعار')
       qc.invalidateQueries({ queryKey: ['notifications'] })
     },
-    onError: () => toast.error(t('error.delete')),
+    onError: () => toast.error('حدث خطأ'),
   })
 
-  const all = data?.data ?? []
-  const filtered = typeFilter === 'all' ? all : all.filter((n) => n.type === typeFilter)
-  const total = all.length
-  const unread = all.filter((n) => !n.isRead).length
-  const byType = (type: string) => all.filter((n) => n.type === type).length
+  const handleExport = () => {
+    const rows = notifications.map((n) => ({
+      'العنوان': n.title,
+      'الرسالة': n.message,
+      'النوع': n.type,
+      'التصنيف': n.category,
+      'مقروء': n.isRead ? 'نعم' : 'لا',
+      'التاريخ': formatDateTime(n.createdAt),
+    }))
+    exportToCSV('notifications', rows)
+    toast.success('تم تصدير الملف')
+  }
 
   return (
     <ModuleShell
       title={t('module.notifications')}
-      description="إدارة الإشعارات والتنبيهات"
+      description="إدارة الإشعارات والمطالعات عبر النظام"
       icon={<Bell className="size-5" />}
+      searchValue={search}
+      onSearch={setSearch}
+      searchPlaceholder="ابحث في عنوان أو نص الإشعار..."
+      onExport={handleExport}
       actions={
-        <Button variant="outline" size="sm" onClick={() => markAllReadMutation.mutate()} disabled={unread === 0 || markAllReadMutation.isPending} className="gap-1.5">
-          <CheckCheck className="size-4" /> تحديد الكل كمقروء
+        <Button
+          size="sm"
+          variant="outline"
+          className="gap-1.5"
+          disabled={markAllReadMutation.isPending || stats.unread === 0}
+          onClick={() => markAllReadMutation.mutate()}
+        >
+          <CheckCheck className="size-4" />
+          <span className="hidden sm:inline">تعليم الكل كمقروء</span>
         </Button>
       }
       filters={
-        <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-36 h-9"><SelectValue placeholder="النوع" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">كل الأنواع</SelectItem>
-            <SelectItem value="info">معلومة</SelectItem>
-            <SelectItem value="success">نجاح</SelectItem>
-            <SelectItem value="warning">تحذير</SelectItem>
-            <SelectItem value="error">خطأ</SelectItem>
-          </SelectContent>
-        </Select>
+        <>
+          <Select value={filterType} onValueChange={setFilterType}>
+            <SelectTrigger size="sm" className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {TYPES.map((t) => (
+                <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={filterCategory} onValueChange={setFilterCategory}>
+            <SelectTrigger size="sm" className="w-36">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {CATEGORIES.map((c) => (
+                <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {READ_FILTERS.map((f) => (
+            <Button
+              key={f.value}
+              size="sm"
+              variant={filterRead === f.value ? 'default' : 'outline'}
+              onClick={() => setFilterRead(f.value)}
+            >
+              {f.label}
+            </Button>
+          ))}
+        </>
       }
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard title="إجمالي الإشعارات" value={String(total)} icon={<Bell className="size-5" />} accent="emerald" />
-        <KpiCard title="غير مقروء" value={String(unread)} icon={<Mail className="size-5" />} accent="rose" />
-        <KpiCard title="تحذيرات" value={String(byType('warning'))} icon={<AlertTriangle className="size-5" />} accent="amber" />
-        <KpiCard title="أخطاء" value={String(byType('error'))} icon={<XCircle className="size-5" />} accent="rose" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+        <KpiCard title="إجمالي الإشعارات" value={formatInt(stats.total)} icon={<Bell className="size-5" />} accent="emerald" />
+        <KpiCard title="غير مقروءة" value={formatInt(stats.unread)} icon={<BellOff className="size-5" />} accent="rose" />
+        <KpiCard title="الأكثر نوعاً" value={topTypeLabel} icon={<Info className="size-5" />} accent="amber" />
+        <KpiCard title="الأكثر تصنيفاً" value={topCategoryLabel} icon={<Mail className="size-5" />} accent="violet" />
       </div>
 
-      <Card className="rounded-xl border bg-card overflow-hidden">
-        <ScrollArea className="max-h-[65vh] scrollbar-thin">
-          <div className="divide-y">
-            {isLoading ? (
-              <div className="py-16 text-center text-muted-foreground">{t('loading')}</div>
-            ) : filtered.length === 0 ? (
-              <div className="py-16 text-center text-muted-foreground flex flex-col items-center gap-2">
-                <BellOff className="size-10 text-muted-foreground/50" />
-                <p>{t('empty.noData')}</p>
-              </div>
-            ) : filtered.map((n) => {
-              const meta = TYPE_META[n.type] ?? TYPE_META.info
-              return (
-                <div key={n.id} className={cn('flex items-start gap-3 p-4 transition-colors', !n.isRead && 'bg-primary/[0.03]')}>
-                  <div className={cn('size-9 rounded-lg flex items-center justify-center shrink-0', meta.bg, meta.color)}>
-                    {meta.icon}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className={cn('text-sm font-semibold', !n.isRead && 'font-bold')}>{n.title}</p>
-                      {!n.isRead && <span className="size-2 rounded-full bg-primary" />}
-                      <Badge variant="outline" className="text-[10px]">{TYPE_LABELS[n.type] ?? n.type}</Badge>
-                      <Badge variant="outline" className="text-[10px] text-muted-foreground">{CATEGORY_LABELS[n.category] ?? n.category}</Badge>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{n.message}</p>
-                    <p className="text-[10px] text-muted-foreground/70 mt-1">
-                      <span className="num">{formatDateTime(n.createdAt)}</span> · {relativeTime(n.createdAt)}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    {!n.isRead && (
-                      <Button variant="ghost" size="icon" className="size-8" title="تحديد كمقروء" onClick={() => markReadMutation.mutate(n.id)}>
-                        <CheckCheck className="size-4" />
-                      </Button>
-                    )}
-                    <Button variant="ghost" size="icon" className="size-8 text-rose-600 hover:text-rose-700" onClick={() => deleteMutation.mutate(n.id)}>
-                      <Trash2 className="size-4" />
-                    </Button>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
+      <Card className="rounded-xl overflow-hidden">
+        <ScrollArea className="max-h-[60vh]">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                <TableHead className="ps-4 w-8"></TableHead>
+                <TableHead>العنوان</TableHead>
+                <TableHead>الرسالة</TableHead>
+                <TableHead>النوع</TableHead>
+                <TableHead>التصنيف</TableHead>
+                <TableHead>الحالة</TableHead>
+                <TableHead>التاريخ</TableHead>
+                <TableHead className="text-end">إجراءات</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow><TableCell colSpan={8} className="text-center py-10 text-muted-foreground">جاري التحميل...</TableCell></TableRow>
+              ) : notifications.length === 0 ? (
+                <TableRow><TableCell colSpan={8} className="text-center py-10 text-muted-foreground">لا توجد إشعارات مطابقة.</TableCell></TableRow>
+              ) : notifications.map((n) => {
+                const tm = TYPE_META[n.type] ?? TYPE_META.info
+                return (
+                  <TableRow
+                    key={n.id}
+                    className={cn('hover:bg-muted/40', !n.isRead && 'bg-emerald-50/40 dark:bg-emerald-950/10')}
+                  >
+                    <TableCell className="ps-4">
+                      <div className={cn('size-8 rounded-lg flex items-center justify-center', tm.badge, 'border')}>
+                        {tm.icon}
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        {!n.isRead && <span className="size-2 rounded-full bg-emerald-500 shrink-0" />}
+                        <span className={cn(!n.isRead && 'font-bold')}>{n.title}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground max-w-md truncate" title={n.message}>
+                      {n.message || '—'}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={cn('text-[10px]', tm.badge)}>{n.type}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-[10px]">{CATEGORIES.find((c) => c.value === n.category)?.label ?? n.category}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {n.isRead ? (
+                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                          <MailOpen className="size-3.5" /> مقروء
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+                          <Mail className="size-3.5" /> غير مقروء
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground whitespace-nowrap" title={formatDateTime(n.createdAt)}>
+                      <span className="num" dir="ltr">{relativeTime(n.createdAt)}</span>
+                    </TableCell>
+                    <TableCell className="text-end">
+                      <div className="flex items-center justify-end gap-1">
+                        {!n.isRead && (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="size-8 text-emerald-600 hover:text-emerald-700"
+                            onClick={() => markReadMutation.mutate(n.id)}
+                            title="تعليم كمقروء"
+                          >
+                            <CheckCheck className="size-3.5" />
+                          </Button>
+                        )}
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="size-8 text-rose-500 hover:text-rose-600"
+                          onClick={() => deleteMutation.mutate(n.id)}
+                          title="حذف"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
+            </TableBody>
+          </Table>
         </ScrollArea>
       </Card>
     </ModuleShell>

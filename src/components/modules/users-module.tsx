@@ -5,192 +5,317 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ModuleShell } from '@/components/erp/module-shell'
 import { KpiCard } from '@/components/erp/kpi-card'
 import { StatusBadge } from '@/components/erp/status-badge'
-import { Badge } from '@/components/ui/badge'
 import { useT } from '@/lib/i18n/use-t'
-import { formatDate } from '@/lib/format'
+import { formatInt, formatDateTime } from '@/lib/format'
 import { exportToCSV } from '@/lib/export'
 import { toast } from 'sonner'
-import { UserPlus, Users, CheckCircle2, Shield, Building2, Pencil, Trash2, Mail, Phone } from 'lucide-react'
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import { Badge } from '@/components/ui/badge'
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select'
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+} from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
+import {
+  Users as UsersIcon, ShieldCheck, UserCheck, KeyRound, Plus, Pencil, Trash2,
+  Lock, Eye, EyeOff,
+} from 'lucide-react'
 
-const ROLES = ['developer', 'owner', 'admin', 'manager', 'accountant', 'cashier', 'employee', 'viewer'] as const
-
-interface UserRow {
-  id: string; name: string; email: string; role: string; phone?: string | null
-  branchId?: string | null; active: boolean; createdAt: string
-  branch?: { name: string; code: string } | null
+interface Role {
+  id: string
+  code: string
+  nameAr: string
+  nameEn?: string
+  isSystem: boolean
+}
+interface Branch {
+  id: string
+  code: string
+  nameAr: string
+  nameEn?: string
+}
+interface User {
+  id: string
+  username: string
+  email: string
+  nameAr: string
+  nameEn?: string
+  phone?: string
+  avatar?: string
+  active: boolean
+  mfaEnabled: boolean
+  defaultBranchId?: string
+  locale: string
+  timezone: string
+  lastLoginAt?: string
+  createdAt: string
+  defaultBranch?: Branch
+  userRoles: { role: Role }[]
+  _count?: { auditLogs: number }
 }
 
 export function UsersModule() {
   const { t } = useT()
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
+  const [filterActive, setFilterActive] = useState<'all' | 'active' | 'inactive'>('all')
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [editing, setEditing] = useState<UserRow | null>(null)
-  const [form, setForm] = useState<any>({ name: '', email: '', password: '', role: 'employee', branchId: '', phone: '', active: true })
-  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [editing, setEditing] = useState<User | null>(null)
+  const [showPassword, setShowPassword] = useState(false)
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false)
+  const [selectedRole, setSelectedRole] = useState<string>('')
+  const [selectedBranch, setSelectedBranch] = useState<string>('')
 
-  const { data, isLoading } = useQuery<{ data: UserRow[]; total: number }>({
-    queryKey: ['users'],
+  const { data, isLoading } = useQuery<{ data: User[]; meta: any }>({
+    queryKey: ['users', search, filterActive],
     queryFn: async () => {
-      const r = await fetch('/api/erp/users')
-      if (!r.ok) throw new Error()
+      const params = new URLSearchParams()
+      if (search) params.set('q', search)
+      if (filterActive === 'active') params.set('active', 'true')
+      if (filterActive === 'inactive') params.set('active', 'false')
+      params.set('pageSize', '200')
+      const r = await fetch(`/api/erp/users?${params}`)
+      if (!r.ok) throw new Error('Failed')
       return r.json()
     },
   })
 
-  const { data: branchesData } = useQuery<{ data: any[] }>({
-    queryKey: ['branches-mini'],
-    queryFn: async () => (await fetch('/api/erp/branches').then((r) => r.json())),
+  const { data: rolesData } = useQuery<{ data: Role[] }>({
+    queryKey: ['roles-for-users'],
+    queryFn: async () => {
+      const r = await fetch('/api/erp/roles?pageSize=200')
+      if (!r.ok) return { data: [] }
+      return r.json()
+    },
   })
-  const branches = branchesData?.data ?? []
+  const roles = rolesData?.data ?? []
+
+  // Fetch branches via warehouses proxy if available — branches have no list route,
+  // but the seeded MAIN branch is exposed via users' defaultBranch. We provide a
+  // static fallback by reusing the first user's defaultBranch.
+  const branches: Branch[] = []
+  const seenBranchIds = new Set<string>()
+  for (const u of data?.data ?? []) {
+    if (u.defaultBranch && !seenBranchIds.has(u.defaultBranch.id)) {
+      seenBranchIds.add(u.defaultBranch.id)
+      branches.push(u.defaultBranch)
+    }
+  }
+
+  const users = data?.data ?? []
+  const stats = {
+    total: users.length,
+    active: users.filter((u) => u.active).length,
+    withMfa: users.filter((u) => u.mfaEnabled).length,
+    byRole: users.reduce((acc, u) => {
+      const r = u.userRoles?.[0]?.role
+      if (r) acc[r.nameAr] = (acc[r.nameAr] || 0) + 1
+      return acc
+    }, {} as Record<string, number>),
+  }
+  const topRole = Object.entries(stats.byRole).sort((a, b) => b[1] - a[1])[0]
+  const topRoleLabel = topRole ? `${topRole[0]} (${topRole[1]})` : '—'
 
   const saveMutation = useMutation({
     mutationFn: async (payload: any) => {
       const url = editing ? `/api/erp/users/${editing.id}` : '/api/erp/users'
+      const method = editing ? 'PUT' : 'POST'
       const r = await fetch(url, {
-        method: editing ? 'PUT' : 'POST',
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
       if (!r.ok) {
         const err = await r.json().catch(() => ({}))
-        throw new Error(err.error || 'failed')
+        throw new Error(err?.error?.message ?? 'Failed')
       }
       return r.json()
     },
     onSuccess: () => {
-      toast.success(t('success.saved'))
+      toast.success(editing ? 'تم تحديث المستخدم بنجاح' : 'تم إنشاء المستخدم بنجاح')
       qc.invalidateQueries({ queryKey: ['users'] })
       setDialogOpen(false)
+      setEditing(null)
+      setChangePasswordOpen(false)
+      setShowPassword(false)
+      setSelectedRole('')
+      setSelectedBranch('')
     },
-    onError: (e: any) => toast.error(e.message || t('error.save')),
+    onError: (e: any) => toast.error(e.message || 'حدث خطأ'),
   })
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const r = await fetch(`/api/erp/users/${id}`, { method: 'DELETE' })
-      if (!r.ok) throw new Error()
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({}))
+        throw new Error(err?.error?.message ?? 'Failed')
+      }
+      return r.json()
     },
     onSuccess: () => {
-      toast.success(t('success.deleted'))
+      toast.success('تم حذف المستخدم')
       qc.invalidateQueries({ queryKey: ['users'] })
-      setDeleteId(null)
     },
-    onError: () => toast.error(t('error.delete')),
+    onError: (e: any) => toast.error(e.message || 'حدث خطأ'),
   })
 
-  const list = (data?.data ?? []).filter((u) =>
-    !search || u.name.includes(search) || u.email.includes(search) || u.role.includes(search)
-  )
-
-  const total = data?.total ?? 0
-  const active = (data?.data ?? []).filter((u) => u.active).length
-  const byRole = new Set((data?.data ?? []).map((u) => u.role)).size
-  const byBranch = new Set((data?.data ?? []).filter((u) => u.branchId).map((u) => u.branchId)).size
-
-  function openAdd() {
-    setEditing(null)
-    setForm({ name: '', email: '', password: '', role: 'employee', branchId: branches[0]?.id ?? '', phone: '', active: true })
-    setDialogOpen(true)
-  }
-  function openEdit(u: UserRow) {
+  const openEdit = (u: User) => {
     setEditing(u)
-    setForm({ name: u.name, email: u.email, password: '', role: u.role, branchId: u.branchId ?? '', phone: u.phone ?? '', active: u.active })
+    setSelectedRole(u.userRoles?.[0]?.role?.id ?? '')
+    setSelectedBranch(u.defaultBranchId ?? '')
+    setChangePasswordOpen(false)
+    setShowPassword(false)
     setDialogOpen(true)
   }
-  function handleSave() {
-    if (!form.name.trim()) return toast.error('الاسم مطلوب')
-    if (!form.email.trim()) return toast.error('البريد مطلوب')
-    if (!editing && !form.password) return toast.error('كلمة المرور مطلوبة')
-    saveMutation.mutate(form)
+
+  const openAdd = () => {
+    setEditing(null)
+    setSelectedRole('')
+    setSelectedBranch('')
+    setChangePasswordOpen(false)
+    setShowPassword(false)
+    setDialogOpen(true)
   }
-  function handleExport() {
-    exportToCSV('users', list.map((u) => ({
-      name: u.name, email: u.email, role: t(`role.${u.role}` as any),
-      branch: u.branch?.name ?? '', active: u.active ? 'نشط' : 'غير نشط',
-    })))
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const fd = new FormData(e.currentTarget)
+    const payload: any = {
+      username: editing ? editing.username : fd.get('username'),
+      nameAr: fd.get('nameAr'),
+      nameEn: fd.get('nameEn') || undefined,
+      email: fd.get('email'),
+      phone: fd.get('phone') || undefined,
+      roleId: selectedRole || undefined,
+      defaultBranchId: selectedBranch || undefined,
+      active: fd.get('active') === 'on',
+      mfaEnabled: fd.get('mfaEnabled') === 'on',
+    }
+    if (!editing) {
+      const pw = fd.get('password')
+      if (!pw) {
+        toast.error('كلمة المرور مطلوبة للمستخدم الجديد')
+        return
+      }
+      payload.password = pw
+    } else if (changePasswordOpen) {
+      const pw = fd.get('password')
+      if (pw) payload.password = pw
+    }
+    saveMutation.mutate(payload)
+  }
+
+  const handleExport = () => {
+    const rows = users.map((u) => ({
+      'اسم المستخدم': u.username,
+      'الاسم': u.nameAr,
+      'البريد': u.email,
+      'الدور': u.userRoles?.[0]?.role?.nameAr ?? '',
+      'الفرع': u.defaultBranch?.nameAr ?? '',
+      'نشط': u.active ? 'نعم' : 'لا',
+      'MFA': u.mfaEnabled ? 'مفعّل' : 'معطّل',
+      'آخر دخول': u.lastLoginAt ? formatDateTime(u.lastLoginAt) : '—',
+    }))
+    exportToCSV('users', rows)
+    toast.success('تم تصدير الملف')
   }
 
   return (
     <ModuleShell
       title={t('module.users')}
-      description="إدارة المستخدمين والأدوار"
-      icon={<Users className="size-5" />}
-      onSearch={setSearch}
+      description="إدارة مستخدمي النظام وأدوارهم وصلاحيات الوصول"
+      icon={<UsersIcon className="size-5" />}
       searchValue={search}
-      searchPlaceholder="ابحث عن مستخدم..."
+      onSearch={setSearch}
+      searchPlaceholder="ابحث باسم المستخدم أو الاسم أو البريد..."
       onAdd={openAdd}
-      addLabel="مستخدم جديد"
+      addLabel={t('action.add')}
       onExport={handleExport}
+      filters={
+        <>
+          <Button size="sm" variant={filterActive === 'all' ? 'default' : 'outline'} onClick={() => setFilterActive('all')}>الكل</Button>
+          <Button size="sm" variant={filterActive === 'active' ? 'default' : 'outline'} onClick={() => setFilterActive('active')}>نشط</Button>
+          <Button size="sm" variant={filterActive === 'inactive' ? 'default' : 'outline'} onClick={() => setFilterActive('inactive')}>غير نشط</Button>
+        </>
+      }
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard title="إجمالي المستخدمين" value={String(total)} icon={<Users className="size-5" />} accent="emerald" />
-        <KpiCard title="نشط" value={String(active)} icon={<CheckCircle2 className="size-5" />} accent="teal" />
-        <KpiCard title="عدد الأدوار" value={String(byRole)} icon={<Shield className="size-5" />} accent="amber" />
-        <KpiCard title="بالفروع" value={String(byBranch)} icon={<Building2 className="size-5" />} accent="violet" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+        <KpiCard title="إجمالي المستخدمين" value={formatInt(stats.total)} icon={<UsersIcon className="size-5" />} accent="emerald" />
+        <KpiCard title="المستخدمون النشطون" value={formatInt(stats.active)} icon={<UserCheck className="size-5" />} accent="teal" />
+        <KpiCard title="الأكثر دوراً" value={topRoleLabel} icon={<KeyRound className="size-5" />} accent="amber" />
+        <KpiCard title="مع التحقق الثنائي (MFA)" value={formatInt(stats.withMfa)} icon={<ShieldCheck className="size-5" />} accent="violet" />
       </div>
 
-      <Card className="rounded-xl border bg-card overflow-hidden">
-        <ScrollArea className="max-h-[60vh] scrollbar-thin">
-          <Table className="table-sticky">
+      <Card className="rounded-xl overflow-hidden">
+        <ScrollArea className="max-h-[60vh]">
+          <Table>
             <TableHeader>
-              <TableRow>
+              <TableRow className="bg-muted/50">
+                <TableHead className="ps-4">اسم المستخدم</TableHead>
                 <TableHead>الاسم</TableHead>
                 <TableHead>البريد</TableHead>
                 <TableHead>الدور</TableHead>
-                <TableHead className="hidden md:table-cell">الفرع</TableHead>
-                <TableHead className="w-28">الحالة</TableHead>
-                <TableHead className="text-end w-24">إجراءات</TableHead>
+                <TableHead>الفرع</TableHead>
+                <TableHead>MFA</TableHead>
+                <TableHead>الحالة</TableHead>
+                <TableHead>آخر دخول</TableHead>
+                <TableHead className="text-end">إجراءات</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">{t('loading')}</TableCell></TableRow>
-              ) : list.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">{t('empty.noData')}</TableCell></TableRow>
-              ) : list.map((u) => (
-                <TableRow key={u.id}>
+                <TableRow><TableCell colSpan={9} className="text-center py-10 text-muted-foreground">جاري التحميل...</TableCell></TableRow>
+              ) : users.length === 0 ? (
+                <TableRow><TableCell colSpan={9} className="text-center py-10 text-muted-foreground">لا يوجد مستخدمون. ابدأ بإضافة أول مستخدم.</TableCell></TableRow>
+              ) : users.map((u) => (
+                <TableRow key={u.id} className="hover:bg-muted/40">
+                  <TableCell className="ps-4 font-mono text-xs" dir="ltr">{u.username}</TableCell>
+                  <TableCell className="font-medium">{u.nameAr}</TableCell>
+                  <TableCell className="text-sm font-mono" dir="ltr">{u.email}</TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <div className="size-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-xs">
-                        {u.name.slice(0, 2).toUpperCase()}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-sm">{u.name}</p>
-                        {u.phone && <p className="text-[10px] text-muted-foreground flex items-center gap-0.5"><Phone className="size-2.5" /><span className="num">{u.phone}</span></p>}
-                      </div>
-                    </div>
+                    {u.userRoles?.[0]?.role ? (
+                      <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 text-[11px]">
+                        {u.userRoles[0].role.nameAr}
+                      </Badge>
+                    ) : <span className="text-xs text-muted-foreground">—</span>}
                   </TableCell>
-                  <TableCell className="text-muted-foreground text-xs">
-                    <div className="flex items-center gap-1">
-                      <Mail className="size-3 shrink-0" />
-                      <span className="num">{u.email}</span>
-                    </div>
-                  </TableCell>
+                  <TableCell className="text-sm">{u.defaultBranch?.nameAr ?? '—'}</TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="text-[10px] font-semibold bg-primary/10 text-primary border-primary/20">
-                      {t(`role.${u.role}` as any)}
-                    </Badge>
+                    {u.mfaEnabled ? (
+                      <Badge variant="outline" className="bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/40 dark:text-violet-400 text-[10px] gap-1">
+                        <ShieldCheck className="size-3" /> مفعّل
+                      </Badge>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">معطّل</span>
+                    )}
                   </TableCell>
-                  <TableCell className="hidden md:table-cell text-muted-foreground text-sm">{u.branch?.name ?? '—'}</TableCell>
                   <TableCell><StatusBadge status={u.active ? 'active' : 'inactive'} /></TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-end gap-0.5">
-                      <Button variant="ghost" size="icon" className="size-8" onClick={() => openEdit(u)}>
-                        <Pencil className="size-4" />
+                  <TableCell className="text-xs text-muted-foreground">
+                    {u.lastLoginAt ? <span className="num" dir="ltr">{formatDateTime(u.lastLoginAt)}</span> : '—'}
+                  </TableCell>
+                  <TableCell className="text-end">
+                    <div className="flex items-center justify-end gap-1">
+                      <Button size="icon" variant="ghost" className="size-8" onClick={() => openEdit(u)}>
+                        <Pencil className="size-3.5" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="size-8 text-rose-600 hover:text-rose-700" onClick={() => setDeleteId(u.id)}>
-                        <Trash2 className="size-4" />
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="size-8 text-rose-500 hover:text-rose-600 disabled:opacity-30"
+                        disabled={u.username === 'admin'}
+                        onClick={() => deleteMutation.mutate(u.id)}
+                      >
+                        <Trash2 className="size-3.5" />
                       </Button>
                     </div>
                   </TableCell>
@@ -202,73 +327,161 @@ export function UsersModule() {
       </Card>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{editing ? 'تعديل مستخدم' : 'مستخدم جديد'}</DialogTitle>
+            <DialogTitle>{editing ? 'تعديل مستخدم' : 'إضافة مستخدم جديد'}</DialogTitle>
+            <DialogDescription>
+              {editing ? `تعديل بيانات: ${editing.nameAr}` : 'أدخل بيانات المستخدم الجديد'}
+            </DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-2">
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="name">الاسم الكامل *</Label>
-              <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="email">البريد الإلكتروني *</Label>
-              <Input id="email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="phone">الهاتف</Label>
-              <Input id="phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="password">{editing ? 'كلمة المرور (اتركها فارغة لعدم التغيير)' : 'كلمة المرور *'}</Label>
-              <Input id="password" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder={editing ? '••••••' : ''} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="role">الدور</Label>
-              <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v })}>
-                <SelectTrigger id="role"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {ROLES.map((r) => <SelectItem key={r} value={r}>{t(`role.${r}` as any)}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="branch">الفرع</Label>
-              <Select value={form.branchId} onValueChange={(v) => setForm({ ...form, branchId: v })}>
-                <SelectTrigger id="branch"><SelectValue placeholder="بدون فرع" /></SelectTrigger>
-                <SelectContent>
-                  {branches.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center gap-2 sm:col-span-2">
-              <Switch checked={form.active} onCheckedChange={(v) => setForm({ ...form, active: v })} id="active" />
-              <Label htmlFor="active" className="cursor-pointer">المستخدم نشط</Label>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>{t('action.cancel')}</Button>
-            <Button onClick={handleSave} disabled={saveMutation.isPending}>
-              {saveMutation.isPending ? t('loading') : t('action.save')}
-            </Button>
-          </DialogFooter>
+          <form onSubmit={handleSubmit}>
+            <ScrollArea className="max-h-[60vh] pe-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-1">
+                {!editing && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="username">اسم المستخدم *</Label>
+                    <Input id="username" name="username" required placeholder="admin" dir="ltr" />
+                  </div>
+                )}
+                <div className="space-y-1.5">
+                  <Label htmlFor="nameAr">الاسم (عربي) *</Label>
+                  <Input id="nameAr" name="nameAr" defaultValue={editing?.nameAr} required />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="nameEn">الاسم (إنجليزي)</Label>
+                  <Input id="nameEn" name="nameEn" defaultValue={editing?.nameEn} dir="ltr" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="email">البريد الإلكتروني *</Label>
+                  <Input id="email" name="email" type="email" defaultValue={editing?.email} required dir="ltr" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="phone">الهاتف</Label>
+                  <Input id="phone" name="phone" defaultValue={editing?.phone} dir="ltr" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>الدور</Label>
+                  <Select value={selectedRole} onValueChange={setSelectedRole}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="اختر دوراً" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {roles.map((r) => (
+                        <SelectItem key={r.id} value={r.id}>
+                          {r.nameAr} <span className="text-xs text-muted-foreground ms-1" dir="ltr">({r.code})</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>الفرع</Label>
+                  <Select value={selectedBranch} onValueChange={setSelectedBranch}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="اختر فرعاً" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {branches.length === 0 ? (
+                        <SelectItem value="_none" disabled>لا توجد فروع</SelectItem>
+                      ) : (
+                        branches.map((b) => (
+                          <SelectItem key={b.id} value={b.id}>
+                            {b.nameAr} <span className="text-xs text-muted-foreground ms-1" dir="ltr">({b.code})</span>
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Password section */}
+                {!editing && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="password">كلمة المرور *</Label>
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        name="password"
+                        type={showPassword ? 'text' : 'password'}
+                        required
+                        placeholder="••••••••"
+                        className="pe-9"
+                        dir="ltr"
+                      />
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="absolute end-1 top-1/2 -translate-y-1/2 size-7"
+                        onClick={() => setShowPassword((v) => !v)}
+                      >
+                        {showPassword ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                {editing && (
+                  <div className="md:col-span-2">
+                    <div className="flex items-center gap-2 p-3 rounded-lg border bg-muted/30">
+                      <Lock className="size-4 text-muted-foreground" />
+                      <span className="text-sm flex-1">كلمة المرور محمية</span>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={changePasswordOpen ? 'default' : 'outline'}
+                        onClick={() => setChangePasswordOpen((v) => !v)}
+                      >
+                        {changePasswordOpen ? 'إلغاء التغيير' : 'تغيير كلمة المرور'}
+                      </Button>
+                    </div>
+                    {changePasswordOpen && (
+                      <div className="mt-3 space-y-1.5">
+                        <Label htmlFor="password">كلمة المرور الجديدة</Label>
+                        <div className="relative">
+                          <Input
+                            id="password"
+                            name="password"
+                            type={showPassword ? 'text' : 'password'}
+                            placeholder="اتركها فارغة للإبقاء على الحالية"
+                            className="pe-9"
+                            dir="ltr"
+                          />
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            className="absolute end-1 top-1/2 -translate-y-1/2 size-7"
+                            onClick={() => setShowPassword((v) => !v)}
+                          >
+                            {showPassword ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="md:col-span-2 flex items-center gap-6 pt-2">
+                  <div className="flex items-center gap-2">
+                    <Switch id="active" name="active" defaultChecked={editing?.active ?? true} />
+                    <Label htmlFor="active">نشط</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Switch id="mfaEnabled" name="mfaEnabled" defaultChecked={editing?.mfaEnabled ?? false} />
+                    <Label htmlFor="mfaEnabled">تفعيل التحقق الثنائي (MFA)</Label>
+                  </div>
+                </div>
+              </div>
+            </ScrollArea>
+            <DialogFooter className="mt-4">
+              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>إلغاء</Button>
+              <Button type="submit" disabled={saveMutation.isPending}>
+                {saveMutation.isPending ? 'جاري الحفظ...' : 'حفظ'}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
-
-      <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
-            <AlertDialogDescription>{t('misc.confirmDelete')}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('action.cancel')}</AlertDialogCancel>
-            <AlertDialogAction onClick={() => deleteId && deleteMutation.mutate(deleteId)} className="bg-rose-600 hover:bg-rose-700">
-              {t('action.delete')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </ModuleShell>
   )
 }
