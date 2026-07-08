@@ -1,0 +1,644 @@
+     1→'use client'
+     2→
+     3→import { useState } from 'react'
+     4→import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+     5→import { ModuleShell } from '@/components/erp/module-shell'
+     6→import { KpiCard } from '@/components/erp/kpi-card'
+     7→import { StatusBadge } from '@/components/erp/status-badge'
+     8→import { exportToCSV, printHTML } from '@/lib/export'
+     9→import { formatCurrency, formatDate, formatNumber } from '@/lib/format'
+    10→import { useT } from '@/lib/i18n/use-t'
+    11→import { toast } from 'sonner'
+    12→import {
+    13→  FileText, Wallet, Clock, Hash, Plus, Pencil, Trash2, Printer, X,
+    14→} from 'lucide-react'
+    15→import { Button } from '@/components/ui/button'
+    16→import { Input } from '@/components/ui/input'
+    17→import { Label } from '@/components/ui/label'
+    18→import { Textarea } from '@/components/ui/textarea'
+    19→import {
+    20→  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+    21→} from '@/components/ui/dialog'
+    22→import {
+    23→  Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
+    24→} from '@/components/ui/table'
+    25→import { ScrollArea } from '@/components/ui/scroll-area'
+    26→import { Skeleton } from '@/components/ui/skeleton'
+    27→import {
+    28→  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+    29→} from '@/components/ui/select'
+    30→import {
+    31→  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+    32→} from '@/components/ui/alert-dialog'
+    33→
+    34→interface Client { id: string; code: string; name: string; taxNumber?: string | null; address?: string | null; phone?: string | null }
+    35→interface Product { id: string; sku: string; name: string; nameAr: string | null; salePrice: number; taxRate: number; unit: string }
+    36→interface InvoiceItem {
+    37→  id?: string
+    38→  productId: string
+    39→  quantity: number
+    40→  unitPrice: number
+    41→  discount: number
+    42→  taxRate: number
+    43→  total: number
+    44→  product?: Product
+    45→}
+    46→interface Invoice {
+    47→  id: string
+    48→  code: string
+    49→  clientId: string
+    50→  status: string
+    51→  issueDate: string
+    52→  dueDate: string | null
+    53→  subtotal: number
+    54→  taxTotal: number
+    55→  discount: number
+    56→  total: number
+    57→  paid: number
+    58→  note: string | null
+    59→  createdAt: string
+    60→  client: { id: string; name: string; code: string; phone: string | null }
+    61→  items: InvoiceItem[]
+    62→}
+    63→interface InvoiceResponse {
+    64→  data: Invoice[]
+    65→  total: number
+    66→  stats: { totalInvoiced: number; totalCollected: number; outstanding: number; count: number }
+    67→}
+    68→
+    69→const EMPTY_LINE = {
+    70→  productId: '',
+    71→  quantity: 1,
+    72→  unitPrice: 0,
+    73→  discount: 0,
+    74→  taxRate: 15,
+    75→}
+    76→
+    77→const EMPTY_FORM = {
+    78→  clientId: '',
+    79→  status: 'posted',
+    80→  issueDate: new Date().toISOString().slice(0, 10),
+    81→  dueDate: '',
+    82→  discount: 0,
+    83→  note: '',
+    84→  items: [{ ...EMPTY_LINE }],
+    85→}
+    86→
+    87→const STATUS_OPTIONS = [
+    88→  { value: 'all', label: 'الكل' },
+    89→  { value: 'draft', label: 'مسودة' },
+    90→  { value: 'posted', label: 'مُرحّل' },
+    91→  { value: 'paid', label: 'مدفوع' },
+    92→  { value: 'cancelled', label: 'ملغي' },
+    93→]
+    94→
+    95→function lineTotal(line: { quantity: number; unitPrice: number; discount: number; taxRate: number }): number {
+    96→  const qty = Number(line.quantity) || 0
+    97→  const price = Number(line.unitPrice) || 0
+    98→  const disc = Number(line.discount) || 0
+    99→  const tax = Number(line.taxRate) || 0
+   100→  const net = Math.max(0, qty * price - disc)
+   101→  return net + net * (tax / 100)
+   102→}
+   103→
+   104→export function SalesInvoicesModule() {
+   105→  const { t } = useT()
+   106→  const qc = useQueryClient()
+   107→  const [search, setSearch] = useState('')
+   108→  const [statusFilter, setStatusFilter] = useState('all')
+   109→  const [dialogOpen, setDialogOpen] = useState(false)
+   110→  const [editId, setEditId] = useState<string | null>(null)
+   111→  const [form, setForm] = useState<any>(EMPTY_FORM)
+   112→  const [deleteId, setDeleteId] = useState<string | null>(null)
+   113→
+   114→  const { data, isLoading } = useQuery<InvoiceResponse>({
+   115→    queryKey: ['sales-invoices', search, statusFilter],
+   116→    queryFn: async () => {
+   117→      const params = new URLSearchParams()
+   118→      if (search) params.set('q', search)
+   119→      if (statusFilter && statusFilter !== 'all') params.set('status', statusFilter)
+   120→      const r = await fetch(`/api/erp/sales-invoices?${params}`)
+   121→      if (!r.ok) throw new Error('fetch failed')
+   122→      return r.json()
+   123→    },
+   124→    staleTime: 30 * 1000,
+   125→  })
+   126→
+   127→  const { data: clientsData } = useQuery<{ data: Client[] }>({
+   128→    queryKey: ['clients-for-select'],
+   129→    queryFn: async () => {
+   130→      const r = await fetch('/api/erp/clients?active=true')
+   131→      if (!r.ok) throw new Error('fetch failed')
+   132→      return r.json()
+   133→    },
+   134→    staleTime: 60 * 1000,
+   135→  })
+   136→
+   137→  const { data: productsData } = useQuery<{ data: Product[] }>({
+   138→    queryKey: ['products-for-select'],
+   139→    queryFn: async () => {
+   140→      const r = await fetch('/api/erp/products')
+   141→      if (!r.ok) throw new Error('fetch failed')
+   142→      return r.json()
+   143→    },
+   144→    staleTime: 60 * 1000,
+   145→  })
+   146→
+   147→  const clients = clientsData?.data ?? []
+   148→  const products = productsData?.data ?? []
+   149→
+   150→  const createMut = useMutation({
+   151→    mutationFn: async (payload: any) => {
+   152→      const r = await fetch('/api/erp/sales-invoices', {
+   153→        method: 'POST',
+   154→        headers: { 'Content-Type': 'application/json' },
+   155→        body: JSON.stringify(payload),
+   156→      })
+   157→      if (!r.ok) {
+   158→        const e = await r.json()
+   159→        throw new Error(e.error || 'failed')
+   160→      }
+   161→      return r.json()
+   162→    },
+   163→    onSuccess: () => {
+   164→      toast.success('تم إنشاء الفاتورة بنجاح')
+   165→      qc.invalidateQueries({ queryKey: ['sales-invoices'] })
+   166→      qc.invalidateQueries({ queryKey: ['dashboard'] })
+   167→      setDialogOpen(false)
+   168→    },
+   169→    onError: (e: any) => toast.error(e.message || t('error.save')),
+   170→  })
+   171→
+   172→  const updateMut = useMutation({
+   173→    mutationFn: async (payload: any) => {
+   174→      const r = await fetch(`/api/erp/sales-invoices/${editId}`, {
+   175→        method: 'PUT',
+   176→        headers: { 'Content-Type': 'application/json' },
+   177→        body: JSON.stringify(payload),
+   178→      })
+   179→      if (!r.ok) {
+   180→        const e = await r.json()
+   181→        throw new Error(e.error || 'failed')
+   182→      }
+   183→      return r.json()
+   184→    },
+   185→    onSuccess: () => {
+   186→      toast.success(t('success.updated'))
+   187→      qc.invalidateQueries({ queryKey: ['sales-invoices'] })
+   188→      setDialogOpen(false)
+   189→    },
+   190→    onError: (e: any) => toast.error(e.message || t('error.save')),
+   191→  })
+   192→
+   193→  const deleteMut = useMutation({
+   194→    mutationFn: async (id: string) => {
+   195→      const r = await fetch(`/api/erp/sales-invoices/${id}`, { method: 'DELETE' })
+   196→      if (!r.ok) {
+   197→        const e = await r.json()
+   198→        throw new Error(e.error || 'failed')
+   199→      }
+   200→      return r.json()
+   201→    },
+   202→    onSuccess: () => {
+   203→      toast.success(t('success.deleted'))
+   204→      qc.invalidateQueries({ queryKey: ['sales-invoices'] })
+   205→      setDeleteId(null)
+   206→    },
+   207→    onError: (e: any) => toast.error(e.message || t('error.delete')),
+   208→  })
+   209→
+   210→  const stats = data?.stats
+   211→  const rows = data?.data ?? []
+   212→
+   213→  const formTotals = (form.items ?? []).reduce(
+   214→    (acc: { subtotal: number; taxTotal: number }, line: any) => {
+   215→      if (!line.productId) return acc
+   216→      const qty = Number(line.quantity) || 0
+   217→      const price = Number(line.unitPrice) || 0
+   218→      const disc = Number(line.discount) || 0
+   219→      const tax = Number(line.taxRate) || 0
+   220→      const net = Math.max(0, qty * price - disc)
+   221→      acc.subtotal += net
+   222→      acc.taxTotal += net * (tax / 100)
+   223→      return acc
+   224→    },
+   225→    { subtotal: 0, taxTotal: 0 }
+   226→  )
+   227→  const formDiscount = Number(form.discount) || 0
+   228→  const formSubtotal = Math.max(0, formTotals.subtotal - formDiscount)
+   229→  const formTotal = formSubtotal + formTotals.taxTotal
+   230→
+   231→  const handleAddLine = () => setForm({ ...form, items: [...form.items, { ...EMPTY_LINE }] })
+   232→
+   233→  const handleRemoveLine = (idx: number) => {
+   234→    if (form.items.length === 1) {
+   235→      toast.error('يجب وجود عنصر واحد على الأقل')
+   236→      return
+   237→    }
+   238→    setForm({ ...form, items: form.items.filter((_: any, i: number) => i !== idx) })
+   239→  }
+   240→
+   241→  const handleLineChange = (idx: number, field: string, value: any) => {
+   242→    const items = [...form.items]
+   243→    items[idx] = { ...items[idx], [field]: value }
+   244→    if (field === 'productId') {
+   245→      const p = products.find((pr) => pr.id === value)
+   246→      if (p) {
+   247→        items[idx].unitPrice = p.salePrice
+   248→        items[idx].taxRate = p.taxRate
+   249→      }
+   250→    }
+   251→    setForm({ ...form, items })
+   252→  }
+   253→
+   254→  const handleAdd = () => {
+   255→    setForm({ ...EMPTY_FORM, items: [{ ...EMPTY_LINE }], issueDate: new Date().toISOString().slice(0, 10) })
+   256→    setEditId(null)
+   257→    setDialogOpen(true)
+   258→  }
+   259→
+   260→  const handleEdit = (inv: Invoice) => {
+   261→    setForm({
+   262→      clientId: inv.clientId,
+   263→      status: inv.status,
+   264→      issueDate: new Date(inv.issueDate).toISOString().slice(0, 10),
+   265→      dueDate: inv.dueDate ? new Date(inv.dueDate).toISOString().slice(0, 10) : '',
+   266→      discount: inv.discount,
+   267→      note: inv.note ?? '',
+   268→      items: inv.items.map((it) => ({
+   269→        id: it.id,
+   270→        productId: it.productId,
+   271→        quantity: it.quantity,
+   272→        unitPrice: it.unitPrice,
+   273→        discount: it.discount,
+   274→        taxRate: it.taxRate,
+   275→        total: it.total,
+   276→      })),
+   277→    })
+   278→    setEditId(inv.id)
+   279→    setDialogOpen(true)
+   280→  }
+   281→
+   282→  const handleSubmit = () => {
+   283→    if (!form.clientId) {
+   284→      toast.error('العميل مطلوب')
+   285→      return
+   286→    }
+   287→    const validItems = form.items.filter((it: any) => it.productId && Number(it.quantity) > 0)
+   288→    if (!validItems.length) {
+   289→      toast.error('يجب إضافة عنصر صالح واحد على الأقل')
+   290→      return
+   291→    }
+   292→    const payload = {
+   293→      ...form,
+   294→      discount: Number(form.discount) || 0,
+   295→      items: validItems.map((it: any) => ({
+   296→        productId: it.productId,
+   297→        quantity: Number(it.quantity),
+   298→        unitPrice: Number(it.unitPrice),
+   299→        discount: Number(it.discount) || 0,
+   300→        taxRate: Number(it.taxRate) || 0,
+   301→      })),
+   302→    }
+   303→    if (editId) updateMut.mutate(payload)
+   304→    else createMut.mutate(payload)
+   305→  }
+   306→
+   307→  const handlePrint = (inv: Invoice) => {
+   308→    const client = clients.find((c) => c.id === inv.clientId) ?? inv.client as any
+   309→    const html = `
+   310→      <div class="doc-header">
+   311→        <div class="company">
+   312→          <div class="logo">أ</div>
+   313→          <div class="info">
+   314→            <h2>الأستاذ للأنظمة المحاسبية</h2>
+   315→            <p>الرقم الضريبي: 300000000000003</p>
+   316→            <p>الرياض · المملكة العربية السعودية</p>
+   317→          </div>
+   318→        </div>
+   319→        <div class="doc-meta">
+   320→          <div class="type">فاتورة ضريبية</div>
+   321→          <div class="code">${inv.code}</div>
+   322→          <div class="date">تاريخ الإصدار: ${formatDate(inv.issueDate)}</div>
+   323→          ${inv.dueDate ? `<div class="date">تاريخ الاستحقاق: ${formatDate(inv.dueDate)}</div>` : ''}
+   324→        </div>
+   325→      </div>
+   326→      <div class="party">
+   327→        <div class="label">فاتورة إلى (العميل)</div>
+   328→        <div class="name">${inv.client.name}</div>
+   329→        ${client?.taxNumber ? `<div class="sub">الرقم الضريبي: ${client.taxNumber}</div>` : ''}
+   330→        ${client?.address ? `<div class="sub">${client.address}</div>` : ''}
+   331→        ${inv.client.phone ? `<div class="sub">الهاتف: ${inv.client.phone}</div>` : ''}
+   332→      </div>
+   333→      <table>
+   334→        <thead>
+   335→          <tr><th>#</th><th>المنتج / الخدمة</th><th>الكمية</th><th>سعر الوحدة</th><th>الخصم</th><th>الضريبة</th><th>الإجمالي</th></tr>
+   336→        </thead>
+   337→        <tbody>
+   338→          ${inv.items.map((it, i) => `
+   339→            <tr>
+   340→              <td>${i + 1}</td>
+   341→              <td>${it.product?.nameAr ?? it.product?.name ?? '—'}<div style="font-size:10px;color:#777">${it.product?.sku ?? ''}</div></td>
+   342→              <td>${formatNumber(it.quantity, 0)} ${it.product?.unit ?? ''}</td>
+   343→              <td>${formatCurrency(it.unitPrice)}</td>
+   344→              <td>${formatCurrency(it.discount)}</td>
+   345→              <td>${formatNumber(it.taxRate, 0)}%</td>
+   346→              <td>${formatCurrency(it.total)}</td>
+   347→            </tr>
+   348→          `).join('')}
+   349→        </tbody>
+   350→      </table>
+   351→      <div class="totals">
+   352→        <div class="row"><span>المجموع الفرعي</span><span>${formatCurrency(inv.subtotal)}</span></div>
+   353→        <div class="row"><span>الخصم</span><span>${formatCurrency(inv.discount)}</span></div>
+   354→        <div class="row"><span>ضريبة القيمة المضافة (15%)</span><span>${formatCurrency(inv.taxTotal)}</span></div>
+   355→        <div class="row grand"><span>الإجمالي المستحق</span><span>${formatCurrency(inv.total)}</span></div>
+   356→        <div class="row"><span>المدفوع</span><span>${formatCurrency(inv.paid)}</span></div>
+   357→        <div class="row"><span>المتبقي</span><span>${formatCurrency(Math.max(0, inv.total - inv.paid))}</span></div>
+   358→      </div>
+   359→      ${inv.note ? `<div class="notes"><strong>ملاحظات:</strong> ${inv.note}</div>` : ''}
+   360→      <div class="signatures">
+   361→        <div class="sig"><div class="line"></div><div class="label">المحاسب</div></div>
+   362→        <div class="sig"><div class="line"></div><div class="label">العميل</div></div>
+   363→        <div class="sig"><div class="line"></div><div class="label">المدير المالي</div></div>
+   364→      </div>
+   365→    `
+   366→    printHTML(html, `فاتورة ضريبية ${inv.code}`)
+   367→  }
+   368→
+   369→  const handleExport = () => {
+   370→    if (!rows.length) {
+   371→      toast.error('لا توجد بيانات للتصدير')
+   372→      return
+   373→    }
+   374→    exportToCSV('sales-invoices', rows.map((r) => ({
+   375→      code: r.code,
+   376→      client: r.client.name,
+   377→      issueDate: formatDate(r.issueDate),
+   378→      dueDate: r.dueDate ? formatDate(r.dueDate) : '',
+   379→      total: r.total,
+   380→      paid: r.paid,
+   381→      outstanding: Math.max(0, r.total - r.paid),
+   382→      status: r.status,
+   383→    })), [
+   384→      { key: 'code', label: 'الرمز' },
+   385→      { key: 'client', label: 'العميل' },
+   386→      { key: 'issueDate', label: 'تاريخ الإصدار' },
+   387→      { key: 'dueDate', label: 'تاريخ الاستحقاق' },
+   388→      { key: 'total', label: 'الإجمالي' },
+   389→      { key: 'paid', label: 'المدفوع' },
+   390→      { key: 'outstanding', label: 'المتبقي' },
+   391→      { key: 'status', label: 'الحالة' },
+   392→    ])
+   393→  }
+   394→
+   395→  return (
+   396→    <ModuleShell
+   397→      title={t('module.sales-invoices')}
+   398→      description="إنشاء وإدارة الفواتير الضريبية مع القيود التلقائية وتحديث أرصدة العملاء"
+   399→      icon={<FileText className="size-5" />}
+   400→      searchValue={search}
+   401→      onSearch={setSearch}
+   402→      searchPlaceholder="ابحث برمز الفاتورة أو اسم العميل..."
+   403→      onAdd={handleAdd}
+   404→      addLabel="فاتورة جديدة"
+   405→      onExport={handleExport}
+   406→      filters={
+   407→        <Select value={statusFilter} onValueChange={setStatusFilter}>
+   408→          <SelectTrigger size="sm" className="w-40">
+   409→            <SelectValue placeholder="الحالة" />
+   410→          </SelectTrigger>
+   411→          <SelectContent>
+   412→            {STATUS_OPTIONS.map((s) => (
+   413→              <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+   414→            ))}
+   415→          </SelectContent>
+   416→        </Select>
+   417→      }
+   418→    >
+   419→      {/* KPIs */}
+   420→      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+   421→        {isLoading ? (
+   422→          Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />)
+   423→        ) : (
+   424→          <>
+   425→            <KpiCard title="إجمالي الفواتير" value={formatCurrency(stats?.totalInvoiced ?? 0)} icon={<FileText className="size-5" />} accent="emerald" />
+   426→            <KpiCard title="إجمالي المحصّل" value={formatCurrency(stats?.totalCollected ?? 0)} icon={<Wallet className="size-5" />} accent="teal" />
+   427→            <KpiCard title="المستحقات" value={formatCurrency(stats?.outstanding ?? 0)} icon={<Clock className="size-5" />} accent="rose" />
+   428→            <KpiCard title="عدد الفواتير" value={String(stats?.count ?? 0)} icon={<Hash className="size-5" />} accent="violet" />
+   429→          </>
+   430→        )}
+   431→      </div>
+   432→
+   433→      {/* Table */}
+   434→      <div className="rounded-xl border bg-card overflow-hidden">
+   435→        <ScrollArea className="max-h-[60vh]">
+   436→          <Table>
+   437→            <TableHeader>
+   438→              <TableRow>
+   439→                <TableHead>الرمز</TableHead>
+   440→                <TableHead>العميل</TableHead>
+   441→                <TableHead>تاريخ الإصدار</TableHead>
+   442→                <TableHead>الاستحقاق</TableHead>
+   443→                <TableHead className="text-end">الإجمالي</TableHead>
+   444→                <TableHead className="text-end">المدفوع</TableHead>
+   445→                <TableHead>الحالة</TableHead>
+   446→                <TableHead className="text-end">إجراءات</TableHead>
+   447→              </TableRow>
+   448→            </TableHeader>
+   449→            <TableBody>
+   450→              {isLoading ? (
+   451→                Array.from({ length: 5 }).map((_, i) => (
+   452→                  <TableRow key={i}>
+   453→                    {Array.from({ length: 8 }).map((_, j) => (
+   454→                      <TableCell key={j}><Skeleton className="h-6" /></TableCell>
+   455→                    ))}
+   456→                  </TableRow>
+   457→                ))
+   458→              ) : !rows.length ? (
+   459→                <TableRow>
+   460→                  <TableCell colSpan={8} className="text-center text-muted-foreground py-12">{t('empty.noData')}</TableCell>
+   461→                </TableRow>
+   462→              ) : (
+   463→                rows.map((inv) => (
+   464→                  <TableRow key={inv.id}>
+   465→                    <TableCell className="font-mono text-sm font-semibold">{inv.code}</TableCell>
+   466→                    <TableCell>
+   467→                      <div>
+   468→                        <p className="font-medium">{inv.client.name}</p>
+   469→                        <p className="text-[11px] text-muted-foreground">{inv.items.length} عناصر</p>
+   470→                      </div>
+   471→                    </TableCell>
+   472→                    <TableCell className="text-sm text-muted-foreground">{formatDate(inv.issueDate)}</TableCell>
+   473→                    <TableCell className="text-sm text-muted-foreground">{inv.dueDate ? formatDate(inv.dueDate) : '—'}</TableCell>
+   474→                    <TableCell className="text-end font-semibold tabular-nums">{formatCurrency(inv.total)}</TableCell>
+   475→                    <TableCell className="text-end tabular-nums text-emerald-600 dark:text-emerald-400">{formatCurrency(inv.paid)}</TableCell>
+   476→                    <TableCell><StatusBadge status={inv.status} /></TableCell>
+   477→                    <TableCell className="text-end">
+   478→                      <div className="flex items-center justify-end gap-1">
+   479→                        <Button variant="ghost" size="icon" className="size-8" onClick={() => handlePrint(inv)} title="طباعة">
+   480→                          <Printer className="size-4" />
+   481→                        </Button>
+   482→                        <Button variant="ghost" size="icon" className="size-8" onClick={() => handleEdit(inv)} title="تعديل">
+   483→                          <Pencil className="size-4" />
+   484→                        </Button>
+   485→                        <Button variant="ghost" size="icon" className="size-8 text-rose-600 hover:text-rose-700" onClick={() => setDeleteId(inv.id)} title="حذف">
+   486→                          <Trash2 className="size-4" />
+   487→                        </Button>
+   488→                      </div>
+   489→                    </TableCell>
+   490→                  </TableRow>
+   491→                ))
+   492→              )}
+   493→            </TableBody>
+   494→          </Table>
+   495→        </ScrollArea>
+   496→      </div>
+   497→
+   498→      {/* Dialog */}
+   499→      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+   500→        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+   501→          <DialogHeader>
+   502→            <DialogTitle>{editId ? 'تعديل فاتورة' : 'فاتورة ضريبية جديدة'}</DialogTitle>
+   503→            <DialogDescription>سيتم إنشاء قيد محاسبي تلقائي عند الحفظ: من ح/الذمم المدينة، إلى ح/إيرادات المبيعات وضريبة القيمة المضافة.</DialogDescription>
+   504→          </DialogHeader>
+   505→
+   506→          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 py-2">
+   507→            <div className="md:col-span-2">
+   508→              <Label className="text-xs font-medium mb-1.5 block">العميل *</Label>
+   509→              <Select value={form.clientId} onValueChange={(v) => setForm({ ...form, clientId: v })}>
+   510→                <SelectTrigger className="w-full"><SelectValue placeholder="اختر العميل" /></SelectTrigger>
+   511→                <SelectContent>
+   512→                  {clients.map((c) => (
+   513→                    <SelectItem key={c.id} value={c.id}>{c.name} ({c.code})</SelectItem>
+   514→                  ))}
+   515→                </SelectContent>
+   516→              </Select>
+   517→            </div>
+   518→            <div>
+   519→              <Label className="text-xs font-medium mb-1.5 block">تاريخ الإصدار</Label>
+   520→              <Input type="date" value={form.issueDate} onChange={(e) => setForm({ ...form, issueDate: e.target.value })} />
+   521→            </div>
+   522→            <div>
+   523→              <Label className="text-xs font-medium mb-1.5 block">الاستحقاق</Label>
+   524→              <Input type="date" value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} />
+   525→            </div>
+   526→          </div>
+   527→
+   528→          {/* Line items */}
+   529→          <div className="space-y-2">
+   530→            <div className="flex items-center justify-between">
+   531→              <Label className="text-sm font-semibold">العناصر</Label>
+   532→              <Button size="sm" variant="outline" onClick={handleAddLine} className="gap-1.5 h-8">
+   533→                <Plus className="size-3.5" /> إضافة سطر
+   534→              </Button>
+   535→            </div>
+   536→
+   537→            <div className="rounded-lg border overflow-hidden">
+   538→              <Table>
+   539→                <TableHeader>
+   540→                  <TableRow>
+   541→                    <TableHead className="w-[34%]">المنتج</TableHead>
+   542→                    <TableHead className="w-20">الكمية</TableHead>
+   543→                    <TableHead className="w-28">السعر</TableHead>
+   544→                    <TableHead className="w-24">الخصم</TableHead>
+   545→                    <TableHead className="w-20">الضريبة%</TableHead>
+   546→                    <TableHead className="w-28 text-end">الإجمالي</TableHead>
+   547→                    <TableHead className="w-10"></TableHead>
+   548→                  </TableRow>
+   549→                </TableHeader>
+   550→                <TableBody>
+   551→                  {form.items.map((line: any, idx: number) => (
+   552→                    <TableRow key={idx}>
+   553→                      <TableCell>
+   554→                        <Select value={line.productId} onValueChange={(v) => handleLineChange(idx, 'productId', v)}>
+   555→                          <SelectTrigger className="w-full h-8"><SelectValue placeholder="اختر المنتج" /></SelectTrigger>
+   556→                          <SelectContent>
+   557→                            {products.map((p) => (
+   558→                              <SelectItem key={p.id} value={p.id}>
+   559→                                {p.nameAr ?? p.name} ({p.sku})
+   560→                              </SelectItem>
+   561→                            ))}
+   562→                          </SelectContent>
+   563→                        </Select>
+   564→                      </TableCell>
+   565→                      <TableCell>
+   566→                        <Input type="number" min="0" step="any" value={line.quantity} onChange={(e) => handleLineChange(idx, 'quantity', e.target.value)} className="h-8" />
+   567→                      </TableCell>
+   568→                      <TableCell>
+   569→                        <Input type="number" min="0" step="any" value={line.unitPrice} onChange={(e) => handleLineChange(idx, 'unitPrice', e.target.value)} className="h-8" />
+   570→                      </TableCell>
+   571→                      <TableCell>
+   572→                        <Input type="number" min="0" step="any" value={line.discount} onChange={(e) => handleLineChange(idx, 'discount', e.target.value)} className="h-8" />
+   573→                      </TableCell>
+   574→                      <TableCell>
+   575→                        <Input type="number" min="0" step="any" value={line.taxRate} onChange={(e) => handleLineChange(idx, 'taxRate', e.target.value)} className="h-8" />
+   576→                      </TableCell>
+   577→                      <TableCell className="text-end font-semibold tabular-nums">{formatCurrency(lineTotal(line))}</TableCell>
+   578→                      <TableCell>
+   579→                        <Button variant="ghost" size="icon" className="size-8 text-rose-600 hover:text-rose-700" onClick={() => handleRemoveLine(idx)}>
+   580→                          <X className="size-4" />
+   581→                        </Button>
+   582→                      </TableCell>
+   583→                    </TableRow>
+   584→                  ))}
+   585→                </TableBody>
+   586→              </Table>
+   587→            </div>
+   588→          </div>
+   589→
+   590→          <div className="grid grid-cols-2 gap-4 pt-2">
+   591→            <div>
+   592→              <Label className="text-xs font-medium mb-1.5 block">ملاحظات</Label>
+   593→              <Textarea value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} rows={3} />
+   594→            </div>
+   595→            <div className="rounded-lg border bg-muted/30 p-3 space-y-2 self-start">
+   596→              <div className="flex justify-between text-sm">
+   597→                <span className="text-muted-foreground">المجموع الفرعي</span>
+   598→                <span className="tabular-nums">{formatCurrency(formTotals.subtotal)}</span>
+   599→              </div>
+   600→              <div className="flex justify-between text-sm items-center">
+   601→                <span className="text-muted-foreground">خصم إضافي</span>
+   602→                <Input type="number" min="0" step="any" value={form.discount} onChange={(e) => setForm({ ...form, discount: e.target.value })} className="w-28 h-8 text-end" />
+   603→              </div>
+   604→              <div className="flex justify-between text-sm">
+   605→                <span className="text-muted-foreground">ضريبة القيمة المضافة</span>
+   606→                <span className="tabular-nums">{formatCurrency(formTotals.taxTotal)}</span>
+   607→              </div>
+   608→              <div className="flex justify-between pt-2 border-t font-bold text-base">
+   609→                <span>الإجمالي</span>
+   610→                <span className="tabular-nums text-primary">{formatCurrency(formTotal)}</span>
+   611→              </div>
+   612→            </div>
+   613→          </div>
+   614→
+   615→          <DialogFooter>
+   616→            <Button variant="outline" onClick={() => setDialogOpen(false)}>{t('action.cancel')}</Button>
+   617→            <Button onClick={handleSubmit} disabled={createMut.isPending || updateMut.isPending} className="gap-1.5">
+   618→              {editId ? t('action.save') : <><Plus className="size-4" /> {t('action.create')}</>}
+   619→            </Button>
+   620→          </DialogFooter>
+   621→        </DialogContent>
+   622→      </Dialog>
+   623→
+   624→      <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
+   625→        <AlertDialogContent>
+   626→          <AlertDialogHeader>
+   627→            <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
+   628→            <AlertDialogDescription>سيتم حذف الفاتورة والقيد المحاسبي المرتبط بها. لا يمكن التراجع.</AlertDialogDescription>
+   629→          </AlertDialogHeader>
+   630→          <AlertDialogFooter>
+   631→            <AlertDialogCancel>{t('action.cancel')}</AlertDialogCancel>
+   632→            <AlertDialogAction
+   633→              onClick={() => deleteId && deleteMut.mutate(deleteId)}
+   634→              className="bg-rose-600 hover:bg-rose-700 text-white"
+   635→            >
+   636→              حذف
+   637→            </AlertDialogAction>
+   638→          </AlertDialogFooter>
+   639→        </AlertDialogContent>
+   640→      </AlertDialog>
+   641→    </ModuleShell>
+   642→  )
+   643→}
+   644→
