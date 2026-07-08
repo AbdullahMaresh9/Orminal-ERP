@@ -3,24 +3,27 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
+// 16 unified modules per Arabic Accounting Spec §22 + Volume 2 bounded contexts
 export type ModuleKey =
-  | 'dashboard'
-  | 'pos'
-  // Sales
-  | 'clients' | 'sales-orders' | 'sales-invoices' | 'sales-credit-notes' | 'sales-payments'
-  // Purchases
-  | 'suppliers' | 'purchase-orders' | 'purchase-invoices' | 'purchase-credit-notes' | 'purchase-payments'
-  // Inventory
-  | 'products' | 'categories' | 'storehouses' | 'inventory-incoming' | 'inventory-outgoing'
-  | 'inventory-transfers' | 'stock-takes' | 'inventory-requisitions'
-  // Accounting
-  | 'chart-of-accounts' | 'analytic-accounts' | 'journal-entries' | 'closed-periods'
+  // Platform
+  | 'dashboard' | 'profile' | 'users' | 'roles' | 'audit-logs' | 'notifications' | 'settings'
+  // Master Data
+  | 'partners' | 'products' | 'categories' | 'warehouses'
   // Finance
-  | 'bank-accounts' | 'safes' | 'expenses' | 'revenues' | 'finance-transfers' | 'finance-requisitions'
-  // Reports & users
-  | 'reports' | 'branches' | 'partners' | 'activities' | 'users' | 'roles'
-  // Settings & system
-  | 'settings' | 'document-templates' | 'audit-logs' | 'notifications' | 'profile'
+  | 'chart-of-accounts' | 'journal-entries' | 'fiscal-periods' | 'cost-centers' | 'bank-accounts' | 'safes'
+  | 'sales-payments' | 'purchase-payments'
+  // Sales & CRM
+  | 'sales-quotations' | 'sales-orders' | 'sales-invoices' | 'sales-credit-notes' | 'sales-returns'
+  // Procurement
+  | 'purchase-requests' | 'purchase-orders' | 'goods-receipts' | 'purchase-invoices' | 'purchase-credit-notes' | 'purchase-returns'
+  // Inventory
+  | 'stock-on-hand' | 'stock-transfers' | 'deliveries' | 'inventory-adjustments' | 'stock-moves'
+  // Manufacturing
+  | 'boms' | 'work-centers' | 'production-orders'
+  // HR
+  | 'employees' | 'departments' | 'attendance' | 'leave-requests' | 'payroll-runs'
+  // Reports
+  | 'reports'
 
 interface NavState {
   activeModule: ModuleKey
@@ -44,7 +47,7 @@ export const useNav = create<NavState>()(
       setMobileSidebarOpen: (v) => set({ mobileSidebarOpen: v }),
     }),
     {
-      name: 'alostaz-nav',
+      name: 'alostaz-nav-v2',
       partialize: (s) => ({ activeModule: s.activeModule, sidebarCollapsed: s.sidebarCollapsed }),
     }
   )

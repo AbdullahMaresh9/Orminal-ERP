@@ -1,43 +1,68 @@
-import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { ok, created, list, badRequest, serverError, parsePagination, parseSearch } from '@/lib/erp/api-response'
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const [data, branches] = await Promise.all([
-      db.safe.findMany({ orderBy: { createdAt: 'desc' } }),
-      db.branch.findMany({ select: { id: true, name: true, code: true } }),
+    const { page, pageSize, skip } = parsePagination(req)
+    const q = parseSearch(req)
+    const url = new URL(req.url)
+    const branchId = url.searchParams.get('branchId')
+
+    const where: any = {}
+    if (q) {
+      where.OR = [
+        { code: { contains: q } },
+        { nameAr: { contains: q } },
+        { nameEn: { contains: q } },
+      ]
+    }
+    if (branchId) where.branchId = branchId
+
+    const [data, total] = await Promise.all([
+      db.safe.findMany({
+        where,
+        skip,
+        take: pageSize,
+        include: { account: { select: { id: true, code: true, nameAr: true } } },
+        orderBy: { code: 'asc' },
+      }),
+      db.safe.count({ where }),
     ])
-    const branchMap = new Map(branches.map((b) => [b.id, b]))
-    const enriched = data.map((s) => ({
-      ...s,
-      branch: s.branchId ? branchMap.get(s.branchId) ?? null : null,
-    }))
-    return NextResponse.json({ data: enriched, total: enriched.length })
+    return list(data, total, page, pageSize)
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    return serverError(e.message)
   }
 }
 
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const count = await db.safe.count()
-    const code = body.code ?? `SAFE-${String(count + 1).padStart(4, '0')}`
-    const created = await db.safe.create({
+    if (!body.nameAr) return badRequest('nameAr is required')
+
+    const company = await db.company.findFirst()
+    if (!company) return badRequest('no company in db')
+
+    let code = body.code
+    if (!code) {
+      const count = await db.safe.count()
+      code = `SAFE-${String(count + 1).padStart(3, '0')}`
+    }
+
+    const safe = await db.safe.create({
       data: {
-        name: body.name,
+        companyId: company.id,
+        branchId: body.branchId,
         code,
-        branchId: body.branchId || null,
-        currency: body.currency ?? 'SAR',
-        balance: Number(body.openingBalance ?? 0),
+        nameAr: body.nameAr,
+        nameEn: body.nameEn,
+        currencyId: body.currencyId,
+        accountId: body.accountId,
+        balance: body.balance ?? 0,
         active: body.active ?? true,
       },
     })
-    const branch = created.branchId
-      ? await db.branch.findUnique({ where: { id: created.branchId }, select: { id: true, name: true, code: true } })
-      : null
-    return NextResponse.json({ ...created, branch }, { status: 201 })
+    return created(safe)
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    return serverError(e.message)
   }
 }

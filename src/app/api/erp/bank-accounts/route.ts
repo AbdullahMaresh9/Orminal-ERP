@@ -1,33 +1,64 @@
-import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { ok, created, list, badRequest, serverError, parsePagination, parseSearch } from '@/lib/erp/api-response'
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const data = await db.bankAccount.findMany({
-      orderBy: { createdAt: 'desc' },
-    })
-    return NextResponse.json({ data, total: data.length })
+    const { page, pageSize, skip } = parsePagination(req)
+    const q = parseSearch(req)
+
+    const where: any = {}
+    if (q) {
+      where.OR = [
+        { nameAr: { contains: q } },
+        { nameEn: { contains: q } },
+        { bankName: { contains: q } },
+        { iban: { contains: q } },
+        { accountNo: { contains: q } },
+      ]
+    }
+
+    const [data, total] = await Promise.all([
+      db.bankAccount.findMany({
+        where,
+        skip,
+        take: pageSize,
+        include: { account: { select: { id: true, code: true, nameAr: true } } },
+        orderBy: { createdAt: 'desc' },
+      }),
+      db.bankAccount.count({ where }),
+    ])
+    return list(data, total, page, pageSize)
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    return serverError(e.message)
   }
 }
 
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const created = await db.bankAccount.create({
+    if (!body.nameAr) return badRequest('nameAr is required')
+    if (!body.bankName) return badRequest('bankName is required')
+
+    const company = await db.company.findFirst()
+    if (!company) return badRequest('no company in db')
+
+    const bank = await db.bankAccount.create({
       data: {
-        name: body.name,
-        bankName: body.bankName ?? '',
-        iban: body.iban ?? null,
-        accountNo: body.accountNo ?? null,
-        currency: body.currency ?? 'SAR',
-        balance: Number(body.openingBalance ?? 0),
+        companyId: company.id,
+        nameAr: body.nameAr,
+        nameEn: body.nameEn,
+        bankName: body.bankName,
+        iban: body.iban,
+        accountNo: body.accountNo,
+        swiftCode: body.swiftCode,
+        currencyId: body.currencyId,
+        accountId: body.accountId,
+        balance: body.balance ?? 0,
         active: body.active ?? true,
       },
     })
-    return NextResponse.json(created, { status: 201 })
+    return created(bank)
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    return serverError(e.message)
   }
 }

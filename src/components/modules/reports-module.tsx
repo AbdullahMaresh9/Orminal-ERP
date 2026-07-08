@@ -4,220 +4,309 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ModuleShell } from '@/components/erp/module-shell'
 import { useT } from '@/lib/i18n/use-t'
-import { formatCurrency, formatNumber, formatDate } from '@/lib/format'
+import { formatCurrency, formatInt, formatDate } from '@/lib/format'
 import { exportToCSV, printHTML } from '@/lib/export'
 import { toast } from 'sonner'
-import {
-  BarChart3, FileText, ShoppingCart, Truck, Boxes, Users, Building2,
-  Play, Printer, Download, Calendar, Filter, BarChart2, PieChart, TrendingUp,
-} from 'lucide-react'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Skeleton } from '@/components/ui/skeleton'
+import { Badge } from '@/components/ui/badge'
 import {
-  BarChart, Bar, PieChart as RPieChart, Pie, Cell,
-  ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-} from 'recharts'
+  Tabs, TabsContent, TabsList, TabsTrigger,
+} from '@/components/ui/tabs'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter,
+} from '@/components/ui/table'
+import {
+  BarChart3, FileText, BookOpen, Scale, TrendingUp, TrendingDown,
+  Boxes, Coins, Printer, Download, PlayCircle,
+} from 'lucide-react'
 
-const PIE_COLORS = ['#16a34a', '#65a30d', '#ca8a04', '#d97706', '#dc2626', '#7c3aed', '#0891b2', '#0d9488']
+type ReportType = 'trial-balance' | 'income' | 'balance-sheet' | 'sales-summary' | 'purchases-summary' | 'inventory-value'
 
-interface ReportDef {
-  key: string
-  title: string
-  description: string
-  type: string // endpoint type param
-  category: 'accounting' | 'sales' | 'purchases' | 'inventory' | 'clients' | 'suppliers'
-  icon: React.ReactNode
-  working: boolean
+const REPORTS = {
+  accounting: [
+    { type: 'trial-balance' as ReportType, title: 'ميزان المراجعة', icon: Scale, color: 'emerald' },
+    { type: 'income' as ReportType, title: 'قائمة الدخل', icon: TrendingUp, color: 'teal' },
+    { type: 'balance-sheet' as ReportType, title: 'الميزانية العمومية', icon: BookOpen, color: 'violet' },
+  ],
+  sales: [
+    { type: 'sales-summary' as ReportType, title: 'ملخص المبيعات', icon: FileText, color: 'emerald' },
+  ],
+  purchases: [
+    { type: 'purchases-summary' as ReportType, title: 'ملخص المشتريات', icon: FileText, color: 'amber' },
+  ],
+  inventory: [
+    { type: 'inventory-value' as ReportType, title: 'قيمة المخزون', icon: Boxes, color: 'violet' },
+  ],
 }
 
-const REPORTS: ReportDef[] = [
-  // Accounting
-  { key: 'trial-balance', title: 'ميزان المراجعة', description: 'كشف بأرصدة جميع الحسابات مدين/دائن', type: 'trial-balance', category: 'accounting', icon: <BarChart2 className="size-5" />, working: true },
-  { key: 'income', title: 'قائمة الدخل', description: 'الإيرادات والمصروفات وصافي الربح', type: 'income', category: 'accounting', icon: <TrendingUp className="size-5" />, working: true },
-  { key: 'balance', title: 'الميزانية العمومية', description: 'الأصول مقابل الالتزامات وحقوق الملكية', type: 'balance', category: 'accounting', icon: <BarChart3 className="size-5" />, working: true },
-  { key: 'general-ledger', title: 'الأستاذ العام', description: 'تفاصيل القيود لكل حساب', type: 'general-ledger', category: 'accounting', icon: <FileText className="size-5" />, working: false },
-  { key: 'tax-detailed', title: 'التقارير الضريبية المفصّلة', description: 'تقرير ضريبة القيمة المضافة المفصّل', type: 'tax-detailed', category: 'accounting', icon: <FileText className="size-5" />, working: false },
-  { key: 'tax-summary', title: 'التقارير الضريبية المجملة', description: 'ملخص ضريبة القيمة المضافة', type: 'tax-summary', category: 'accounting', icon: <FileText className="size-5" />, working: false },
-  { key: 'tax-return', title: 'الإقرار الضريبي', description: 'إقرار ضريبة القيمة المضافة', type: 'tax-return', category: 'accounting', icon: <FileText className="size-5" />, working: false },
-  // Sales
-  { key: 'sales-summary', title: 'ملخص المبيعات', description: 'إجمالي المبيعات والضريبة', type: 'sales-summary', category: 'sales', icon: <ShoppingCart className="size-5" />, working: true },
-  { key: 'sales-invoices-detailed', title: 'الفواتير (مفصّل)', description: 'تفاصيل فواتير المبيعات', type: 'sales-invoices-detailed', category: 'sales', icon: <FileText className="size-5" />, working: false },
-  { key: 'gross-profit', title: 'إجمالي الربح', description: 'تحليل هامش الربح الإجمالي', type: 'gross-profit', category: 'sales', icon: <TrendingUp className="size-5" />, working: false },
-  { key: 'client-payments', title: 'مدفوعات العملاء', description: 'تقرير المقبوضات من العملاء', type: 'client-payments', category: 'sales', icon: <FileText className="size-5" />, working: false },
-  // Purchases
-  { key: 'purchases-summary', title: 'ملخص المشتريات', description: 'إجمالي المشتريات والضريبة', type: 'purchases-summary', category: 'purchases', icon: <Truck className="size-5" />, working: true },
-  { key: 'purchase-invoices-detailed', title: 'فواتير الشراء (مفصّل)', description: 'تفاصيل فواتير المشتريات', type: 'purchase-invoices-detailed', category: 'purchases', icon: <FileText className="size-5" />, working: false },
-  { key: 'supplier-payments', title: 'مدفوعات الموردين', description: 'تقرير المدفوعات للموردين', type: 'supplier-payments', category: 'purchases', icon: <FileText className="size-5" />, working: false },
-  // Inventory
-  { key: 'inventory-value', title: 'قيمة المخزون', description: 'قيمة المخزون بالتكلفة لكل منتج', type: 'inventory-value', category: 'inventory', icon: <Boxes className="size-5" />, working: true },
-  // Clients
-  { key: 'client-aging', title: 'أعمار ديون العملاء', description: 'تحليل أعمار الذمم المدينة', type: 'client-aging', category: 'clients', icon: <Users className="size-5" />, working: true },
-  { key: 'client-statement', title: 'كشف حساب العميل', description: 'كشف حساب مفصّل للعميل', type: 'client-statement', category: 'clients', icon: <FileText className="size-5" />, working: false },
-  // Suppliers
-  { key: 'supplier-aging', title: 'أعمار دائنية الموردين', description: 'تحليل أعمار الذمم الدائنة', type: 'supplier-aging', category: 'suppliers', icon: <Building2 className="size-5" />, working: true },
-  { key: 'supplier-statement', title: 'كشف حساب المورد', description: 'كشف حساب مفصّل للمورد', type: 'supplier-statement', category: 'suppliers', icon: <FileText className="size-5" />, working: false },
-]
-
-const CATEGORIES = [
-  { key: 'accounting', label: 'محاسبي' },
-  { key: 'sales', label: 'المبيعات' },
-  { key: 'purchases', label: 'المشتريات' },
-  { key: 'inventory', label: 'المخزون' },
-  { key: 'clients', label: 'العملاء' },
-  { key: 'suppliers', label: 'الموردون' },
-] as const
+const COLOR_CLASSES: Record<string, string> = {
+  emerald: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 ring-emerald-200 dark:ring-emerald-900',
+  teal: 'bg-teal-50 text-teal-600 dark:bg-teal-950/40 dark:text-teal-400 ring-teal-200 dark:ring-teal-900',
+  violet: 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-400 ring-violet-200 dark:ring-violet-900',
+  amber: 'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400 ring-amber-200 dark:ring-amber-900',
+}
 
 export function ReportsModule() {
-  const { t, locale } = useT()
-  const [activeCategory, setActiveCategory] = useState<string>('accounting')
-  const [selected, setSelected] = useState<ReportDef | null>(null)
+  const { t } = useT()
+  const [activeReport, setActiveReport] = useState<ReportType | null>(null)
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
 
-  const { data, isLoading, refetch, isFetching } = useQuery<any>({
-    queryKey: ['report', selected?.type, from, to],
+  const { data, isLoading, refetch } = useQuery<any>({
+    queryKey: ['financial-report', activeReport, from, to],
     queryFn: async () => {
-      if (!selected) return null
-      const params = new URLSearchParams({ type: selected.type })
+      if (!activeReport) return null
+      const params = new URLSearchParams()
+      params.set('type', activeReport)
       if (from) params.set('from', from)
       if (to) params.set('to', to)
-      const r = await fetch(`/api/erp/reports?${params}`)
-      if (!r.ok) throw new Error()
-      return r.json()
+      const r = await fetch(`/api/erp/financial-statements?${params}`)
+      if (!r.ok) throw new Error('Failed')
+      const json = await r.json()
+      return json.data
     },
-    enabled: !!selected,
+    enabled: !!activeReport,
   })
 
-  function generate(r: ReportDef) {
-    setSelected(r)
+  const handleGenerate = (type: ReportType) => {
+    setActiveReport(type)
     setTimeout(() => refetch(), 50)
   }
 
-  function handleExport() {
-    if (!data?.rows || data.rows.length === 0) {
-      toast.error('لا توجد بيانات للتصدير')
-      return
+  const handleExport = () => {
+    if (!data || !activeReport) return
+    let rows: any[] = []
+    if (activeReport === 'trial-balance') {
+      rows = (data.rows ?? []).map((r: any) => ({
+        'الرمز': r.code,
+        'الحساب': r.nameAr,
+        'النوع': r.type,
+        'مدين': r.debit,
+        'دائن': r.credit,
+      }))
+    } else if (activeReport === 'income') {
+      rows = [
+        ...((data.revenues ?? []).map((r: any) => ({ 'القسم': 'إيرادات', 'الرمز': r.code, 'البيان': r.nameAr, 'المبلغ': r.amount }))),
+        ...((data.expenses ?? []).map((r: any) => ({ 'القسم': 'مصروفات', 'الرمز': r.code, 'البيان': r.nameAr, 'المبلغ': r.amount }))),
+      ]
+    } else if (activeReport === 'balance-sheet') {
+      rows = [
+        ...((data.assets ?? []).map((r: any) => ({ 'القسم': 'أصول', 'الرمز': r.code, 'البيان': r.nameAr, 'المبلغ': r.amount }))),
+        ...((data.liabilities ?? []).map((r: any) => ({ 'القسم': 'التزامات', 'الرمز': r.code, 'البيان': r.nameAr, 'المبلغ': r.amount }))),
+        ...((data.equity ?? []).map((r: any) => ({ 'القسم': 'حقوق ملكية', 'الرمز': r.code, 'البيان': r.nameAr, 'المبلغ': r.amount }))),
+      ]
+    } else if (activeReport === 'inventory-value') {
+      rows = (data.rows ?? []).map((r: any) => ({
+        'SKU': r.sku,
+        'المنتج': r.name,
+        'المستودع': r.warehouse,
+        'الكمية': r.quantity,
+        'التكلفة': r.costPrice,
+        'القيمة': r.value,
+      }))
     }
-    exportToCSV(selected?.title ?? 'report', data.rows)
+    exportToCSV(activeReport, rows)
+    toast.success('تم تصدير التقرير')
   }
 
-  function handlePrint() {
-    if (!data) return
-    const title = selected?.title ?? 'تقرير'
-    let html = `<div class="doc-header"><div class="company"><div class="logo">أ</div><div class="info"><h2>مؤسسة الأستاذ التجارية</h2><p>${title}</p></div></div><div class="doc-meta"><div class="type">${title}</div><div class="date">${formatDate(new Date(), locale)}</div></div></div>`
-    if (data.rows?.length) {
-      const keys = Object.keys(data.rows[0])
-      html += '<table><thead><tr>' + keys.map((k) => `<th>${k}</th>`).join('') + '</tr></thead><tbody>'
-      html += data.rows.slice(0, 100).map((r: any) => '<tr>' + keys.map((k) => `<td>${typeof r[k] === 'number' ? formatNumber(r[k]) : (r[k] ?? '—')}</td>`).join('') + '</tr>').join('')
-      html += '</tbody></table>'
+  const handlePrint = () => {
+    if (!data || !activeReport) return
+    const title = REPORTS.accounting.concat(REPORTS.sales, REPORTS.purchases, REPORTS.inventory).find((r) => r.type === activeReport)?.title ?? activeReport
+    let body = ''
+    if (activeReport === 'trial-balance') {
+      body = `
+        <table>
+          <thead><tr><th>الرمز</th><th>الحساب</th><th>مدين</th><th>دائن</th></tr></thead>
+          <tbody>
+            ${(data.rows ?? []).map((r: any) => `<tr><td>${r.code}</td><td>${r.nameAr}</td><td>${formatCurrency(r.debit)}</td><td>${formatCurrency(r.credit)}</td></tr>`).join('')}
+          </tbody>
+          <tfoot><tr><td colspan="2">الإجمالي</td><td>${formatCurrency(data.totalDebit)}</td><td>${formatCurrency(data.totalCredit)}</td></tr></tfoot>
+        </table>
+      `
+    } else if (activeReport === 'income') {
+      body = `
+        <h3>الإيرادات</h3>
+        <table>
+          <thead><tr><th>الرمز</th><th>الحساب</th><th>المبلغ</th></tr></thead>
+          <tbody>
+            ${(data.revenues ?? []).map((r: any) => `<tr><td>${r.code}</td><td>${r.nameAr}</td><td>${formatCurrency(r.amount)}</td></tr>`).join('')}
+          </tbody>
+        </table>
+        <h3>المصروفات</h3>
+        <table>
+          <thead><tr><th>الرمز</th><th>الحساب</th><th>المبلغ</th></tr></thead>
+          <tbody>
+            ${(data.expenses ?? []).map((r: any) => `<tr><td>${r.code}</td><td>${r.nameAr}</td><td>${formatCurrency(r.amount)}</td></tr>`).join('')}
+          </tbody>
+        </table>
+        <div class="totals">
+          <div class="row"><span>إجمالي الإيرادات:</span><span>${formatCurrency(data.totals?.revenue ?? 0)}</span></div>
+          <div class="row"><span>إجمالي المصروفات:</span><span>${formatCurrency(data.totals?.expense ?? 0)}</span></div>
+          <div class="row grand"><span>صافي الربح:</span><span>${formatCurrency(data.totals?.netProfit ?? 0)}</span></div>
+        </div>
+      `
+    } else if (activeReport === 'balance-sheet') {
+      body = `
+        <h3>الأصول</h3>
+        <table><thead><tr><th>الرمز</th><th>الحساب</th><th>المبلغ</th></tr></thead>
+        <tbody>${(data.assets ?? []).map((r: any) => `<tr><td>${r.code}</td><td>${r.nameAr}</td><td>${formatCurrency(r.amount)}</td></tr>`).join('')}</tbody></table>
+        <h3>الالتزامات</h3>
+        <table><thead><tr><th>الرمز</th><th>الحساب</th><th>المبلغ</th></tr></thead>
+        <tbody>${(data.liabilities ?? []).map((r: any) => `<tr><td>${r.code}</td><td>${r.nameAr}</td><td>${formatCurrency(r.amount)}</td></tr>`).join('')}</tbody></table>
+        <h3>حقوق الملكية</h3>
+        <table><thead><tr><th>الرمز</th><th>الحساب</th><th>المبلغ</th></tr></thead>
+        <tbody>${(data.equity ?? []).map((r: any) => `<tr><td>${r.code}</td><td>${r.nameAr}</td><td>${formatCurrency(r.amount)}</td></tr>`).join('')}</tbody></table>
+        <div class="totals">
+          <div class="row"><span>إجمالي الأصول:</span><span>${formatCurrency(data.totals?.assets ?? 0)}</span></div>
+          <div class="row"><span>إجمالي الالتزامات:</span><span>${formatCurrency(data.totals?.liabilities ?? 0)}</span></div>
+          <div class="row"><span>إجمالي حقوق الملكية:</span><span>${formatCurrency(data.totals?.equity ?? 0)}</span></div>
+        </div>
+      `
+    } else if (activeReport === 'sales-summary' || activeReport === 'purchases-summary') {
+      body = `
+        <div class="totals">
+          <div class="row"><span>إجمالي الطلبات:</span><span>${formatCurrency(data.totalSales ?? data.totalPurchases ?? 0)}</span></div>
+          <div class="row"><span>إجمالي الفواتير:</span><span>${formatCurrency(data.totalInvoiced ?? 0)}</span></div>
+          <div class="row"><span>المدفوع:</span><span>${formatCurrency(data.totalPaid ?? 0)}</span></div>
+          <div class="row"><span>المستحق:</span><span>${formatCurrency(data.outstanding ?? 0)}</span></div>
+          <div class="row grand"><span>عدد الطلبات:</span><span>${data.ordersCount ?? 0}</span></div>
+        </div>
+      `
+    } else if (activeReport === 'inventory-value') {
+      body = `
+        <table>
+          <thead><tr><th>SKU</th><th>المنتج</th><th>المستودع</th><th>الكمية</th><th>التكلفة</th><th>القيمة</th></tr></thead>
+          <tbody>
+            ${(data.rows ?? []).map((r: any) => `<tr><td>${r.sku}</td><td>${r.name}</td><td>${r.warehouse}</td><td>${r.quantity}</td><td>${formatCurrency(r.costPrice)}</td><td>${formatCurrency(r.value)}</td></tr>`).join('')}
+          </tbody>
+          <tfoot><tr><td colspan="5">الإجمالي</td><td>${formatCurrency(data.totalValue ?? 0)}</td></tr></tfoot>
+        </table>
+      `
     }
-    if (data.totals) {
-      html += '<div class="totals">'
-      for (const [k, v] of Object.entries(data.totals)) {
-        html += `<div class="row ${k.includes('total') || k.includes('net') ? 'grand' : ''}"><span>${k}</span><span>${typeof v === 'number' ? formatCurrency(v as number) : v}</span></div>`
-      }
-      html += '</div>'
-    }
+    const html = `
+      <div class="doc-header">
+        <div class="company">
+          <div class="logo">أ</div>
+          <div class="info"><h2>الأستاذ</h2><p>${title}</p></div>
+        </div>
+        <div class="doc-meta">
+          <div class="type">${title}</div>
+          <div class="code">${from ? formatDate(from) : 'بداية'}</div>
+          <div class="date">${to ? formatDate(to) : formatDate(new Date())}</div>
+        </div>
+      </div>
+      ${body}
+    `
     printHTML(html, title)
   }
 
   return (
     <ModuleShell
       title={t('module.reports')}
-      description="مركز التقارير الشامل"
+      description="التقارير المحاسبية والمالية والمخزون"
       icon={<BarChart3 className="size-5" />}
-      onPrint={selected ? handlePrint : undefined}
-      onExport={selected ? handleExport : undefined}
     >
-      <Tabs value={activeCategory} onValueChange={setActiveCategory} className="gap-4">
-        <ScrollArea className="w-full whitespace-nowrap">
-          <TabsList className="inline-flex w-max">
-            {CATEGORIES.map((c) => (
-              <TabsTrigger key={c.key} value={c.key}>{c.label}</TabsTrigger>
-            ))}
-          </TabsList>
-        </ScrollArea>
+      <Tabs defaultValue="accounting">
+        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 mb-5">
+          <TabsTrigger value="accounting">محاسبي</TabsTrigger>
+          <TabsTrigger value="sales">المبيعات</TabsTrigger>
+          <TabsTrigger value="purchases">المشتريات</TabsTrigger>
+          <TabsTrigger value="inventory">المخزون</TabsTrigger>
+          <TabsTrigger value="customers">العملاء</TabsTrigger>
+          <TabsTrigger value="suppliers">الموردون</TabsTrigger>
+        </TabsList>
 
-        {CATEGORIES.map((cat) => (
-          <TabsContent key={cat.key} value={cat.key}>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {REPORTS.filter((r) => r.category === cat.key).map((r) => (
-                <Card key={r.key} className={`p-5 gap-3 hover:shadow-md transition-all cursor-pointer ${selected?.key === r.key ? 'ring-2 ring-primary' : ''}`} onClick={() => generate(r)}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center ring-1 ring-primary/20">
-                      {r.icon}
-                    </div>
-                    {r.working ? (
-                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 dark:text-emerald-400 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full">جاهز</span>
-                    ) : (
-                      <span className="text-[10px] font-bold text-amber-700 bg-amber-100 dark:text-amber-400 dark:bg-amber-950/40 px-2 py-0.5 rounded-full">قريباً</span>
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-sm">{r.title}</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">{r.description}</p>
-                  </div>
-                  <Button size="sm" className="w-full gap-1.5" onClick={(e) => { e.stopPropagation(); generate(r) }}>
-                    <Play className="size-3.5" /> توليد التقرير
-                  </Button>
-                </Card>
-              ))}
+        {/* Date range filter */}
+        <Card className="p-4 mb-4">
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="from" className="text-xs">من تاريخ</Label>
+              <Input id="from" type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-40" />
             </div>
-          </TabsContent>
-        ))}
+            <div className="space-y-1.5">
+              <Label htmlFor="to" className="text-xs">إلى تاريخ</Label>
+              <Input id="to" type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-40" />
+            </div>
+          </div>
+        </Card>
+
+        <TabsContent value="accounting" className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {REPORTS.accounting.map((r) => (
+              <ReportCard key={r.type} report={r} onGenerate={() => handleGenerate(r.type)} active={activeReport === r.type} />
+            ))}
+          </div>
+        </TabsContent>
+        <TabsContent value="sales" className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {REPORTS.sales.map((r) => (
+              <ReportCard key={r.type} report={r} onGenerate={() => handleGenerate(r.type)} active={activeReport === r.type} />
+            ))}
+            <ComingSoonCard title="كشف حساب عميل" />
+            <ComingSoonCard title="أعمار ديون العملاء" />
+          </div>
+        </TabsContent>
+        <TabsContent value="purchases" className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {REPORTS.purchases.map((r) => (
+              <ReportCard key={r.type} report={r} onGenerate={() => handleGenerate(r.type)} active={activeReport === r.type} />
+            ))}
+            <ComingSoonCard title="كشف حساب مورد" />
+            <ComingSoonCard title="أعمار دائنية الموردين" />
+          </div>
+        </TabsContent>
+        <TabsContent value="inventory" className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {REPORTS.inventory.map((r) => (
+              <ReportCard key={r.type} report={r} onGenerate={() => handleGenerate(r.type)} active={activeReport === r.type} />
+            ))}
+            <ComingSoonCard title="حركة مخزون صنف" />
+            <ComingSoonCard title="تسوية المخزون" />
+          </div>
+        </TabsContent>
+        <TabsContent value="customers" className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <ComingSoonCard title="كشف حساب عميل" />
+            <ComingSoonCard title="أعمار ديون العملاء" />
+            <ComingSoonCard title="تحليل العملاء" />
+          </div>
+        </TabsContent>
+        <TabsContent value="suppliers" className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <ComingSoonCard title="كشف حساب مورد" />
+            <ComingSoonCard title="أعمار دائنية الموردين" />
+            <ComingSoonCard title="تحليل الموردين" />
+          </div>
+        </TabsContent>
       </Tabs>
 
-      {/* Report viewer */}
-      {selected && (
-        <Card className="rounded-xl border p-5 mt-2">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="size-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                {selected.icon}
-              </div>
-              <div>
-                <h3 className="font-semibold">{selected.title}</h3>
-                <p className="text-xs text-muted-foreground">{selected.description}</p>
-              </div>
-            </div>
+      {/* Report Results */}
+      {activeReport && (
+        <Card className="mt-5 p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-base">
+              نتائج: {REPORTS.accounting.concat(REPORTS.sales, REPORTS.purchases, REPORTS.inventory).find((r) => r.type === activeReport)?.title ?? activeReport}
+            </h3>
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1">
-                <Calendar className="size-3.5 text-muted-foreground" />
-                <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-8 w-32 text-xs" />
-                <span className="text-muted-foreground text-xs">—</span>
-                <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-8 w-32 text-xs" />
-              </div>
-              <Button size="sm" variant="outline" onClick={() => refetch()} disabled={isFetching} className="gap-1.5">
-                <Filter className="size-3.5" /> {isFetching ? t('loading') : 'تحديث'}
+              <Button size="sm" variant="outline" onClick={handleExport} className="gap-1.5">
+                <Download className="size-3.5" /> تصدير
               </Button>
               <Button size="sm" variant="outline" onClick={handlePrint} className="gap-1.5">
                 <Printer className="size-3.5" /> طباعة
               </Button>
-              <Button size="sm" variant="outline" onClick={handleExport} className="gap-1.5">
-                <Download className="size-3.5" /> تصدير
-              </Button>
             </div>
           </div>
 
-          {isLoading || isFetching ? (
-            <Skeleton className="h-96" />
+          {isLoading ? (
+            <div className="py-10 text-center text-muted-foreground">جاري إنشاء التقرير...</div>
           ) : !data ? (
-            <div className="py-16 text-center text-sm text-muted-foreground">{t('empty.noData')}</div>
-          ) : data.placeholder ? (
-            <div className="py-16 text-center">
-              <div className="size-14 rounded-2xl bg-muted mx-auto flex items-center justify-center mb-3">
-                <FileText className="size-7 text-muted-foreground" />
-              </div>
-              <p className="text-sm text-muted-foreground">{data.message}</p>
-            </div>
+            <div className="py-10 text-center text-muted-foreground">اختر تقريراً لعرض النتائج</div>
           ) : (
-            <ReportRenderer data={data} type={selected.type} locale={locale} />
+            <ReportResults type={activeReport} data={data} />
           )}
         </Card>
       )}
@@ -225,271 +314,229 @@ export function ReportsModule() {
   )
 }
 
-function ReportRenderer({ data, type, locale }: { data: any; type: string; locale: 'ar' | 'en' }) {
-  // TRIAL BALANCE
+function ReportCard({ report, onGenerate, active }: { report: any; onGenerate: () => void; active: boolean }) {
+  const Icon = report.icon
+  return (
+    <Card className={`p-5 transition-all hover:shadow-md ${active ? 'ring-2 ring-primary' : ''}`}>
+      <div className="flex items-start gap-3 mb-4">
+        <div className={`size-10 rounded-xl flex items-center justify-center ring-1 ${COLOR_CLASSES[report.color]}`}>
+          <Icon className="size-5" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold">{report.title}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">تقرير تفصيلي</p>
+        </div>
+      </div>
+      <Button size="sm" className="w-full gap-1.5" onClick={onGenerate} variant={active ? 'default' : 'outline'}>
+        <PlayCircle className="size-4" />
+        {active ? 'مُحدد' : 'إنشاء التقرير'}
+      </Button>
+    </Card>
+  )
+}
+
+function ComingSoonCard({ title }: { title: string }) {
+  return (
+    <Card className="p-5 opacity-60">
+      <div className="flex items-start gap-3 mb-4">
+        <div className="size-10 rounded-xl flex items-center justify-center ring-1 bg-muted text-muted-foreground">
+          <FileText className="size-5" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold">{title}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">قيد التطوير</p>
+        </div>
+      </div>
+      <Button size="sm" className="w-full" disabled variant="outline">قريباً</Button>
+    </Card>
+  )
+}
+
+function ReportResults({ type, data }: { type: ReportType; data: any }) {
   if (type === 'trial-balance') {
     return (
-      <div className="space-y-4">
-        <ChartBar data={data.chart ?? []} xKey="name" bars={[{ key: 'debit', name: 'مدين', color: '#16a34a' }, { key: 'credit', name: 'دائن', color: '#d97706' }]} locale={locale} />
+      <Card className="rounded-lg overflow-hidden">
         <ScrollArea className="max-h-[60vh]">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>الرمز</TableHead>
+              <TableRow className="bg-muted/50">
+                <TableHead className="ps-3">الرمز</TableHead>
                 <TableHead>الحساب</TableHead>
                 <TableHead>النوع</TableHead>
-                <TableHead className="text-end">مدين</TableHead>
-                <TableHead className="text-end">دائن</TableHead>
+                <TableHead className="text-end num-cell">مدين</TableHead>
+                <TableHead className="text-end num-cell">دائن</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.rows?.map((r: any, i: number) => (
+              {(data.rows ?? []).map((r: any, i: number) => (
                 <TableRow key={i}>
-                  <TableCell className="font-mono text-xs">{r.code}</TableCell>
-                  <TableCell className="font-medium">{r.name}</TableCell>
-                  <TableCell className="text-muted-foreground text-xs">{r.type}</TableCell>
-                  <TableCell className="text-end tabular-nums">{r.debit ? formatNumber(r.debit) : '—'}</TableCell>
-                  <TableCell className="text-end tabular-nums">{r.credit ? formatNumber(r.credit) : '—'}</TableCell>
+                  <TableCell className="ps-3 font-mono text-xs" dir="ltr">{r.code}</TableCell>
+                  <TableCell className="font-medium">{r.nameAr}</TableCell>
+                  <TableCell><Badge variant="outline" className="text-[10px]">{r.type}</Badge></TableCell>
+                  <TableCell className="text-end num-cell"><span className="num tabular-nums" dir="ltr">{formatCurrency(r.debit)}</span></TableCell>
+                  <TableCell className="text-end num-cell"><span className="num tabular-nums" dir="ltr">{formatCurrency(r.credit)}</span></TableCell>
                 </TableRow>
               ))}
-              <TableRow className="border-t-2 border-primary bg-primary/5 font-bold">
-                <TableCell colSpan={3}>الإجمالي</TableCell>
-                <TableCell className="text-end tabular-nums">{formatNumber(data.totals.debit)}</TableCell>
-                <TableCell className="text-end tabular-nums">{formatNumber(data.totals.credit)}</TableCell>
-              </TableRow>
             </TableBody>
+            <TableFooter>
+              <TableRow>
+                <TableCell colSpan={3} className="font-bold">الإجمالي</TableCell>
+                <TableCell className="text-end num-cell"><span className="num font-bold tabular-nums" dir="ltr">{formatCurrency(data.totalDebit)}</span></TableCell>
+                <TableCell className="text-end num-cell"><span className="num font-bold tabular-nums" dir="ltr">{formatCurrency(data.totalCredit)}</span></TableCell>
+              </TableRow>
+            </TableFooter>
           </Table>
         </ScrollArea>
-      </div>
+      </Card>
     )
   }
-
-  // INCOME STATEMENT
   if (type === 'income') {
     return (
-      <div className="space-y-4">
-        <ChartBar data={data.chart ?? []} xKey="name" bars={[{ key: 'value', name: 'القيمة', color: '#16a34a' }]} locale={locale} />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <SummaryCard label="إجمالي الإيرادات" value={formatCurrency(data.totals.totalRevenue)} accent="emerald" />
-          <SummaryCard label="إجمالي المصروفات" value={formatCurrency(data.totals.totalExpense)} accent="rose" />
-          <SummaryCard label="صافي الربح" value={formatCurrency(data.totals.netIncome)} accent={data.totals.netIncome >= 0 ? 'teal' : 'rose'} />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Section title="الإيرادات" rows={data.revenues} />
-          <Section title="المصروفات" rows={data.expenses} />
-        </div>
-      </div>
-    )
-  }
-
-  // BALANCE SHEET
-  if (type === 'balance') {
-    return (
-      <div className="space-y-4">
-        <ChartBar data={data.chart ?? []} xKey="name" bars={[{ key: 'value', name: 'القيمة', color: '#0d9488' }]} locale={locale} />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <SummaryCard label="إجمالي الأصول" value={formatCurrency(data.totals.totalAssets)} accent="emerald" />
-          <SummaryCard label="إجمالي الالتزامات" value={formatCurrency(data.totals.totalLiabilities)} accent="amber" />
-          <SummaryCard label="حقوق الملكية" value={formatCurrency(data.totals.totalEquity)} accent="teal" />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Section title="الأصول" rows={data.assets} />
-          <div className="space-y-4">
-            <Section title="الالتزامات" rows={data.liabilities} />
-            <Section title="حقوق الملكية" rows={data.equity} />
+      <div className="space-y-5">
+        <Card className="rounded-lg overflow-hidden">
+          <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 border-b">
+            <p className="font-semibold text-emerald-700 dark:text-emerald-400">الإيرادات</p>
           </div>
+          <Table>
+            <TableBody>
+              {(data.revenues ?? []).map((r: any, i: number) => (
+                <TableRow key={i}>
+                  <TableCell className="ps-3 font-mono text-xs" dir="ltr">{r.code}</TableCell>
+                  <TableCell className="font-medium">{r.nameAr}</TableCell>
+                  <TableCell className="text-end num-cell"><span className="num tabular-nums font-semibold text-emerald-600" dir="ltr">{formatCurrency(r.amount)}</span></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
+        <Card className="rounded-lg overflow-hidden">
+          <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border-b">
+            <p className="font-semibold text-amber-700 dark:text-amber-400">المصروفات</p>
+          </div>
+          <Table>
+            <TableBody>
+              {(data.expenses ?? []).map((r: any, i: number) => (
+                <TableRow key={i}>
+                  <TableCell className="ps-3 font-mono text-xs" dir="ltr">{r.code}</TableCell>
+                  <TableCell className="font-medium">{r.nameAr}</TableCell>
+                  <TableCell className="text-end num-cell"><span className="num tabular-nums text-amber-600" dir="ltr">{formatCurrency(r.amount)}</span></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
+        <div className="grid grid-cols-3 gap-3">
+          <Card className="p-4 bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900">
+            <p className="text-xs text-muted-foreground">إجمالي الإيرادات</p>
+            <p className="font-bold text-lg text-emerald-700 dark:text-emerald-400 tabular-nums" dir="ltr">{formatCurrency(data.totals?.revenue ?? 0)}</p>
+          </Card>
+          <Card className="p-4 bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900">
+            <p className="text-xs text-muted-foreground">إجمالي المصروفات</p>
+            <p className="font-bold text-lg text-amber-700 dark:text-amber-400 tabular-nums" dir="ltr">{formatCurrency(data.totals?.expense ?? 0)}</p>
+          </Card>
+          <Card className={`p-4 ${(data.totals?.netProfit ?? 0) >= 0 ? 'bg-teal-50 dark:bg-teal-950/30 border-teal-200 dark:border-teal-900' : 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900'}`}>
+            <p className="text-xs text-muted-foreground">صافي الربح</p>
+            <p className={`font-bold text-lg tabular-nums ${(data.totals?.netProfit ?? 0) >= 0 ? 'text-teal-700 dark:text-teal-400' : 'text-rose-700 dark:text-rose-400'}`} dir="ltr">{formatCurrency(data.totals?.netProfit ?? 0)}</p>
+          </Card>
         </div>
       </div>
     )
   }
-
-  // SALES / PURCHASES SUMMARY
+  if (type === 'balance-sheet') {
+    return (
+      <div className="space-y-5">
+        <BalanceSheetSection title="الأصول" items={data.assets ?? []} color="emerald" total={data.totals?.assets ?? 0} />
+        <BalanceSheetSection title="الالتزامات" items={data.liabilities ?? []} color="rose" total={data.totals?.liabilities ?? 0} />
+        <BalanceSheetSection title="حقوق الملكية + صافي الدخل" items={[
+          ...(data.equity ?? []),
+          { code: '—', nameAr: `صافي الدخل (${data.netIncome >= 0 ? 'ربح' : 'خسارة'})`, amount: data.netIncome ?? 0 },
+        ]} color="violet" total={data.totals?.equity ?? 0} />
+      </div>
+    )
+  }
   if (type === 'sales-summary' || type === 'purchases-summary') {
     const isSales = type === 'sales-summary'
     return (
-      <div className="space-y-4">
-        <ChartBar data={data.chart ?? []} xKey="name" bars={[{ key: 'value', name: isSales ? 'المبيعات' : 'المشتريات', color: isSales ? '#16a34a' : '#d97706' }]} locale={locale} />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <SummaryCard label="عدد العمليات" value={String(data.totals.count)} accent="violet" />
-          <SummaryCard label="المجموع الفرعي" value={formatCurrency(data.totals.subtotal)} accent="emerald" />
-          <SummaryCard label="الضريبة" value={formatCurrency(data.totals.tax)} accent="amber" />
-          <SummaryCard label="الإجمالي" value={formatCurrency(data.totals.total)} accent="teal" />
-        </div>
-        <ScrollArea className="max-h-[40vh]">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>الشهر</TableHead>
-                <TableHead className="text-end">القيمة</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.rows?.map((r: any, i: number) => (
-                <TableRow key={i}>
-                  <TableCell className="font-medium">{r.name}</TableCell>
-                  <TableCell className="text-end tabular-nums">{formatCurrency(r.value)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </ScrollArea>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <SummaryCard title="إجمالي الطلبات" value={formatCurrency(isSales ? data.totalSales : data.totalPurchases)} />
+        <SummaryCard title="إجمالي الفواتير" value={formatCurrency(data.totalInvoiced)} />
+        <SummaryCard title="المدفوع" value={formatCurrency(data.totalPaid)} />
+        <SummaryCard title="المستحق" value={formatCurrency(data.outstanding)} />
+        <SummaryCard title="عدد الطلبات" value={formatInt(data.ordersCount)} />
+        <SummaryCard title="عدد الفواتير" value={formatInt(data.invoicesCount)} />
       </div>
     )
   }
-
-  // INVENTORY VALUE
   if (type === 'inventory-value') {
     return (
-      <div className="space-y-4">
-        <ChartPie data={data.chart ?? []} locale={locale} />
-        <div className="grid grid-cols-2 gap-3">
-          <SummaryCard label="عدد المنتجات" value={String(data.totals.count)} accent="violet" />
-          <SummaryCard label="إجمالي القيمة" value={formatCurrency(data.totals.totalValue)} accent="emerald" />
-        </div>
-        <ScrollArea className="max-h-[50vh]">
+      <Card className="rounded-lg overflow-hidden">
+        <ScrollArea className="max-h-[60vh]">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>SKU</TableHead>
+              <TableRow className="bg-muted/50">
+                <TableHead className="ps-3">SKU</TableHead>
                 <TableHead>المنتج</TableHead>
-                <TableHead className="text-end">الكمية</TableHead>
-                <TableHead className="text-end">التكلفة</TableHead>
-                <TableHead className="text-end">القيمة</TableHead>
+                <TableHead>المستودع</TableHead>
+                <TableHead className="text-end num-cell">الكمية</TableHead>
+                <TableHead className="text-end num-cell">التكلفة</TableHead>
+                <TableHead className="text-end num-cell">القيمة</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.rows?.map((r: any, i: number) => (
+              {(data.rows ?? []).map((r: any, i: number) => (
                 <TableRow key={i}>
-                  <TableCell className="font-mono text-xs">{r.sku}</TableCell>
+                  <TableCell className="ps-3 font-mono text-xs" dir="ltr">{r.sku}</TableCell>
                   <TableCell className="font-medium">{r.name}</TableCell>
-                  <TableCell className="text-end tabular-nums">{formatNumber(r.qty, 0)}</TableCell>
-                  <TableCell className="text-end tabular-nums">{formatCurrency(r.cost)}</TableCell>
-                  <TableCell className="text-end tabular-nums font-semibold">{formatCurrency(r.value)}</TableCell>
+                  <TableCell className="text-sm">{r.warehouse}</TableCell>
+                  <TableCell className="text-end num-cell"><span className="num tabular-nums" dir="ltr">{formatInt(r.quantity)}</span></TableCell>
+                  <TableCell className="text-end num-cell"><span className="num tabular-nums" dir="ltr">{formatCurrency(r.costPrice)}</span></TableCell>
+                  <TableCell className="text-end num-cell"><span className="num tabular-nums font-semibold" dir="ltr">{formatCurrency(r.value)}</span></TableCell>
                 </TableRow>
               ))}
             </TableBody>
-          </Table>
-        </ScrollArea>
-      </div>
-    )
-  }
-
-  // AGING (client / supplier)
-  if (type === 'client-aging' || type === 'supplier-aging') {
-    return (
-      <div className="space-y-4">
-        <ChartBar data={data.chart ?? []} xKey="name" bars={[{ key: 'value', name: 'الرصيد', color: '#dc2626' }]} locale={locale} />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <SummaryCard label="الإجمالي" value={formatCurrency(data.totals.total)} accent="rose" />
-          <SummaryCard label="حالي" value={formatCurrency(data.totals.current)} accent="emerald" />
-          <SummaryCard label="0-30 يوم" value={formatCurrency(data.totals.d30)} accent="teal" />
-          <SummaryCard label="90+ يوم" value={formatCurrency(data.totals.d90p)} accent="rose" />
-        </div>
-        <ScrollArea className="max-h-[50vh]">
-          <Table>
-            <TableHeader>
+            <TableFooter>
               <TableRow>
-                <TableHead>الرمز</TableHead>
-                <TableHead>الاسم</TableHead>
-                <TableHead>الفئة العمرية</TableHead>
-                <TableHead className="text-end">الرصيد</TableHead>
+                <TableCell colSpan={5} className="font-bold">إجمالي القيمة</TableCell>
+                <TableCell className="text-end num-cell"><span className="num font-bold tabular-nums" dir="ltr">{formatCurrency(data.totalValue ?? 0)}</span></TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.rows?.map((r: any, i: number) => (
-                <TableRow key={i}>
-                  <TableCell className="font-mono text-xs">{r.code}</TableCell>
-                  <TableCell className="font-medium">{r.name}</TableCell>
-                  <TableCell>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary">{r.bucket}</span>
-                  </TableCell>
-                  <TableCell className="text-end tabular-nums">{formatCurrency(r.balance)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
+            </TableFooter>
           </Table>
         </ScrollArea>
-      </div>
+      </Card>
     )
   }
-
-  return <div className="py-16 text-center text-sm text-muted-foreground">{t('empty.noData')}</div>
+  return null
 }
 
-function ChartBar({ data, xKey, bars, locale }: { data: any[]; xKey: string; bars: { key: string; name: string; color: string }[]; locale: 'ar' | 'en' }) {
-  if (!data?.length) return null
+function BalanceSheetSection({ title, items, color, total }: { title: string; items: any[]; color: string; total: number }) {
   return (
-    <ResponsiveContainer width="100%" height={280}>
-      <BarChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.9 0.01 150)" />
-        <XAxis dataKey={xKey} tick={{ fontSize: 11 }} reversed={locale === 'ar'} />
-        <YAxis tick={{ fontSize: 11 }} orientation={locale === 'ar' ? 'right' : 'left'} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-        <Tooltip contentStyle={{ direction: locale === 'ar' ? 'rtl' : 'ltr', borderRadius: 8, fontSize: 12 }} formatter={(v: any) => formatCurrency(v)} />
-        <Legend wrapperStyle={{ fontSize: 12 }} />
-        {bars.map((b) => <Bar key={b.key} dataKey={b.key} name={b.name} fill={b.color} radius={[6, 6, 0, 0]} />)}
-      </BarChart>
-    </ResponsiveContainer>
-  )
-}
-
-function ChartPie({ data, locale }: { data: any[]; locale: 'ar' | 'en' }) {
-  if (!data?.length) return null
-  return (
-    <ResponsiveContainer width="100%" height={280}>
-      <RPieChart>
-        <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} innerRadius={50} paddingAngle={2}>
-          {data.map((_: any, i: number) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
-        </Pie>
-        <Tooltip formatter={(v: any) => formatCurrency(v)} contentStyle={{ direction: locale === 'ar' ? 'rtl' : 'ltr', fontSize: 12 }} />
-        <Legend wrapperStyle={{ fontSize: 11 }} />
-      </RPieChart>
-    </ResponsiveContainer>
-  )
-}
-
-function SummaryCard({ label, value, accent }: { label: string; value: string; accent: 'emerald' | 'amber' | 'rose' | 'teal' | 'violet' }) {
-  const colors = {
-    emerald: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400',
-    amber: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400',
-    rose: 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400',
-    teal: 'bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-400',
-    violet: 'bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-400',
-  }
-  return (
-    <div className={`p-4 rounded-xl border ${colors[accent]}`}>
-      <p className="text-xs font-medium opacity-80">{label}</p>
-      <p className="text-xl font-bold tabular-nums mt-1">{value}</p>
-    </div>
-  )
-}
-
-function Section({ title, rows }: { title: string; rows: any[] }) {
-  const total = rows.reduce((s, r) => s + (r.amount ?? 0), 0)
-  return (
-    <div className="rounded-xl border">
-      <div className="px-4 py-2.5 border-b bg-muted/40 font-semibold text-sm flex items-center justify-between">
-        <span>{title}</span>
-        <span className="text-xs text-muted-foreground">{rows.length} حساب</span>
+    <Card className="rounded-lg overflow-hidden">
+      <div className={`p-3 bg-${color}-50 dark:bg-${color}-950/30 border-b`}>
+        <div className="flex items-center justify-between">
+          <p className={`font-semibold text-${color}-700 dark:text-${color}-400`}>{title}</p>
+          <span className={`font-bold tabular-nums text-${color}-700 dark:text-${color}-400`} dir="ltr">{formatCurrency(total)}</span>
+        </div>
       </div>
-      <ScrollArea className="max-h-72">
-        <Table>
-          <TableBody>
-            {rows.length === 0 ? (
-              <TableRow><TableCell className="text-center text-muted-foreground py-6">لا بيانات</TableCell></TableRow>
-            ) : rows.map((r: any, i: number) => (
-              <TableRow key={i}>
-                <TableCell className="font-mono text-xs text-muted-foreground w-20">{r.code}</TableCell>
-                <TableCell className="font-medium text-sm">{r.name}</TableCell>
-                <TableCell className="text-end tabular-nums text-sm font-semibold">{formatCurrency(r.amount)}</TableCell>
-              </TableRow>
-            ))}
-            <TableRow className="border-t-2 bg-muted/30 font-bold">
-              <TableCell colSpan={2}>الإجمالي</TableCell>
-              <TableCell className="text-end tabular-nums">{formatCurrency(total)}</TableCell>
+      <Table>
+        <TableBody>
+          {items.map((r: any, i: number) => (
+            <TableRow key={i}>
+              <TableCell className="ps-3 font-mono text-xs" dir="ltr">{r.code}</TableCell>
+              <TableCell className="font-medium">{r.nameAr}</TableCell>
+              <TableCell className="text-end num-cell"><span className="num tabular-nums" dir="ltr">{formatCurrency(r.amount)}</span></TableCell>
             </TableRow>
-          </TableBody>
-        </Table>
-      </ScrollArea>
-    </div>
+          ))}
+        </TableBody>
+      </Table>
+    </Card>
+  )
+}
+
+function SummaryCard({ title, value }: { title: string; value: string }) {
+  return (
+    <Card className="p-4">
+      <p className="text-xs text-muted-foreground">{title}</p>
+      <p className="font-bold text-lg tabular-nums mt-1" dir="ltr">{value}</p>
+    </Card>
   )
 }

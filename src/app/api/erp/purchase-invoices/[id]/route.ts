@@ -1,21 +1,18 @@
-import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { ok, notFound, badRequest, serverError } from '@/lib/erp/api-response'
+import { reverseJournalEntry } from '@/lib/erp/accounting-engine'
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
-    const invoice = await db.purchaseInvoice.findUnique({
+    const item = await db.purchaseInvoice.findUnique({
       where: { id },
-      include: {
-        supplier: true,
-        branch: true,
-        items: { include: { product: true } },
-      },
+      include: { partner: true, lines: { include: { product: true } } },
     })
-    if (!invoice) return NextResponse.json({ error: 'غير موجود' }, { status: 404 })
-    return NextResponse.json(invoice)
+    if (!item) return notFound('Purchase invoice not found')
+    return ok(item)
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    return serverError(e.message)
   }
 }
 
@@ -23,51 +20,57 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   try {
     const { id } = await params
     const body = await req.json()
-    const existing = await db.purchaseInvoice.findUnique({ where: { id } })
-    if (!existing) return NextResponse.json({ error: 'غير موجود' }, { status: 404 })
+    const exists = await db.purchaseInvoice.findUnique({ where: { id } })
+    if (!exists) return notFound('Purchase invoice not found')
+    if (exists.status !== 'draft') return badRequest('Only draft invoices can be edited')
 
-    const oldPaid = existing.paid
-    const newPaid = body.paid !== undefined ? Number(body.paid) : oldPaid
-    const paidDelta = newPaid - oldPaid
-
-    const updated = await db.purchaseInvoice.update({
-      where: { id },
-      data: {
-        status: body.status ?? existing.status,
-        note: body.note ?? existing.note,
-        paid: newPaid,
-      },
-    })
-
-    // If paid changed, update supplier balance (reduces AP)
-    if (paidDelta !== 0) {
-      await db.supplier.update({
-        where: { id: existing.supplierId },
-        data: { balance: { decrement: paidDelta } },
-      })
-    }
-
-    return NextResponse.json(updated)
+    const { id: _id, lines, createdAt: _c, updatedAt: _u, ...rest } = body
+    const updated = await db.purchaseInvoice.update({ where: { id }, data: rest })
+    return ok(updated)
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    return serverError(e.message)
   }
 }
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
-    const existing = await db.purchaseInvoice.findUnique({ where: { id } })
-    if (!existing) return NextResponse.json({ error: 'غير موجود' }, { status: 404 })
-
-    // Reverse supplier balance
-    await db.supplier.update({
-      where: { id: existing.supplierId },
-      data: { balance: { decrement: existing.total - existing.paid } },
-    })
+    const exists = await db.purchaseInvoice.findUnique({ where: { id } })
+    if (!exists) return notFound('Purchase invoice not found')
+    if (exists.status !== 'draft') return badRequest('Only draft invoices can be deleted')
 
     await db.purchaseInvoice.delete({ where: { id } })
-    return NextResponse.json({ success: true })
+    return ok({ success: true })
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    return serverError(e.message)
+  }
+}
+
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params
+    const body = await req.json().catch(() => ({}))
+    const action = body.action
+    if (action !== 'reverse') return badRequest('Use action=reverse')
+
+    const invoice = await db.purchaseInvoice.findUnique({ where: { id } })
+    if (!invoice) return notFound('Purchase invoice not found')
+    if (invoice.status !== 'posted') return badRequest('Only posted invoices can be reversed')
+    if (!invoice.journalEntryId) return badRequest('No journal entry to reverse')
+
+    const reversal = await reverseJournalEntry(invoice.journalEntryId, body.userId, `عكس فاتورة مشتريات ${invoice.code}`)
+
+    await db.purchaseInvoice.update({
+      where: { id },
+      data: { status: 'reversed' },
+    })
+    await db.partner.update({
+      where: { id: invoice.partnerId },
+      data: { currentBalance: { decrement: invoice.total } },
+    })
+
+    return ok({ success: true, reversalEntryId: reversal.id, reversalCode: reversal.code })
+  } catch (e: any) {
+    return serverError(e.message)
   }
 }

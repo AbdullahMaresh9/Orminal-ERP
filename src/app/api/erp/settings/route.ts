@@ -1,15 +1,11 @@
-import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { ok, badRequest } from '@/lib/erp/api-response'
 
 export async function GET() {
-  try {
-    const settings = await db.setting.findMany()
-    const obj: Record<string, string> = {}
-    for (const s of settings) obj[s.key] = s.value
-    return NextResponse.json(obj)
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 })
-  }
+  const settings = await db.setting.findMany()
+  const obj: Record<string, string> = {}
+  for (const s of settings) obj[s.key] = s.value
+  return ok(obj)
 }
 
 export async function PUT(req: Request) {
@@ -19,8 +15,8 @@ export async function PUT(req: Request) {
       db.setting.upsert({ where: { key }, update: { value }, create: { key, value } })
     )
     await Promise.all(ops)
-    return NextResponse.json({ success: true })
+    return ok({ success: true })
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    return badRequest(e.message)
   }
 }

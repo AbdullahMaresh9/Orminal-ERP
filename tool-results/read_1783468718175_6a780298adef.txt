@@ -1,0 +1,502 @@
+   500→                                      and credit notes.
+   501→
+   502→  Objectives                          Ensure controlled pricing, discount
+   503→                                      approval, customer credit
+   504→                                      validation, inventory availability
+   505→                                      check and correct handoff to
+   506→                                      finance and inventory.
+   507→
+   508→  Business Scope                      Lead, opportunity, quotation, sales
+   509→                                      order, pricing, customer credit,
+   510→                                      delivery coordination, invoice
+   511→                                      request, sales returns, credit note
+   512→                                      requests.
+   513→
+   514→  Responsibilities                    Customer pipeline, quotations,
+   515→                                      sales orders, commercial approvals,
+   516→                                      delivery instructions, sales
+   517→                                      reports, customer communication.
+   518→
+   519→  Actors                              Sales Representative, Sales
+   520→                                      Manager, Credit Controller,
+   521→                                      Customer Service, Warehouse User,
+   522→                                      AR Accountant, Customer Portal
+   523→                                      User.
+   524→
+   525→  Dependencies                        Business partner/customer master,
+   526→                                      product/pricelist, tax, inventory
+   527→                                      availability, finance AR, workflow,
+   528→                                      notification, document numbering.
+   529→
+   530→  Entry Points                        Lead created, opportunity won,
+   531→                                      customer requests quotation,
+   532→                                      recurring sales order, portal
+   533→                                      order, imported order.
+   534→
+   535→  Exit Points                         Confirmed order, delivery request,
+   536→                                      invoice request, closed sale,
+   537→                                      cancelled order, return/credit
+   538→                                      request.
+   539→
+   540→  Business Capabilities               Lead management, opportunity
+   541→                                      pipeline, quotation, sales order,
+   542→                                      pricing, discounting, credit
+   543→                                      checks, delivery/invoicing status
+   544→                                      tracking, returns.
+   545→
+   546→  Supported Documents                 Quotation, Sales Order, Sales
+   547→                                      Return
+   548→
+   549→  Master Data                         Customer, contact, address,
+   550→                                      product, price list, payment terms,
+   551→                                      sales team, salesperson, tax code,
+   552→                                      shipping method.
+   553→
+   554→  Transactions                        Lead activity, quotation, sales
+   555→                                      order confirmation, delivery
+   556→                                      request, invoice request, return
+   557→                                      request, credit note request.
+   558→
+   559→  Accounting Integration              Customer invoice request triggers
+   560→                                      AR invoice in finance; sale itself
+   561→                                      does not post until invoice and
+   562→                                      delivery valuation events occur.
+   563→
+   564→  Inventory Integration               Sales order can reserve stock;
+   565→                                      delivery validates stock issue;
+   566→                                      returns receive stock back based on
+   567→                                      return disposition.
+   568→
+   569→  Approval Requirements               Discount over threshold, credit
+   570→                                      limit override, sell below cost,
+   571→                                      order cancellation after
+   572→                                      confirmation, return approval.
+   573→
+   574→  Configuration                       Price lists, discount thresholds,
+   575→                                      credit policy, quotation validity,
+   576→                                      order sequence, shipping terms,
+   577→                                      sales approval matrix.
+   578→
+   579→  Limitations                         Confirmed delivered quantities
+   580→                                      cannot be reduced without
+   581→                                      return/correction; credit blocked
+   582→                                      customers cannot proceed without
+   583→                                      approval.
+   584→
+   585→  KPIs                                Pipeline value, win rate, quotation
+   586→                                      conversion rate, sales margin,
+   587→                                      pending deliveries, credit blocked
+   588→                                      orders, return rate.
+   589→
+   590→  Acceptance Criteria                 A sales user can create quotation,
+   591→                                      convert to sales order, pass
+   592→                                      credit/discount rules, reserve
+   593→                                      stock, initiate delivery and
+   594→                                      invoice request with full
+   595→                                      traceability.
+   596→  -----------------------------------------------------------------------
+   597→
+   598→## **Sales & CRM --- Screen Specifications**
+   599→
+   600→  ------------------------------------------------------------------------------------------------------------------------------------------------------
+   601→  **Screen ID** **Screen      **Purpose**   **Actors**   **Navigation   **Toolbar /       **Filters &    **States**   **Responsive /     **Performance /
+   602→                Name**                                   Path**         Buttons**         Search**                    Accessibility**    Acceptance**
+   603→  ------------- ------------- ------------- ------------ -------------- ----------------- -------------- ------------ ------------------ ---------------
+   604→  SAL-SCR-001   Sales         Pipeline      Sales roles  Sales \>       New, Save Draft,  Customer,      Open, Won,   Responsive         Workspace loads
+   605→                Workspace     KPIs, pending              Workspace      Submit, Approve,  salesperson,   Quoted,      kanban/list toggle under 3s.
+   606→                              quotations,                               Reject,           status,        Ordered,                        
+   607→                              blocked                                   Post/Validate,    validity,      Blocked                         
+   608→                              orders,                                   Cancel,           credit block                                   
+   609→                              approvals.                                Reverse/Return,                                                  
+   610→                                                                        Print, Email,                                                    
+   611→                                                                        Export, Attach,                                                  
+   612→                                                                        Comment, View                                                    
+   613→                                                                        Audit, Open                                                      
+   614→                                                                        Related                                                          
+   615→
+   616→  SAL-SCR-002   Lead /        Manage sales  Sales Rep,   Sales \> CRM   New, Save Draft,  Sales team,    New,         Kanban keyboard    Drag/drop
+   617→                Opportunity   pipeline.     Sales        \> Pipeline    Submit, Approve,  stage,         Qualified,   movement and list  changes stage
+   618→                Board                       Manager                     Reject,           expected       Won, Lost    alternative        with audit.
+   619→                                                                        Post/Validate,    close,                                         
+   620→                                                                        Cancel,           probability                                    
+   621→                                                                        Reverse/Return,                                                  
+   622→                                                                        Print, Email,                                                    
+   623→                                                                        Export, Attach,                                                  
+   624→                                                                        Comment, View                                                    
+   625→                                                                        Audit, Open                                                      
+   626→                                                                        Related                                                          
+   627→
+   628→  SAL-SCR-003   Quotation     Prepare       Sales Rep    Sales \>       New, Save Draft,  Customer,      Draft, Sent, Mobile reads;      Price
+   629→                Form          commercial                 Quotations \>  Submit, Approve,  price list,    Accepted,    desktop line grid  calculation
+   630→                              offer.                     New/Open       Reject,           product,       Expired,                        \<1s per 100
+   631→                                                                        Post/Validate,    validity,      Cancelled                       lines.
+   632→                                                                        Cancel,           amount                                         
+   633→                                                                        Reverse/Return,                                                  
+   634→                                                                        Print, Email,                                                    
+   635→                                                                        Export, Attach,                                                  
+   636→                                                                        Comment, View                                                    
+   637→                                                                        Audit, Open                                                      
+   638→                                                                        Related                                                          
+   639→
+   640→  SAL-SCR-004   Sales Order   Confirm and   Sales Rep,   Sales \>       New, Save Draft,  Customer,      Draft,       Status bar with    Availability
+   641→                Form          track order.  Sales        Orders \> Open Submit, Approve,  status,        Confirmed,   related            check async if
+   642→                                            Manager                     Reject,           credit,        Partially    delivery/invoice   large order.
+   643→                                                                        Post/Validate,    delivery,      Delivered,   links              
+   644→                                                                        Cancel,           invoice status Closed                          
+   645→                                                                        Reverse/Return,                                                  
+   646→                                                                        Print, Email,                                                    
+   647→                                                                        Export, Attach,                                                  
+   648→                                                                        Comment, View                                                    
+   649→                                                                        Audit, Open                                                      
+   650→                                                                        Related                                                          
+   651→
+   652→  SAL-SCR-005   Return        Control       Customer     Sales \>       New, Save Draft,  Customer,      Requested,   Accessible reason  Return must
+   653→                Request       customer      Service,     Returns        Submit, Approve,  invoice,       Approved,    and attachment     reference
+   654→                              returns.      Sales                       Reject,           delivery,      Received,    capture            original
+   655→                                            Manager                     Post/Validate,    product,       Credited,                       document.
+   656→                                                                        Cancel,           reason         Closed                          
+   657→                                                                        Reverse/Return,                                                  
+   658→                                                                        Print, Email,                                                    
+   659→                                                                        Export, Attach,                                                  
+   660→                                                                        Comment, View                                                    
+   661→                                                                        Audit, Open                                                      
+   662→                                                                        Related                                                          
+   663→  ------------------------------------------------------------------------------------------------------------------------------------------------------
+   664→
+   665→## **Sales & CRM --- Field Specifications**
+   666→
+   667→  --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+   668→  **Field ID**  **Label**   **Data Type**   **Required**   **Editable**   **Lookup /       **Validation / Regex**   **Conditional      **Permission      **API Mapping**    **DB Mapping**
+   669→                                                                          Reference**                               Rules**            Rules**                              
+   670→  ------------- ----------- --------------- -------------- -------------- ---------------- ------------------------ ------------------ ----------------- ------------------ ------------------------------------
+   671→  SAL-FLD-001   Customer    Lookup          Yes            Draft only     customers        Active and not blocked   Required before    Restricted by     customer_id        sales_orders.customer_id
+   672→                                                                                           unless override          price/credit       customer scope                       
+   673→                                                                                                                    calculation                                             
+   674→
+   675→  SAL-FLD-002   Price List  Lookup          Yes            Draft only     price_lists      Valid for                Defaults customer  Sales manager can price_list_id      sales_orders.price_list_id
+   676→                                                                                           customer/currency/date   pricelist          override                             
+   677→
+   678→  SAL-FLD-003   Order Date  Date            Yes            Draft only     None             Cannot be future beyond  Default today      Visible all sales order_date         sales_orders.order_date
+   679→                                                                                           policy                                      users                                
+   680→
+   681→  SAL-FLD-004   Product     Lookup          Yes            Draft line     products         Sellable active product  Required per line  Product           product_id         sales_order_lines.product_id
+   682→                                                           only                                                                        visibility by                        
+   683→                                                                                                                                       company                              
+   684→
+   685→  SAL-FLD-005   Quantity    Decimal(18,4)   Yes            Draft line     None             Quantity \> 0            Availability check Editable own      quantity           sales_order_lines.quantity
+   686→                                                           only                                                     if stockable       draft                                
+   687→
+   688→  SAL-FLD-006   Unit Price  Decimal(18,4)   Yes            Draft line     pricing_engine   \>= minimum price unless Calculated from    Manual override   unit_price         sales_order_lines.unit_price
+   689→                                                           conditional                     approved                 price list         by permission                        
+   690→
+   691→  SAL-FLD-007   Discount %  Decimal(5,2)    No             Draft line     None             0-100; threshold policy  Approval if above  Visible by margin discount_percent   sales_order_lines.discount_percent
+   692→                                                           only                                                     limit              permission                           
+   693→
+   694→  SAL-FLD-008   Tax Code    Lookup          Yes            Draft line     tax_codes        Valid output tax         Default            Tax view          tax_code_id        sales_order_lines.tax_code_id
+   695→                                                           only                                                     product/customer   permission                           
+   696→                                                                                                                    tax                                                     
+   697→
+   698→  SAL-FLD-009   Credit      Enum            Yes            System         credit_engine    Allowed values: OK,      Calculated on      Credit role sees  credit_status      sales_orders.credit_status
+   699→                Status                                                                     Warning, Blocked         confirm            details                              
+   700→
+   701→  SAL-FLD-010   Delivery    Enum            Yes            System         deliveries       Derived from linked      Visible after      Read by           delivery_status    sales_orders.delivery_status
+   702→                Status                                                                     delivery quantities      confirmation       sales/warehouse                      
+   703→  --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+   704→
+   705→## **Sales & CRM --- Document Specifications**
+   706→
+   707→  ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+   708→  **Document**   **Purpose**         **Header / Lines**  **Lifecycle         **Workflow /      **Posting     **Inventory Impact**        **Reverse /     **Related      **API / Reports**
+   709→                                                         Statuses**          Approval**        Logic**                                   Cancel /        Documents**    
+   710→                                                                                                                                         Correction**                   
+   711→  -------------- ------------------- ------------------- ------------------- ----------------- ------------- --------------------------- --------------- -------------- ------------------------
+   712→  Quotation      Formal offer to     Header: customer,   Draft, Submitted,   Sent by sales;    No accounting No stock; optional forecast Cancel before   Lead,          /api/v1/quotations;
+   713→                 customer with       validity, price     Pending Approval,   approval for high posting.      only.                       acceptance;     opportunity,   quotation conversion
+   714→                 validity and        list. Lines:        Approved,           discount;                                                   expired based   customer,      report.
+   715→                 prices.             product, qty,       Posted/Validated,   accepted converts                                           on validity;    sales order.   
+   716→                                     price, tax,         Partially           to order.                                                   revise by new                  
+   717→                                     discount.           Completed,                                                                      version.                       
+   718→                                                         Completed,                                                                                                     
+   719→                                                         Cancelled,                                                                                                     
+   720→                                                         Reversed, Archived                                                                                             
+   721→
+   722→  Sales Order    Confirmed customer  Header: customer,   Draft, Submitted,   Credit/discount   No AR until   Reservation and delivery    Cancel before   Quotation,     /api/v1/sales-orders;
+   723→                 order controlling   payment, warehouse, Pending Approval,   approval then     invoice;      issue.                      delivery; after delivery,      sales order status
+   724→                 delivery/invoice.   shipping. Lines:    Approved,           confirm; delivery margin                                    delivery        invoice,       report.
+   725→                                     product, qty,       Posted/Validated,   and invoice       analytics                                 requires        payment.       
+   726→                                     price, tax.         Partially           requests follow.  calculated.                               return/credit                  
+   727→                                                         Completed,                                                                      process.                       
+   728→                                                         Completed,                                                                                                     
+   729→                                                         Cancelled,                                                                                                     
+   730→                                                         Reversed, Archived                                                                                             
+   731→
+   732→  Sales Return   Customer return     Header: customer,   Draft, Submitted,   Approve, receive, Credit note   Returned stock to           Cancel before   Delivery,      /api/v1/sales-returns;
+   733→                 request and         original            Pending Approval,   inspect, credit.  request to    inspection/sellable/scrap   receipt;        invoice,       return analysis.
+   734→                 commercial          invoice/delivery,   Approved,                             finance.      location.                   correction by   credit note,   
+   735→                 approval.           reason. Lines:      Posted/Validated,                                                               adjustment and  stock receipt. 
+   736→                                     returned items and  Partially                                                                       credit                         
+   737→                                     condition.          Completed,                                                                      reversal.                      
+   738→                                                         Completed,                                                                                                     
+   739→                                                         Cancelled,                                                                                                     
+   740→                                                         Reversed, Archived                                                                                             
+   741→  ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+   742→
+   743→## **Sales & CRM --- Business Rule Catalog**
+   744→
+   745→  ----------------------------------------------------------------------------------------------------------------------------------------------------------
+   746→  **Rule ID**  **Module**   **Description**   **Trigger /      **Validation**   **Exception /   **Workflow     **Accounting /  **Notification / **Recovery /
+   747→                                              Condition**                       Approval**      Effect**       Inventory       Error**          Example**
+   748→                                                                                                               Effect**                         
+   749→  ------------ ------------ ----------------- ---------------- ---------------- --------------- -------------- --------------- ---------------- ------------
+   750→  BR-SAL-001   SAL          Customer must be  Create/confirm   Customer status  Blocked         Blocks         No              Error SAL-001    Select
+   751→                            active            quote/order      active and not   customer        confirmation   posting/stock   customer blocked active
+   752→                                                               blocked          requires credit                reservation                      customer or
+   753→                                                                                approval                                                        approve
+   754→                                                                                                                                                override.
+   755→
+   756→  BR-SAL-002   SAL          Discount          Save/confirm     Discount within  Route to        State Pending  No posting;     Notify approver  Reduce
+   757→                            threshold         lines            role threshold   sales/finance   Discount       reservation                      discount or
+   758→                                                               and margin       approval        Approval       waits if policy                  approve.
+   759→                                                               policy                                                                           
+   760→
+   761→  BR-SAL-003   SAL          Credit limit      Confirm order    Exposure \<=     Credit          State Credit   No delivery     Notify sales and Collect
+   762→                                                               credit limit     controller      Blocked        request until   credit           payment or
+   763→                                                                                approval                       released                         approve.
+   764→  ----------------------------------------------------------------------------------------------------------------------------------------------------------
+   765→
+   766→## **Sales & CRM --- Workflow Specification**
+   767→
+   768→  ----------------------------------------------------------------------------------------------------------------------------------------------------
+   769→  **Workflow**    **Actors**   **Trigger**   **Inputs / Outputs**      **States /      **Decision    **Exceptions / **Events / Audit**     **Final
+   770→                                                                       Transitions**   Points /      Rollback**                            State**
+   771→                                                                                       Approvals**                                         
+   772→  --------------- ------------ ------------- ------------------------- --------------- ------------- -------------- ---------------------- -----------
+   773→  Lead-to-Order   Sales Rep,   Lead          Input:                    Lead \>         Discount,     Lost lead,     LeadQualified,         Confirmed
+   774→                  Sales        qualified or  lead/customer/products.   Opportunity \>  credit,       expired quote, QuotationSent,         SO
+   775→                  Manager,     customer RFQ  Output: confirmed SO.     Quotation \>    margin        rejected order SalesOrderConfirmed;   
+   776→                  Credit                                               Accepted \> SO  decisions                    full timeline          
+   777→                  Controller                                           Draft \>                                                            
+   778→                                                                       Approved \>                                                         
+   779→                                                                       Confirmed                                                           
+   780→
+   781→  Sales Return    Customer     Customer      Input: original doc,      Requested \>    Return        Reject return; ReturnApproved,        Closed
+   782→                  Service,     return        returned qty. Output:     Approved \>     approval and  partial        ReturnReceived,        
+   783→                  Sales        request       credit/close.             Received \>     condition     receipt;       CreditRequested        
+   784→                  Manager,                                             Inspected \>    decision      credit                                
+   785→                  Warehouse,                                           Credited \>                   reversal                              
+   786→                  AR                                                   Closed                                                              
+   787→  ----------------------------------------------------------------------------------------------------------------------------------------------------
+   788→
+   789→## **Sales & CRM --- Posting Specification**
+   790→
+   791→  ------------------------------------------------------------------------------------------------------------
+   792→  **Transaction**   **Trigger**   **Debit / Credit **Tax /         **Reversal /     **Period /    **Audit
+   793→                                  / Stock Ledger** Currency /      Adjustment**     Closing       Example**
+   794→                                                   Dimensions**                     Rule**        
+   795→  ----------------- ------------- ---------------- --------------- ---------------- ------------- ------------
+   796→  Sales Invoice     Invoice       Dr AR; Cr        Tax from sales  Credit note      Invoice       Source SO
+   797→  Request           created in    Revenue/Output   lines; currency reverses         posting       referenced
+   798→                    finance       Tax when invoice from order      revenue/tax      period        in invoice
+   799→                                  posted by                                         controlled by audit
+   800→                                  finance                                           finance       
+   801→
+   802→  Delivery Goods    Delivery      Dr COGS; Cr      Cost            Return reverses  Stock         Delivery
+   803→  Issue             validation    Inventory if     center/profit   COGS/inventory   period/date   links SO
+   804→                                  perpetual        center from     as configured    rules apply   line to
+   805→                                  valuation        product/order                                  stock move
+   806→  ------------------------------------------------------------------------------------------------------------
+   807→
+   808→## **Sales & CRM --- Permission Matrix**
+   809→
+   810→  ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+   811→  **Module**   **Feature**   **Action**   **Create**   **Read**   **Update**   **Delete**   **Approve/Reject**   **Post/Reverse/Cancel**   **Print/Export/Email/Import**   **Data Scope**    **Field Scope**
+   812→  ------------ ------------- ------------ ------------ ---------- ------------ ------------ -------------------- ------------------------- ------------------------------- ----------------- --------------------
+   813→  Sales & CRM  Quotation     Create and   Yes          Own/Team   Own Draft    Draft only   No                   Submit only               Print/Email own                 Sales team scope  Margin hidden unless
+   814→                             edit own                                                                                                                                                        allowed
+   815→
+   816→  Sales & CRM  Sales Order   Confirm      No           Own/Team   Before       No           Approve if manager   Cancel before delivery    Print/Export controlled         Customer/branch   Cost/margin fields
+   817→                                                                  confirm                                                                                                  scope             restricted
+   818→
+   819→  Sales & CRM  Return        Approve      No           Read       Update       No           Approve/Reject       Cancel before receipt     Print/Email                     Branch/customer   Refund values
+   820→                                                                  decision                                                                                                 scope             finance-restricted
+   821→  ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+   822→
+   823→## **Sales & CRM --- API Functional Contract**
+   824→
+   825→  -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+   826→  **Endpoint**                        **Method**   **Purpose**   **Auth / Authz**    **Request /             **Response**      **Errors**              **Workflow / **Idempotency**
+   827→                                                                                     Validation**                                                      Posting      
+   828→                                                                                                                                                       Impact**     
+   829→  ----------------------------------- ------------ ------------- ------------------- ----------------------- ----------------- ----------------------- ------------ -----------------
+   830→  /api/v1/quotations                  POST         Create        OAuth;              Active customer, valid  201 quote id      CUSTOMER_BLOCKED,       Draft        Required for
+   831→                                                   quotation     SAL_QUOTE_CREATE    products/prices                           INVALID_PRICE           quotation    external commerce
+   832→
+   833→  /api/v1/sales-orders/{id}/confirm   POST         Confirm sales OAuth;              Credit/discount/stock   200 Confirmed or  CREDIT_BLOCKED,         May reserve  Required
+   834→                                                   order         SAL_SO_CONFIRM      policy checks           PendingApproval   APPROVAL_REQUIRED       stock        
+   835→
+   836→  /api/v1/sales-returns               POST         Create return OAuth;              Original                201 return id     ORIGINAL_DOC_REQUIRED   Starts       Required
+   837→                                                   request       SAL_RETURN_CREATE   invoice/delivery                                                  return       
+   838→                                                                                     required                                                          workflow     
+   839→  -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+   840→
+   841→## **Sales & CRM --- Reports, Notifications, Errors and Tests**
+   842→
+   843→  ---------------------------------------------------------------------------------------------------------------
+   844→  **Type**       **ID / Name**      **Audience /  **Columns /        **Filters /    **Security /   **Acceptance
+   845→                                    Recipient**   Template / Code**  Trigger /      Retry /        Test**
+   846→                                                                     Cause**        Recovery**     
+   847→  -------------- ------------------ ------------- ------------------ -------------- -------------- --------------
+   848→  Report         SAL-RPT-001 Sales  Sales Manager Order, customer,   Date,          Sales scope    Confirmed
+   849→                 Order Status                     amount, delivery,  salesperson,                  order appears
+   850→                                                  invoice, credit    branch, status                with delivery
+   851→                                                                                                   status.
+   852→
+   853→  Notification   SAL-NOT-001 Credit Sales         Order {number}     On confirm     In-app/email   Approver
+   854→                 Block              Rep/Credit    blocked by credit  blocked        retry          receives
+   855→                                    Controller    limit                                            release
+   856→                                                                                                   action.
+   857→
+   858→  Error          SAL-ERR-001        User/API      Customer           Order confirm  Select         Negative test
+   859→                 CUSTOMER_BLOCKED                 inactive/blocked                  customer or    blocks
+   860→                                                                                    approve        confirm.
+   861→
+   862→  Test           SAL-TST-001        QA            Discount above     SO confirm     Approval audit Order cannot
+   863→                 Discount approval                threshold routes                  required       confirm before
+   864→                                                  approval                                         approval.
+   865→  ---------------------------------------------------------------------------------------------------------------
+   866→
+   867→### **Sales & CRM --- Mermaid Workflow Diagram**
+   868→
+   869→mermaid\
+   870→stateDiagram-v2\
+   871→\[\*\] \--\> Lead\
+   872→Lead \--\> Opportunity: Qualify\
+   873→Opportunity \--\> Quotation: Create Quote\
+   874→Quotation \--\> Sent: Send\
+   875→Sent \--\> Accepted: Customer Accepts\
+   876→Accepted \--\> SalesOrderDraft: Convert\
+   877→SalesOrderDraft \--\> PendingApproval: Discount/Credit Exception\
+   878→PendingApproval \--\> Confirmed: Approve\
+   879→SalesOrderDraft \--\> Confirmed: No Exception\
+   880→Confirmed \--\> PartiallyDelivered\
+   881→PartiallyDelivered \--\> FullyDelivered\
+   882→FullyDelivered \--\> Invoiced\
+   883→Invoiced \--\> Paid\
+   884→Paid \--\> Closed
+   885→
+   886→# **MODULE --- Purchasing & Procurement**
+   887→
+   888→  -----------------------------------------------------------------------
+   889→  **Specification Item**              **Implementation-Level Detail**
+   890→  ----------------------------------- -----------------------------------
+   891→  Purpose                             Control source-to-pay processes
+   892→                                      from internal demand to supplier
+   893→                                      sourcing, purchase order, receipt,
+   894→                                      invoice match and payment request.
+   895→
+   896→  Objectives                          Ensure approved spend, approved
+   897→                                      suppliers, competitive sourcing,
+   898→                                      receiving control, three-way match
+   899→                                      and AP handoff.
+   900→
+   901→  Business Scope                      Purchase requests, RFQs, supplier
+   902→                                      quotations, purchase orders, goods
+   903→                                      receipt coordination, vendor bill
+   904→                                      matching, returns to vendor.
+   905→
+   906→  Responsibilities                    Demand validation, supplier
+   907→                                      selection, PO creation, receipt
+   908→                                      follow-up, variance management,
+   909→                                      supplier performance.
+   910→
+   911→  Actors                              Requester, Department Manager,
+   912→                                      Buyer, Purchase Manager, Warehouse
+   913→                                      Receiver, Quality Inspector, AP
+   914→                                      Accountant, Supplier Portal User.
+   915→
+   916→  Dependencies                        Supplier master, item master,
+   917→                                      inventory, budget, finance AP,
+   918→                                      quality, workflow, notification,
+   919→                                      approval matrix.
+   920→
+   921→  Entry Points                        Purchase request, reorder rule, MRP
+   922→                                      demand, project demand, manual
+   923→                                      buyer PO, service requirement.
+   924→
+   925→  Exit Points                         Approved PO, received
+   926→                                      goods/services, matched vendor
+   927→                                      bill, supplier return, procurement
+   928→                                      report.
+   929→
+   930→  Business Capabilities               PR, RFQ, quotation comparison, PO,
+   931→                                      contracts, receipts, three-way
+   932→                                      match, purchase returns, supplier
+   933→                                      evaluation.
+   934→
+   935→  Supported Documents                 Purchase Request, Purchase Order,
+   936→                                      Goods Receipt
+   937→
+   938→  Master Data                         Supplier, item, supplier item code,
+   939→                                      purchase price, payment terms,
+   940→                                      incoterms, tax code, warehouse,
+   941→                                      budget/cost center.
+   942→
+   943→  Transactions                        PR, RFQ, supplier quotation, PO,
+   944→                                      goods receipt, service entry,
+   945→                                      vendor bill request, purchase
+   946→                                      return.
+   947→
+   948→  Accounting Integration              Vendor bill posts AP; goods receipt
+   949→                                      may post inventory/GRNI depending
+   950→                                      valuation; price variance posted
+   951→                                      through finance.
+   952→
+   953→  Inventory Integration               Receipts increase stock; returns
+   954→                                      decrease stock; inspection may put
+   955→                                      stock into quality/blocked status.
+   956→
+   957→  Approval Requirements               PR amount/budget, supplier
+   958→                                      approval, PO amount, contract,
+   959→                                      receipt over tolerance, invoice
+   960→                                      variance.
+   961→
+   962→  Configuration                       Approval thresholds, RFQ templates,
+   963→                                      tolerances, supplier evaluation
+   964→                                      criteria, contracts, receipt
+   965→                                      routing.
+   966→
+   967→  Limitations                         PO cannot be confirmed for blocked
+   968→                                      supplier; vendor bill cannot post
+   969→                                      beyond tolerance without approval.
+   970→
+   971→  KPIs                                Spend by supplier, PO cycle time,
+   972→                                      supplier OTIF, price variance,
+   973→                                      unmatched bills, pending receipts,
+   974→                                      savings.
+   975→
+   976→  Acceptance Criteria                 Buyer can convert approved demand
+   977→                                      to RFQ/PO, receive goods within
+   978→                                      tolerance, match bill and produce
+   979→                                      supplier performance data.
+   980→  -----------------------------------------------------------------------
+   981→
+   982→## **Purchasing & Procurement --- Screen Specifications**
+   983→
+   984→  --------------------------------------------------------------------------------------------------------------------------------------------------------
+   985→  **Screen ID** **Screen      **Purpose**   **Actors**   **Navigation   **Toolbar /       **Filters &   **States**   **Responsive /     **Performance /
+   986→                Name**                                   Path**         Buttons**         Search**                   Accessibility**    Acceptance**
+   987→  ------------- ------------- ------------- ------------ -------------- ----------------- ------------- ------------ ------------------ ------------------
+   988→  PUR-SCR-001   Procurement   Open PRs,     Buyer,       Purchasing \>  New, Save Draft,  Requester,    Draft,       Role alerts        Workspace \<3s.
+   989→                Workspace     pending       Purchase     Workspace      Submit, Approve,  category,     Approved,    accessible         
+   990→                              approvals,    Manager                     Reject,           supplier,     Ordered,                        
+   991→                              supplier                                  Post/Validate,    status,       Received,                       
+   992→                              exceptions.                               Cancel,           budget        Billed                          
+   993→                                                                        Reverse/Return,                                                 
+   994→                                                                        Print, Email,                                                   
+   995→                                                                        Export, Attach,                                                 
+   996→                                                                        Comment, View                                                   
+   997→                                                                        Audit, Open                                                     
+   998→                                                                        Related                                                         
+   999→
+
+[showing lines 500-999 of 3742; use offset=1000 with limit to continue reading]

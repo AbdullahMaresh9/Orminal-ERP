@@ -1,0 +1,352 @@
+   351→                                                    Completed,          approval.                                                                      
+   352→                                                    Cancelled,                                                                                         
+   353→                                                    Reversed, Archived                                                                                 
+   354→  --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+   355→
+   356→## **Finance & Accounting --- Business Rule Catalog**
+   357→
+   358→  ----------------------------------------------------------------------------------------------------------------------------------------------------------
+   359→  **Rule ID**  **Module**   **Description**   **Trigger /   **Validation**       **Exception / **Workflow       **Accounting / **Notification / **Recovery /
+   360→                                              Condition**                        Approval**    Effect**         Inventory      Error**          Example**
+   361→                                                                                                                Effect**                        
+   362→  ------------ ------------ ----------------- ------------- -------------------- ------------- ---------------- -------------- ---------------- ------------
+   363→  BR-FIN-001   FIN          Journal must      On post       Sum debit equals sum Reject post;  State remains    No ledger      Error FIN-001:   Correct line
+   364→                            balance                         credit by company    no override   Draft/Approved   impact         Journal entry is amounts.
+   365→                                                            currency                                                           not balanced.    
+   366→
+   367→  BR-FIN-002   FIN          Posting period    On post       Posting date is      Period        Routes to Period Prevents       Notify chief     Change date
+   368→                            open                            inside open period   override      Exception        financial      accountant       or request
+   369→                                                            and user date range  requires                       posting                         reopen.
+   370→                                                                                 approval                                                       
+   371→
+   372→  BR-FIN-003   FIN          AR/AP partner     On line       Partner is mandatory Reject        Line invalid     Prevents       Error FIN-003    Select
+   373→                            required          save/post     for                  save/post                      orphan                          partner.
+   374→                                                            receivable/payable                                  subledger                       
+   375→                                                            accounts                                                                            
+   376→  ----------------------------------------------------------------------------------------------------------------------------------------------------------
+   377→
+   378→## **Finance & Accounting --- Workflow Specification**
+   379→
+   380→  --------------------------------------------------------------------------------------------------------------------------------------------------
+   381→  **Workflow**     **Actors**    **Trigger**   **Inputs /   **States /      **Decision Points /      **Exceptions / **Events / Audit**  **Final
+   382→                                               Outputs**    Transitions**   Approvals**              Rollback**                         State**
+   383→  ---------------- ------------- ------------- ------------ --------------- ------------------------ -------------- ------------------- ------------
+   384→  Manual Journal   Accountant,   Draft journal Input:       Draft \>        Amount/backdate/manual   Reject returns JournalSubmitted,   Posted or
+   385→  Posting          Chief         saved         journal      Submitted \>    risk approval            to Draft;      JournalApproved,    Reversed
+   386→                   Accountant,                 lines.       Approved \>                              reverse        JournalPosted;      
+   387→                   Finance                     Output:      Posted \>                                creates        audit every         
+   388→                   Manager                     posted       Reversed                                 reversal       transition          
+   389→                                               entry.                                                                                   
+   390→
+   391→  Bank             Cashier,      Statement     Input: bank  Imported \>     Manual match approval    Unmatch        BankLineMatched,    Reconciled
+   392→  Reconciliation   Accountant    imported      lines.       Matched \>      for high variance        allowed before BankReconciled      
+   393→                                               Output:      Reviewed \>                              period close                       
+   394→                                               reconciled   Reconciled                                                                  
+   395→                                               entries.                                                                                 
+   396→  --------------------------------------------------------------------------------------------------------------------------------------------------
+   397→
+   398→## **Finance & Accounting --- Posting Specification**
+   399→
+   400→  ----------------------------------------------------------------------------------------------------------
+   401→  **Transaction**   **Trigger**   **Debit /    **Tax / Currency **Reversal /     **Period / **Audit
+   402→                                  Credit /     / Dimensions**   Adjustment**     Closing    Example**
+   403→                                  Stock                                          Rule**     
+   404→                                  Ledger**                                                  
+   405→  ----------------- ------------- ------------ ---------------- ---------------- ---------- ----------------
+   406→  Manual Journal    Post journal  Debit        Tax/dimensions   Reverse entry    Open       JE-2026-000001
+   407→                                  selected     from lines;      mirrors          period     posted by
+   408→                                  accounts;    currency         debit/credit     only;      user/time/IP
+   409→                                  Credit       converted by                      closed     
+   410→                                  selected     rate                              period no  
+   411→                                  accounts                                       posting    
+   412→
+   413→  Customer Receipt  Post receipt  Dr           Currency         Reverse          Bank       Receipt source
+   414→                                  Bank/Cash;   gain/loss on     before/after     period and invoice retained
+   415→                                  Cr AR or     reconciliation   reconciliation   fiscal     
+   416→                                  advance                       by controlled    period     
+   417→                                                                process          must be    
+   418→                                                                                 open       
+   419→  ----------------------------------------------------------------------------------------------------------
+   420→
+   421→## **Finance & Accounting --- Permission Matrix**
+   422→
+   423→  ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+   424→  **Module**   **Feature**      **Action**   **Create**   **Read**   **Update**   **Delete**   **Approve/Reject**   **Post/Reverse/Cancel**   **Print/Export/Email/Import**   **Data Scope**           **Field Scope**
+   425→  ------------ ---------------- ------------ ------------ ---------- ------------ ------------ -------------------- ------------------------- ------------------------------- ------------------------ ----------------
+   426→  Finance &    Journal Entry    Create Draft Yes          Yes        Own Draft    No           No                   No                        Print own draft                 Company/branch/account   Sensitive tax
+   427→  Accounting                                                                                                                                                                  scope                    fields hidden
+   428→                                                                                                                                                                                                       unless finance
+   429→
+   430→  Finance &    Journal Entry    Post         No           Yes        No           No           Approve only if role Post/Reverse with         Print/Export if allowed         Company scope and amount All fields read;
+   431→  Accounting                                                                                                        permission                                                threshold                no edit after
+   432→                                                                                                                                                                                                       post
+   433→
+   434→  Finance &    Bank             Reconcile    No           Yes        Match        No           Review exceptions    Post reconciliation       Export controlled               Bank account scope       Bank account
+   435→  Accounting   Reconciliation                                        candidates                                                                                                                        details masked
+   436→                                                                                                                                                                                                       for
+   437→                                                                                                                                                                                                       non-authorized
+   438→  ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+   439→
+   440→## **Finance & Accounting --- API Functional Contract**
+   441→
+   442→  ------------------------------------------------------------------------------------------------------------------------------------------------------------------
+   443→  **Endpoint**                        **Method**   **Purpose**   **Auth /        **Request /    **Response**   **Errors**             **Workflow / **Idempotency**
+   444→                                                                 Authz**         Validation**                                         Posting      
+   445→                                                                                                                                      Impact**     
+   446→  ----------------------------------- ------------ ------------- --------------- -------------- -------------- ---------------------- ------------ -----------------
+   447→  /api/v1/journal-entries             POST         Create draft  OAuth;          Balanced not   201 with       VALIDATION_ERROR,      Creates      Idempotency
+   448→                                                   journal       FIN_JE_CREATE   required until id/status      AUTHORIZATION_DENIED   Draft only   optional for
+   449→                                                                                 post; required                                                    draft
+   450→                                                                                 header/lines                                                      
+   451→
+   452→  /api/v1/journal-entries/{id}/post   POST         Post approved OAuth;          Entry must be  200 status     PERIOD_CLOSED,         Creates      Required
+   453→                                                   journal       FIN_JE_POST     approved,      Posted         UNBALANCED_JOURNAL     ledger       
+   454→                                                                                 balanced, open                                       entries      
+   455→                                                                                 period                                                            
+   456→
+   457→  /api/v1/bank-statements/import      POST         Import bank   OAuth;          Valid bank     202 import job DUPLICATE_STATEMENT    Creates      Required by
+   458→                                                   statement     BANK_IMPORT     account, file  id                                    imported     statement hash
+   459→                                                                                 format, no                                           lines        
+   460→                                                                                 duplicates                                                        
+   461→  ------------------------------------------------------------------------------------------------------------------------------------------------------------------
+   462→
+   463→## **Finance & Accounting --- Reports, Notifications, Errors and Tests**
+   464→
+   465→  -----------------------------------------------------------------------------------------------------------
+   466→  **Type**       **ID / Name**        **Audience /      **Columns / **Filters / **Security /   **Acceptance
+   467→                                      Recipient**       Template /  Trigger /   Retry /        Test**
+   468→                                                        Code**      Cause**     Recovery**     
+   469→  -------------- -------------------- ----------------- ----------- ----------- -------------- --------------
+   470→  Report         FIN-RPT-001 Trial    Finance/Auditor   Account,    Company,    Scope by       Totals match
+   471→                 Balance                                opening,    period,     company;       GL ledger.
+   472→                                                        debit,      branch,     export audited 
+   473→                                                        credit,     dimension                  
+   474→                                                        closing                                
+   475→
+   476→  Notification   FIN-NOT-001 Journal  Approver          Template:   Trigger:    Retry          Approver
+   477→                 Approval Request                       Journal     journal     email/in-app 3 receives
+   478→                                                        {number}    submitted   times          actionable
+   479→                                                        awaits                                 link.
+   480→                                                        approval                               
+   481→
+   482→  Error          FIN-ERR-001          User/API          Cause:      On post     Recovery:      Negative test
+   483→                 UNBALANCED_JOURNAL                     debit !=                correct lines  rejects
+   484→                                                        credit                                 posting.
+   485→
+   486→  Test           FIN-TST-001 Post     QA                Positive:   Open period Audit created  Journal
+   487→                 balanced journal                       balanced                               appears in GL
+   488→                                                        entry posts                            report.
+   489→  -----------------------------------------------------------------------------------------------------------
+   490→
+   491→# **MODULE --- Sales & CRM**
+   492→
+   493→  -----------------------------------------------------------------------
+   494→  **Specification Item**              **Implementation-Level Detail**
+   495→  ----------------------------------- -----------------------------------
+   496→  Purpose                             Manage lead-to-cash commercial
+   497→                                      execution from lead capture through
+   498→                                      quotation, sales order, delivery
+   499→                                      request, invoicing request, returns
+   500→                                      and credit notes.
+   501→
+   502→  Objectives                          Ensure controlled pricing, discount
+   503→                                      approval, customer credit
+   504→                                      validation, inventory availability
+   505→                                      check and correct handoff to
+   506→                                      finance and inventory.
+   507→
+   508→  Business Scope                      Lead, opportunity, quotation, sales
+   509→                                      order, pricing, customer credit,
+   510→                                      delivery coordination, invoice
+   511→                                      request, sales returns, credit note
+   512→                                      requests.
+   513→
+   514→  Responsibilities                    Customer pipeline, quotations,
+   515→                                      sales orders, commercial approvals,
+   516→                                      delivery instructions, sales
+   517→                                      reports, customer communication.
+   518→
+   519→  Actors                              Sales Representative, Sales
+   520→                                      Manager, Credit Controller,
+   521→                                      Customer Service, Warehouse User,
+   522→                                      AR Accountant, Customer Portal
+   523→                                      User.
+   524→
+   525→  Dependencies                        Business partner/customer master,
+   526→                                      product/pricelist, tax, inventory
+   527→                                      availability, finance AR, workflow,
+   528→                                      notification, document numbering.
+   529→
+   530→  Entry Points                        Lead created, opportunity won,
+   531→                                      customer requests quotation,
+   532→                                      recurring sales order, portal
+   533→                                      order, imported order.
+   534→
+   535→  Exit Points                         Confirmed order, delivery request,
+   536→                                      invoice request, closed sale,
+   537→                                      cancelled order, return/credit
+   538→                                      request.
+   539→
+   540→  Business Capabilities               Lead management, opportunity
+   541→                                      pipeline, quotation, sales order,
+   542→                                      pricing, discounting, credit
+   543→                                      checks, delivery/invoicing status
+   544→                                      tracking, returns.
+   545→
+   546→  Supported Documents                 Quotation, Sales Order, Sales
+   547→                                      Return
+   548→
+   549→  Master Data                         Customer, contact, address,
+   550→                                      product, price list, payment terms,
+   551→                                      sales team, salesperson, tax code,
+   552→                                      shipping method.
+   553→
+   554→  Transactions                        Lead activity, quotation, sales
+   555→                                      order confirmation, delivery
+   556→                                      request, invoice request, return
+   557→                                      request, credit note request.
+   558→
+   559→  Accounting Integration              Customer invoice request triggers
+   560→                                      AR invoice in finance; sale itself
+   561→                                      does not post until invoice and
+   562→                                      delivery valuation events occur.
+   563→
+   564→  Inventory Integration               Sales order can reserve stock;
+   565→                                      delivery validates stock issue;
+   566→                                      returns receive stock back based on
+   567→                                      return disposition.
+   568→
+   569→  Approval Requirements               Discount over threshold, credit
+   570→                                      limit override, sell below cost,
+   571→                                      order cancellation after
+   572→                                      confirmation, return approval.
+   573→
+   574→  Configuration                       Price lists, discount thresholds,
+   575→                                      credit policy, quotation validity,
+   576→                                      order sequence, shipping terms,
+   577→                                      sales approval matrix.
+   578→
+   579→  Limitations                         Confirmed delivered quantities
+   580→                                      cannot be reduced without
+   581→                                      return/correction; credit blocked
+   582→                                      customers cannot proceed without
+   583→                                      approval.
+   584→
+   585→  KPIs                                Pipeline value, win rate, quotation
+   586→                                      conversion rate, sales margin,
+   587→                                      pending deliveries, credit blocked
+   588→                                      orders, return rate.
+   589→
+   590→  Acceptance Criteria                 A sales user can create quotation,
+   591→                                      convert to sales order, pass
+   592→                                      credit/discount rules, reserve
+   593→                                      stock, initiate delivery and
+   594→                                      invoice request with full
+   595→                                      traceability.
+   596→  -----------------------------------------------------------------------
+   597→
+   598→## **Sales & CRM --- Screen Specifications**
+   599→
+   600→  ------------------------------------------------------------------------------------------------------------------------------------------------------
+   601→  **Screen ID** **Screen      **Purpose**   **Actors**   **Navigation   **Toolbar /       **Filters &    **States**   **Responsive /     **Performance /
+   602→                Name**                                   Path**         Buttons**         Search**                    Accessibility**    Acceptance**
+   603→  ------------- ------------- ------------- ------------ -------------- ----------------- -------------- ------------ ------------------ ---------------
+   604→  SAL-SCR-001   Sales         Pipeline      Sales roles  Sales \>       New, Save Draft,  Customer,      Open, Won,   Responsive         Workspace loads
+   605→                Workspace     KPIs, pending              Workspace      Submit, Approve,  salesperson,   Quoted,      kanban/list toggle under 3s.
+   606→                              quotations,                               Reject,           status,        Ordered,                        
+   607→                              blocked                                   Post/Validate,    validity,      Blocked                         
+   608→                              orders,                                   Cancel,           credit block                                   
+   609→                              approvals.                                Reverse/Return,                                                  
+   610→                                                                        Print, Email,                                                    
+   611→                                                                        Export, Attach,                                                  
+   612→                                                                        Comment, View                                                    
+   613→                                                                        Audit, Open                                                      
+   614→                                                                        Related                                                          
+   615→
+   616→  SAL-SCR-002   Lead /        Manage sales  Sales Rep,   Sales \> CRM   New, Save Draft,  Sales team,    New,         Kanban keyboard    Drag/drop
+   617→                Opportunity   pipeline.     Sales        \> Pipeline    Submit, Approve,  stage,         Qualified,   movement and list  changes stage
+   618→                Board                       Manager                     Reject,           expected       Won, Lost    alternative        with audit.
+   619→                                                                        Post/Validate,    close,                                         
+   620→                                                                        Cancel,           probability                                    
+   621→                                                                        Reverse/Return,                                                  
+   622→                                                                        Print, Email,                                                    
+   623→                                                                        Export, Attach,                                                  
+   624→                                                                        Comment, View                                                    
+   625→                                                                        Audit, Open                                                      
+   626→                                                                        Related                                                          
+   627→
+   628→  SAL-SCR-003   Quotation     Prepare       Sales Rep    Sales \>       New, Save Draft,  Customer,      Draft, Sent, Mobile reads;      Price
+   629→                Form          commercial                 Quotations \>  Submit, Approve,  price list,    Accepted,    desktop line grid  calculation
+   630→                              offer.                     New/Open       Reject,           product,       Expired,                        \<1s per 100
+   631→                                                                        Post/Validate,    validity,      Cancelled                       lines.
+   632→                                                                        Cancel,           amount                                         
+   633→                                                                        Reverse/Return,                                                  
+   634→                                                                        Print, Email,                                                    
+   635→                                                                        Export, Attach,                                                  
+   636→                                                                        Comment, View                                                    
+   637→                                                                        Audit, Open                                                      
+   638→                                                                        Related                                                          
+   639→
+   640→  SAL-SCR-004   Sales Order   Confirm and   Sales Rep,   Sales \>       New, Save Draft,  Customer,      Draft,       Status bar with    Availability
+   641→                Form          track order.  Sales        Orders \> Open Submit, Approve,  status,        Confirmed,   related            check async if
+   642→                                            Manager                     Reject,           credit,        Partially    delivery/invoice   large order.
+   643→                                                                        Post/Validate,    delivery,      Delivered,   links              
+   644→                                                                        Cancel,           invoice status Closed                          
+   645→                                                                        Reverse/Return,                                                  
+   646→                                                                        Print, Email,                                                    
+   647→                                                                        Export, Attach,                                                  
+   648→                                                                        Comment, View                                                    
+   649→                                                                        Audit, Open                                                      
+   650→                                                                        Related                                                          
+   651→
+   652→  SAL-SCR-005   Return        Control       Customer     Sales \>       New, Save Draft,  Customer,      Requested,   Accessible reason  Return must
+   653→                Request       customer      Service,     Returns        Submit, Approve,  invoice,       Approved,    and attachment     reference
+   654→                              returns.      Sales                       Reject,           delivery,      Received,    capture            original
+   655→                                            Manager                     Post/Validate,    product,       Credited,                       document.
+   656→                                                                        Cancel,           reason         Closed                          
+   657→                                                                        Reverse/Return,                                                  
+   658→                                                                        Print, Email,                                                    
+   659→                                                                        Export, Attach,                                                  
+   660→                                                                        Comment, View                                                    
+   661→                                                                        Audit, Open                                                      
+   662→                                                                        Related                                                          
+   663→  ------------------------------------------------------------------------------------------------------------------------------------------------------
+   664→
+   665→## **Sales & CRM --- Field Specifications**
+   666→
+   667→  --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+   668→  **Field ID**  **Label**   **Data Type**   **Required**   **Editable**   **Lookup /       **Validation / Regex**   **Conditional      **Permission      **API Mapping**    **DB Mapping**
+   669→                                                                          Reference**                               Rules**            Rules**                              
+   670→  ------------- ----------- --------------- -------------- -------------- ---------------- ------------------------ ------------------ ----------------- ------------------ ------------------------------------
+   671→  SAL-FLD-001   Customer    Lookup          Yes            Draft only     customers        Active and not blocked   Required before    Restricted by     customer_id        sales_orders.customer_id
+   672→                                                                                           unless override          price/credit       customer scope                       
+   673→                                                                                                                    calculation                                             
+   674→
+   675→  SAL-FLD-002   Price List  Lookup          Yes            Draft only     price_lists      Valid for                Defaults customer  Sales manager can price_list_id      sales_orders.price_list_id
+   676→                                                                                           customer/currency/date   pricelist          override                             
+   677→
+   678→  SAL-FLD-003   Order Date  Date            Yes            Draft only     None             Cannot be future beyond  Default today      Visible all sales order_date         sales_orders.order_date
+   679→                                                                                           policy                                      users                                
+   680→
+   681→  SAL-FLD-004   Product     Lookup          Yes            Draft line     products         Sellable active product  Required per line  Product           product_id         sales_order_lines.product_id
+   682→                                                           only                                                                        visibility by                        
+   683→                                                                                                                                       company                              
+   684→
+   685→  SAL-FLD-005   Quantity    Decimal(18,4)   Yes            Draft line     None             Quantity \> 0            Availability check Editable own      quantity           sales_order_lines.quantity
+   686→                                                           only                                                     if stockable       draft                                
+   687→
+   688→  SAL-FLD-006   Unit Price  Decimal(18,4)   Yes            Draft line     pricing_engine   \>= minimum price unless Calculated from    Manual override   unit_price         sales_order_lines.unit_price
+   689→                                                           conditional                     approved                 price list         by permission                        
+   690→
+   691→  SAL-FLD-007   Discount %  Decimal(5,2)    No             Draft line     None             0-100; threshold policy  Approval if above  Visible by margin discount_percent   sales_order_lines.discount_percent
+   692→                                                           only                                                     limit              permission                           
+   693→
+   694→  SAL-FLD-008   Tax Code    Lookup          Yes            Draft line     tax_codes        Valid output tax         Default            Tax view          tax_code_id        sales_order_lines.tax_code_id
+   695→                                                           only                                                     product/customer   permission                           
+   696→                                                                                                                    tax                                                     
+   697→
+   698→  SAL-FLD-009   Credit      Enum            Yes            System         credit_engine    Allowed values: OK,      Calculated on      Credit role sees  credit_status      sales_orders.credit_status
+   699→                Status                                                                     Warning, Blocked         confirm            details                              
+   700→
+
+[showing lines 351-700 of 3742; use offset=701 with limit to continue reading]

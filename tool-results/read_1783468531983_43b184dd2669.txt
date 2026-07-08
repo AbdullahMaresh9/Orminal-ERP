@@ -1,0 +1,1411 @@
+     1→**Volume 4 --- SDTA**
+     2→
+     3→**BOOK 2 --- Backend Architecture**
+     4→
+     5→Enterprise ERP Solution Design & Technical Architecture
+     6→
+     7→Implementation-ready backend engineering reference after Book 1
+     8→
+     9→Prepared for: Abdullah Maresh \| Date: 07 July 2026
+    10→
+    11→# **Document Context and Consistency Statement**
+    12→
+    13→This document implements BOOK 2 --- Backend Architecture according to
+    14→the approved Volume 4 SDTA Master TOC. It builds directly on BOOK 1 ---
+    15→Enterprise Solution Architecture and preserves the decisions established
+    16→in Volumes 1--3. It does not re-benchmark vendors, redesign the
+    17→platform, or duplicate functional module specifications. It defines the
+    18→engineering structure for implementing backend services, domain logic,
+    19→application use cases, repositories, transactions, events, caching,
+    20→jobs, queues, exceptions, logging, auditing, dependency injection,
+    21→concurrency, folder structure, naming conventions and coding guidelines.
+    22→
+    23→تم إعداد هذا الملف كوثيقة Word مستقلة ومنسقة لفريق Backend والهندسة،
+    24→بحيث تكون قابلة للتنفيذ المباشر ومفهومة ومنظمة.
+    25→
+    26→  -----------------------------------------------------------------------
+    27→  **Reference**                       **Role in Book 2**
+    28→  ----------------------------------- -----------------------------------
+    29→  Book 1 --- Enterprise Solution      Defines modular monolith, shared
+    30→  Architecture                        kernel, event architecture and
+    31→                                      architecture layers.
+    32→
+    33→  Volume 2 --- Software Blueprint     Defines domain-oriented,
+    34→                                      event-aware, audit-first
+    35→                                      architecture and engineering
+    36→                                      standards.
+    37→
+    38→  Volume 3 --- FTS                    Defines module-level commands,
+    39→                                      screens, documents, rules,
+    40→                                      workflows, APIs and posting
+    41→                                      behavior.
+    42→
+    43→  Book 2 --- Backend Architecture     Defines backend implementation
+    44→                                      patterns and coding structure.
+    45→  -----------------------------------------------------------------------
+    46→
+    47→  -----------------------------------------------------------------------
+    48→  **Backend Architecture Rule\
+    49→  **Backend is responsible for enforcing business correctness. Frontend
+    50→  and external integrations must never bypass backend application/domain
+    51→  rules.
+    52→  -----------------------------------------------------------------------
+    53→
+    54→  -----------------------------------------------------------------------
+    55→
+    56→# **2.1 Backend Architecture Overview**
+    57→
+    58→## **2.1.1 Backend Responsibility**
+    59→
+    60→The backend layer is responsible for executing enterprise business
+    61→logic, not only exposing APIs. It receives user and integration
+    62→requests, applies permission and policy checks, executes use cases,
+    63→coordinates workflows, performs posting orchestration, persists state,
+    64→emits events, writes audit trails, runs background jobs and provides
+    65→secure query models for frontend and reporting consumers.
+    66→
+    67→-   Receive commands and queries from the API layer.
+    68→
+    69→-   Execute business use cases and module-specific application logic.
+    70→
+    71→-   Apply authorization, data scope, field scope and
+    72→    segregation-of-duties policies.
+    73→
+    74→-   Manage document lifecycle and workflow transitions.
+    75→
+    76→-   Execute business rules and validations consistently.
+    77→
+    78→-   Coordinate accounting posting and inventory posting through shared
+    79→    services.
+    80→
+    81→-   Create domain events and integration events.
+    82→
+    83→-   Persist aggregate state through repositories and unit of work.
+    84→
+    85→-   Record audit events for critical actions.
+    86→
+    87→-   Run background jobs, integration jobs and event publishing workers.
+    88→
+    89→## **2.1.2 Backend Boundary**
+    90→
+    91→The backend boundary protects the system from architectural leakage. UI,
+    92→integrations and reports must not directly modify operational data.
+    93→Controllers must not contain business logic, posting logic or workflow
+    94→decisions.
+    95→
+    96→  -----------------------------------------------------------------------
+    97→  **Allowed in Backend**              **Forbidden in Backend Boundary**
+    98→  ----------------------------------- -----------------------------------
+    99→  Application use cases,              UI visual layout logic or component
+   100→  command/query handlers, domain      rendering logic.
+   101→  services, repositories and          
+   102→  infrastructure adapters.            
+   103→
+   104→  Business rules, workflows, posting  Direct database writes from
+   105→  orchestration, audit and            frontend or external systems.
+   106→  authorization.                      
+   107→
+   108→  DTO mapping, validation pipeline,   SQL scattered inside controllers or
+   109→  transaction pipeline and event      external clients.
+   110→  publishing.                         
+   111→
+   112→  Controlled read models and query    Business validation that exists
+   113→  services.                           only in frontend.
+   114→  -----------------------------------------------------------------------
+   115→
+   116→Correct flow:\
+   117→Frontend → API Controller → Application Layer → Domain Layer →
+   118→Infrastructure\
+   119→\
+   120→Forbidden flow:\
+   121→Frontend → Database\
+   122→External Integration → Database\
+   123→Controller → SQL → Posting tables
+   124→
+   125→## **2.1.3 Backend Design Goals**
+   126→
+   127→  -----------------------------------------------------------------------
+   128→  **Goal**                            **Backend Meaning**
+   129→  ----------------------------------- -----------------------------------
+   130→  Domain Integrity                    Every state-changing operation
+   131→                                      passes through the correct
+   132→                                      aggregate, domain service or
+   133→                                      policy.
+   134→
+   135→  Posting Safety                      No accounting or inventory posting
+   136→                                      occurs outside the approved posting
+   137→                                      services.
+   138→
+   139→  Workflow Consistency                Every state transition goes through
+   140→                                      workflow service and is
+   141→                                      audit-logged.
+   142→
+   143→  Security Enforcement                Every command and query evaluates
+   144→                                      permissions, scopes and field-level
+   145→                                      security.
+   146→
+   147→  Auditability                        Every critical action produces
+   148→                                      traceable audit evidence.
+   149→
+   150→  Testability                         Every rule, policy, use case,
+   151→                                      posting and workflow is testable in
+   152→                                      isolation and integration.
+   153→
+   154→  Maintainability                     Commands, queries, domain logic and
+   155→                                      infrastructure are separated.
+   156→
+   157→  Scalability                         Heavy side effects run
+   158→                                      asynchronously through queues and
+   159→                                      workers when appropriate.
+   160→
+   161→  Integration Safety                  External calls use idempotency
+   162→                                      keys, correlation IDs, retries and
+   163→                                      error mapping.
+   164→  -----------------------------------------------------------------------
+   165→
+   166→## **2.1.4 Backend Non-Goals**
+   167→
+   168→-   Implementing financial or inventory business logic inside stored
+   169→    procedures as a substitute for the domain layer.
+   170→
+   171→-   Allowing frontend to bypass workflow, authorization or posting
+   172→    services.
+   173→
+   174→-   Making every module an independent microservice from the first
+   175→    release.
+   176→
+   177→-   Duplicating authorization logic separately inside every module.
+   178→
+   179→-   Executing heavy analytics directly through transactional queries
+   180→    when read models are required.
+   181→
+   182→# **2.2 Application Layers**
+   183→
+   184→## **2.2.1 Backend Layer Model**
+   185→
+   186→mermaid\
+   187→flowchart TB\
+   188→API\[API Controllers\]\
+   189→App\[Application Layer\]\
+   190→Domain\[Domain Layer\]\
+   191→Infra\[Infrastructure Layer\]\
+   192→DB\[(Database)\]\
+   193→Cache\[(Cache)\]\
+   194→Queue\[(Queue)\]\
+   195→External\[External Integrations\]\
+   196→\
+   197→API \--\> App\
+   198→App \--\> Domain\
+   199→Domain \--\> Infra\
+   200→Infra \--\> DB\
+   201→Infra \--\> Cache\
+   202→Infra \--\> Queue\
+   203→Infra \--\> External
+   204→
+   205→## **2.2.2 Presentation / API Controllers**
+   206→
+   207→API Controllers are thin entry points. They receive HTTP requests,
+   208→extract execution context, call mediator/handlers and return
+   209→standardized responses. They must not implement decisions that belong to
+   210→application or domain layers.
+   211→
+   212→Controller must not:\
+   213→- Access database directly\
+   214→- Build journal entries directly\
+   215→- Change document status directly\
+   216→- Send notifications directly\
+   217→- Apply approval logic directly
+   218→
+   219→## **2.2.3 Application Services**
+   220→
+   221→The application layer represents use cases. It coordinates the execution
+   222→of commands and queries according to the domain model, workflow engine,
+   223→posting engine, audit service and outbox/event architecture.
+   224→
+   225→Examples:\
+   226→ConfirmSalesOrderCommandHandler\
+   227→PostCustomerInvoiceCommandHandler\
+   228→ValidateGoodsReceiptCommandHandler\
+   229→ApprovePurchaseOrderCommandHandler\
+   230→RunPayrollCommandHandler\
+   231→CloseFiscalPeriodCommandHandler
+   232→
+   233→-   Orchestrate use case execution.
+   234→
+   235→-   Load aggregates and required data.
+   236→
+   237→-   Call domain behavior and policies.
+   238→
+   239→-   Open and control transaction boundaries.
+   240→
+   241→-   Call workflow service where state transition is needed.
+   242→
+   243→-   Call posting service if financial or inventory posting is required.
+   244→
+   245→-   Save changes through unit of work.
+   246→
+   247→-   Record audit events and save outbox events.
+   248→
+   249→## **2.2.4 Domain Services**
+   250→
+   251→  -----------------------------------------------------------------------
+   252→  **Domain Service**                  **Responsibility**
+   253→  ----------------------------------- -----------------------------------
+   254→  PricingService                      Calculate price, discount,
+   255→                                      commercial tax basis and applicable
+   256→                                      pricing conditions.
+   257→
+   258→  CreditCheckService                  Evaluate customer credit limit,
+   259→                                      exposure and credit block status.
+   260→
+   261→  AvailabilityService                 Check available stock, reservations
+   262→                                      and warehouse availability rules.
+   263→
+   264→  PostingPreparationService           Prepare posting data before sending
+   265→                                      to central posting engine.
+   266→
+   267→  InventoryValuationService           Calculate inventory cost and
+   268→                                      valuation layers.
+   269→
+   270→  PayrollCalculationService           Calculate gross pay, deductions,
+   271→                                      employer liabilities and net pay.
+   272→
+   273→  BudgetControlService                Evaluate budget availability and
+   274→                                      commitment rules.
+   275→
+   276→  MatchingService                     Match purchase order, goods receipt
+   277→                                      and vendor bill.
+   278→  -----------------------------------------------------------------------
+   279→
+   280→## **2.2.5 Infrastructure Services**
+   281→
+   282→Infrastructure services implement technical details and external access.
+   283→They are called through interfaces from application/domain layers and
+   284→must be replaceable for testing and future provider changes.
+   285→
+   286→-   ORM and relational database persistence.
+   287→
+   288→-   Repositories and query services.
+   289→
+   290→-   Redis or distributed cache.
+   291→
+   292→-   Message queue and outbox publisher.
+   293→
+   294→-   External API clients.
+   295→
+   296→-   File/object storage.
+   297→
+   298→-   Email/SMS/push providers.
+   299→
+   300→-   PDF, import and export adapters.
+   301→
+   302→## **2.2.6 Background Workers**
+   303→
+   304→-   Publish outbox events.
+   305→
+   306→-   Send notifications.
+   307→
+   308→-   Generate heavy reports.
+   309→
+   310→-   Run scheduled jobs.
+   311→
+   312→-   Synchronize external systems.
+   313→
+   314→-   Process imports and exports.
+   315→
+   316→-   Execute retries and dead-letter handling.
+   317→
+   318→-   Process long-running integration jobs.
+   319→
+   320→## **2.2.7 Integration Adapters**
+   321→
+   322→BankIntegrationAdapter\
+   323→TaxAuthorityAdapter\
+   324→ShippingProviderAdapter\
+   325→PaymentGatewayAdapter\
+   326→EInvoicingAdapter\
+   327→IdentityProviderAdapter\
+   328→EmailProviderAdapter
+   329→
+   330→Every adapter must implement timeout, retry, circuit breaker,
+   331→correlation ID propagation, secure secret handling, request/response
+   332→logging with masking and deterministic error mapping.
+   333→
+   334→# **2.3 Domain Layer**
+   335→
+   336→## **2.3.1 Entities**
+   337→
+   338→An entity has identity and lifecycle. It protects its own invariants and
+   339→exposes business methods, but it does not access the database, call
+   340→external services or know about the UI/API.
+   341→
+   342→Examples:\
+   343→Customer\
+   344→Supplier\
+   345→Product\
+   346→SalesOrder\
+   347→PurchaseOrder\
+   348→JournalEntry\
+   349→StockMove\
+   350→ProductionOrder\
+   351→Employee\
+   352→Project\
+   353→Asset\
+   354→\
+   355→Business methods:\
+   356→SalesOrder.confirm()\
+   357→SalesOrder.cancel(reason)\
+   358→PurchaseOrder.approve(approver)\
+   359→JournalEntry.post()\
+   360→StockTransfer.validate()
+   361→
+   362→-   Entity must not depend on database directly.
+   363→
+   364→-   Entity must not call external services.
+   365→
+   366→-   Entity must protect its own invariants.
+   367→
+   368→-   Entity methods must represent business actions, not data setters
+   369→    only.
+   370→
+   371→## **2.3.2 Aggregate Roots**
+   372→
+   373→  -----------------------------------------------------------------------
+   374→  **Aggregate Root**                  **Child Entities**
+   375→  ----------------------------------- -----------------------------------
+   376→  SalesOrder                          SalesOrderLine, Discount,
+   377→                                      DeliveryInstruction
+   378→
+   379→  PurchaseOrder                       PurchaseOrderLine, SupplierTerms
+   380→
+   381→  JournalEntry                        JournalEntryLine, TaxLine
+   382→
+   383→  StockTransfer                       StockMoveLine, Lot/Serial
+   384→                                      Assignment
+   385→
+   386→  ProductionOrder                     WorkOrder, ConsumptionLine,
+   387→                                      FinishedGoodsLine
+   388→
+   389→  PayrollRun                          Payslip, PayslipLine
+   390→  -----------------------------------------------------------------------
+   391→
+   392→  -----------------------------------------------------------------------
+   393→  **Aggregate Rule\
+   394→  **Child entities must never be modified directly from outside the
+   395→  aggregate root. All consistency-sensitive changes go through the
+   396→  aggregate root.
+   397→  -----------------------------------------------------------------------
+   398→
+   399→  -----------------------------------------------------------------------
+   400→
+   401→## **2.3.3 Value Objects**
+   402→
+   403→Money\
+   404→CurrencyAmount\
+   405→Quantity\
+   406→Percentage\
+   407→TaxRate\
+   408→Address\
+   409→PostingDate\
+   410→FiscalPeriod\
+   411→DocumentNumber\
+   412→LotNumber\
+   413→SerialNumber
+   414→
+   415→-   Immutable.
+   416→
+   417→-   Validated at creation.
+   418→
+   419→-   No database identity.
+   420→
+   421→-   Compared by value.
+   422→
+   423→-   Used to prevent invalid primitive values from leaking into domain
+   424→    logic.
+   425→
+   426→## **2.3.4 Domain Events**
+   427→
+   428→SalesOrderConfirmed\
+   429→PurchaseOrderApproved\
+   430→CustomerInvoicePosted\
+   431→StockMoveValidated\
+   432→ProductionOrderReleased\
+   433→PayrollPosted\
+   434→PermissionChanged
+   435→
+   436→-   Use past-tense business language.
+   437→
+   438→-   Include correlation_id.
+   439→
+   440→-   Include source document information.
+   441→
+   442→-   Avoid unnecessary sensitive data.
+   443→
+   444→-   Support versioning and schema registry.
+   445→
+   446→## **2.3.5 Policies**
+   447→
+   448→  -----------------------------------------------------------------------
+   449→  **Policy**                          **Purpose**
+   450→  ----------------------------------- -----------------------------------
+   451→  CanConfirmSalesOrderPolicy          Checks credit, discount, customer
+   452→                                      status and order validity.
+   453→
+   454→  CanPostJournalEntryPolicy           Checks balance, period, permissions
+   455→                                      and posting readiness.
+   456→
+   457→  CanValidateStockMovePolicy          Checks stock, lot/serial and
+   458→                                      warehouse scope.
+   459→
+   460→  CanApprovePurchaseOrderPolicy       Checks amount, role, approval limit
+   461→                                      and SOD.
+   462→
+   463→  CanRunPayrollPolicy                 Checks payroll period, exceptions,
+   464→                                      approvals and payroll readiness.
+   465→  -----------------------------------------------------------------------
+   466→
+   467→## **2.3.6 Specifications**
+   468→
+   469→IsCustomerActive\
+   470→IsPeriodOpen\
+   471→HasSufficientStock\
+   472→IsSupplierApproved\
+   473→IsDiscountWithinLimit\
+   474→IsLotNotExpired\
+   475→IsUserInCompanyScope
+   476→
+   477→Specifications are reusable predicates used by policies, validators and
+   478→domain services. They must be deterministic and testable.
+   479→
+   480→## **2.3.7 Factories**
+   481→
+   482→SalesOrderFactory.createFromQuotation()\
+   483→PurchaseOrderFactory.createFromRFQ()\
+   484→JournalEntryFactory.createFromInvoice()\
+   485→StockMoveFactory.createFromDelivery()\
+   486→PayrollRunFactory.createForPeriod()
+   487→
+   488→Factories are required when aggregate creation depends on defaults,
+   489→numbering, inherited values, source document linkage, derived lines,
+   490→initial workflow state or configuration-based initialization.
+   491→
+   492→# **2.4 Application Layer**
+   493→
+   494→## **2.4.1 Commands**
+   495→
+   496→CreateSalesOrderCommand\
+   497→ConfirmSalesOrderCommand\
+   498→ApprovePurchaseOrderCommand\
+   499→ValidateGoodsReceiptCommand\
+   500→PostCustomerInvoiceCommand\
+   501→ReverseJournalEntryCommand\
+   502→RunPayrollCommand\
+   503→CloseFiscalPeriodCommand
+   504→
+   505→A command represents an intention to change system state. Commands are
+   506→handled once, audited, authorized and validated. Commands that post,
+   507→integrate or create documents from external sources must support
+   508→idempotency.
+   509→
+   510→Mandatory command envelope:\
+   511→command_id\
+   512→correlation_id\
+   513→user_context\
+   514→company_id\
+   515→payload\
+   516→idempotency_key, if external or posting-related
+   517→
+   518→## **2.4.2 Command Handlers**
+   519→
+   520→mermaid\
+   521→sequenceDiagram\
+   522→participant API\
+   523→participant Handler\
+   524→participant Auth\
+   525→participant Repo\
+   526→participant Domain\
+   527→participant Workflow\
+   528→participant Posting\
+   529→participant Audit\
+   530→participant Outbox\
+   531→\
+   532→API-\>\>Handler: Command\
+   533→Handler-\>\>Auth: Authorize\
+   534→Handler-\>\>Repo: Load Aggregate\
+   535→Handler-\>\>Domain: Execute Business Logic\
+   536→Handler-\>\>Workflow: Apply State Transition\
+   537→Handler-\>\>Posting: Post if required\
+   538→Handler-\>\>Audit: Record Audit\
+   539→Handler-\>\>Outbox: Save Events\
+   540→Handler-\>\>Repo: Commit
+   541→
+   542→## **2.4.3 Queries**
+   543→
+   544→GetSalesOrderByIdQuery\
+   545→SearchCustomersQuery\
+   546→GetStockOnHandQuery\
+   547→GetTrialBalanceQuery\
+   548→GetPendingApprovalsQuery\
+   549→GetAuditTimelineQuery
+   550→
+   551→-   Queries do not change state.
+   552→
+   553→-   Queries enforce data scope security.
+   554→
+   555→-   Queries support pagination, filtering, sorting and searching.
+   556→
+   557→-   Queries must not reveal masked or forbidden fields.
+   558→
+   559→-   Sensitive queries may create audit events.
+   560→
+   561→## **2.4.4 DTOs**
+   562→
+   563→  -----------------------------------------------------------------------
+   564→  **DTO Type**                        **Purpose**
+   565→  ----------------------------------- -----------------------------------
+   566→  Request DTO                         Input contract received from API
+   567→                                      consumer.
+   568→
+   569→  Response DTO                        Output contract returned to
+   570→                                      consumer.
+   571→
+   572→  List Item DTO                       Optimized row for list pages.
+   573→
+   574→  Detail DTO                          Full object page data.
+   575→
+   576→  Lookup DTO                          Small dataset for
+   577→                                      dropdowns/lookups.
+   578→
+   579→  Command DTO                         Maps API request to command.
+   580→
+   581→  Import DTO                          Validated import row structure.
+   582→
+   583→  Export DTO                          Controlled export representation.
+   584→  -----------------------------------------------------------------------
+   585→
+   586→-   Do not expose domain entities directly as API responses.
+   587→
+   588→-   Mask or remove sensitive fields.
+   589→
+   590→-   Use ISO 8601 timestamps.
+   591→
+   592→-   Represent money as amount + currency.
+   593→
+   594→-   Avoid exposing internal database implementation details.
+   595→
+   596→## **2.4.5 Use Cases**
+   597→
+   598→Every use case must document:\
+   599→Name\
+   600→Command / Query\
+   601→Actor\
+   602→Permission\
+   603→Input DTO\
+   604→Output DTO\
+   605→Aggregate\
+   606→Policies\
+   607→Transaction Boundary\
+   608→Events\
+   609→Audit\
+   610→Errors\
+   611→Tests
+   612→
+   613→## **2.4.6 Validation Pipeline**
+   614→
+   615→  -----------------------------------------------------------------------
+   616→  **Validation Level**                **Example**
+   617→  ----------------------------------- -----------------------------------
+   618→  DTO Validation                      Required fields, type, length and
+   619→                                      format.
+   620→
+   621→  Business Validation                 Customer active, supplier approved,
+   622→                                      product sellable.
+   623→
+   624→  Workflow Validation                 Action allowed in current state.
+   625→
+   626→  Posting Validation                  Balanced journal, open period,
+   627→                                      valid accounts.
+   628→
+   629→  Security Validation                 Permission, scope and field access.
+   630→
+   631→  Integration Validation              Idempotency key and external
+   632→                                      reference validity.
+   633→  -----------------------------------------------------------------------
+   634→
+   635→## **2.4.7 Authorization Pipeline**
+   636→
+   637→Authentication → Role Permission → Data Scope → Field Scope → Workflow
+   638→Permission → SOD Check → Policy Check
+   639→
+   640→## **2.4.8 Transaction Pipeline**
+   641→
+   642→The transaction boundary covers aggregate modifications, ledger
+   643→postings, workflow state changes, audit records and outbox events. It
+   644→must not include email sending, webhook calls, heavy PDF generation or
+   645→BI projection updates. These are executed after commit through workers.
+   646→
+   647→## **2.4.9 Audit Pipeline**
+   648→
+   649→user_id\
+   650→company_id\
+   651→module\
+   652→document_type\
+   653→document_id\
+   654→action\
+   655→old_state\
+   656→new_state\
+   657→request_payload_hash\
+   658→ip_address\
+   659→device\
+   660→correlation_id\
+   661→timestamp
+   662→
+   663→# **2.5 Infrastructure Layer**
+   664→
+   665→## **2.5.1 Database Access**
+   666→
+   667→Application Handler → Repository / Query Service → ORM / SQL → Database
+   668→
+   669→Controllers, frontend clients and external integrations must not access
+   670→the database directly. All persistence must pass through approved
+   671→repository/query/service boundaries.
+   672→
+   673→## **2.5.2 ORM Strategy**
+   674→
+   675→The ORM should be used for aggregates, transactional entities, master
+   676→data and configuration where object mapping improves maintainability.
+   677→Heavy reports may use optimized SQL, read models, materialized views or
+   678→a reporting store.
+   679→
+   680→## **2.5.3 Repository Implementation**
+   681→
+   682→  -----------------------------------------------------------------------
+   683→  **Repository Type**                 **Purpose**
+   684→  ----------------------------------- -----------------------------------
+   685→  Aggregate Repository                Load and save aggregate roots.
+   686→
+   687→  Read Repository                     Optimized query reads and
+   688→                                      list/detail projections.
+   689→
+   690→  Lookup Repository                   Lightweight dropdown and reference
+   691→                                      data queries.
+   692→
+   693→  Posting Repository                  Persist ledger and posting records.
+   694→
+   695→  Audit Repository                    Persist and query audit events.
+   696→
+   697→  Configuration Repository            Access versioned settings and
+   698→                                      rules.
+   699→  -----------------------------------------------------------------------
+   700→
+   701→## **2.5.4 Unit of Work**
+   702→
+   703→The Unit of Work coordinates transaction lifecycle. It opens the
+   704→transaction, tracks changes, commits, rolls back and saves outbox events
+   705→inside the same transaction.
+   706→
+   707→Commit Rule:\
+   708→No external side effect before successful commit.
+   709→
+   710→## **2.5.5 Distributed Cache**
+   711→
+   712→  -----------------------------------------------------------------------
+   713→  **Cache Use**                       **Allowed? / Rule**
+   714→  ----------------------------------- -----------------------------------
+   715→  Permissions cache                   Allowed; must invalidate after
+   716→                                      role/permission changes.
+   717→
+   718→  Reference data cache                Allowed for stable data such as
+   719→                                      currencies and UOMs.
+   720→
+   721→  Configuration cache                 Allowed with version-aware
+   722→                                      invalidation.
+   723→
+   724→  Session metadata                    Allowed; sensitive tokens follow
+   725→                                      security rules.
+   726→
+   727→  Idempotency keys                    Allowed with expiry and unique
+   728→                                      constraints.
+   729→
+   730→  Posted ledger source of truth       Forbidden; ledger is database
+   731→                                      source of truth.
+   732→
+   733→  Critical financial state            Forbidden as cache-only source.
+   734→  -----------------------------------------------------------------------
+   735→
+   736→## **2.5.6 File Storage**
+   737→
+   738→-   Store file metadata in the database and binary content in object
+   739→    storage.
+   740→
+   741→-   Scan files before making them available.
+   742→
+   743→-   Apply document permission checks to attachments.
+   744→
+   745→-   Use immutable or versioned attachments for posted legal documents.
+   746→
+   747→-   Log upload, download and delete events with audit.
+   748→
+   749→## **2.5.7 External API Clients**
+   750→
+   751→Every external API client must support:\
+   752→timeout\
+   753→retry\
+   754→circuit breaker\
+   755→request logging\
+   756→response logging\
+   757→masked secrets\
+   758→correlation ID\
+   759→error mapping
+   760→
+   761→# **2.6 Repository Pattern**
+   762→
+   763→## **2.6.1 Repository Responsibility**
+   764→
+   765→Repositories do not contain business logic. They load aggregates, save
+   766→aggregate state, execute persistence operations and enforce
+   767→persistence-level constraints only.
+   768→
+   769→## **2.6.2 Aggregate Repository Rules**
+   770→
+   771→Allowed:\
+   772→SalesOrderRepository.getById()\
+   773→SalesOrderRepository.save()\
+   774→PurchaseOrderRepository.getById()\
+   775→JournalEntryRepository.save()\
+   776→\
+   777→Forbidden in repository:\
+   778→approveOrder()\
+   779→calculateTax()\
+   780→postInvoice()
+   781→
+   782→## **2.6.3 Read Repository Rules**
+   783→
+   784→SalesOrderReadRepository.search()\
+   785→StockOnHandReadRepository.getByWarehouse()\
+   786→TrialBalanceReadRepository.run()
+   787→
+   788→Read repositories may use optimized SQL/read models, but must still
+   789→enforce authorization and data scope rules.
+   790→
+   791→## **2.6.4 Repository Anti-Patterns**
+   792→
+   793→-   God repository combining unrelated modules.
+   794→
+   795→-   Repository per table without domain meaning.
+   796→
+   797→-   SQL inside controller.
+   798→
+   799→-   Business decisions inside repository.
+   800→
+   801→-   Bypassing unit of work.
+   802→
+   803→# **2.7 Unit of Work**
+   804→
+   805→  -----------------------------------------------------------------------
+   806→  **Topic**                           **Rule**
+   807→  ----------------------------------- -----------------------------------
+   808→  Transaction Scope                   Aggregate update, workflow
+   809→                                      transition, posting records, audit
+   810→                                      records and outbox events.
+   811→
+   812→  Commit Rules                        Commit only after validations,
+   813→                                      policies, postings and audit/outbox
+   814→                                      preparation succeed.
+   815→
+   816→  Rollback Rules                      Rollback on validation failure,
+   817→                                      posting failure, concurrency
+   818→                                      conflict, database constraint
+   819→                                      violation or unauthorized action.
+   820→
+   821→  Posting Transaction Rules           Document state change + posting +
+   822→                                      audit + outbox must be in one
+   823→                                      transaction.
+   824→
+   825→  Outbox Commit Rules                 Outbox event is saved before
+   826→                                      commit; publish occurs after
+   827→                                      commit.
+   828→  -----------------------------------------------------------------------
+   829→
+   830→# **2.8 CQRS**
+   831→
+   832→## **2.8.1 Command Model**
+   833→
+   834→ConfirmSalesOrder\
+   835→PostInvoice\
+   836→ValidateDelivery\
+   837→ApprovePO\
+   838→RunPayroll
+   839→
+   840→## **2.8.2 Query Model**
+   841→
+   842→SalesOrderListItem\
+   843→StockOnHandView\
+   844→CustomerAgingSummary\
+   845→TrialBalanceView\
+   846→PendingApprovalView
+   847→
+   848→## **2.8.3 Projection Model**
+   849→
+   850→mermaid\
+   851→flowchart LR\
+   852→DomainEvent\[Domain Event\]\
+   853→Worker\[Projection Worker\]\
+   854→ReadModel\[(Read Model)\]\
+   855→UI\[Dashboard/List View\]\
+   856→\
+   857→DomainEvent \--\> Worker\
+   858→Worker \--\> ReadModel\
+   859→ReadModel \--\> UI
+   860→
+   861→## **2.8.4 ERP CQRS Candidate Areas**
+   862→
+   863→  -----------------------------------------------------------------------
+   864→  **Area**                            **CQRS Benefit**
+   865→  ----------------------------------- -----------------------------------
+   866→  Stock on hand                       Very high read volume and frequent
+   867→                                      availability queries.
+   868→
+   869→  Trial balance                       Heavy aggregation across ledger
+   870→                                      lines.
+   871→
+   872→  Aging reports                       Complex financial summaries.
+   873→
+   874→  Approval inbox                      Cross-module aggregation.
+   875→
+   876→  Dashboards                          KPI projection and fast loading.
+   877→
+   878→  Audit timeline                      Append-only read optimization.
+   879→
+   880→  Sales pipeline                      Kanban performance and aggregated
+   881→                                      state.
+   882→  -----------------------------------------------------------------------
+   883→
+   884→## **2.8.5 CQRS Anti-Patterns**
+   885→
+   886→-   Do not use CQRS for simple screens with low read pressure.
+   887→
+   888→-   Do not introduce separate read models without ownership and refresh
+   889→    strategy.
+   890→
+   891→-   Do not sacrifice required immediate consistency for unnecessary
+   892→    projection complexity.
+   893→
+   894→# **2.9 Mediator Pattern**
+   895→
+   896→## **2.9.1 Request Dispatching**
+   897→
+   898→Controller → Mediator → Handler
+   899→
+   900→## **2.9.2 Pipeline Behaviors**
+   901→
+   902→Correlation\
+   903→Logging\
+   904→Authentication Context\
+   905→Authorization\
+   906→Validation\
+   907→Idempotency\
+   908→Transaction\
+   909→Handler\
+   910→Audit\
+   911→Event Collection\
+   912→Response Mapping
+   913→
+   914→  -----------------------------------------------------------------------
+   915→  **Behavior**                        **Responsibility**
+   916→  ----------------------------------- -----------------------------------
+   917→  Logging Behavior                    Record correlation, handler name,
+   918→                                      user, company, elapsed time, status
+   919→                                      and error code.
+   920→
+   921→  Validation Behavior                 Run DTO validation before handler
+   922→                                      and business validation inside
+   923→                                      handler/domain.
+   924→
+   925→  Authorization Behavior              Apply shared authorization for
+   926→                                      every command/query beyond
+   927→                                      controller checks.
+   928→
+   929→  Transaction Behavior                Open write transaction for commands
+   930→                                      only, not read-only queries.
+   931→
+   932→  Idempotency Behavior                Protect external create, posting,
+   933→                                      payment, callbacks and import jobs.
+   934→  -----------------------------------------------------------------------
+   935→
+   936→# **2.10 Backend Cross-Cutting Concerns**
+   937→
+   938→## **2.10.1 Caching**
+   939→
+   940→  -----------------------------------------------------------------------
+   941→  **Cache Type**                      **Use**
+   942→  ----------------------------------- -----------------------------------
+   943→  Reference cache                     Currencies, countries, UOM and
+   944→                                      stable reference data.
+   945→
+   946→  Permission cache                    Evaluated permissions and scopes.
+   947→
+   948→  Configuration cache                 Workflows, posting rules,
+   949→                                      thresholds.
+   950→
+   951→  Lookup cache                        Small dropdowns and lookup results.
+   952→
+   953→  Idempotency cache                   Prevent duplicate external
+   954→                                      requests.
+   955→  -----------------------------------------------------------------------
+   956→
+   957→## **2.10.2 Background Jobs**
+   958→
+   959→-   Idempotent.
+   960→
+   961→-   Retryable.
+   962→
+   963→-   Cancellable.
+   964→
+   965→-   Observable.
+   966→
+   967→-   Scheduled or event-triggered.
+   968→
+   969→-   Linked to correlation/job ID.
+   970→
+   971→## **2.10.3 Queues**
+   972→
+   973→notification_queue\
+   974→report_queue\
+   975→integration_queue\
+   976→event_publish_queue\
+   977→import_queue\
+   978→posting_heavy_queue
+   979→
+   980→## **2.10.4 Exception Handling**
+   981→
+   982→  -----------------------------------------------------------------------
+   983→  **Exception Type**                  **Example**
+   984→  ----------------------------------- -----------------------------------
+   985→  ValidationException                 Required field missing.
+   986→
+   987→  BusinessRuleException               Credit limit exceeded.
+   988→
+   989→  AuthorizationException              User lacks permission.
+   990→
+   991→  WorkflowException                   Invalid state transition.
+   992→
+   993→  PostingException                    Unbalanced journal.
+   994→
+   995→  ConcurrencyException                Document modified by another user.
+   996→
+   997→  IntegrationException                Bank API failed.
+   998→
+   999→  InfrastructureException             Database unavailable.
+  1000→  -----------------------------------------------------------------------
+  1001→
+  1002→## **2.10.5 Logging**
+  1003→
+  1004→{\
+  1005→\"correlation_id\": \"uuid\",\
+  1006→\"level\": \"ERROR\",\
+  1007→\"module\": \"Finance\",\
+  1008→\"action\": \"PostInvoice\",\
+  1009→\"document_id\": \"uuid\",\
+  1010→\"user_id\": \"uuid\",\
+  1011→\"error_code\": \"FIN-POST-001\"\
+  1012→}
+  1013→
+  1014→## **2.10.6 Auditing**
+  1015→
+  1016→  -----------------------------------------------------------------------
+  1017→  **Log**                             **Audit**
+  1018→  ----------------------------------- -----------------------------------
+  1019→  Used for troubleshooting.           Used as legal/business evidence.
+  1020→
+  1021→  Technical focus.                    Business-oriented focus.
+  1022→
+  1023→  May have shorter retention.         Often long retention.
+  1024→
+  1025→  Used by developers/operations.      Used by auditors/security/business
+  1026→                                      owners.
+  1027→  -----------------------------------------------------------------------
+  1028→
+  1029→## **2.10.7 Dependency Injection**
+  1030→
+  1031→Every service, repository, adapter and provider must be injected through
+  1032→dependency injection. Static service locators, hard-coded providers and
+  1033→creating external clients inside handlers are forbidden.
+  1034→
+  1035→## **2.10.8 Concurrency**
+  1036→
+  1037→-   Use optimistic concurrency for drafts and editable documents.
+  1038→
+  1039→-   Use version columns to detect stale updates.
+  1040→
+  1041→-   Use row locks for posting and sequence generation.
+  1042→
+  1043→-   Use unique constraints for idempotency keys and external references.
+  1044→
+  1045→## **2.10.9 Performance**
+  1046→
+  1047→-   No unbounded queries.
+  1048→
+  1049→-   No N+1 query patterns.
+  1050→
+  1051→-   Pagination is mandatory for lists.
+  1052→
+  1053→-   Use projections for dashboards.
+  1054→
+  1055→-   Batch operations run asynchronously when large.
+  1056→
+  1057→-   SQL plans and slow queries are monitored.
+  1058→
+  1059→# **2.11 Backend Folder Structure**
+  1060→
+  1061→## **2.11.1 Proposed Structure**
+  1062→
+  1063→/src\
+  1064→/modules\
+  1065→/finance\
+  1066→/domain\
+  1067→/application\
+  1068→/infrastructure\
+  1069→/api\
+  1070→/tests\
+  1071→/sales\
+  1072→/domain\
+  1073→/application\
+  1074→/infrastructure\
+  1075→/api\
+  1076→/tests\
+  1077→/inventory\
+  1078→/domain\
+  1079→/application\
+  1080→/infrastructure\
+  1081→/api\
+  1082→/tests\
+  1083→/shared\
+  1084→/kernel\
+  1085→/security\
+  1086→/workflow\
+  1087→/posting\
+  1088→/audit\
+  1089→/notifications\
+  1090→/integration\
+  1091→/platform\
+  1092→/identity\
+  1093→/configuration\
+  1094→/observability
+  1095→
+  1096→## **2.11.2 Module Folder Template**
+  1097→
+  1098→/module-name\
+  1099→/domain\
+  1100→/entities\
+  1101→/aggregates\
+  1102→/value-objects\
+  1103→/events\
+  1104→/policies\
+  1105→/specifications\
+  1106→/services\
+  1107→/application\
+  1108→/commands\
+  1109→/queries\
+  1110→/dtos\
+  1111→/validators\
+  1112→/handlers\
+  1113→/infrastructure\
+  1114→/repositories\
+  1115→/mappings\
+  1116→/external\
+  1117→/api\
+  1118→/controllers\
+  1119→/routes\
+  1120→/tests\
+  1121→/unit\
+  1122→/integration\
+  1123→/contract
+  1124→
+  1125→# **2.12 Backend Naming Standards**
+  1126→
+  1127→  ---------------------------------------------------------------------------------
+  1128→  **Type**                **Naming Standard**     **Example**
+  1129→  ----------------------- ----------------------- ---------------------------------
+  1130→  Command                 Verb + Entity + Command ConfirmSalesOrderCommand
+  1131→
+  1132→  Handler                 Command + Handler       ConfirmSalesOrderCommandHandler
+  1133→
+  1134→  Query                   Get/Search + Entity +   SearchSalesOrdersQuery
+  1135→                          Query                   
+  1136→
+  1137→  Event                   Past tense business     SalesOrderConfirmed
+  1138→                          name                    
+  1139→
+  1140→  Policy                  Can + Action + Entity + CanPostInvoicePolicy
+  1141→                          Policy                  
+  1142→
+  1143→  Specification           Is/Has + Condition      IsPeriodOpenSpecification
+  1144→
+  1145→  Repository              Entity + Repository     SalesOrderRepository
+  1146→
+  1147→  DTO                     UseCase +               CreateInvoiceRequestDto
+  1148→                          Request/Response        
+  1149→  ---------------------------------------------------------------------------------
+  1150→
+  1151→# **2.13 Backend Coding Guidelines**
+  1152→
+  1153→## **2.13.1 Command Handler Rules**
+  1154→
+  1155→-   1\. Authorize user and data scope.
+  1156→
+  1157→-   2\. Validate request DTO.
+  1158→
+  1159→-   3\. Load aggregate.
+  1160→
+  1161→-   4\. Apply policies/specifications.
+  1162→
+  1163→-   5\. Execute domain behavior.
+  1164→
+  1165→-   6\. Apply workflow transition.
+  1166→
+  1167→-   7\. Execute posting if required.
+  1168→
+  1169→-   8\. Record audit event.
+  1170→
+  1171→-   9\. Save outbox events.
+  1172→
+  1173→-   10\. Commit transaction.
+  1174→
+  1175→## **2.13.2 Query Handler Rules**
+  1176→
+  1177→-   Apply data scope.
+  1178→
+  1179→-   Apply field masking.
+  1180→
+  1181→-   Use pagination.
+  1182→
+  1183→-   Do not change state.
+  1184→
+  1185→-   Do not publish events.
+  1186→
+  1187→-   Audit only sensitive queries.
+  1188→
+  1189→## **2.13.3 Entity Rules**
+  1190→
+  1191→-   Entity does not know API.
+  1192→
+  1193→-   Entity does not know UI.
+  1194→
+  1195→-   Entity does not know database.
+  1196→
+  1197→-   Entity contains business invariants.
+  1198→
+  1199→-   Entity does not use service locator.
+  1200→
+  1201→## **2.13.4 Aggregate Rules**
+  1202→
+  1203→-   Protect consistency boundary.
+  1204→
+  1205→-   Child entities are modified only through aggregate root.
+  1206→
+  1207→-   Raise domain events.
+  1208→
+  1209→-   Own state transition methods.
+  1210→
+  1211→## **2.13.5 Service Rules**
+  1212→
+  1213→-   Single responsibility.
+  1214→
+  1215→-   Interface-driven.
+  1216→
+  1217→-   Testable.
+  1218→
+  1219→-   No hidden side effects.
+  1220→
+  1221→-   Use shared logging/audit services.
+  1222→
+  1223→## **2.13.6 Exception Rules**
+  1224→
+  1225→Every exception must include:\
+  1226→error_code\
+  1227→message\
+  1228→details\
+  1229→correlation_id\
+  1230→recoverable
+  1231→
+  1232→## **2.13.7 Logging Rules**
+  1233→
+  1234→Never log passwords, tokens, full bank account values, salary details,
+  1235→private HR data or full sensitive payloads.
+  1236→
+  1237→## **2.13.8 Testing Rules**
+  1238→
+  1239→-   Domain tests.
+  1240→
+  1241→-   Command handler tests.
+  1242→
+  1243→-   Query tests.
+  1244→
+  1245→-   Authorization tests.
+  1246→
+  1247→-   Workflow tests.
+  1248→
+  1249→-   Posting tests.
+  1250→
+  1251→-   API contract tests.
+  1252→
+  1253→-   Regression tests.
+  1254→
+  1255→# **2.14 Book 2 Completion Status**
+  1256→
+  1257→## **2.14.1 Completion Status**
+  1258→
+  1259→  -----------------------------------------------------------------------
+  1260→  **Section**                         **Status**
+  1261→  ----------------------------------- -----------------------------------
+  1262→  Backend Architecture Overview       Completed
+  1263→
+  1264→  Application Layers                  Completed
+  1265→
+  1266→  Domain Layer                        Completed
+  1267→
+  1268→  Application Layer                   Completed
+  1269→
+  1270→  Infrastructure Layer                Completed
+  1271→
+  1272→  Repository Pattern                  Completed
+  1273→
+  1274→  Unit of Work                        Completed
+  1275→
+  1276→  CQRS                                Completed
+  1277→
+  1278→  Mediator Pattern                    Completed
+  1279→
+  1280→  Cross-Cutting Concerns              Completed
+  1281→
+  1282→  Folder Structure                    Completed
+  1283→
+  1284→  Naming Standards                    Completed
+  1285→
+  1286→  Coding Guidelines                   Completed
+  1287→  -----------------------------------------------------------------------
+  1288→
+  1289→## **2.14.2 Coverage Checklist**
+  1290→
+  1291→  -----------------------------------------------------------------------
+  1292→  **TOC Requirement**                 **Covered**
+  1293→  ----------------------------------- -----------------------------------
+  1294→  Application Layers                  Yes
+  1295→
+  1296→  Domain Layer                        Yes
+  1297→
+  1298→  Application Layer                   Yes
+  1299→
+  1300→  Infrastructure Layer                Yes
+  1301→
+  1302→  Presentation Layer Boundary         Yes
+  1303→
+  1304→  Repository Pattern                  Yes
+  1305→
+  1306→  Unit of Work                        Yes
+  1307→
+  1308→  CQRS                                Yes
+  1309→
+  1310→  Mediator                            Yes
+  1311→
+  1312→  Domain Events                       Yes
+  1313→
+  1314→  Integration Events                  Yes
+  1315→
+  1316→  Specifications                      Yes
+  1317→
+  1318→  Factories                           Yes
+  1319→
+  1320→  Policies                            Yes
+  1321→
+  1322→  Services                            Yes
+  1323→
+  1324→  Validators                          Yes
+  1325→
+  1326→  DTOs                                Yes
+  1327→
+  1328→  Commands                            Yes
+  1329→
+  1330→  Queries                             Yes
+  1331→
+  1332→  Pipelines                           Yes
+  1333→
+  1334→  Caching                             Yes
+  1335→
+  1336→  Background Jobs                     Yes
+  1337→
+  1338→  Queues                              Yes
+  1339→
+  1340→  Exception Handling                  Yes
+  1341→
+  1342→  Logging                             Yes
+  1343→
+  1344→  Auditing                            Yes
+  1345→
+  1346→  Dependency Injection                Yes
+  1347→
+  1348→  Transactions                        Yes
+  1349→
+  1350→  Concurrency                         Yes
+  1351→
+  1352→  Performance                         Yes
+  1353→
+  1354→  Folder Structure                    Yes
+  1355→
+  1356→  Naming Standards                    Yes
+  1357→
+  1358→  Coding Guidelines                   Yes
+  1359→  -----------------------------------------------------------------------
+  1360→
+  1361→## **2.14.3 Cross-Reference Matrix**
+  1362→
+  1363→  -----------------------------------------------------------------------
+  1364→  **Book 2 Section**                  **Related Volume / Book**
+  1365→  ----------------------------------- -----------------------------------
+  1366→  Backend layers                      Book 1 Architecture Layers
+  1367→
+  1368→  Domain layer                        Volume 2 Domain Architecture
+  1369→
+  1370→  Commands / Queries                  Volume 3 API and Workflow
+  1371→                                      Specifications
+  1372→
+  1373→  Posting behavior                    Volume 3 Accounting Posting
+  1374→                                      Specification
+  1375→
+  1376→  Inventory behavior                  Volume 3 Inventory Posting
+  1377→                                      Specification
+  1378→
+  1379→  Authorization pipeline              Volume 3 Permission Matrix
+  1380→
+  1381→  Audit pipeline                      Volume 2 Audit Strategy
+  1382→
+  1383→  CQRS and read models                Volume 2 Reporting Architecture
+  1384→
+  1385→  Queues and workers                  Book 1 Event Architecture
+  1386→
+  1387→  Folder structure                    Volume 2 Engineering Standards
+  1388→  -----------------------------------------------------------------------
+  1389→
+  1390→## **2.14.4 Remaining Books**
+  1391→
+  1392→-   Book 3 --- Database Technical Design
+  1393→
+  1394→-   Book 4 --- API Technical Architecture
+  1395→
+  1396→-   Book 5 --- Frontend Architecture
+  1397→
+  1398→-   Book 6 --- UI Component Library
+  1399→
+  1400→-   Book 7 --- Security Architecture
+  1401→
+  1402→-   Book 8 --- Performance Architecture
+  1403→
+  1404→-   Book 9 --- DevOps Architecture
+  1405→
+  1406→-   Book 10 --- Engineering Standards
+  1407→
+  1408→-   Book 11 --- Implementation Decision Records ADR
+  1409→
+  1410→-   Book 12 --- Implementation Readiness Assessment
+  1411→

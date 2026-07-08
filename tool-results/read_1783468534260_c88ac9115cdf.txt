@@ -1,0 +1,1350 @@
+     1→     1→**Volume 4 --- SDTA**
+     2→     2→
+     3→     3→**BOOK 5 --- Frontend Architecture**
+     4→     4→
+     5→     5→Enterprise Comprehensive Edition --- Flutter Frontend Engineering
+     6→     6→Architecture
+     7→     7→
+     8→     8→Enterprise ERP Solution Design & Technical Architecture
+     9→     9→
+    10→    10→Implementation-ready frontend reference for Flutter Web, Desktop, Tablet
+    11→    11→and Mobile
+    12→    12→
+    13→    13→Prepared for: Abdullah Maresh \| Date: 08 July 2026
+    14→    14→
+    15→    15→# **Document Context and Consistency Statement**
+    16→    16→
+    17→    17→This document implements BOOK 5 --- Frontend Architecture according to
+    18→    18→the approved SDTA structure. It builds on the
+    19→    19→backend/API/security/database architecture already established in Books
+    20→    20→1--4, and translates the ERP product experience into a precise frontend
+    21→    21→engineering architecture for Flutter. It does not redesign previous
+    22→    22→architecture decisions and does not duplicate module FTS content; it
+    23→    23→defines how the frontend shall be structured, secured, localized,
+    24→    24→routed, tested, optimized and delivered.
+    25→    25→
+    26→    26→تم إعداد هذا الملف كنسخة موسعة ومفصلة جدًا من Book 5 وبصيغة Word
+    27→    27→احترافية، ليكون مرجعًا مباشرًا لفريق الواجهة الأمامية وUI/UX وQA والهندسة.
+    28→    28→
+    29→    29→  -----------------------------------------------------------------------
+    30→    30→  **Reference**                       **Frontend Architecture
+    31→    31→                                      Dependency**
+    32→    32→  ----------------------------------- -----------------------------------
+    33→    33→  Book 1 --- Enterprise Solution      Defines modular monolith,
+    34→    34→  Architecture                        architecture layers, shared kernel
+    35→    35→                                      and event-aware platform.
+    36→    36→
+    37→    37→  Book 2 --- Backend Architecture     Defines commands, queries, DTOs,
+    38→    38→                                      pipelines, authorization and
+    39→    39→                                      backend folder boundaries.
+    40→    40→
+    41→    41→  Book 3 --- Database Technical       Defines data scope, audit, read
+    42→    42→  Design                              models, reporting views and
+    43→    43→                                      security-scoped data rules.
+    44→    44→
+    45→    45→  Book 4 --- API Technical            Defines REST standards,
+    46→    46→  Architecture                        authentication, authorization,
+    47→    47→                                      response formats, error contracts
+    48→    48→                                      and webhooks.
+    49→    49→
+    50→    50→  Volume 3 --- FTS                    Defines ERP screens, fields,
+    51→    51→                                      workflows, permissions,
+    52→    52→                                      validations, reports and
+    53→    53→                                      module-level behavior.
+    54→    54→  -----------------------------------------------------------------------
+    55→    55→
+    56→    56→# **5.1 Frontend Architecture Vision**
+    57→    57→
+    58→    58→## **5.1.1 Frontend Mission**
+    59→    59→
+    60→    60→The frontend is not a passive presentation layer. In an enterprise ERP
+    61→    61→platform, it is the role-based productivity environment where users
+    62→    62→execute transactions, approve workflows, analyze exceptions, inspect
+    63→    63→audit history, manage documents and interact with operational controls.
+    64→    64→It must translate complex ERP behavior into a disciplined, consistent,
+    65→    65→secure and efficient user experience.
+    66→    66→
+    67→    67→Frontend Mission:\
+    68→    68→Enterprise Workspace\
+    69→    69→Role-Based Productivity Environment\
+    70→    70→Transaction Execution Platform\
+    71→    71→Workflow Interaction Layer\
+    72→    72→Decision Support Layer\
+    73→    73→Operational Control Center
+    74→    74→
+    75→    75→Goal:\
+    76→    76→Enable enterprise users\
+    77→    77→to execute business processes\
+    78→    78→with maximum efficiency,\
+    79→    79→minimum clicks,\
+    80→    80→clear visibility,\
+    81→    81→full traceability,\
+    82→    82→and secure access.
+    83→    83→
+    84→    84→## **5.1.2 Frontend Design Goals**
+    85→    85→
+    86→    86→  -----------------------------------------------------------------------
+    87→    87→  **Goal**                            **Frontend Implementation Meaning**
+    88→    88→  ----------------------------------- -----------------------------------
+    89→    89→  Productivity                        Reduce clicks, support keyboard
+    90→    90→                                      shortcuts, quick actions, saved
+    91→    91→                                      filters, role workspaces and bulk
+    92→    92→                                      operations.
+    93→    93→
+    94→    94→  Consistency                         Use the same object page, list,
+    95→    95→                                      table, workflow, attachment,
+    96→    96→                                      timeline and audit patterns across
+    97→    97→                                      modules.
+    98→    98→
+    99→    99→  Scalability                         Support thousands of screens
+   100→   100→                                      through feature-first modules and
+   101→   101→                                      shared component architecture.
+   102→   102→
+   103→   103→  Maintainability                     Keep UI, state, routes, services
+   104→   104→                                      and feature modules separated and
+   105→   105→                                      testable.
+   106→   106→
+   107→   107→  Extensibility                       Enable new ERP modules, reports and
+   108→   108→                                      screens without breaking shell,
+   109→   109→                                      navigation or core components.
+   110→   110→
+   111→   111→  Responsiveness                      Provide desktop, tablet, mobile and
+   112→   112→                                      optional offline-friendly layouts.
+   113→   113→
+   114→   114→  Security                            Render UI actions based on
+   115→   115→                                      permissions, but never rely on
+   116→   116→                                      frontend authorization alone.
+   117→   117→
+   118→   118→  Accessibility                       Follow WCAG 2.1 AA-oriented
+   119→   119→                                      patterns for tables, forms, focus,
+   120→   120→                                      keyboard, contrast and screen
+   121→   121→                                      reader labels.
+   122→   122→
+   123→   123→  Offline Capability                  Support selected offline flows such
+   124→   124→                                      as lookups, recent documents, field
+   125→   125→                                      operations and queued actions.
+   126→   126→
+   127→   127→  Performance                         Fast navigation, lazy-loaded
+   128→   128→                                      features, virtualized lists,
+   129→   129→                                      optimized lookups and cached
+   130→   130→                                      reference data.
+   131→   131→  -----------------------------------------------------------------------
+   132→   132→
+   133→   133→## **5.1.3 Platform Strategy**
+   134→   134→
+   135→   135→The frontend platform is Flutter. Flutter is selected to provide a
+   136→   136→unified UI engineering model across Web, Desktop, Tablet and Mobile
+   137→   137→while sharing design tokens, components, routing concepts, state
+   138→   138→management, localization, validations and test strategies.
+   139→   139→
+   140→   140→  -----------------------------------------------------------------------
+   141→   141→  **Target**                          **Frontend Requirement**
+   142→   142→  ----------------------------------- -----------------------------------
+   143→   143→  Web                                 Full ERP productivity interface
+   144→   144→                                      with desktop-class navigation,
+   145→   145→                                      tables, reports and dashboards.
+   146→   146→
+   147→   147→  Desktop                             Dense operational workflows, large
+   148→   148→                                      screens, keyboard navigation and
+   149→   149→                                      multi-panel layouts.
+   150→   150→
+   151→   151→  Tablet                              Adaptive field operations,
+   152→   152→                                      approvals, warehouse/field-service
+   153→   153→                                      screens and manager review flows.
+   154→   154→
+   155→   155→  Mobile                              Focused tasks, approvals,
+   156→   156→                                      notifications, scanning, quick
+   157→   157→                                      create, status review and
+   158→   158→                                      offline-friendly workflows.
+   159→   159→  -----------------------------------------------------------------------
+   160→   160→
+   161→   161→# **5.2 Frontend Architecture Model**
+   162→   162→
+   163→   163→## **5.2.1 High-Level Architecture**
+   164→   164→
+   165→   165→mermaid\
+   166→   166→flowchart TB\
+   167→   167→UI\[UI Components\]\
+   168→   168→Pages\[Pages\]\
+   169→   169→Features\[Feature Modules\]\
+   170→   170→State\[State Management\]\
+   171→   171→Services\[Application Services\]\
+   172→   172→API\[API Clients\]\
+   173→   173→Backend\[Backend APIs\]\
+   174→   174→\
+   175→   175→UI \--\> Pages\
+   176→   176→Pages \--\> Features\
+   177→   177→Features \--\> State\
+   178→   178→State \--\> Services\
+   179→   179→Services \--\> API\
+   180→   180→API \--\> Backend
+   181→   181→
+   182→   182→## **5.2.2 Layer Structure**
+   183→   183→
+   184→   184→  -----------------------------------------------------------------------
+   185→   185→  **Layer**                           **Responsibility**
+   186→   186→  ----------------------------------- -----------------------------------
+   187→   187→  Presentation Layer                  Pages, widgets, components, forms,
+   188→   188→                                      tables, navigation and UI states.
+   189→   189→
+   190→   190→  Application Layer                   Frontend use-case orchestration
+   191→   191→                                      such as submit form, load list,
+   192→   192→                                      approve action and trigger export.
+   193→   193→
+   194→   194→  State Layer                         Riverpod providers/notifiers for
+   195→   195→                                      session, feature, form, workflow
+   196→   196→                                      and async state.
+   197→   197→
+   198→   198→  Service Layer                       Permission service, navigation
+   199→   199→                                      service, validation service, file
+   200→   200→                                      service, notification service and
+   201→   201→                                      report service.
+   202→   202→
+   203→   203→  API Layer                           Typed API clients, DTO
+   204→   204→                                      serialization, response mapping,
+   205→   205→                                      error mapping and retry handling.
+   206→   206→
+   207→   207→  Infrastructure Layer                Secure storage, persistent cache,
+   208→   208→                                      offline queue, local database/cache
+   209→   209→                                      and device services.
+   210→   210→  -----------------------------------------------------------------------
+   211→   211→
+   212→   212→# **5.3 Flutter Architecture**
+   213→   213→
+   214→   214→## **5.3.1 Feature-First Architecture**
+   215→   215→
+   216→   216→The frontend must use a feature-first architecture. ERP scale makes a
+   217→   217→layer-first global structure difficult to maintain because hundreds of
+   218→   218→screens and thousands of widgets become mixed across modules.
+   219→   219→Feature-first keeps sales, finance, inventory and HR independent while
+   220→   220→still sharing common design components.
+   221→   221→
+   222→   222→Forbidden global structure:\
+   223→   223→/screens\
+   224→   224→/widgets\
+   225→   225→/services\
+   226→   226→/models\
+   227→   227→\
+   228→   228→Approved feature-first structure:\
+   229→   229→/features\
+   230→   230→/sales\
+   231→   231→/inventory\
+   232→   232→/finance\
+   233→   233→/purchasing\
+   234→   234→/hr
+   235→   235→
+   236→   236→  -----------------------------------------------------------------------
+   237→   237→  **Architecture Rule\
+   238→   238→  **The feature module owns its pages, state, DTO mappings, validators,
+   239→   239→  route definitions and tests. Shared widgets live in shared/ui only when
+   240→   240→  they are genuinely reusable.
+   241→   241→  -----------------------------------------------------------------------
+   242→   242→
+   243→   243→  -----------------------------------------------------------------------
+   244→   244→
+   245→   245→## **5.3.2 Module Structure**
+   246→   246→
+   247→   247→sales\
+   248→   248→├─ presentation\
+   249→   249→├─ application\
+   250→   250→├─ domain\
+   251→   251→├─ infrastructure\
+   252→   252→├─ widgets\
+   253→   253→├─ pages\
+   254→   254→├─ state\
+   255→   255→├─ routes\
+   256→   256→├─ services\
+   257→   257→└─ tests
+   258→   258→
+   259→   259→  -----------------------------------------------------------------------
+   260→   260→  **Folder**                          **Purpose**
+   261→   261→  ----------------------------------- -----------------------------------
+   262→   262→  presentation                        Feature pages, screen composition
+   263→   263→                                      and feature-specific widgets.
+   264→   264→
+   265→   265→  application                         Frontend use cases, form submit
+   266→   266→                                      handlers and screen workflows.
+   267→   267→
+   268→   268→  domain                              Frontend domain models where
+   269→   269→                                      needed; must not duplicate backend
+   270→   270→                                      business rules.
+   271→   271→
+   272→   272→  infrastructure                      API client implementations,
+   273→   273→                                      mappers, local cache adapters.
+   274→   274→
+   275→   275→  widgets                             Feature-specific widgets that
+   276→   276→                                      should not be shared globally.
+   277→   277→
+   278→   278→  pages                               Route-level screens such as list
+   279→   279→                                      page, form page and detail page.
+   280→   280→
+   281→   281→  state                               Riverpod providers, state
+   282→   282→                                      notifiers, async notifiers and
+   283→   283→                                      state classes.
+   284→   284→
+   285→   285→  routes                              Feature route definitions and
+   286→   286→                                      guards.
+   287→   287→
+   288→   288→  services                            Feature services such as wizard
+   289→   289→                                      orchestration or local import
+   290→   290→                                      helpers.
+   291→   291→
+   292→   292→  tests                               Widget, state, routing, API mapper
+   293→   293→                                      and integration tests.
+   294→   294→  -----------------------------------------------------------------------
+   295→   295→
+   296→   296→## **5.3.3 Shared Layer**
+   297→   297→
+   298→   298→shared\
+   299→   299→├─ ui\
+   300→   300→├─ widgets\
+   301→   301→├─ themes\
+   302→   302→├─ localization\
+   303→   303→├─ services\
+   304→   304→├─ helpers\
+   305→   305→├─ security\
+   306→   306→├─ permissions\
+   307→   307→├─ navigation\
+   308→   308→└─ error_handling
+   309→   309→
+   310→   310→The shared layer contains stable cross-module assets only. It must not
+   311→   311→become a dumping ground for feature-specific logic. Shared components
+   312→   312→must be documented, versioned and covered by component tests.
+   313→   313→
+   314→   314→# **5.4 State Management Architecture**
+   315→   315→
+   316→   316→## **5.4.1 State Strategy**
+   317→   317→
+   318→   318→The platform requires enterprise-grade state management that is
+   319→   319→scalable, testable, modular, predictable and friendly to asynchronous
+   320→   320→workflows. State must support large forms, approval actions, dashboards,
+   321→   321→offline queues and long-running background jobs.
+   322→   322→
+   323→   323→State management criteria:\
+   324→   324→Scalable\
+   325→   325→Testable\
+   326→   326→Modular\
+   327→   327→Predictable\
+   328→   328→Event Driven
+   329→   329→
+   330→   330→## **5.4.2 Recommended Approach**
+   331→   331→
+   332→   332→The recommended frontend state architecture is Riverpod with
+   333→   333→StateNotifier, AsyncNotifier, Provider, FutureProvider and
+   334→   334→StreamProvider. Riverpod is selected because it supports explicit
+   335→   335→dependencies, testability, modular providers, scoped overrides and clean
+   336→   336→separation from widget lifecycle.
+   337→   337→
+   338→   338→  -----------------------------------------------------------------------
+   339→   339→  **Riverpod Construct**              **Recommended Use**
+   340→   340→  ----------------------------------- -----------------------------------
+   341→   341→  Provider                            Immutable dependencies, API
+   342→   342→                                      clients, configuration and service
+   343→   343→                                      access.
+   344→   344→
+   345→   345→  StateNotifierProvider               Complex mutable screen/form state
+   346→   346→                                      where explicit actions are
+   347→   347→                                      required.
+   348→   348→
+   349→   349→  AsyncNotifierProvider               Asynchronous screen state such as
+   350→   350→                                      lists, details, reports and
+   351→   351→                                      dashboards.
+   352→   352→
+   353→   353→  FutureProvider                      Simple one-time lookups and
+   354→   354→                                      reference data.
+   355→   355→
+   356→   356→  StreamProvider                      Live updates, notifications, job
+   357→   357→                                      progress and event-driven screen
+   358→   358→                                      updates.
+   359→   359→  -----------------------------------------------------------------------
+   360→   360→
+   361→   361→## **5.4.3 State Categories**
+   362→   362→
+   363→   363→  -----------------------------------------------------------------------
+   364→   364→  **State Category**      **Examples**            **Ownership**
+   365→   365→  ----------------------- ----------------------- -----------------------
+   366→   366→  Application State       Current user, current   App shell/shared
+   367→   367→                          company, current        providers.
+   368→   368→                          branch, permissions,    
+   369→   369→                          locale, theme,          
+   370→   370→                          settings.               
+   371→   371→
+   372→   372→  Feature State           Sales orders, invoices, Feature provider/state
+   373→   373→                          products, employees,    module.
+   374→   374→                          projects, stock         
+   375→   375→                          transfers.              
+   376→   376→
+   377→   377→  Form State              Draft values,           Form state notifier.
+   378→   378→                          validation state, dirty 
+   379→   379→                          flag, attachments, line 
+   380→   380→                          edits, unsaved changes. 
+   381→   381→
+   382→   382→  Workflow State          Pending approval,       Workflow
+   383→   383→                          approval history,       provider/service.
+   384→   384→                          available actions,      
+   385→   385→                          state transition        
+   386→   386→                          metadata.               
+   387→   387→
+   388→   388→  Cache State             Reference data,         Cache service/provider.
+   389→   389→                          lookups, user           
+   390→   390→                          preferences, recent     
+   391→   391→                          documents.              
+   392→   392→
+   393→   393→  Offline State           Queued commands, sync   Offline queue service.
+   394→   394→                          status, local drafts    
+   395→   395→                          and conflict flags.     
+   396→   396→  -----------------------------------------------------------------------
+   397→   397→
+   398→   398→## **5.4.4 State Rules**
+   399→   399→
+   400→   400→-   Business logic must not live inside widgets.
+   401→   401→
+   402→   402→-   API calls must not be executed directly inside UI build methods.
+   403→   403→
+   404→   404→-   Global mutable state is forbidden.
+   405→   405→
+   406→   406→-   Every asynchronous state must expose loading, empty, success and
+   407→   407→    error states.
+   408→   408→
+   409→   409→-   Form states must track dirty/clean status for unsaved change
+   410→   410→    warnings.
+   411→   411→
+   412→   412→-   State must be recoverable after navigation when business flow
+   413→   413→    requires it.
+   414→   414→
+   415→   415→-   Permission changes must invalidate permission-dependent UI state.
+   416→   416→
+   417→   417→# **5.5 Routing Architecture**
+   418→   418→
+   419→   419→## **5.5.1 Routing Strategy**
+   420→   420→
+   421→   421→The application uses declarative routing. Routes are defined per feature
+   422→   422→and registered into the app shell through a central route registry.
+   423→   423→Route guards enforce authentication, permissions, data scope and
+   424→   424→license/module availability before rendering screens.
+   425→   425→
+   426→   426→## **5.5.2 Route Naming Standard**
+   427→   427→
+   428→   428→/sales/orders\
+   429→   429→/sales/orders/:id\
+   430→   430→/inventory/transfers\
+   431→   431→/finance/journal-entries\
+   432→   432→/hr/employees
+   433→   433→
+   434→   434→## **5.5.3 Route Permissions**
+   435→   435→
+   436→   436→  --------------------------------------------------------------------------------
+   437→   437→  **Route**                      **Required Permission**   **Scope**
+   438→   438→  ------------------------------ ------------------------- -----------------------
+   439→   439→  /finance/journal-entries       finance.journal.view      Company + branch +
+   440→   440→                                                           journal access.
+   441→   441→
+   442→   442→  /finance/journal-entries/:id   finance.journal.read      Document company,
+   443→   443→                                                           branch and account
+   444→   444→                                                           scope.
+   445→   445→
+   446→   446→  /sales/orders                  sales.order.view          Sales team, company and
+   447→   447→                                                           branch scope.
+   448→   448→
+   449→   449→  /inventory/transfers           inventory.transfer.view   Warehouse scope.
+   450→   450→
+   451→   451→  /hr/employees                  hr.employee.view          Department/company
+   452→   452→                                                           scope with salary field
+   453→   453→                                                           masking.
+   454→   454→  --------------------------------------------------------------------------------
+   455→   455→
+   456→   456→## **5.5.4 Route Guard**
+   457→   457→
+   458→   458→Route guard checks:\
+   459→   459→Authenticated?\
+   460→   460→Authorized?\
+   461→   461→Scope Allowed?\
+   462→   462→License / Module Enabled?\
+   463→   463→Session Valid?\
+   464→   464→MFA Required?\
+   465→   465→Maintenance Mode Allowed?
+   466→   466→
+   467→   467→# **5.6 Navigation Architecture**
+   468→   468→
+   469→   469→## **5.6.1 Navigation Types**
+   470→   470→
+   471→   471→  -----------------------------------------------------------------------
+   472→   472→  **Navigation Type**                 **Purpose**
+   473→   473→  ----------------------------------- -----------------------------------
+   474→   474→  Sidebar Navigation                  Primary module navigation for
+   475→   475→                                      desktop and tablet.
+   476→   476→
+   477→   477→  Workspace Navigation                Role-specific dashboard,
+   478→   478→                                      exceptions, approvals and action
+   479→   479→                                      queues.
+   480→   480→
+   481→   481→  Breadcrumb Navigation               Shows functional hierarchy and
+   482→   482→                                      document context.
+   483→   483→
+   484→   484→  Quick Actions                       Fast access to create, approve,
+   485→   485→                                      post, import, export and scan
+   486→   486→                                      actions.
+   487→   487→
+   488→   488→  Global Search Navigation            Jump to documents, masters,
+   489→   489→                                      reports, settings and help.
+   490→   490→
+   491→   491→  Context Navigation                  Related documents, smart links,
+   492→   492→                                      source/target documents and audit
+   493→   493→                                      trail.
+   494→   494→  -----------------------------------------------------------------------
+   495→   495→
+   496→   496→## **5.6.2 Desktop Navigation**
+   497→   497→
+   498→   498→Desktop layout uses left sidebar, top toolbar, workspace tabs and quick
+   499→   499→search. It supports high-density business users who need tables, split
+   500→   500→views, keyboard shortcuts and multi-panel decision making.
+   501→   501→
+   502→   502→## **5.6.3 Mobile Navigation**
+   503→   503→
+   504→   504→Mobile layout uses bottom navigation, drawer and floating contextual
+   505→   505→actions. Mobile must favor task execution over configuration-heavy
+   506→   506→screens. High-risk actions such as posting may require stronger
+   507→   507→confirmation and MFA depending policy.
+   508→   508→
+   509→   509→# **5.7 Dependency Injection**
+   510→   510→
+   511→   511→## **5.7.1 DI Strategy**
+   512→   512→
+   513→   513→All services must be injected through providers. Widgets must not
+   514→   514→instantiate API clients or infrastructure classes directly.
+   515→   515→
+   516→   516→Forbidden inside widgets:\
+   517→   517→new ApiClient()\
+   518→   518→new AuthService()\
+   519→   519→new StorageAdapter()
+   520→   520→
+   521→   521→## **5.7.2 Registered Services**
+   522→   522→
+   523→   523→  -----------------------------------------------------------------------
+   524→   524→  **Service**                         **Purpose**
+   525→   525→  ----------------------------------- -----------------------------------
+   526→   526→  ApiClient                           HTTP communication and
+   527→   527→                                      response/error mapping.
+   528→   528→
+   529→   529→  AuthService                         Login, refresh, logout and session
+   530→   530→                                      handling.
+   531→   531→
+   532→   532→  PermissionService                   Permission checks and
+   533→   533→                                      permission-based rendering.
+   534→   534→
+   535→   535→  NavigationService                   Route navigation, redirect and
+   536→   536→                                      guarded navigation.
+   537→   537→
+   538→   538→  NotificationService                 In-app notifications, badges and
+   539→   539→                                      notification center.
+   540→   540→
+   541→   541→  StorageService                      Secure storage, local preferences
+   542→   542→                                      and persistent cache.
+   543→   543→
+   544→   544→  ReportService                       Report execution, jobs, export and
+   545→   545→                                      status tracking.
+   546→   546→
+   547→   547→  OfflineQueueService                 Store and sync offline/queued
+   548→   548→                                      actions.
+   549→   549→  -----------------------------------------------------------------------
+   550→   550→
+   551→   551→# **5.8 Theme System**
+   552→   552→
+   553→   553→## **5.8.1 Theme Architecture**
+   554→   554→
+   555→   555→The theme system is token-driven. All colors, typography, spacing,
+   556→   556→elevation, radius, density and status styles must be defined as design
+   557→   557→tokens rather than hard-coded in widgets.
+   558→   558→
+   559→   559→  -----------------------------------------------------------------------
+   560→   560→  **Theme Element**                   **Definition**
+   561→   561→  ----------------------------------- -----------------------------------
+   562→   562→  Design Tokens                       Central variables for color,
+   563→   563→                                      spacing, radius, shadows,
+   564→   564→                                      typography and density.
+   565→   565→
+   566→   566→  Theme Definitions                   Light and dark theme mappings.
+   567→   567→
+   568→   568→  Color System                        Brand, neutral, semantic and risk
+   569→   569→                                      colors.
+   570→   570→
+   571→   571→  Typography                          Text scale for headings, labels,
+   572→   572→                                      body, metadata and tables.
+   573→   573→
+   574→   574→  Spacing                             Consistent spacing scale for forms,
+   575→   575→                                      cards, tables and dashboards.
+   576→   576→
+   577→   577→  Elevation                           Subtle layering for dialogs, cards
+   578→   578→                                      and panels.
+   579→   579→
+   580→   580→  Status Colors                       Draft, submitted, approved,
+   581→   581→                                      rejected, posted, cancelled and
+   582→   582→                                      warning states.
+   583→   583→  -----------------------------------------------------------------------
+   584→   584→
+   585→   585→## **5.8.2 Theme Modes**
+   586→   586→
+   587→   587→The system supports Light Theme and Dark Theme. Dark theme must not be a
+   588→   588→simple color inversion. Financial negative values, warning colors,
+   589→   589→status badges and table states must remain accessible and semantically
+   590→   590→consistent.
+   591→   591→
+   592→   592→## **5.8.3 Design Tokens**
+   593→   593→
+   594→   594→Primary Color\
+   595→   595→Secondary Color\
+   596→   596→Error Color\
+   597→   597→Success Color\
+   598→   598→Warning Color\
+   599→   599→Info Color\
+   600→   600→Neutral Background\
+   601→   601→Surface Color\
+   602→   602→Border Color\
+   603→   603→Focus Ring Color\
+   604→   604→Table Header Color\
+   605→   605→Status Draft Color\
+   606→   606→Status Posted Color
+   607→   607→
+   608→   608→## **5.8.4 ERP Status Colors**
+   609→   609→
+   610→   610→  -----------------------------------------------------------------------
+   611→   611→  **Status**              **Color Usage**         **UI Rule**
+   612→   612→  ----------------------- ----------------------- -----------------------
+   613→   613→  Draft                   Gray                    Neutral state;
+   614→   614→                                                  editable.
+   615→   615→
+   616→   616→  Submitted               Blue                    Awaiting review or
+   617→   617→                                                  approval.
+   618→   618→
+   619→   619→  Approved                Green                   Approved but not
+   620→   620→                                                  necessarily posted.
+   621→   621→
+   622→   622→  Rejected                Red                     Requires correction or
+   623→   623→                                                  resubmission.
+   624→   624→
+   625→   625→  Posted                  Dark Green              Legal/financially
+   626→   626→                                                  effective; immutable.
+   627→   627→
+   628→   628→  Cancelled               Dark Gray               Inactive/cancelled;
+   629→   629→                                                  read-only.
+   630→   630→
+   631→   631→  Exception               Amber/Warning           Requires user action or
+   632→   632→                                                  review.
+   633→   633→  -----------------------------------------------------------------------
+   634→   634→
+   635→   635→# **5.9 Localization Architecture**
+   636→   636→
+   637→   637→## **5.9.1 Supported Languages**
+   638→   638→
+   639→   639→The minimum supported languages are Arabic and English. The architecture
+   640→   640→must support additional languages without changing screen logic.
+   641→   641→
+   642→   642→## **5.9.2 Localization Scope**
+   643→   643→
+   644→   644→-   UI text and labels.
+   645→   645→
+   646→   646→-   Dates and time.
+   647→   647→
+   648→   648→-   Currency formatting.
+   649→   649→
+   650→   650→-   Number formatting.
+   651→   651→
+   652→   652→-   Validation messages.
+   653→   653→
+   654→   654→-   Error messages.
+   655→   655→
+   656→   656→-   Reports.
+   657→   657→
+   658→   658→-   Notifications.
+   659→   659→
+   660→   660→-   Print templates.
+   661→   661→
+   662→   662→-   Accessibility labels.
+   663→   663→
+   664→   664→## **5.9.3 RTL Support**
+   665→   665→
+   666→   666→Arabic requires full RTL support across layout, tables, forms,
+   667→   667→navigation, breadcrumbs, dialogs and report previews. Mixed
+   668→   668→Arabic/English content must preserve number and code readability.
+   669→   669→
+   670→   670→  -----------------------------------------------------------------------
+   671→   671→  **RTL Area**                        **Requirement**
+   672→   672→  ----------------------------------- -----------------------------------
+   673→   673→  Forms                               Labels, input alignment and section
+   674→   674→                                      order adapt to RTL.
+   675→   675→
+   676→   676→  Tables                              Column order policy must be defined
+   677→   677→                                      per screen; numeric columns remain
+   678→   678→                                      readable.
+   679→   679→
+   680→   680→  Navigation                          Sidebar and breadcrumbs support RTL
+   681→   681→                                      direction.
+   682→   682→
+   683→   683→  Dialogs                             Actions and focus order adapt to
+   684→   684→                                      RTL language.
+   685→   685→
+   686→   686→  Reports                             Printed reports must support RTL
+   687→   687→                                      fonts and layout.
+   688→   688→  -----------------------------------------------------------------------
+   689→   689→
+   690→   690→# **5.10 Responsive Design Strategy**
+   691→   691→
+   692→   692→## **5.10.1 Device Categories**
+   693→   693→
+   694→   694→  -----------------------------------------------------------------------
+   695→   695→  **Device Type**         **Width**               **Primary UX Pattern**
+   696→   696→  ----------------------- ----------------------- -----------------------
+   697→   697→  Mobile                  \< 768 px               Single column,
+   698→   698→                                                  task-focused actions,
+   699→   699→                                                  simplified tables.
+   700→   700→
+   701→   701→  Tablet                  768--1199 px            Adaptive panels,
+   702→   702→                                                  list/detail
+   703→   703→                                                  transitions, field
+   704→   704→                                                  operations.
+   705→   705→
+   706→   706→  Desktop                 \>= 1200 px             Multi-column forms,
+   707→   707→                                                  split views, dense
+   708→   708→                                                  tables, workspace
+   709→   709→                                                  dashboards.
+   710→   710→  -----------------------------------------------------------------------
+   711→   711→
+   712→   712→## **5.10.2 Layout Strategy**
+   713→   713→
+   714→   714→  -----------------------------------------------------------------------
+   715→   715→  **Layout**                          **Description**
+   716→   716→  ----------------------------------- -----------------------------------
+   717→   717→  Mobile                              Single column; cards replace dense
+   718→   718→                                      tables; bottom actions; reduced
+   719→   719→                                      configuration screens.
+   720→   720→
+   721→   721→  Tablet                              Adaptive layout; collapsible
+   722→   722→                                      panels; larger touch targets;
+   723→   723→                                      optional split view.
+   724→   724→
+   725→   725→  Desktop                             Multi-workspace layout; sidebar;
+   726→   726→                                      large tables; master-detail; docked
+   727→   727→                                      panels.
+   728→   728→  -----------------------------------------------------------------------
+   729→   729→
+   730→   730→## **5.10.3 ERP Workspace Mode**
+   731→   731→
+   732→   732→-   Master-detail screens for orders, invoices, employees and stock
+   733→   733→    transfers.
+   734→   734→
+   735→   735→-   Side panels for audit, attachments, comments and related documents.
+   736→   736→
+   737→   737→-   Split views for review/approval and reconciliation workflows.
+   738→   738→
+   739→   739→-   Docked reports for finance and inventory analysis.
+   740→   740→
+   741→   741→# **5.11 Offline Architecture**
+   742→   742→
+   743→   743→## **5.11.1 Offline Goals**
+   744→   744→
+   745→   745→Offline support is selective and controlled. It is intended for weak,
+   746→   746→intermittent or temporary offline conditions, not for permanent offline
+   747→   747→ERP operation. Offline transactions must be queued, validated locally
+   748→   748→where possible and revalidated by backend during sync.
+   749→   749→
+   750→   750→## **5.11.2 Cached Data**
+   751→   751→
+   752→   752→Lookups\
+   753→   753→Currencies\
+   754→   754→Permissions\
+   755→   755→User Preferences\
+   756→   756→Recent Documents\
+   757→   757→Warehouse Locations\
+   758→   758→Product Barcodes\
+   759→   759→Open Assigned Tasks
+   760→   760→
+   761→   761→## **5.11.3 Offline Queue**
+   762→   762→
+   763→   763→The offline queue stores create/update commands, attachments and user
+   764→   764→actions until synchronization. Each queued item requires local ID,
+   765→   765→command type, payload, timestamp, user, company, retry count and sync
+   766→   766→status.
+   767→   767→
+   768→   768→  -----------------------------------------------------------------------
+   769→   769→  **Offline Queue Field**             **Purpose**
+   770→   770→  ----------------------------------- -----------------------------------
+   771→   771→  local_id                            Temporary client-side identifier.
+   772→   772→
+   773→   773→  command_type                        Business action type such as
+   774→   774→                                      CreateStockCountLine.
+   775→   775→
+   776→   776→  payload                             Serialized command payload.
+   777→   777→
+   778→   778→  created_at                          Offline creation timestamp.
+   779→   779→
+   780→   780→  user_id                             Actor who created the command.
+   781→   781→
+   782→   782→  company_id                          Company context.
+   783→   783→
+   784→   784→  retry_count                         Sync retry count.
+   785→   785→
+   786→   786→  sync_status                         Pending, syncing, failed, synced or
+   787→   787→                                      conflict.
+   788→   788→  -----------------------------------------------------------------------
+   789→   789→
+   790→   790→## **5.11.4 Conflict Resolution**
+   791→   791→
+   792→   792→  -----------------------------------------------------------------------
+   793→   793→  **Conflict Strategy**               **Use Case**
+   794→   794→  ----------------------------------- -----------------------------------
+   795→   795→  Server Wins                         Financial postings, posted
+   796→   796→                                      documents, security-sensitive data.
+   797→   797→
+   798→   798→  Client Wins                         Limited low-risk drafts when no
+   799→   799→                                      server update occurred.
+   800→   800→
+   801→   801→  Manual Resolution                   Conflicting field edits, stock
+   802→   802→                                      counts, field service notes and
+   803→   803→                                      attachments.
+   804→   804→  -----------------------------------------------------------------------
+   805→   805→
+   806→   806→# **5.12 Caching Architecture**
+   807→   807→
+   808→   808→## **5.12.1 Cache Layers**
+   809→   809→
+   810→   810→  -----------------------------------------------------------------------
+   811→   811→  **Cache Layer**                     **Purpose**
+   812→   812→  ----------------------------------- -----------------------------------
+   813→   813→  In-Memory Cache                     Short-lived screen/reference data
+   814→   814→                                      during app session.
+   815→   815→
+   816→   816→  Persistent Cache                    Lookups, user preferences and
+   817→   817→                                      recent documents across sessions.
+   818→   818→
+   819→   819→  Offline Cache                       Approved offline datasets and
+   820→   820→                                      queued actions.
+   821→   821→  -----------------------------------------------------------------------
+   822→   822→
+   823→   823→## **5.12.2 Cached Entities**
+   824→   824→
+   825→   825→Companies\
+   826→   826→Branches\
+   827→   827→Currencies\
+   828→   828→Permissions\
+   829→   829→Lookups\
+   830→   830→Countries\
+   831→   831→Payment Terms\
+   832→   832→Warehouses\
+   833→   833→UOMs\
+   834→   834→Reason Codes
+   835→   835→
+   836→   836→## **5.12.3 Cache Invalidation**
+   837→   837→
+   838→   838→  -----------------------------------------------------------------------
+   839→   839→  **Invalidation Trigger**            **Action**
+   840→   840→  ----------------------------------- -----------------------------------
+   841→   841→  Login                               Refresh user, company, permission
+   842→   842→                                      and config cache.
+   843→   843→
+   844→   844→  Permission Change                   Invalidate permission-dependent
+   845→   845→                                      routes and UI actions.
+   846→   846→
+   847→   847→  Workflow Change                     Refresh available actions and
+   848→   848→                                      status metadata.
+   849→   849→
+   850→   850→  Configuration Change                Refresh settings, sequences and
+   851→   851→                                      posting/approval rules.
+   852→   852→
+   853→   853→  New App Version                     Clear incompatible persistent
+   854→   854→                                      caches.
+   855→   855→  -----------------------------------------------------------------------
+   856→   856→
+   857→   857→# **5.13 Component Hierarchy**
+   858→   858→
+   859→   859→## **5.13.1 Hierarchy**
+   860→   860→
+   861→   861→App\
+   862→   862→→ Workspace\
+   863→   863→→ Feature\
+   864→   864→→ Page\
+   865→   865→→ Section\
+   866→   866→→ Component\
+   867→   867→→ Widget
+   868→   868→
+   869→   869→## **5.13.2 Component Categories**
+   870→   870→
+   871→   871→  -----------------------------------------------------------------------
+   872→   872→  **Category**                        **Examples**
+   873→   873→  ----------------------------------- -----------------------------------
+   874→   874→  Layout Components                   App shell, sidebar, top bar,
+   875→   875→                                      responsive grid, split view.
+   876→   876→
+   877→   877→  Form Components                     Text field, lookup, date picker,
+   878→   878→                                      currency field, line items grid.
+   879→   879→
+   880→   880→  Table Components                    Data table, tree table, editable
+   881→   881→                                      grid, totals row, column manager.
+   882→   882→
+   883→   883→  Workflow Components                 Status bar, approval panel, action
+   884→   884→                                      toolbar, audit timeline.
+   885→   885→
+   886→   886→  Navigation Components               Breadcrumbs, quick actions, global
+   887→   887→                                      search, favorites.
+   888→   888→
+   889→   889→  Feedback Components                 Toast, alert banner, loading
+   890→   890→                                      skeleton, error summary, empty
+   891→   891→                                      state.
+   892→   892→  -----------------------------------------------------------------------
+   893→   893→
+   894→   894→# **5.14 Error Handling Architecture**
+   895→   895→
+   896→   896→## **5.14.1 Error Categories**
+   897→   897→
+   898→   898→  -----------------------------------------------------------------------
+   899→   899→  **Error Category**                  **Frontend Handling**
+   900→   900→  ----------------------------------- -----------------------------------
+   901→   901→  Validation                          Inline field errors and form-level
+   902→   902→                                      error summary.
+   903→   903→
+   904→   904→  Authorization                       Access denied page or disabled
+   905→   905→                                      action with reason.
+   906→   906→
+   907→   907→  Network                             Retry option, offline indicator and
+   908→   908→                                      queued action when supported.
+   909→   909→
+   910→   910→  Business Rule                       Business message with recovery
+   911→   911→                                      guidance.
+   912→   912→
+   913→   913→  Workflow                            Action restricted message and
+   914→   914→                                      available next actions.
+   915→   915→
+   916→   916→  System                              Error dialog with correlation ID
+   917→   917→                                      and support guidance.
+   918→   918→  -----------------------------------------------------------------------
+   919→   919→
+   920→   920→## **5.14.2 API Error Mapping**
+   921→   921→
+   922→   922→Backend:\
+   923→   923→{\
+   924→   924→\"code\":\"FIN-POST-001\"\
+   925→   925→}\
+   926→   926→\
+   927→   927→Frontend:\
+   928→   928→Financial Period Closed
+   929→   929→
+   930→   930→## **5.14.3 Global Error Handler**
+   931→   931→
+   932→   932→Handles:\
+   933→   933→401 Unauthorized\
+   934→   934→403 Forbidden\
+   935→   935→500 Internal Server Error\
+   936→   936→Timeout\
+   937→   937→Connectivity failure\
+   938→   938→Session expired\
+   939→   939→Maintenance mode\
+   940→   940→Version mismatch
+   941→   941→
+   942→   942→# **5.15 Frontend Performance Architecture**
+   943→   943→
+   944→   944→## **5.15.1 Performance Targets**
+   945→   945→
+   946→   946→  -----------------------------------------------------------------------
+   947→   947→  **Action**                          **Target**
+   948→   948→  ----------------------------------- -----------------------------------
+   949→   949→  Login                               \< 2 seconds after network
+   950→   950→                                      response.
+   951→   951→
+   952→   952→  Workspace Load                      \< 3 seconds for normal role scope.
+   953→   953→
+   954→   954→  Form Open                           \< 1 second for cached metadata.
+   955→   955→
+   956→   956→  Lookup Load                         \< 500 ms for cached/common
+   957→   957→                                      lookups.
+   958→   958→
+   959→   959→  Navigation                          \< 200 ms route transition after
+   960→   960→                                      bundle loaded.
+   961→   961→
+   962→   962→  List Scroll                         No visible frame drops for
+   963→   963→                                      virtualized list.
+   964→   964→  -----------------------------------------------------------------------
+   965→   965→
+   966→   966→## **5.15.2 Lazy Loading**
+   967→   967→
+   968→   968→Feature modules, pages, reports, dashboards and large dependencies must
+   969→   969→be lazy-loaded. Users should not download or initialize every ERP module
+   970→   970→on first login.
+   971→   971→
+   972→   972→## **5.15.3 Virtualized Lists**
+   973→   973→
+   974→   974→High-volume ERP lists must use pagination, infinite scroll or
+   975→   975→virtualized rendering. Journal entries, stock moves, customers,
+   976→   976→products, audit events and approval inboxes must never render unbounded
+   977→   977→row sets.
+   978→   978→
+   979→   979→Apply virtualization to:\
+   980→   980→Journal Entries\
+   981→   981→Stock Moves\
+   982→   982→Customers\
+   983→   983→Products\
+   984→   984→Audit Events\
+   985→   985→Approval Inbox\
+   986→   986→Inventory Lots/Serials
+   987→   987→
+   988→   988→# **5.16 Accessibility Architecture**
+   989→   989→
+   990→   990→## **5.16.1 Standards**
+   991→   991→
+   992→   992→The frontend follows WCAG 2.1 AA-oriented design. Accessibility is
+   993→   993→mandatory for forms, approvals, tables, reports and navigation.
+   994→   994→Accessibility testing must be part of QA, not a final cosmetic review.
+   995→   995→
+   996→   996→## **5.16.2 Accessibility Controls**
+   997→   997→
+   998→   998→-   Keyboard navigation.
+   999→   999→
+  1000→  1000→-   Screen reader labels.
+  1001→  1001→
+  1002→  1002→-   Focus management.
+  1003→  1003→
+  1004→  1004→-   Color contrast.
+  1005→  1005→
+  1006→  1006→-   Large text support.
+  1007→  1007→
+  1008→  1008→-   Non-color status indicators.
+  1009→  1009→
+  1010→  1010→-   Accessible error summaries.
+  1011→  1011→
+  1012→  1012→-   Table header semantics.
+  1013→  1013→
+  1014→  1014→-   Dialog focus trapping.
+  1015→  1015→
+  1016→  1016→-   Skip navigation where appropriate.
+  1017→  1017→
+  1018→  1018→## **5.16.3 ERP Accessibility Requirements**
+  1019→  1019→
+  1020→  1020→  -----------------------------------------------------------------------
+  1021→  1021→  **Area**                            **Requirement**
+  1022→  1022→  ----------------------------------- -----------------------------------
+  1023→  1023→  Forms                               Labels, required markers, inline
+  1024→  1024→                                      errors and keyboard traversal.
+  1025→  1025→
+  1026→  1026→  Approvals                           Action buttons accessible by
+  1027→  1027→                                      keyboard and screen reader.
+  1028→  1028→
+  1029→  1029→  Tables                              Headers, sorting labels, row focus
+  1030→  1030→                                      and keyboard navigation.
+  1031→  1031→
+  1032→  1032→  Reports                             Readable charts, data table
+  1033→  1033→                                      alternative and export
+  1034→  1034→                                      accessibility.
+  1035→  1035→
+  1036→  1036→  Notifications                       Announced alerts with appropriate
+  1037→  1037→                                      urgency.
+  1038→  1038→  -----------------------------------------------------------------------
+  1039→  1039→
+  1040→  1040→# **5.17 Security on Frontend**
+  1041→  1041→
+  1042→  1042→## **5.17.1 Frontend Security Rules**
+  1043→  1043→
+  1044→  1044→Forbidden:\
+  1045→  1045→Store JWT in insecure storage\
+  1046→  1046→Client-side authorization only\
+  1047→  1047→Expose hidden fields in API responses\
+  1048→  1048→Hard-code secrets\
+  1049→  1049→Trust route guards as the only security layer\
+  1050→  1050→Log sensitive personal/financial data
+  1051→  1051→
+  1052→  1052→## **5.17.2 Required Security Controls**
+  1053→  1053→
+  1054→  1054→Secure Storage\
+  1055→  1055→Refresh Tokens\
+  1056→  1056→Permission-Based Rendering\
+  1057→  1057→Mask Sensitive Data\
+  1058→  1058→Session Timeouts\
+  1059→  1059→Route Guards\
+  1060→  1060→Sensitive Action Confirmation\
+  1061→  1061→MFA hooks for high-risk actions\
+  1062→  1062→Export Permission Checks
+  1063→  1063→
+  1064→  1064→## **5.17.3 Permission-Based Rendering**
+  1065→  1065→
+  1066→  1066→The UI must hide or disable actions based on permission metadata, but
+  1067→  1067→backend remains the final authority. Buttons disabled due to permission
+  1068→  1068→or workflow state should provide a short reason when appropriate,
+  1069→  1069→especially for enterprise users and approvers.
+  1070→  1070→
+  1071→  1071→# **5.18 Frontend Folder Structure**
+  1072→  1072→
+  1073→  1073→src\
+  1074→  1074→├─ app\
+  1075→  1075→│ ├─ app_shell.dart\
+  1076→  1076→│ ├─ app_router.dart\
+  1077→  1077→│ └─ app_bootstrap.dart\
+  1078→  1078→├─ shared\
+  1079→  1079→│ ├─ ui\
+  1080→  1080→│ ├─ widgets\
+  1081→  1081→│ ├─ themes\
+  1082→  1082→│ ├─ localization\
+  1083→  1083→│ ├─ services\
+  1084→  1084→│ ├─ helpers\
+  1085→  1085→│ ├─ security\
+  1086→  1086→│ ├─ permissions\
+  1087→  1087→│ ├─ navigation\
+  1088→  1088→│ └─ error_handling\
+  1089→  1089→├─ core\
+  1090→  1090→│ ├─ api\
+  1091→  1091→│ ├─ auth\
+  1092→  1092→│ ├─ config\
+  1093→  1093→│ ├─ cache\
+  1094→  1094→│ ├─ offline\
+  1095→  1095→│ └─ observability\
+  1096→  1096→├─ features\
+  1097→  1097→│ ├─ sales\
+  1098→  1098→│ ├─ inventory\
+  1099→  1099→│ ├─ finance\
+  1100→  1100→│ ├─ purchasing\
+  1101→  1101→│ ├─ hr\
+  1102→  1102→│ └─ projects\
+  1103→  1103→├─ localization\
+  1104→  1104→├─ themes\
+  1105→  1105→├─ services\
+  1106→  1106→└─ tests
+  1107→  1107→
+  1108→  1108→  -----------------------------------------------------------------------
+  1109→  1109→  **Folder**                          **Rule**
+  1110→  1110→  ----------------------------------- -----------------------------------
+  1111→  1111→  app                                 Application shell, top-level
+  1112→  1112→                                      routing and bootstrap only.
+  1113→  1113→
+  1114→  1114→  shared                              Reusable components and
+  1115→  1115→                                      cross-cutting frontend utilities.
+  1116→  1116→
+  1117→  1117→  core                                Infrastructure-level frontend
+  1118→  1118→                                      concerns such as API, auth, cache
+  1119→  1119→                                      and offline.
+  1120→  1120→
+  1121→  1121→  features                            All ERP module-specific pages,
+  1122→  1122→                                      state, services and tests.
+  1123→  1123→
+  1124→  1124→  localization                        Translation assets and localization
+  1125→  1125→                                      helpers.
+  1126→  1126→
+  1127→  1127→  themes                              Design tokens and theme
+  1128→  1128→                                      definitions.
+  1129→  1129→
+  1130→  1130→  tests                               Cross-feature and shared test
+  1131→  1131→                                      utilities.
+  1132→  1132→  -----------------------------------------------------------------------
+  1133→  1133→
+  1134→  1134→# **5.19 Testing Strategy**
+  1135→  1135→
+  1136→  1136→## **5.19.1 Mandatory Tests**
+  1137→  1137→
+  1138→  1138→  -----------------------------------------------------------------------
+  1139→  1139→  **Test Type**                       **Purpose**
+  1140→  1140→  ----------------------------------- -----------------------------------
+  1141→  1141→  Widget Tests                        Validate reusable components and
+  1142→  1142→                                      feature widgets.
+  1143→  1143→
+  1144→  1144→  Integration Tests                   Validate screen flows with mocked
+  1145→  1145→                                      APIs or test backend.
+  1146→  1146→
+  1147→  1147→  Golden Tests                        Validate visual consistency for key
+  1148→  1148→                                      components and screens.
+  1149→  1149→
+  1150→  1150→  Routing Tests                       Validate guarded routes, redirects
+  1151→  1151→                                      and deep links.
+  1152→  1152→
+  1153→  1153→  Permission Tests                    Validate hidden/disabled actions
+  1154→  1154→                                      and field masking.
+  1155→  1155→
+  1156→  1156→  Localization Tests                  Validate Arabic/English text, RTL,
+  1157→  1157→                                      dates, numbers and currencies.
+  1158→  1158→
+  1159→  1159→  Performance Tests                   Validate large tables, navigation
+  1160→  1160→                                      speed and workspace load behavior.
+  1161→  1161→
+  1162→  1162→  Accessibility Tests                 Validate focus, labels, keyboard
+  1163→  1163→                                      operation and contrast.
+  1164→  1164→  -----------------------------------------------------------------------
+  1165→  1165→
+  1166→  1166→## **5.19.2 Critical Test Scenarios**
+  1167→  1167→
+  1168→  1168→-   User without permission cannot see restricted menu item.
+  1169→  1169→
+  1170→  1170→-   User with read-only permission cannot edit form fields.
+  1171→  1171→
+  1172→  1172→-   Posted document opens in read-only state.
+  1173→  1173→
+  1174→  1174→-   Salary field is masked for unauthorized HR users.
+  1175→  1175→
+  1176→  1176→-   Arabic RTL route renders without layout break.
+  1177→  1177→
+  1178→  1178→-   Offline queued stock count syncs successfully or shows conflict.
+  1179→  1179→
+  1180→  1180→-   Large journal entry list remains responsive with
+  1181→  1181→    pagination/virtualization.
+  1182→  1182→
+  1183→  1183→-   Global error handler shows correlation ID for server errors.
+  1184→  1184→
+  1185→  1185→# **5.20 Frontend Readiness Matrix**
+  1186→  1186→
+  1187→  1187→  -----------------------------------------------------------------------
+  1188→  1188→  **Area**                **Status**              **Readiness Criteria**
+  1189→  1189→  ----------------------- ----------------------- -----------------------
+  1190→  1190→  Flutter Architecture    Complete                Feature-first
+  1191→  1191→                                                  structure, shared
+  1192→  1192→                                                  layer, app shell and
+  1193→  1193→                                                  route registry defined.
+  1194→  1194→
+  1195→  1195→  State Management        Complete                Riverpod
+  1196→  1196→                                                  providers/notifiers and
+  1197→  1197→                                                  state categories
+  1198→  1198→                                                  defined.
+  1199→  1199→
+  1200→  1200→  Routing                 Complete                Declarative routes,
+  1201→  1201→                                                  guards and permissions
+  1202→  1202→                                                  defined.
+  1203→  1203→
+  1204→  1204→  Navigation              Complete                Desktop, tablet,
+  1205→  1205→                                                  mobile, search and
+  1206→  1206→                                                  contextual navigation
+  1207→  1207→                                                  defined.
+  1208→  1208→
+  1209→  1209→  Dependency Injection    Complete                Services injected
+  1210→  1210→                                                  through providers; no
+  1211→  1211→                                                  direct service
+  1212→  1212→                                                  construction in
+  1213→  1213→                                                  widgets.
+  1214→  1214→
+  1215→  1215→  Theme System            Complete                Tokens, light/dark
+  1216→  1216→                                                  themes and status
+  1217→  1217→                                                  colors defined.
+  1218→  1218→
+  1219→  1219→  Localization            Complete                Arabic/English, RTL,
+  1220→  1220→                                                  formatting and
+  1221→  1221→                                                  localized errors
+  1222→  1222→                                                  defined.
+  1223→  1223→
+  1224→  1224→  Responsive Design       Complete                Mobile/tablet/desktop
+  1225→  1225→                                                  patterns defined.
+  1226→  1226→
+  1227→  1227→  Offline Mode            Complete                Selective offline
+  1228→  1228→                                                  cache, queue and
+  1229→  1229→                                                  conflict resolution
+  1230→  1230→                                                  defined.
+  1231→  1231→
+  1232→  1232→  Caching                 Complete                In-memory, persistent
+  1233→  1233→                                                  and offline cache rules
+  1234→  1234→                                                  defined.
+  1235→  1235→
+  1236→  1236→  Components              Complete                Hierarchy and component
+  1237→  1237→                                                  categories defined.
+  1238→  1238→
+  1239→  1239→  Error Handling          Complete                Error categories and
+  1240→  1240→                                                  API mapping defined.
+  1241→  1241→
+  1242→  1242→  Performance             Complete                Targets, lazy loading
+  1243→  1243→                                                  and virtualization
+  1244→  1244→                                                  defined.
+  1245→  1245→
+  1246→  1246→  Accessibility           Complete                WCAG-oriented controls
+  1247→  1247→                                                  and ERP accessibility
+  1248→  1248→                                                  requirements defined.
+  1249→  1249→
+  1250→  1250→  Security                Complete                Secure storage,
+  1251→  1251→                                                  permission rendering
+  1252→  1252→                                                  and sensitive data
+  1253→  1253→                                                  rules defined.
+  1254→  1254→
+  1255→  1255→  Testing                 Complete                Mandatory tests and
+  1256→  1256→                                                  critical scenarios
+  1257→  1257→                                                  defined.
+  1258→  1258→  -----------------------------------------------------------------------
+  1259→  1259→
+  1260→  1260→# **5.21 Completion Status**
+  1261→  1261→
+  1262→  1262→## **5.21.1 Book 5 Completion Checklist**
+  1263→  1263→
+  1264→  1264→  -----------------------------------------------------------------------
+  1265→  1265→  **Requirement**                     **Covered**
+  1266→  1266→  ----------------------------------- -----------------------------------
+  1267→  1267→  Flutter Architecture                Yes
+  1268→  1268→
+  1269→  1269→  State Management                    Yes
+  1270→  1270→
+  1271→  1271→  Routing                             Yes
+  1272→  1272→
+  1273→  1273→  Navigation                          Yes
+  1274→  1274→
+  1275→  1275→  Dependency Injection                Yes
+  1276→  1276→
+  1277→  1277→  Theme System                        Yes
+  1278→  1278→
+  1279→  1279→  Localization                        Yes
+  1280→  1280→
+  1281→  1281→  Responsive Strategy                 Yes
+  1282→  1282→
+  1283→  1283→  Offline Strategy                    Yes
+  1284→  1284→
+  1285→  1285→  Caching                             Yes
+  1286→  1286→
+  1287→  1287→  Component Hierarchy                 Yes
+  1288→  1288→
+  1289→  1289→  Folder Structure                    Yes
+  1290→  1290→
+  1291→  1291→  Code Organization                   Yes
+  1292→  1292→
+  1293→  1293→  Feature Modules                     Yes
+  1294→  1294→
+  1295→  1295→  Error Handling                      Yes
+  1296→  1296→
+  1297→  1297→  Performance                         Yes
+  1298→  1298→
+  1299→  1299→  Accessibility                       Yes
+  1300→  1300→
+  1301→  1301→  Security                            Yes
+  1302→  1302→
+  1303→  1303→  Testing                             Yes
+  1304→  1304→  -----------------------------------------------------------------------
+  1305→  1305→
+  1306→  1306→## **5.21.2 Cross-Reference Matrix**
+  1307→  1307→
+  1308→  1308→  -----------------------------------------------------------------------
+  1309→  1309→  **Book 5 Section**                  **Related Volume / Book**
+  1310→  1310→  ----------------------------------- -----------------------------------
+  1311→  1311→  Frontend architecture vision        Book 1 Architecture Vision and
+  1312→  1312→                                      Volume 2 UI strategy.
+  1313→  1313→
+  1314→  1314→  API clients and error mapping       Book 4 API Technical Architecture.
+  1315→  1315→
+  1316→  1316→  State and workflows                 Volume 3 FTS workflows and Book 2
+  1317→  1317→                                      command/query architecture.
+  1318→  1318→
+  1319→  1319→  Permission-based rendering          Volume 3 Permission Matrix and Book
+  1320→  1320→                                      7 Security Architecture later.
+  1321→  1321→
+  1322→  1322→  Offline and caching                 Book 8 Performance Architecture
+  1323→  1323→                                      later.
+  1324→  1324→
+  1325→  1325→  Folder structure and testing        Book 10 Engineering Standards
+  1326→  1326→                                      later.
+  1327→  1327→
+  1328→  1328→  Screens and components              Volume 3 FTS screen specifications
+  1329→  1329→                                      and Book 6 UI Component Library
+  1330→  1330→                                      next.
+  1331→  1331→  -----------------------------------------------------------------------
+  1332→  1332→
+  1333→  1333→## **5.21.3 Remaining Books**
+  1334→  1334→
+  1335→  1335→-   Book 6 --- UI Component Library
+  1336→  1336→
+  1337→  1337→-   Book 7 --- Security Architecture
+  1338→  1338→
+  1339→  1339→-   Book 8 --- Performance Architecture
+  1340→  1340→
+  1341→  1341→-   Book 9 --- DevOps Architecture
+  1342→  1342→
+  1343→  1343→-   Book 10 --- Engineering Standards
+  1344→  1344→
+  1345→  1345→-   Book 11 --- Architecture Decision Records ADR
+  1346→  1346→
+  1347→  1347→-   Book 12 --- Implementation Readiness Assessment
+  1348→  1348→
+  1349→  1349→**BOOK 5 --- Frontend Architecture: Completed.**
+  1350→  1350→

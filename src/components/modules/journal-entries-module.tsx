@@ -2,503 +2,181 @@
 
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useT } from '@/lib/i18n/use-t'
-import { formatCurrency, formatDate, formatDateTime } from '@/lib/format'
-import { exportToCSV, printHTML } from '@/lib/export'
 import { ModuleShell } from '@/components/erp/module-shell'
 import { KpiCard } from '@/components/erp/kpi-card'
 import { StatusBadge } from '@/components/erp/status-badge'
+import { useT } from '@/lib/i18n/use-t'
+import { formatCurrency, formatInt, formatDate } from '@/lib/format'
+import { exportToCSV, printHTML } from '@/lib/export'
+import { toast } from 'sonner'
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter,
+} from '@/components/ui/table'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Skeleton } from '@/components/ui/skeleton'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
-} from '@/components/ui/dialog'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter,
-} from '@/components/ui/table'
-import { toast } from 'sonner'
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+} from '@/components/ui/dialog'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import {
-  BookCopy, Plus, Trash2, Printer, Download, Eye, Check, X,
-  FileText, ListChecks, CalendarDays, Scale, AlertTriangle,
+  FileText, Plus, Trash2, Eye, Printer, CheckCircle2, XCircle, Send,
+  BookOpen, CalendarDays, Coins,
 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
-interface Account {
-  id: string
-  code: string
-  name: string
-  nameAr: string | null
-  type: string
-}
-
+interface Account { id: string; code: string; nameAr: string; type: string }
 interface JournalLine {
   id?: string
-  accountId: string
+  accountId?: string
   account?: Account
-  accountCode?: string
   debit: number
   credit: number
-  description?: string | null
+  description?: string
 }
-
 interface JournalEntry {
   id: string
   code: string
-  date: string
-  description: string | null
-  refType: string | null
-  refId: string | null
-  status: string
+  postingDate: string
+  description?: string
+  refType?: string
+  state: string
   totalDebit: number
   totalCredit: number
-  createdAt: string
   lines: JournalLine[]
+  createdAt: string
 }
 
-const REF_TYPES = [
-  { value: 'manual', label: 'يدوي' },
-  { value: 'sales_order', label: 'بيع' },
-  { value: 'purchase_order', label: 'شراء' },
-  { value: 'payment', label: 'سند' },
-  { value: 'production', label: 'إنتاج' },
-  { value: 'expense', label: 'مصروف' },
-  { value: 'revenue', label: 'إيراد' },
-  { value: 'opening', label: 'افتتاحي' },
-]
+interface LineDraft {
+  key: string
+  accountCode: string
+  debit: string
+  credit: string
+  description: string
+}
 
-const STATUS_FILTERS = [
-  { value: 'all', label: 'الكل' },
-  { value: 'posted', label: 'مُرحّل' },
-  { value: 'draft', label: 'مسودة' },
-  { value: 'reversed', label: 'معكوس' },
+const JOURNAL_TYPES = [
+  { value: 'general', label: 'يومية عامة' },
+  { value: 'sale', label: 'يومية المبيعات' },
+  { value: 'purchase', label: 'يومية المشتريات' },
+  { value: 'cash', label: 'يومية النقدية' },
+  { value: 'bank', label: 'يومية البنك' },
+  { value: 'opening', label: 'يومية افتتاحية' },
 ]
 
 export function JournalEntriesModule() {
   const { t } = useT()
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
+  const [filterState, setFilterState] = useState('all')
   const [addOpen, setAddOpen] = useState(false)
-  const [viewEntry, setViewEntry] = useState<JournalEntry | null>(null)
+  const [viewOpen, setViewOpen] = useState(false)
+  const [viewing, setViewing] = useState<JournalEntry | null>(null)
+  const [page, setPage] = useState(1)
+  const pageSize = 15
+
+  const { data, isLoading } = useQuery<{ data: JournalEntry[]; meta: any }>({
+    queryKey: ['journal-entries', search, filterState, page],
+    queryFn: async () => {
+      const params = new URLSearchParams()
+      if (search) params.set('q', search)
+      if (filterState !== 'all') params.set('state', filterState)
+      params.set('page', String(page))
+      params.set('pageSize', String(pageSize))
+      const r = await fetch(`/api/erp/journal-entries?${params}`)
+      if (!r.ok) throw new Error('Failed')
+      return r.json()
+    },
+  })
 
   const { data: accountsData } = useQuery<{ data: Account[] }>({
-    queryKey: ['accounts-all-compact'],
+    queryKey: ['accounts-for-je'],
     queryFn: async () => {
-      const r = await fetch('/api/erp/accounts')
-      if (!r.ok) throw new Error('fetch failed')
+      const r = await fetch('/api/erp/accounts?pageSize=500')
+      if (!r.ok) return { data: [] }
       return r.json()
     },
-    staleTime: 60 * 1000,
-  })
-  const accounts = accountsData?.data ?? []
-
-  const { data, isLoading } = useQuery<{ data: JournalEntry[]; total: number }>({
-    queryKey: ['journal-entries', statusFilter],
-    queryFn: async () => {
-      const url = new URL('/api/erp/journal-entries', window.location.origin)
-      if (statusFilter !== 'all') url.searchParams.set('status', statusFilter)
-      const r = await fetch(url.toString())
-      if (!r.ok) throw new Error('fetch failed')
-      return r.json()
-    },
-    staleTime: 10 * 1000,
   })
 
   const entries = data?.data ?? []
+  const total = data?.meta?.pagination?.total ?? 0
+  const totalPages = data?.meta?.pagination?.totalPages ?? 1
+  const accounts = accountsData?.data ?? []
 
-  // Filtered list (search)
-  const filtered = useMemo(() => {
-    if (!search) return entries
-    const q = search.toLowerCase()
-    return entries.filter((e) => e.code.toLowerCase().includes(q) || (e.description ?? '').toLowerCase().includes(q))
-  }, [entries, search])
+  const stats = {
+    total,
+    posted: entries.filter((e) => e.state === 'posted').length,
+    drafts: entries.filter((e) => e.state === 'draft').length,
+    totalDebit: entries.reduce((s, e) => s + e.totalDebit, 0),
+  }
 
-  // KPIs
-  const kpis = useMemo(() => {
-    const total = entries.length
-    const posted = entries.filter((e) => e.status === 'posted').length
-    const now = new Date()
-    const thisMonth = entries.filter((e) => {
-      const d = new Date(e.date)
-      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
-    }).length
-    const totalDebit = entries.filter((e) => e.status === 'posted').reduce((s, e) => s + (e.totalDebit || 0), 0)
-    return { total, posted, thisMonth, totalDebit }
-  }, [entries])
+  // ===== Add dialog state =====
+  const [description, setDescription] = useState('')
+  const [journalType, setJournalType] = useState('general')
+  const [refType, setRefType] = useState('manual')
+  const [postingDate, setPostingDate] = useState(new Date().toISOString().slice(0, 10))
+  const [lines, setLines] = useState<LineDraft[]>([
+    { key: '1', accountCode: '', debit: '', credit: '', description: '' },
+    { key: '2', accountCode: '', debit: '', credit: '', description: '' },
+  ])
 
-  function handleExport() {
-    const rows = entries.map((e) => ({
-      code: e.code,
-      date: formatDate(e.date),
-      description: e.description ?? '',
-      refType: e.refType ?? '',
-      totalDebit: e.totalDebit,
-      totalCredit: e.totalCredit,
-      status: e.status,
+  const totalDebit = useMemo(() => lines.reduce((s, l) => s + (Number(l.debit) || 0), 0), [lines])
+  const totalCredit = useMemo(() => lines.reduce((s, l) => s + (Number(l.credit) || 0), 0), [lines])
+  const diff = Math.abs(totalDebit - totalCredit)
+  const balanced = diff < 0.01 && totalDebit > 0
+  const validLines = lines.filter((l) => l.accountCode && (Number(l.debit) > 0 || Number(l.credit) > 0))
+
+  const updateLine = (key: string, field: keyof LineDraft, value: string) => {
+    setLines((prev) => prev.map((l) => {
+      if (l.key !== key) return l
+      const next = { ...l, [field]: value }
+      // Entering debit clears credit and vice versa
+      if (field === 'debit' && Number(value) > 0) next.credit = ''
+      if (field === 'credit' && Number(value) > 0) next.debit = ''
+      return next
     }))
-    exportToCSV('قيود-اليومية', rows, [
-      { key: 'code', label: 'رقم القيد' },
-      { key: 'date', label: 'التاريخ' },
-      { key: 'description', label: 'البيان' },
-      { key: 'refType', label: 'نوع المرجع' },
-      { key: 'totalDebit', label: 'إجمالي مدين' },
-      { key: 'totalCredit', label: 'إجمالي دائن' },
-      { key: 'status', label: 'الحالة' },
+  }
+
+  const addLine = () => {
+    setLines((prev) => [...prev, { key: String(Date.now()), accountCode: '', debit: '', credit: '', description: '' }])
+  }
+
+  const removeLine = (key: string) => {
+    if (lines.length <= 2) {
+      toast.error('يجب وجود بندين على الأقل')
+      return
+    }
+    setLines((prev) => prev.filter((l) => l.key !== key))
+  }
+
+  const resetForm = () => {
+    setDescription('')
+    setJournalType('general')
+    setRefType('manual')
+    setPostingDate(new Date().toISOString().slice(0, 10))
+    setLines([
+      { key: '1', accountCode: '', debit: '', credit: '', description: '' },
+      { key: '2', accountCode: '', debit: '', credit: '', description: '' },
     ])
   }
 
-  function printVoucher(e: JournalEntry) {
-    const linesHtml = e.lines.map((l) => `
-      <tr>
-        <td>${l.account?.code ?? '—'}</td>
-        <td>${l.account?.nameAr ?? l.account?.name ?? '—'}</td>
-        <td style="text-align:left">${l.debit ? formatCurrency(l.debit) : ''}</td>
-        <td style="text-align:left">${l.credit ? formatCurrency(l.credit) : ''}</td>
-      </tr>
-    `).join('')
-
-    const html = `
-      <div class="doc-header">
-        <div class="company">
-          <div class="logo">الأ</div>
-          <div class="info">
-            <h2>الأستاذ</h2>
-            <p>نظام المحاسبة المالية</p>
-          </div>
-        </div>
-        <div class="doc-meta">
-          <div class="type">قيد محاسبي</div>
-          <div class="code">${e.code}</div>
-          <div class="date">${formatDate(e.date)}</div>
-        </div>
-      </div>
-
-      <div class="party">
-        <div class="label">البيان</div>
-        <div class="name">${e.description ?? 'قيد محاسبي'}</div>
-        <div class="sub">نوع المرجع: ${e.refType ?? 'يدوي'} · الحالة: ${e.status === 'posted' ? 'مُرحّل' : e.status === 'draft' ? 'مسودة' : 'معكوس'}</div>
-      </div>
-
-      <table>
-        <thead>
-          <tr>
-            <th style="width:80px">الرمز</th>
-            <th>الحساب</th>
-            <th style="width:120px">مدين</th>
-            <th style="width:120px">دائن</th>
-          </tr>
-        </thead>
-        <tbody>${linesHtml}</tbody>
-        <tfoot>
-          <tr>
-            <td colspan="2" style="text-align:left">الإجمالي</td>
-            <td style="text-align:left">${formatCurrency(e.totalDebit)}</td>
-            <td style="text-align:left">${formatCurrency(e.totalCredit)}</td>
-          </tr>
-        </tfoot>
-      </table>
-
-      <div class="notes">
-        ${e.totalDebit === e.totalCredit
-          ? '✓ القيد متوازن — مجموع المدين يساوي مجموع الدائن'
-          : '⚠ القيد غير متوازن'}
-      </div>
-
-      <div class="signatures">
-        <div class="sig"><div class="line"></div><div class="label">المحاسب</div></div>
-        <div class="sig"><div class="line"></div><div class="label">المدير المالي</div></div>
-        <div class="sig"><div class="line"></div><div class="label">المراجع</div></div>
-      </div>
-    `
-    printHTML(html, 'قيد محاسبي')
-  }
-
-  return (
-    <ModuleShell
-      title={t('module.journal-entries')}
-      description="قيود اليومية المحاسبية — قيد مزدوج متوازن"
-      icon={<BookCopy className="size-5" />}
-      onSearch={setSearch}
-      searchValue={search}
-      searchPlaceholder="بحث برقم القيد أو البيان..."
-      onAdd={() => setAddOpen(true)}
-      addLabel="قيد جديد"
-      onExport={handleExport}
-      filters={
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger size="sm" className="w-32">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {STATUS_FILTERS.map((s) => (
-              <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      }
-    >
-      {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {isLoading ? (
-          Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />)
-        ) : (
-          <>
-            <KpiCard title="إجمالي القيود" value={String(kpis.total)} icon={<ListChecks className="size-5" />} accent="emerald" />
-            <KpiCard title="قيود مرحّلة" value={String(kpis.posted)} icon={<Check className="size-5" />} accent="teal" />
-            <KpiCard title="قيود هذا الشهر" value={String(kpis.thisMonth)} icon={<CalendarDays className="size-5" />} accent="violet" />
-            <KpiCard title="إجمالي الحركة (مدين=دائن)" value={formatCurrency(kpis.totalDebit)} icon={<Scale className="size-5" />} accent="amber" />
-          </>
-        )}
-      </div>
-
-      {/* Table */}
-      <Card className="rounded-xl border bg-card overflow-hidden">
-        <ScrollArea className="max-h-[60vh]">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/40">
-                <TableHead className="w-28">رقم القيد</TableHead>
-                <TableHead className="w-28">التاريخ</TableHead>
-                <TableHead>البيان</TableHead>
-                <TableHead className="w-28">المرجع</TableHead>
-                <TableHead className="text-end w-32">مدين</TableHead>
-                <TableHead className="text-end w-32">دائن</TableHead>
-                <TableHead className="w-24 text-center">الحالة</TableHead>
-                <TableHead className="w-24 text-center">إجراءات</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell colSpan={8}><Skeleton className="h-10" /></TableCell>
-                  </TableRow>
-                ))
-              ) : filtered.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center py-16 text-sm text-muted-foreground">
-                    <FileText className="size-10 mx-auto mb-2 opacity-40" />
-                    لا توجد قيود
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filtered.map((e) => {
-                  const balanced = Math.abs(e.totalDebit - e.totalCredit) < 0.01
-                  return (
-                    <TableRow
-                      key={e.id}
-                      className="cursor-pointer hover:bg-muted/40"
-                      onClick={() => setViewEntry(e)}
-                    >
-                      <TableCell className="font-mono text-xs font-bold">{e.code}</TableCell>
-                      <TableCell className="text-xs">{formatDate(e.date)}</TableCell>
-                      <TableCell className="max-w-xs truncate">{e.description ?? '—'}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-[10px] font-medium">
-                          {REF_TYPES.find((r) => r.value === e.refType)?.label ?? e.refType ?? '—'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-end font-mono text-xs font-semibold">
-                        {formatCurrency(e.totalDebit)}
-                      </TableCell>
-                      <TableCell className="text-end font-mono text-xs font-semibold">
-                        {formatCurrency(e.totalCredit)}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <StatusBadge status={e.status} />
-                          {balanced ? (
-                            <Check className="size-3 text-emerald-600" />
-                          ) : (
-                            <X className="size-3 text-rose-600" />
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-0.5">
-                          <Button
-                            variant="ghost" size="icon" className="size-7"
-                            onClick={(ev) => { ev.stopPropagation(); setViewEntry(e) }}
-                            title="عرض"
-                          >
-                            <Eye className="size-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost" size="icon" className="size-7"
-                            onClick={(ev) => { ev.stopPropagation(); printVoucher(e) }}
-                            title="طباعة السند"
-                          >
-                            <Printer className="size-3.5" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })
-              )}
-            </TableBody>
-          </Table>
-        </ScrollArea>
-      </Card>
-
-      {/* Add dialog */}
-      <AddJournalDialog
-        open={addOpen}
-        onOpenChange={setAddOpen}
-        accounts={accounts}
-      />
-
-      {/* View dialog */}
-      <Dialog open={!!viewEntry} onOpenChange={(o) => !o && setViewEntry(null)}>
-        <DialogContent className="sm:max-w-2xl">
-          {viewEntry && (
-            <>
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <span>قيد {viewEntry.code}</span>
-                  <StatusBadge status={viewEntry.status} />
-                </DialogTitle>
-                <DialogDescription>
-                  {formatDateTime(viewEntry.date)} · {viewEntry.refType ?? 'يدوي'}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-3">
-                {viewEntry.description && (
-                  <div className="rounded-lg bg-muted/40 p-3 text-sm">
-                    <p className="text-xs text-muted-foreground mb-1">البيان</p>
-                    <p>{viewEntry.description}</p>
-                  </div>
-                )}
-                <ScrollArea className="max-h-72">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-20">الرمز</TableHead>
-                        <TableHead>الحساب</TableHead>
-                        <TableHead>البيان</TableHead>
-                        <TableHead className="text-end">مدين</TableHead>
-                        <TableHead className="text-end">دائن</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {viewEntry.lines.map((l, i) => (
-                        <TableRow key={l.id ?? i}>
-                          <TableCell className="font-mono text-xs">{l.account?.code ?? '—'}</TableCell>
-                          <TableCell className="text-xs">{l.account?.nameAr ?? l.account?.name ?? '—'}</TableCell>
-                          <TableCell className="text-xs text-muted-foreground">{l.description ?? '—'}</TableCell>
-                          <TableCell className="text-end font-mono text-xs">{l.debit ? formatCurrency(l.debit) : '—'}</TableCell>
-                          <TableCell className="text-end font-mono text-xs">{l.credit ? formatCurrency(l.credit) : '—'}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                    <TableFooter>
-                      <TableRow>
-                        <TableCell colSpan={3} className="text-start font-bold">الإجمالي</TableCell>
-                        <TableCell className="text-end font-mono font-bold">{formatCurrency(viewEntry.totalDebit)}</TableCell>
-                        <TableCell className="text-end font-mono font-bold">{formatCurrency(viewEntry.totalCredit)}</TableCell>
-                      </TableRow>
-                    </TableFooter>
-                  </Table>
-                </ScrollArea>
-                <div className={`flex items-center justify-center gap-2 rounded-lg p-2 text-sm font-semibold ${
-                  Math.abs(viewEntry.totalDebit - viewEntry.totalCredit) < 0.01
-                    ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400'
-                    : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400'
-                }`}>
-                  {Math.abs(viewEntry.totalDebit - viewEntry.totalCredit) < 0.01 ? (
-                    <><Check className="size-4" /> القيد متوازن</>
-                  ) : (
-                    <><X className="size-4" /> القيد غير متوازن</>
-                  )}
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => printVoucher(viewEntry)} className="gap-1.5">
-                  <Printer className="size-4" /> طباعة السند
-                </Button>
-                <Button variant="outline" onClick={() => setViewEntry(null)}>إغلاق</Button>
-              </DialogFooter>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
-    </ModuleShell>
-  )
-}
-
-// ====================================================================
-// Add Journal Dialog — with dynamic line editor + balance validation
-// ====================================================================
-function AddJournalDialog({
-  open, onOpenChange, accounts,
-}: {
-  open: boolean
-  onOpenChange: (o: boolean) => void
-  accounts: Account[]
-}) {
-  const qc = useQueryClient()
-  const [date, setDate] = useState<string>(new Date().toISOString().slice(0, 10))
-  const [description, setDescription] = useState('')
-  const [refType, setRefType] = useState('manual')
-  const [lines, setLines] = useState<JournalLine[]>([
-    { accountId: '', accountCode: '', debit: 0, credit: 0, description: '' },
-    { accountId: '', accountCode: '', debit: 0, credit: 0, description: '' },
-  ])
-
-  const totals = useMemo(() => {
-    const debit = lines.reduce((s, l) => s + (Number(l.debit) || 0), 0)
-    const credit = lines.reduce((s, l) => s + (Number(l.credit) || 0), 0)
-    return { debit, credit }
-  }, [lines])
-
-  const balanced = Math.abs(totals.debit - totals.credit) < 0.01
-  const hasZeroRows = lines.some((l) => !l.accountCode)
-  const hasEmptyAmounts = lines.some((l) => l.debit === 0 && l.credit === 0)
-
-  function updateLine(idx: number, patch: Partial<JournalLine>) {
-    setLines((prev) => prev.map((l, i) => i === idx ? { ...l, ...patch } : l))
-  }
-  function updateAccount(idx: number, code: string) {
-    const acc = accounts.find((a) => a.code === code)
-    setLines((prev) => prev.map((l, i) => i === idx ? {
-      ...l,
-      accountCode: code,
-      accountId: acc?.id ?? '',
-      account: acc,
-    } : l))
-  }
-  // Enter debit → clear credit, vice versa
-  function setDebit(idx: number, val: string) {
-    const n = Number(val) || 0
-    updateLine(idx, { debit: n, credit: 0 })
-  }
-  function setCredit(idx: number, val: string) {
-    const n = Number(val) || 0
-    updateLine(idx, { credit: n, debit: 0 })
-  }
-  function addRow() {
-    setLines((prev) => [...prev, { accountId: '', accountCode: '', debit: 0, credit: 0, description: '' }])
-  }
-  function removeRow(idx: number) {
-    setLines((prev) => prev.filter((_, i) => i !== idx))
-  }
-
   const saveMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (state: 'draft' | 'posted') => {
+      if (!balanced) throw new Error('القيد غير متوازن')
+      if (validLines.length < 2) throw new Error('يجب وجود بندين صحيحين على الأقل')
       const payload = {
-        date,
         description,
+        journalType,
         refType,
-        status: 'posted',
-        lines: lines.map((l) => ({
+        postingDate,
+        state,
+        lines: validLines.map((l) => ({
           accountCode: l.accountCode,
           debit: Number(l.debit) || 0,
           credit: Number(l.credit) || 0,
@@ -511,188 +189,452 @@ function AddJournalDialog({
         body: JSON.stringify(payload),
       })
       if (!r.ok) {
-        const e = await r.json()
-        throw new Error(e.error || 'فشل الإنشاء')
+        const err = await r.json().catch(() => ({}))
+        throw new Error(err?.error?.message ?? 'فشل الحفظ')
       }
       return r.json()
     },
     onSuccess: () => {
-      toast.success('تم حفظ القيد')
-      onOpenChange(false)
-      // reset
-      setDescription('')
-      setLines([
-        { accountId: '', accountCode: '', debit: 0, credit: 0, description: '' },
-        { accountId: '', accountCode: '', debit: 0, credit: 0, description: '' },
-      ])
-      setDate(new Date().toISOString().slice(0, 10))
+      toast.success('تم حفظ القيد بنجاح')
       qc.invalidateQueries({ queryKey: ['journal-entries'] })
-      qc.invalidateQueries({ queryKey: ['accounts'] })
+      setAddOpen(false)
+      resetForm()
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(e.message || 'حدث خطأ'),
   })
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>قيد محاسبي جديد</DialogTitle>
-          <DialogDescription>قيد مزدوج — يجب أن يتوازن مجموع المدين مع الدائن</DialogDescription>
-        </DialogHeader>
+  const postMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const r = await fetch(`/api/erp/journal-entries/${id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'post' }),
+      })
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({}))
+        throw new Error(err?.error?.message ?? 'فشل الترحيل')
+      }
+      return r.json()
+    },
+    onSuccess: () => {
+      toast.success('تم ترحيل القيد بنجاح')
+      qc.invalidateQueries({ queryKey: ['journal-entries'] })
+      setViewOpen(false)
+    },
+    onError: (e: any) => toast.error(e.message || 'حدث خطأ'),
+  })
 
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label>التاريخ</Label>
-            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>نوع المرجع</Label>
-            <Select value={refType} onValueChange={setRefType}>
-              <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {REF_TYPES.map((r) => (
-                  <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5 col-span-2">
-            <Label>البيان</Label>
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={2}
-              placeholder="وصف القيد المحاسبي..."
-              dir="rtl"
-            />
+  const handleExport = () => {
+    const rows = entries.map((e) => ({
+      'الرمز': e.code,
+      'التاريخ': formatDate(e.postingDate),
+      'الوصف': e.description ?? '',
+      'نوع المرجع': e.refType ?? '',
+      'مدين': e.totalDebit,
+      'دائن': e.totalCredit,
+      'الحالة': e.state,
+    }))
+    exportToCSV('journal-entries', rows)
+    toast.success('تم تصدير الملف')
+  }
+
+  const handlePrint = (entry: JournalEntry) => {
+    const html = `
+      <div class="doc-header">
+        <div class="company">
+          <div class="logo">أ</div>
+          <div class="info">
+            <h2>الأستاذ</h2>
+            <p>نظام المحاسبة والإدارة المالية</p>
           </div>
         </div>
+        <div class="doc-meta">
+          <div class="type">قيد محاسبي</div>
+          <div class="code">${entry.code}</div>
+          <div class="date">${formatDate(entry.postingDate)}</div>
+        </div>
+      </div>
+      <div class="party">
+        <div class="label">البيان</div>
+        <div class="name">${entry.description ?? 'قيد محاسبي'}</div>
+        <div class="sub">نوع المرجع: ${entry.refType ?? 'يدوي'} · الحالة: ${entry.state}</div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>الرمز</th>
+            <th>اسم الحساب</th>
+            <th>البيان</th>
+            <th>مدين</th>
+            <th>دائن</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${entry.lines.map((l) => `
+            <tr>
+              <td>${l.account?.code ?? ''}</td>
+              <td>${l.account?.nameAr ?? ''}</td>
+              <td>${l.description ?? ''}</td>
+              <td>${l.debit ? formatCurrency(l.debit) : '—'}</td>
+              <td>${l.credit ? formatCurrency(l.credit) : '—'}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3">الإجمالي</td>
+            <td>${formatCurrency(entry.totalDebit)}</td>
+            <td>${formatCurrency(entry.totalCredit)}</td>
+          </tr>
+        </tfoot>
+      </table>
+      <div class="totals">
+        <div class="row grand">
+          <span>الفرق:</span>
+          <span>${formatCurrency(Math.abs(entry.totalDebit - entry.totalCredit))}</span>
+        </div>
+      </div>
+      <div class="signatures">
+        <div class="sig"><div class="line"></div><div class="label">المحاسب</div></div>
+        <div class="sig"><div class="line"></div><div class="label">المدير المالي</div></div>
+        <div class="sig"><div class="line"></div><div class="label">المراجع</div></div>
+      </div>
+    `
+    printHTML(html, `قيد محاسبي ${entry.code}`)
+  }
 
-        {/* Lines editor */}
-        <div className="rounded-lg border">
-          <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/30">
-            <h4 className="text-sm font-semibold">بنود القيد</h4>
-            <Button variant="outline" size="sm" className="h-7 gap-1" onClick={addRow}>
-              <Plus className="size-3.5" /> بند
-            </Button>
-          </div>
-          <ScrollArea className="max-h-72">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="min-w-[200px]">الحساب</TableHead>
-                  <TableHead className="w-28">مدين</TableHead>
-                  <TableHead className="w-28">دائن</TableHead>
-                  <TableHead className="min-w-[160px]">البيان</TableHead>
-                  <TableHead className="w-10"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {lines.map((l, i) => (
-                  <TableRow key={i}>
+  return (
+    <ModuleShell
+      title={t('module.journal-entries')}
+      description="قيود اليومية مع التحقق من التوازن والترحيل التلقائي"
+      icon={<FileText className="size-5" />}
+      searchValue={search}
+      onSearch={setSearch}
+      searchPlaceholder="ابحث برمز القيد أو الوصف..."
+      onAdd={() => { resetForm(); setAddOpen(true) }}
+      addLabel="قيد جديد"
+      onExport={handleExport}
+      filters={
+        <Select value={filterState} onValueChange={setFilterState}>
+          <SelectTrigger className="w-40"><SelectValue placeholder="الحالة" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">الكل</SelectItem>
+            <SelectItem value="draft">مسودة</SelectItem>
+            <SelectItem value="posted">مُرحّل</SelectItem>
+            <SelectItem value="reversed">معكوس</SelectItem>
+            <SelectItem value="cancelled">ملغي</SelectItem>
+          </SelectContent>
+        </Select>
+      }
+    >
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+        <KpiCard title="إجمالي القيود" value={formatInt(total)} icon={<FileText className="size-5" />} accent="emerald" />
+        <KpiCard title="قيود مرحّلة" value={formatInt(stats.posted)} icon={<CheckCircle2 className="size-5" />} accent="teal" />
+        <KpiCard title="قيود مسودة" value={formatInt(stats.drafts)} icon={<BookOpen className="size-5" />} accent="amber" />
+        <KpiCard title="إجمالي المدين" value={formatCurrency(stats.totalDebit)} icon={<Coins className="size-5" />} accent="violet" />
+      </div>
+
+      <Card className="rounded-xl overflow-hidden">
+        <ScrollArea className="max-h-[60vh]">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                <TableHead className="ps-4">الرمز</TableHead>
+                <TableHead>التاريخ</TableHead>
+                <TableHead>البيان</TableHead>
+                <TableHead>نوع المرجع</TableHead>
+                <TableHead className="text-end num-cell">مدين</TableHead>
+                <TableHead className="text-end num-cell">دائن</TableHead>
+                <TableHead>التوازن</TableHead>
+                <TableHead>الحالة</TableHead>
+                <TableHead className="text-end">إجراءات</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow><TableCell colSpan={9} className="text-center py-10 text-muted-foreground">جاري التحميل...</TableCell></TableRow>
+              ) : entries.length === 0 ? (
+                <TableRow><TableCell colSpan={9} className="text-center py-10 text-muted-foreground">لا توجد قيود. ابدأ بإنشاء أول قيد.</TableCell></TableRow>
+              ) : entries.map((e) => {
+                const isBalanced = Math.abs(e.totalDebit - e.totalCredit) < 0.01
+                return (
+                  <TableRow key={e.id} className="hover:bg-muted/40 cursor-pointer" onClick={() => { setViewing(e); setViewOpen(true) }}>
+                    <TableCell className="ps-4 font-mono text-xs" dir="ltr">{e.code}</TableCell>
+                    <TableCell className="text-sm">{formatDate(e.postingDate)}</TableCell>
+                    <TableCell className="font-medium max-w-xs truncate">{e.description ?? '—'}</TableCell>
+                    <TableCell>{e.refType ? <Badge variant="outline" className="text-[10px]">{e.refType}</Badge> : '—'}</TableCell>
+                    <TableCell className="text-end num-cell"><span className="num tabular-nums" dir="ltr">{formatCurrency(e.totalDebit)}</span></TableCell>
+                    <TableCell className="text-end num-cell"><span className="num tabular-nums" dir="ltr">{formatCurrency(e.totalCredit)}</span></TableCell>
                     <TableCell>
-                      <Select value={l.accountCode || '__none__'} onValueChange={(v) => v !== '__none__' && updateAccount(i, v)}>
-                        <SelectTrigger className="w-full h-8 text-xs"><SelectValue placeholder="اختر الحساب..." /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__none__">— اختر —</SelectItem>
-                          {accounts.map((a) => (
-                            <SelectItem key={a.id} value={a.code}>
-                              <span className="font-mono">{a.code}</span> · {a.nameAr ?? a.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      {isBalanced ? (
+                        <CheckCircle2 className="size-4 text-emerald-500" />
+                      ) : (
+                        <XCircle className="size-4 text-rose-500" />
+                      )}
                     </TableCell>
-                    <TableCell>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={l.debit || ''}
-                        onChange={(e) => setDebit(i, e.target.value)}
-                        className="h-8 text-xs font-mono text-end"
-                        placeholder="0.00"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={l.credit || ''}
-                        onChange={(e) => setCredit(i, e.target.value)}
-                        className="h-8 text-xs font-mono text-end"
-                        placeholder="0.00"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        value={l.description ?? ''}
-                        onChange={(e) => updateLine(i, { description: e.target.value })}
-                        className="h-8 text-xs"
-                        placeholder="بيان البند..."
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost" size="icon"
-                        className="size-7 text-rose-600 hover:text-rose-700"
-                        onClick={() => removeRow(i)}
-                        disabled={lines.length <= 2}
-                      >
-                        <Trash2 className="size-3.5" />
-                      </Button>
+                    <TableCell><StatusBadge status={e.state} /></TableCell>
+                    <TableCell className="text-end" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button size="icon" variant="ghost" className="size-8" onClick={() => { setViewing(e); setViewOpen(true) }} title="عرض">
+                          <Eye className="size-3.5" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="size-8" onClick={() => handlePrint(e)} title="طباعة">
+                          <Printer className="size-3.5" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-              <TableFooter>
-                <TableRow className="bg-muted/40 font-bold">
-                  <TableCell className="text-start">الإجمالي</TableCell>
-                  <TableCell className="text-end font-mono text-xs">{formatCurrency(totals.debit)}</TableCell>
-                  <TableCell className="text-end font-mono text-xs">{formatCurrency(totals.credit)}</TableCell>
-                  <TableCell colSpan={2}>
-                    <div className="flex items-center justify-end gap-1.5 text-xs">
-                      {balanced ? (
-                        <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
-                          <Check className="size-4" /> متوازن
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400 font-semibold">
-                          <X className="size-4" /> غير متوازن (فرق: {formatCurrency(Math.abs(totals.debit - totals.credit))})
-                        </span>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              </TableFooter>
-            </Table>
-          </ScrollArea>
+                )
+              })}
+            </TableBody>
+          </Table>
+        </ScrollArea>
+      </Card>
+
+      <div className="flex items-center justify-between mt-4 text-sm">
+        <p className="text-muted-foreground">
+          عرض {entries.length === 0 ? 0 : (page - 1) * pageSize + 1}–{(page - 1) * pageSize + entries.length} من {total}
+        </p>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}>السابق</Button>
+          <span className="text-xs text-muted-foreground">صفحة {page} من {totalPages}</span>
+          <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>التالي</Button>
         </div>
+      </div>
 
-        {/* Validation warning */}
-        {!balanced && (
-          <div className="flex items-center gap-2 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 p-3 text-sm text-rose-700 dark:text-rose-400">
-            <AlertTriangle className="size-4" />
-            <span>القيد غير متوازن — يجب أن يكون مجموع المدين = مجموع الدائن قبل الحفظ.</span>
+      {/* Add Dialog with line editor */}
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>قيد محاسبي جديد</DialogTitle>
+            <DialogDescription>أضف بنود القيد وتأكد من توازن المدين والدائن</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+              <div className="space-y-1.5 md:col-span-2">
+                <Label htmlFor="description">البيان</Label>
+                <Input id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="قيد محاسبي..." />
+              </div>
+              <div className="space-y-1.5">
+                <Label>نوع اليومية</Label>
+                <Select value={journalType} onValueChange={setJournalType}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {JOURNAL_TYPES.map((j) => <SelectItem key={j.value} value={j.value}>{j.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="postingDate">تاريخ الترحيل</Label>
+                <Input id="postingDate" type="date" value={postingDate} onChange={(e) => setPostingDate(e.target.value)} />
+              </div>
+            </div>
+
+            {/* Lines table */}
+            <Card className="rounded-lg overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/50">
+                    <TableHead className="ps-3">الحساب</TableHead>
+                    <TableHead>البيان</TableHead>
+                    <TableHead className="text-end num-cell w-32">مدين</TableHead>
+                    <TableHead className="text-end num-cell w-32">دائن</TableHead>
+                    <TableHead className="w-12"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {lines.map((l) => (
+                    <TableRow key={l.key}>
+                      <TableCell className="ps-3">
+                        <Select value={l.accountCode} onValueChange={(v) => updateLine(l.key, 'accountCode', v)}>
+                          <SelectTrigger className="h-9 min-w-[200px]"><SelectValue placeholder="اختر الحساب" /></SelectTrigger>
+                          <SelectContent>
+                            {accounts.map((a) => (
+                              <SelectItem key={a.id} value={a.code}>
+                                <span dir="ltr" className="font-mono text-xs">{a.code}</span> — {a.nameAr}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          className="h-9"
+                          value={l.description}
+                          onChange={(e) => updateLine(l.key, 'description', e.target.value)}
+                          placeholder="وصف البند..."
+                        />
+                      </TableCell>
+                      <TableCell className="text-end num-cell">
+                        <Input
+                          className="h-9 text-end tabular-nums"
+                          type="number"
+                          step="0.01"
+                          dir="ltr"
+                          value={l.debit}
+                          onChange={(e) => updateLine(l.key, 'debit', e.target.value)}
+                          placeholder="0.00"
+                        />
+                      </TableCell>
+                      <TableCell className="text-end num-cell">
+                        <Input
+                          className="h-9 text-end tabular-nums"
+                          type="number"
+                          step="0.01"
+                          dir="ltr"
+                          value={l.credit}
+                          onChange={(e) => updateLine(l.key, 'credit', e.target.value)}
+                          placeholder="0.00"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="size-8 text-rose-500"
+                          onClick={() => removeLine(l.key)}
+                        >
+                          <Trash2 className="size-3.5" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+                <TableFooter>
+                  <TableRow>
+                    <TableCell colSpan={2}>
+                      <Button type="button" size="sm" variant="outline" onClick={addLine} className="gap-1.5">
+                        <Plus className="size-3.5" /> إضافة بند
+                      </Button>
+                    </TableCell>
+                    <TableCell className="text-end num-cell">
+                      <span className="num font-bold tabular-nums" dir="ltr">{formatCurrency(totalDebit)}</span>
+                    </TableCell>
+                    <TableCell className="text-end num-cell">
+                      <span className="num font-bold tabular-nums" dir="ltr">{formatCurrency(totalCredit)}</span>
+                    </TableCell>
+                    <TableCell></TableCell>
+                  </TableRow>
+                </TableFooter>
+              </Table>
+            </Card>
+
+            {/* Balance indicator */}
+            <div className={cn(
+              'flex items-center justify-between p-3 rounded-lg border',
+              balanced
+                ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-900'
+                : 'bg-rose-50 border-rose-200 dark:bg-rose-950/30 dark:border-rose-900'
+            )}>
+              <div className="flex items-center gap-2">
+                {balanced ? (
+                  <CheckCircle2 className="size-5 text-emerald-500" />
+                ) : (
+                  <XCircle className="size-5 text-rose-500" />
+                )}
+                <span className={cn('font-semibold text-sm', balanced ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400')}>
+                  {balanced ? 'القيد متوازن' : `القيد غير متوازن — الفرق: ${formatCurrency(diff)}`}
+                </span>
+              </div>
+              <div className="text-sm text-muted-foreground tabular-nums" dir="ltr">
+                الفرق: {formatCurrency(diff)}
+              </div>
+            </div>
           </div>
-        )}
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>إلغاء</Button>
-          <Button
-            onClick={() => saveMutation.mutate()}
-            disabled={
-              saveMutation.isPending ||
-              !balanced ||
-              hasZeroRows ||
-              hasEmptyAmounts ||
-              lines.length < 2
-            }
-            className="gap-1.5"
-          >
-            {saveMutation.isPending ? 'جارٍ الحفظ...' : 'حفظ القيد'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>إلغاء</Button>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={!balanced || saveMutation.isPending}
+              onClick={() => saveMutation.mutate('draft')}
+            >
+              حفظ كمسودة
+            </Button>
+            <Button
+              type="button"
+              disabled={!balanced || saveMutation.isPending}
+              onClick={() => saveMutation.mutate('posted')}
+              className="gap-1.5"
+            >
+              <Send className="size-4" />
+              {saveMutation.isPending ? 'جاري الحفظ...' : 'حفظ وترحيل'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Dialog */}
+      <Dialog open={viewOpen} onOpenChange={setViewOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>تفاصيل القيد {viewing?.code}</DialogTitle>
+            <DialogDescription>{viewing?.description}</DialogDescription>
+          </DialogHeader>
+          {viewing && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-3 text-sm">
+                <div className="p-3 rounded-lg bg-muted/40">
+                  <p className="text-xs text-muted-foreground">التاريخ</p>
+                  <p className="font-semibold">{formatDate(viewing.postingDate)}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-muted/40">
+                  <p className="text-xs text-muted-foreground">الحالة</p>
+                  <StatusBadge status={viewing.state} />
+                </div>
+                <div className="p-3 rounded-lg bg-muted/40">
+                  <p className="text-xs text-muted-foreground">نوع المرجع</p>
+                  <p className="font-semibold">{viewing.refType ?? 'يدوي'}</p>
+                </div>
+              </div>
+              <Card className="rounded-lg overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50">
+                      <TableHead className="ps-3">الرمز</TableHead>
+                      <TableHead>الحساب</TableHead>
+                      <TableHead>البيان</TableHead>
+                      <TableHead className="text-end num-cell">مدين</TableHead>
+                      <TableHead className="text-end num-cell">دائن</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {viewing.lines.map((l, i) => (
+                      <TableRow key={l.id ?? i}>
+                        <TableCell className="ps-3 font-mono text-xs" dir="ltr">{l.account?.code ?? '—'}</TableCell>
+                        <TableCell className="font-medium">{l.account?.nameAr ?? '—'}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{l.description ?? '—'}</TableCell>
+                        <TableCell className="text-end num-cell"><span className="num tabular-nums" dir="ltr">{l.debit ? formatCurrency(l.debit) : '—'}</span></TableCell>
+                        <TableCell className="text-end num-cell"><span className="num tabular-nums" dir="ltr">{l.credit ? formatCurrency(l.credit) : '—'}</span></TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                  <TableFooter>
+                    <TableRow>
+                      <TableCell colSpan={3} className="font-semibold">الإجمالي</TableCell>
+                      <TableCell className="text-end num-cell"><span className="num font-bold tabular-nums" dir="ltr">{formatCurrency(viewing.totalDebit)}</span></TableCell>
+                      <TableCell className="text-end num-cell"><span className="num font-bold tabular-nums" dir="ltr">{formatCurrency(viewing.totalCredit)}</span></TableCell>
+                    </TableRow>
+                  </TableFooter>
+                </Table>
+              </Card>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => handlePrint(viewing)} className="gap-1.5">
+                  <Printer className="size-4" /> طباعة
+                </Button>
+                {viewing.state === 'draft' && (
+                  <Button onClick={() => postMutation.mutate(viewing.id)} disabled={postMutation.isPending} className="gap-1.5">
+                    <Send className="size-4" />
+                    {postMutation.isPending ? 'جاري الترحيل...' : 'ترحيل القيد'}
+                  </Button>
+                )}
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </ModuleShell>
   )
 }

@@ -1,45 +1,73 @@
-import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { ok, created, list, badRequest, serverError, parsePagination, parseSearch } from '@/lib/erp/api-response'
 
+// GET /api/erp/categories — tree or flat list
 export async function GET(req: Request) {
   try {
-    const { searchParams } = new URL(req.url)
-    const q = searchParams.get('q') ?? ''
+    const { page, pageSize, skip } = parsePagination(req)
+    const q = parseSearch(req)
+    const url = new URL(req.url)
+    const type = url.searchParams.get('type')
+
     const where: any = {}
     if (q) {
       where.OR = [
-        { name: { contains: q } },
+        { code: { contains: q } },
         { nameAr: { contains: q } },
+        { nameEn: { contains: q } },
       ]
     }
-    const categories = await db.category.findMany({
-      where,
-      include: {
-        parent: true,
-        _count: { select: { products: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    })
-    return NextResponse.json({ data: categories, total: categories.length })
+    if (type) where.type = type
+
+    if (url.searchParams.get('tree') === 'true') {
+      const roots = await db.category.findMany({
+        where: { ...where, parentId: null },
+        include: { children: { include: { children: true } } },
+        orderBy: { code: 'asc' },
+      })
+      return list(roots, roots.length, 1, 1000)
+    }
+
+    const [data, total] = await Promise.all([
+      db.category.findMany({
+        where,
+        skip,
+        take: pageSize,
+        include: { parent: { select: { id: true, nameAr: true, code: true } } },
+        orderBy: { code: 'asc' },
+      }),
+      db.category.count({ where }),
+    ])
+    return list(data, total, page, pageSize)
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    return serverError(e.message)
   }
 }
 
+// POST /api/erp/categories
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const created = await db.category.create({
+    if (!body.nameAr) return badRequest('nameAr is required')
+
+    let code = body.code
+    if (!code) {
+      const count = await db.category.count()
+      code = `CAT-${String(count + 1).padStart(3, '0')}`
+    }
+
+    const rec = await db.category.create({
       data: {
-        name: body.name,
-        nameAr: body.nameAr || null,
-        parentId: body.parentId || null,
+        code,
+        nameAr: body.nameAr,
+        nameEn: body.nameEn,
+        parentId: body.parentId,
+        type: body.type ?? 'product',
         active: body.active ?? true,
       },
-      include: { parent: true },
     })
-    return NextResponse.json(created, { status: 201 })
+    return created(rec)
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    return serverError(e.message)
   }
 }

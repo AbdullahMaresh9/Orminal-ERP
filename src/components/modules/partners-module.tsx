@@ -4,174 +4,227 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ModuleShell } from '@/components/erp/module-shell'
 import { KpiCard } from '@/components/erp/kpi-card'
+import { StatusBadge } from '@/components/erp/status-badge'
 import { useT } from '@/lib/i18n/use-t'
-import { formatPercent } from '@/lib/format'
+import { formatCurrency, formatInt, formatDate } from '@/lib/format'
 import { exportToCSV } from '@/lib/export'
 import { toast } from 'sonner'
-import { Users, Percent, Building2, PieChart, Plus, Pencil, Trash2 } from 'lucide-react'
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
+import { Badge } from '@/components/ui/badge'
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+} from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
-import { Progress } from '@/components/ui/progress'
+import {
+  Handshake, Users, Truck, Plus, Pencil, Trash2, Phone, Mail, Building2,
+} from 'lucide-react'
 
 interface Partner {
-  id: string; name: string; share: number; branchId: string; createdAt: string
-  branch?: { name: string; code: string }
+  id: string
+  code: string
+  nameAr: string
+  nameEn?: string
+  isCustomer: boolean
+  isSupplier: boolean
+  contactName?: string
+  phone?: string
+  email?: string
+  taxNumber?: string
+  address?: string
+  creditLimit: number
+  openingBalance: number
+  currentBalance: number
+  active: boolean
+  createdAt: string
+  paymentTerm?: { id: string; nameAr: string }
 }
 
 export function PartnersModule() {
   const { t } = useT()
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
+  const [filterType, setFilterType] = useState<'all' | 'customer' | 'supplier'>('all')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<Partner | null>(null)
-  const [form, setForm] = useState<any>({ name: '', share: 0, branchId: '' })
-  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
+  const pageSize = 15
 
-  const { data, isLoading } = useQuery<{ data: Partner[]; total: number }>({
-    queryKey: ['partners'],
+  const { data, isLoading } = useQuery<{ data: Partner[]; meta: any }>({
+    queryKey: ['partners', search, filterType, page],
     queryFn: async () => {
-      const r = await fetch('/api/erp/partners')
-      if (!r.ok) throw new Error('fetch failed')
+      const params = new URLSearchParams()
+      if (search) params.set('q', search)
+      if (filterType === 'customer') params.set('isCustomer', 'true')
+      if (filterType === 'supplier') params.set('isSupplier', 'true')
+      params.set('page', String(page))
+      params.set('pageSize', String(pageSize))
+      const r = await fetch(`/api/erp/partners?${params}`)
+      if (!r.ok) throw new Error('Failed')
       return r.json()
     },
   })
 
-  const { data: branchesData } = useQuery<{ data: any[] }>({
-    queryKey: ['branches-mini'],
-    queryFn: async () => {
-      const r = await fetch('/api/erp/branches')
-      if (!r.ok) throw new Error()
-      return r.json()
-    },
-  })
-  const branches = branchesData?.data ?? []
+  const partners = data?.data ?? []
+  const total = data?.meta?.pagination?.total ?? 0
+  const totalPages = data?.meta?.pagination?.totalPages ?? 1
+
+  const stats = {
+    total: partners.length,
+    customers: partners.filter((p) => p.isCustomer).length,
+    suppliers: partners.filter((p) => p.isSupplier).length,
+    totalBalance: partners.reduce((s, p) => s + (p.currentBalance || 0), 0),
+  }
 
   const saveMutation = useMutation({
     mutationFn: async (payload: any) => {
       const url = editing ? `/api/erp/partners/${editing.id}` : '/api/erp/partners'
+      const method = editing ? 'PUT' : 'POST'
       const r = await fetch(url, {
-        method: editing ? 'PUT' : 'POST',
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
-      if (!r.ok) throw new Error('save failed')
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({}))
+        throw new Error(err?.error?.message ?? 'Failed')
+      }
       return r.json()
     },
     onSuccess: () => {
-      toast.success(t('success.saved'))
+      toast.success('تم الحفظ بنجاح')
       qc.invalidateQueries({ queryKey: ['partners'] })
       setDialogOpen(false)
+      setEditing(null)
     },
-    onError: () => toast.error(t('error.save')),
+    onError: (e: any) => toast.error(e.message || 'حدث خطأ'),
   })
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const r = await fetch(`/api/erp/partners/${id}`, { method: 'DELETE' })
-      if (!r.ok) throw new Error()
+      if (!r.ok) throw new Error('Failed')
+      return r.json()
     },
     onSuccess: () => {
-      toast.success(t('success.deleted'))
+      toast.success('تم الحذف بنجاح')
       qc.invalidateQueries({ queryKey: ['partners'] })
-      setDeleteId(null)
     },
-    onError: () => toast.error(t('error.delete')),
+    onError: () => toast.error('حدث خطأ'),
   })
 
-  const list = (data?.data ?? []).filter((p) =>
-    !search || p.name.includes(search) || (p.branch?.name ?? '').includes(search)
-  )
-
-  const totalPartners = data?.total ?? 0
-  const totalShare = (data?.data ?? []).reduce((s, p) => s + (p.share ?? 0), 0)
-  const branchesCount = new Set((data?.data ?? []).map((p) => p.branchId)).size
-
-  function openAdd() {
-    setEditing(null)
-    setForm({ name: '', share: 0, branchId: branches[0]?.id ?? '' })
-    setDialogOpen(true)
+  const handleSave = (formData: FormData) => {
+    const payload: any = {
+      code: formData.get('code') || undefined,
+      nameAr: formData.get('nameAr'),
+      nameEn: formData.get('nameEn') || undefined,
+      isCustomer: formData.get('isCustomer') === 'on',
+      isSupplier: formData.get('isSupplier') === 'on',
+      contactName: formData.get('contactName') || undefined,
+      phone: formData.get('phone') || undefined,
+      email: formData.get('email') || undefined,
+      taxNumber: formData.get('taxNumber') || undefined,
+      address: formData.get('address') || undefined,
+      creditLimit: Number(formData.get('creditLimit')) || 0,
+      openingBalance: Number(formData.get('openingBalance')) || 0,
+      active: formData.get('active') === 'on',
+    }
+    saveMutation.mutate(payload)
   }
 
-  function openEdit(p: Partner) {
-    setEditing(p)
-    setForm({ name: p.name, share: p.share, branchId: p.branchId })
-    setDialogOpen(true)
-  }
-
-  function handleSave() {
-    if (!form.name.trim()) return toast.error('الاسم مطلوب')
-    if (!form.branchId) return toast.error('الفرع مطلوب')
-    saveMutation.mutate(form)
-  }
-
-  function handleExport() {
-    exportToCSV('partners', list.map((p) => ({
-      name: p.name, branch: p.branch?.name ?? '', share: p.share,
-    })))
+  const handleExport = () => {
+    const rows = partners.map((p) => ({
+      'الرمز': p.code,
+      'الاسم': p.nameAr,
+      'عميل': p.isCustomer ? 'نعم' : 'لا',
+      'مورد': p.isSupplier ? 'نعم' : 'لا',
+      'جهة الاتصال': p.contactName ?? '',
+      'الهاتف': p.phone ?? '',
+      'البريد': p.email ?? '',
+      'الرقم الضريبي': p.taxNumber ?? '',
+      'حد الائتمان': p.creditLimit,
+      'الرصيد الحالي': p.currentBalance,
+      'الحالة': p.active ? 'نشط' : 'غير نشط',
+    }))
+    exportToCSV('partners', rows)
+    toast.success('تم تصدير الملف')
   }
 
   return (
     <ModuleShell
       title={t('module.partners')}
-      description="قوائم الشركاء وحصصهم في كل فرع"
-      icon={<Users className="size-5" />}
-      onSearch={setSearch}
+      description="إدارة موحدة للعملاء والموردين والشركاء التجاريين"
+      icon={<Handshake className="size-5" />}
       searchValue={search}
-      searchPlaceholder="ابحث عن شريك..."
-      onAdd={openAdd}
-      addLabel="شريك جديد"
+      onSearch={setSearch}
+      searchPlaceholder="ابحث برمز الشريك أو الاسم أو الهاتف..."
+      onAdd={() => { setEditing(null); setDialogOpen(true) }}
+      addLabel={t('action.add')}
       onExport={handleExport}
+      filters={
+        <>
+          <Button size="sm" variant={filterType === 'all' ? 'default' : 'outline'} onClick={() => setFilterType('all')}>الكل</Button>
+          <Button size="sm" variant={filterType === 'customer' ? 'default' : 'outline'} onClick={() => setFilterType('customer')}>عملاء</Button>
+          <Button size="sm" variant={filterType === 'supplier' ? 'default' : 'outline'} onClick={() => setFilterType('supplier')}>موردون</Button>
+        </>
+      }
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard title="إجمالي الشركاء" value={String(totalPartners)} icon={<Users className="size-5" />} accent="emerald" />
-        <KpiCard title="إجمالي الحصص" value={formatPercent(totalShare, 1)} icon={<Percent className="size-5" />} accent="amber" />
-        <KpiCard title="عدد الفروع" value={String(branchesCount)} icon={<Building2 className="size-5" />} accent="teal" />
-        <KpiCard title="متوسط الحصة" value={totalPartners ? formatPercent(totalShare / totalPartners, 1) : '0%'} icon={<PieChart className="size-5" />} accent="violet" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+        <KpiCard title="إجمالي الشركاء" value={formatInt(total)} icon={<Handshake className="size-5" />} accent="emerald" />
+        <KpiCard title="العملاء" value={formatInt(stats.customers)} icon={<Users className="size-5" />} accent="teal" />
+        <KpiCard title="الموردون" value={formatInt(stats.suppliers)} icon={<Truck className="size-5" />} accent="amber" />
+        <KpiCard title="إجمالي الأرصدة" value={formatCurrency(stats.totalBalance)} icon={<Building2 className="size-5" />} accent="violet" />
       </div>
 
-      <Card className="rounded-xl border">
+      <Card className="rounded-xl overflow-hidden">
         <ScrollArea className="max-h-[60vh]">
           <Table>
             <TableHeader>
-              <TableRow>
+              <TableRow className="bg-muted/50">
+                <TableHead className="ps-4">الرمز</TableHead>
                 <TableHead>الاسم</TableHead>
-                <TableHead>الفرع</TableHead>
-                <TableHead className="w-[280px]">الحصة</TableHead>
+                <TableHead>النوع</TableHead>
+                <TableHead>جهة الاتصال</TableHead>
+                <TableHead>الهاتف</TableHead>
+                <TableHead className="text-end num-cell">الرصيد</TableHead>
+                <TableHead>الحالة</TableHead>
                 <TableHead className="text-end">إجراءات</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">{t('loading')}</TableCell></TableRow>
-              ) : list.length === 0 ? (
-                <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">{t('empty.noData')}</TableCell></TableRow>
-              ) : list.map((p) => (
+                <TableRow><TableCell colSpan={8} className="text-center py-10 text-muted-foreground">جاري التحميل...</TableCell></TableRow>
+              ) : partners.length === 0 ? (
+                <TableRow><TableCell colSpan={8} className="text-center py-10 text-muted-foreground">لا يوجد شركاء. ابدأ بإضافة أول شريك.</TableCell></TableRow>
+              ) : partners.map((p) => (
                 <TableRow key={p.id} className="hover:bg-muted/40">
-                  <TableCell className="font-semibold">{p.name}</TableCell>
-                  <TableCell className="text-muted-foreground text-sm">{p.branch?.name ?? '—'}</TableCell>
+                  <TableCell className="ps-4 font-mono text-xs" dir="ltr">{p.code}</TableCell>
+                  <TableCell className="font-medium">{p.nameAr}</TableCell>
                   <TableCell>
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-semibold tabular-nums">{p.share.toFixed(1)}%</span>
-                        {p.share > 50 && <span className="text-amber-600 text-[10px] font-semibold">شريك أغلبية</span>}
-                      </div>
-                      <Progress value={p.share} className="h-1.5" />
+                    <div className="flex items-center gap-1">
+                      {p.isCustomer && <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 text-[10px]">عميل</Badge>}
+                      {p.isSupplier && <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 text-[10px]">مورد</Badge>}
                     </div>
                   </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{p.contactName ?? '—'}</TableCell>
+                  <TableCell className="text-sm font-mono" dir="ltr">{p.phone ?? '—'}</TableCell>
+                  <TableCell className="text-end num-cell">
+                    <span className="num font-semibold tabular-nums" dir="ltr">{formatCurrency(p.currentBalance)}</span>
+                  </TableCell>
+                  <TableCell><StatusBadge status={p.active ? 'active' : 'inactive'} /></TableCell>
                   <TableCell className="text-end">
                     <div className="flex items-center justify-end gap-1">
-                      <Button variant="ghost" size="icon" className="size-8" onClick={() => openEdit(p)}>
-                        <Pencil className="size-4" />
+                      <Button size="icon" variant="ghost" className="size-8" onClick={() => { setEditing(p); setDialogOpen(true) }}>
+                        <Pencil className="size-3.5" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="size-8 text-rose-600 hover:text-rose-700" onClick={() => setDeleteId(p.id)}>
-                        <Trash2 className="size-4" />
+                      <Button size="icon" variant="ghost" className="size-8 text-rose-500 hover:text-rose-600" onClick={() => deleteMutation.mutate(p.id)}>
+                        <Trash2 className="size-3.5" />
                       </Button>
                     </div>
                   </TableCell>
@@ -182,54 +235,91 @@ export function PartnersModule() {
         </ScrollArea>
       </Card>
 
+      {/* Pagination */}
+      <div className="flex items-center justify-between mt-4 text-sm">
+        <p className="text-muted-foreground">
+          عرض {partners.length === 0 ? 0 : (page - 1) * pageSize + 1}–{(page - 1) * pageSize + partners.length} من {total}
+        </p>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}>السابق</Button>
+          <span className="text-xs text-muted-foreground">صفحة {page} من {totalPages}</span>
+          <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>التالي</Button>
+        </div>
+      </div>
+
+      {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-w-xl">
           <DialogHeader>
-            <DialogTitle>{editing ? 'تعديل شريك' : 'شريك جديد'}</DialogTitle>
+            <DialogTitle>{editing ? 'تعديل شريك' : 'إضافة شريك جديد'}</DialogTitle>
+            <DialogDescription>أدخل بيانات الشريك التجاري</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="name">اسم الشريك *</Label>
-              <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="مؤسسة الأستاذ التجارية" />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="branch">الفرع *</Label>
-              <Select value={form.branchId} onValueChange={(v) => setForm({ ...form, branchId: v })}>
-                <SelectTrigger id="branch"><SelectValue placeholder="اختر الفرع" /></SelectTrigger>
-                <SelectContent>
-                  {branches.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="share">الحصة (%) — بين 0 و 100</Label>
-              <Input id="share" type="number" min={0} max={100} step={0.1} value={form.share} onChange={(e) => setForm({ ...form, share: Number(e.target.value) })} />
-              <Progress value={form.share} className="h-2" />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>{t('action.cancel')}</Button>
-            <Button onClick={handleSave} disabled={saveMutation.isPending}>
-              {saveMutation.isPending ? t('loading') : t('action.save')}
-            </Button>
-          </DialogFooter>
+          <form onSubmit={(e) => { e.preventDefault(); handleSave(new FormData(e.currentTarget)) }}>
+            <ScrollArea className="max-h-[60vh] pe-2">
+              <div className="grid grid-cols-2 gap-4 p-1">
+                <div className="space-y-1.5">
+                  <Label htmlFor="code">الرمز (تلقائي)</Label>
+                  <Input id="code" name="code" defaultValue={editing?.code} placeholder="P-00001" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="nameAr">الاسم (عربي) *</Label>
+                  <Input id="nameAr" name="nameAr" defaultValue={editing?.nameAr} required />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="nameEn">الاسم (إنجليزي)</Label>
+                  <Input id="nameEn" name="nameEn" defaultValue={editing?.nameEn} dir="ltr" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="contactName">جهة الاتصال</Label>
+                  <Input id="contactName" name="contactName" defaultValue={editing?.contactName} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="phone">الهاتف</Label>
+                  <Input id="phone" name="phone" defaultValue={editing?.phone} dir="ltr" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="email">البريد الإلكتروني</Label>
+                  <Input id="email" name="email" type="email" defaultValue={editing?.email} dir="ltr" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="taxNumber">الرقم الضريبي</Label>
+                  <Input id="taxNumber" name="taxNumber" defaultValue={editing?.taxNumber} dir="ltr" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="creditLimit">حد الائتمان</Label>
+                  <Input id="creditLimit" name="creditLimit" type="number" step="0.01" defaultValue={editing?.creditLimit ?? 0} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="openingBalance">الرصيد الافتتاحي</Label>
+                  <Input id="openingBalance" name="openingBalance" type="number" step="0.01" defaultValue={editing?.openingBalance ?? 0} />
+                </div>
+                <div className="space-y-1.5 col-span-2">
+                  <Label htmlFor="address">العنوان</Label>
+                  <Input id="address" name="address" defaultValue={editing?.address} />
+                </div>
+                <div className="flex items-center gap-6 pt-2">
+                  <div className="flex items-center gap-2">
+                    <Switch id="isCustomer" name="isCustomer" defaultChecked={editing?.isCustomer ?? true} />
+                    <Label htmlFor="isCustomer">عميل</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Switch id="isSupplier" name="isSupplier" defaultChecked={editing?.isSupplier ?? false} />
+                    <Label htmlFor="isSupplier">مورد</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Switch id="active" name="active" defaultChecked={editing?.active ?? true} />
+                    <Label htmlFor="active">نشط</Label>
+                  </div>
+                </div>
+              </div>
+            </ScrollArea>
+            <DialogFooter className="mt-4">
+              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>إلغاء</Button>
+              <Button type="submit" disabled={saveMutation.isPending}>{saveMutation.isPending ? 'جاري الحفظ...' : 'حفظ'}</Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
-
-      <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
-            <AlertDialogDescription>{t('misc.confirmDelete')}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('action.cancel')}</AlertDialogCancel>
-            <AlertDialogAction onClick={() => deleteId && deleteMutation.mutate(deleteId)} className="bg-rose-600 hover:bg-rose-700">
-              {t('action.delete')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </ModuleShell>
   )
 }

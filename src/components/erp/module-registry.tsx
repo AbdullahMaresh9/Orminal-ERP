@@ -1,93 +1,155 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { type ModuleKey } from '@/stores/nav-store'
-import { lazy, Suspense } from 'react'
+import type { ModuleKey } from '@/stores/nav-store'
+import { Skeleton } from '@/components/ui/skeleton'
+import { ModuleComingSoon } from './module-coming-soon'
+
+// Eager-loaded: dashboard (default landing)
 import { DashboardModule } from '@/components/modules/dashboard-module'
 
-// Lazy-load all modules except dashboard to keep initial bundle small.
-// Each module is a separate chunk that loads on demand.
-const lazyMod = (loader: () => Promise<{ default: React.ComponentType }>) =>
-  dynamic(loader, { loading: () => <ModuleSkeleton />, ssr: false })
-
-export const moduleRegistry: Record<ModuleKey, React.ComponentType> = {
-  dashboard: DashboardModule,
-  pos: lazyMod(() => import('@/components/modules/pos-module').then(m => ({ default: m.PosModule }))),
-
-  // Sales
-  clients: lazyMod(() => import('@/components/modules/clients-module').then(m => ({ default: m.ClientsModule }))),
-  'sales-orders': lazyMod(() => import('@/components/modules/sales-orders-module').then(m => ({ default: m.SalesOrdersModule }))),
-  'sales-invoices': lazyMod(() => import('@/components/modules/sales-invoices-module').then(m => ({ default: m.SalesInvoicesModule }))),
-  'sales-credit-notes': lazyMod(() => import('@/components/modules/sales-credit-notes-module').then(m => ({ default: m.SalesCreditNotesModule }))),
-  'sales-payments': lazyMod(() => import('@/components/modules/sales-payments-module').then(m => ({ default: m.SalesPaymentsModule }))),
-
-  // Purchases
-  suppliers: lazyMod(() => import('@/components/modules/suppliers-module').then(m => ({ default: m.SuppliersModule }))),
-  'purchase-orders': lazyMod(() => import('@/components/modules/purchase-orders-module').then(m => ({ default: m.PurchaseOrdersModule }))),
-  'purchase-invoices': lazyMod(() => import('@/components/modules/purchase-invoices-module').then(m => ({ default: m.PurchaseInvoicesModule }))),
-  'purchase-credit-notes': lazyMod(() => import('@/components/modules/purchase-credit-notes-module').then(m => ({ default: m.PurchaseCreditNotesModule }))),
-  'purchase-payments': lazyMod(() => import('@/components/modules/purchase-payments-module').then(m => ({ default: m.PurchasePaymentsModule }))),
-
-  // Inventory
-  products: lazyMod(() => import('@/components/modules/products-module').then(m => ({ default: m.ProductsModule }))),
-  categories: lazyMod(() => import('@/components/modules/categories-module').then(m => ({ default: m.CategoriesModule }))),
-  storehouses: lazyMod(() => import('@/components/modules/storehouses-module').then(m => ({ default: m.StorehousesModule }))),
-  'inventory-incoming': lazyMod(() => import('@/components/modules/inventory-incoming-module').then(m => ({ default: m.InventoryIncomingModule }))),
-  'inventory-outgoing': lazyMod(() => import('@/components/modules/inventory-outgoing-module').then(m => ({ default: m.InventoryOutgoingModule }))),
-  'inventory-transfers': lazyMod(() => import('@/components/modules/inventory-transfers-module').then(m => ({ default: m.InventoryTransfersModule }))),
-  'stock-takes': lazyMod(() => import('@/components/modules/stock-takes-module').then(m => ({ default: m.StockTakesModule }))),
-  'inventory-requisitions': lazyMod(() => import('@/components/modules/inventory-requisitions-module').then(m => ({ default: m.InventoryRequisitionsModule }))),
-
-  // Accounting
-  'chart-of-accounts': lazyMod(() => import('@/components/modules/chart-of-accounts-module').then(m => ({ default: m.ChartOfAccountsModule }))),
-  'analytic-accounts': lazyMod(() => import('@/components/modules/analytic-accounts-module').then(m => ({ default: m.AnalyticAccountsModule }))),
-  'journal-entries': lazyMod(() => import('@/components/modules/journal-entries-module').then(m => ({ default: m.JournalEntriesModule }))),
-  'closed-periods': lazyMod(() => import('@/components/modules/closed-periods-module').then(m => ({ default: m.ClosedPeriodsModule }))),
-
-  // Finance
-  'bank-accounts': lazyMod(() => import('@/components/modules/bank-accounts-module').then(m => ({ default: m.BankAccountsModule }))),
-  safes: lazyMod(() => import('@/components/modules/safes-module').then(m => ({ default: m.SafesModule }))),
-  expenses: lazyMod(() => import('@/components/modules/expenses-module').then(m => ({ default: m.ExpensesModule }))),
-  revenues: lazyMod(() => import('@/components/modules/revenues-module').then(m => ({ default: m.RevenuesModule }))),
-  'finance-transfers': lazyMod(() => import('@/components/modules/finance-transfers-module').then(m => ({ default: m.FinanceTransfersModule }))),
-  'finance-requisitions': lazyMod(() => import('@/components/modules/finance-requisitions-module').then(m => ({ default: m.FinanceRequisitionsModule }))),
-
-  // Reports
-  reports: lazyMod(() => import('@/components/modules/reports-module').then(m => ({ default: m.ReportsModule }))),
-
-  // Branches
-  branches: lazyMod(() => import('@/components/modules/branches-module').then(m => ({ default: m.BranchesModule }))),
-  partners: lazyMod(() => import('@/components/modules/partners-module').then(m => ({ default: m.PartnersModule }))),
-  activities: lazyMod(() => import('@/components/modules/activities-module').then(m => ({ default: m.ActivitiesModule }))),
-
-  // Users
-  users: lazyMod(() => import('@/components/modules/users-module').then(m => ({ default: m.UsersModule }))),
-  roles: lazyMod(() => import('@/components/modules/roles-module').then(m => ({ default: m.RolesModule }))),
-
-  // Settings & system
-  settings: lazyMod(() => import('@/components/modules/settings-module').then(m => ({ default: m.SettingsModule }))),
-  'document-templates': lazyMod(() => import('@/components/modules/document-templates-module').then(m => ({ default: m.DocumentTemplatesModule }))),
-  'audit-logs': lazyMod(() => import('@/components/modules/audit-logs-module').then(m => ({ default: m.AuditLogsModule }))),
-  notifications: lazyMod(() => import('@/components/modules/notifications-module').then(m => ({ default: m.NotificationsModule }))),
-  profile: lazyMod(() => import('@/components/modules/profile-module').then(m => ({ default: m.ProfileModule }))),
-}
-
+// Lazy-loading skeleton fallback
 function ModuleSkeleton() {
   return (
     <div className="flex flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8 max-w-[1600px] mx-auto w-full">
-      <div className="flex items-center gap-3">
-        <div className="size-11 rounded-xl bg-muted animate-pulse" />
-        <div className="space-y-2">
-          <div className="h-6 w-48 bg-muted rounded animate-pulse" />
-          <div className="h-3 w-64 bg-muted rounded animate-pulse" />
-        </div>
+      <div className="flex items-center justify-between">
+        <Skeleton className="h-10 w-48" />
+        <Skeleton className="h-9 w-24" />
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-28 bg-muted rounded-xl animate-pulse" />
+          <Skeleton key={i} className="h-28 w-full" />
         ))}
       </div>
-      <div className="h-96 bg-muted rounded-xl animate-pulse" />
+      <Skeleton className="h-96 w-full" />
     </div>
   )
+}
+
+const lazy = (loader: () => Promise<{ default: React.ComponentType } | { [k: string]: React.ComponentType }>) =>
+  dynamic(async () => {
+    const mod = await loader()
+    const Comp = (mod as any).default ?? Object.values(mod)[0]
+    return { default: Comp }
+  }, { loading: () => <ModuleSkeleton /> })
+
+// Stub factory — returns a ModuleComingSoon for unimplemented modules
+function stub(titleKey: string, description?: string) {
+  return function StubModule() {
+    return <ModuleComingSoon titleKey={titleKey} description={description} />
+  }
+}
+
+// === Lazy-loaded fully functional modules ===
+const PartnersModule = lazy(() => import('@/components/modules/partners-module'))
+const ProductsModule = lazy(() => import('@/components/modules/products-module'))
+const ChartOfAccountsModule = lazy(() => import('@/components/modules/chart-of-accounts-module'))
+const JournalEntriesModule = lazy(() => import('@/components/modules/journal-entries-module'))
+const SalesOrdersModule = lazy(() => import('@/components/modules/sales-orders-module'))
+const SalesInvoicesModule = lazy(() => import('@/components/modules/sales-invoices-module'))
+const PurchaseOrdersModule = lazy(() => import('@/components/modules/purchase-orders-module'))
+const StockOnHandModule = lazy(() => import('@/components/modules/stock-on-hand-module'))
+const ReportsModule = lazy(() => import('@/components/modules/reports-module'))
+const SettingsModule = lazy(() => import('@/components/modules/settings-module'))
+
+// === Stubs (coming soon) ===
+const SalesQuotationsModule = stub('module.sales-quotations', 'عروض الأسعار للعملاء — قيد التطوير')
+const SalesCreditNotesModule = stub('module.sales-credit-notes', 'إشعارات دائنة للمبيعات — قيد التطوير')
+const SalesReturnsModule = stub('module.sales-returns', 'مرتجع المبيعات — قيد التطوير')
+const SalesPaymentsModule = stub('module.sales-payments', 'سندات قبض العملاء — قيد التطوير')
+const PurchaseRequestsModule = stub('module.purchase-requests', 'طلبات الشراء الداخلية — قيد التطوير')
+const GoodsReceiptsModule = stub('module.goods-receipts', 'استلام بضاعة الموردين — قيد التطوير')
+const PurchaseInvoicesModule = stub('module.purchase-invoices', 'فواتير المشتريات — قيد التطوير')
+const PurchaseCreditNotesModule = stub('module.purchase-credit-notes', 'إشعارات دائنة للمشتريات — قيد التطوير')
+const PurchasePaymentsModule = stub('module.purchase-payments', 'سندات صرف الموردين — قيد التطوير')
+const PurchaseReturnsModule = stub('module.purchase-returns', 'مرتجع المشتريات — قيد التطوير')
+const CategoriesModule = stub('module.categories', 'فئات المنتجات — قيد التطوير')
+const WarehousesModule = stub('module.warehouses', 'المستودعات ومواقع التخزين — قيد التطوير')
+const StockLocationsModule = stub('module.stock-locations', 'مواقع التخزين داخل المستودعات — قيد التطوير')
+const StockTransfersModule = stub('module.stock-transfers', 'تحويلات المخزون بين المستودعات — قيد التطوير')
+const DeliveriesModule = stub('module.deliveries', 'تسليمات المبيعات — قيد التطوير')
+const InventoryAdjustmentsModule = stub('module.inventory-adjustments', 'تسويات جرد المخزون — قيد التطوير')
+const StockMovesModule = stub('module.stock-moves', 'سجل حركات المخزون — قيد التطوير')
+const CostCentersModule = stub('module.cost-centers', 'مراكز التكلفة — قيد التطوير')
+const FiscalPeriodsModule = stub('module.fiscal-periods', 'الفترات المالية — قيد التطوير')
+const BankAccountsModule = stub('module.bank-accounts', 'الحسابات البنكية — قيد التطوير')
+const SafesModule = stub('module.safes', 'الخزائن النقدية — قيد التطوير')
+const BomsModule = stub('module.boms', 'قوائم التركيب (BOM) — قيد التطوير')
+const WorkCentersModule = stub('module.work-centers', 'مراكز العمل — قيد التطوير')
+const ProductionOrdersModule = stub('module.production-orders', 'أوامر الإنتاج — قيد التطوير')
+const EmployeesModule = stub('module.employees', 'إدارة الموظفين — قيد التطوير')
+const DepartmentsModule = stub('module.departments', 'الإدارات والأقسام — قيد التطوير')
+const AttendanceModule = stub('module.attendance', 'الحضور والانصراف — قيد التطوير')
+const LeaveRequestsModule = stub('module.leave-requests', 'طلبات الإجازات — قيد التطوير')
+const PayrollRunsModule = stub('module.payroll-runs', 'تشغيلات الرواتب — قيد التطوير')
+const UsersModule = stub('module.users', 'إدارة المستخدمين — قيد التطوير')
+const RolesModule = stub('module.roles', 'الأدوار والصلاحيات — قيد التطوير')
+const AuditLogsModule = stub('module.audit-logs', 'سجل التدقيق — قيد التطوير')
+const NotificationsModule = stub('module.notifications', 'الإشعارات — قيد التطوير')
+const ProfileModule = stub('module.profile', 'الملف الشخصي — قيد التطوير')
+
+export const moduleRegistry: Record<ModuleKey, React.ComponentType> = {
+  // Overview
+  dashboard: DashboardModule,
+
+  // Master Data
+  partners: PartnersModule,
+  products: ProductsModule,
+  categories: CategoriesModule as React.ComponentType,
+  warehouses: WarehousesModule as React.ComponentType,
+
+  // Sales
+  'sales-quotations': SalesQuotationsModule,
+  'sales-orders': SalesOrdersModule,
+  'sales-invoices': SalesInvoicesModule,
+  'sales-credit-notes': SalesCreditNotesModule,
+  'sales-payments': SalesPaymentsModule,
+  'sales-returns': SalesReturnsModule,
+
+  // Procurement
+  'purchase-requests': PurchaseRequestsModule,
+  'purchase-orders': PurchaseOrdersModule,
+  'goods-receipts': GoodsReceiptsModule,
+  'purchase-invoices': PurchaseInvoicesModule,
+  'purchase-credit-notes': PurchaseCreditNotesModule,
+  'purchase-payments': PurchasePaymentsModule,
+  'purchase-returns': PurchaseReturnsModule,
+
+  // Inventory
+  'stock-on-hand': StockOnHandModule,
+  'stock-transfers': StockTransfersModule,
+  deliveries: DeliveriesModule,
+  'inventory-adjustments': InventoryAdjustmentsModule,
+  'stock-moves': StockMovesModule,
+
+  // Finance
+  'chart-of-accounts': ChartOfAccountsModule,
+  'journal-entries': JournalEntriesModule,
+  'cost-centers': CostCentersModule,
+  'fiscal-periods': FiscalPeriodsModule,
+  'bank-accounts': BankAccountsModule,
+  safes: SafesModule,
+
+  // Manufacturing
+  boms: BomsModule,
+  'work-centers': WorkCentersModule,
+  'production-orders': ProductionOrdersModule,
+
+  // HR
+  employees: EmployeesModule,
+  departments: DepartmentsModule,
+  attendance: AttendanceModule,
+  'leave-requests': LeaveRequestsModule,
+  'payroll-runs': PayrollRunsModule,
+
+  // Reports
+  reports: ReportsModule,
+
+  // Platform
+  users: UsersModule,
+  roles: RolesModule,
+  'audit-logs': AuditLogsModule,
+  notifications: NotificationsModule,
+  settings: SettingsModule,
+  profile: ProfileModule,
 }

@@ -1,166 +1,143 @@
-import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { createPurchaseJournalEntry } from '@/lib/erp/accounting-engine'
+import { ok, created, list, badRequest, serverError, parsePagination, parseSearch } from '@/lib/erp/api-response'
+import { nextNumber } from '@/lib/erp/number-sequence'
+import { postJournalEntry, purchaseInvoicePosting } from '@/lib/erp/accounting-engine'
 
+// GET /api/erp/purchase-invoices
 export async function GET(req: Request) {
   try {
-    const { searchParams } = new URL(req.url)
-    const q = searchParams.get('q')?.trim() || ''
-    const status = searchParams.get('status')
-    const supplierId = searchParams.get('supplierId')
+    const { page, pageSize, skip } = parsePagination(req)
+    const q = parseSearch(req)
+    const url = new URL(req.url)
+    const status = url.searchParams.get('status')
+    const partnerId = url.searchParams.get('partnerId')
 
     const where: any = {}
+    if (q) where.OR = [{ code: { contains: q } }, { vendorBillNo: { contains: q } }, { notes: { contains: q } }]
     if (status) where.status = status
-    if (supplierId) where.supplierId = supplierId
-    if (q) {
-      where.OR = [
-        { code: { contains: q } },
-        { note: { contains: q } },
-        { supplier: { name: { contains: q } } },
-        { supplier: { code: { contains: q } } },
-      ]
-    }
+    if (partnerId) where.partnerId = partnerId
 
     const [data, total] = await Promise.all([
       db.purchaseInvoice.findMany({
         where,
-        orderBy: { createdAt: 'desc' },
+        skip,
+        take: pageSize,
         include: {
-          supplier: { select: { id: true, name: true, code: true, phone: true } },
-          items: {
-            include: {
-              product: { select: { id: true, name: true, nameAr: true, sku: true, unit: true } },
-            },
-          },
+          partner: { select: { id: true, nameAr: true, nameEn: true, code: true } },
+          lines: { include: { product: { select: { id: true, sku: true, nameAr: true } } } },
         },
+        orderBy: { createdAt: 'desc' },
       }),
       db.purchaseInvoice.count({ where }),
     ])
-
-    return NextResponse.json({ data, total })
+    return list(data, total, page, pageSize)
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    return serverError(e.message)
   }
 }
 
+// POST — vendor bill. On post: post journal, update partner.currentBalance (increase AP)
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    if (!body.supplierId) return NextResponse.json({ error: 'المورد مطلوب' }, { status: 400 })
-    if (!Array.isArray(body.items) || body.items.length === 0) {
-      return NextResponse.json({ error: 'يجب إضافة عنصر واحد على الأقل' }, { status: 400 })
-    }
+    if (!body.partnerId) return badRequest('partnerId is required')
+    if (!body.lines || body.lines.length === 0) return badRequest('lines are required')
 
-    const supplier = await db.supplier.findUnique({ where: { id: body.supplierId } })
-    if (!supplier) return NextResponse.json({ error: 'المورد غير موجود' }, { status: 404 })
+    const company = await db.company.findFirst()
+    if (!company) return badRequest('no company in db')
+    const branch = await db.branch.findFirst({ where: { companyId: company.id } })
 
-    const items = body.items.map((it: any) => {
-      const quantity = Number(it.quantity) || 0
-      const unitPrice = Number(it.unitPrice) || 0
-      const discount = Number(it.discount) || 0
-      const taxRate = Number(it.taxRate) || 0
-      const lineNet = Math.max(0, quantity * unitPrice - discount)
-      const lineTax = lineNet * (taxRate / 100)
-      const total = lineNet + lineTax
-      return { productId: it.productId, quantity, unitPrice, discount, taxRate, total }
+    const code = await nextNumber('purchase_invoice', company.id, branch?.id)
+
+    let subtotal = 0
+    let taxTotal = 0
+    const processedLines = body.lines.map((l: any) => {
+      const lineSubtotal = (l.quantity || 0) * (l.unitCost || 0) * (1 - (l.discountPercent || 0) / 100) - (l.discountAmount || 0)
+      const lineTax = lineSubtotal * ((l.taxRate || 0) / 100)
+      const total = lineSubtotal + lineTax
+      subtotal += lineSubtotal
+      taxTotal += lineTax
+      return {
+        productId: l.productId,
+        description: l.description,
+        quantity: l.quantity,
+        uomId: l.uomId,
+        unitCost: l.unitCost,
+        discountPercent: l.discountPercent ?? 0,
+        discountAmount: l.discountAmount ?? 0,
+        taxCodeId: l.taxCodeId,
+        taxRate: l.taxRate ?? 0,
+        total,
+      }
     })
+    const total = subtotal + taxTotal
 
-    const subtotal = items.reduce((s: number, it: any) => s + (it.quantity * it.unitPrice - it.discount), 0)
-    const taxTotal = items.reduce((s: number, it: any) => s + ((it.quantity * it.unitPrice - it.discount) * (it.taxRate / 100)), 0)
-    const invoiceDiscount = Number(body.discount) || 0
-    const total = Math.max(0, subtotal + taxTotal - invoiceDiscount)
-    const status = body.status || 'posted'
+    const status = body.status ?? 'posted'
 
-    const count = await db.purchaseInvoice.count()
-    const code = `PINV-${String(count + 1).padStart(4, '0')}`
-
-    const issueDate = body.issueDate ? new Date(body.issueDate) : new Date()
-    const dueDate = body.dueDate ? new Date(body.dueDate) : null
-
-    const created = await db.purchaseInvoice.create({
+    const invoice = await db.purchaseInvoice.create({
       data: {
+        companyId: company.id,
+        branchId: branch?.id,
         code,
-        supplierId: body.supplierId,
-        branchId: body.branchId || null,
-        orderId: body.orderId || null,
-        status,
-        issueDate,
-        dueDate,
+        partnerId: body.partnerId,
+        purchaseOrderId: body.purchaseOrderId,
+        billDate: body.billDate ? new Date(body.billDate) : new Date(),
+        accountingDate: body.accountingDate ? new Date(body.accountingDate) : new Date(),
+        dueDate: body.dueDate ? new Date(body.dueDate) : undefined,
+        vendorBillNo: body.vendorBillNo,
+        currencyId: body.currencyId,
+        paymentTermId: body.paymentTermId,
+        status: status === 'posted' ? 'posted' : 'draft',
         subtotal,
         taxTotal,
-        discount: invoiceDiscount,
         total,
         paid: 0,
-        note: body.note || null,
-        items: { create: items.map((it: any) => ({ productId: it.productId, quantity: it.quantity, unitPrice: it.unitPrice, discount: it.discount, taxRate: it.taxRate, total: it.total })) },
+        notes: body.notes,
+        createdBy: body.createdBy,
+        lines: { create: processedLines },
       },
-      include: {
-        supplier: true,
-        items: { include: { product: { select: { id: true, name: true, nameAr: true, sku: true, unit: true } } } },
-      },
+      include: { lines: true, partner: true },
     })
 
-    // Update supplier balance (AP increases)
-    await db.supplier.update({
-      where: { id: body.supplierId },
-      data: { balance: { increment: total } },
-    })
-
-    // Auto journal entry: Dr Purchases + Input VAT, Cr AP
-    try {
-      const entryInput = createPurchaseJournalEntry({
-        total,
-        taxTotal,
-        subtotal: subtotal - invoiceDiscount,
-        isCash: false,
-        refId: created.id,
-        description: `فاتورة شراء ${code} - ${supplier.name}`,
+    if (body.purchaseOrderId) {
+      await db.purchaseOrder.update({
+        where: { id: body.purchaseOrderId },
+        data: { invoiceStatus: 'invoiced', status: 'billed' },
       })
-
-      const codes = [...new Set(entryInput.lines.map((l) => l.accountCode))]
-      const accounts = await db.account.findMany({ where: { code: { in: codes } } })
-      const codeToId = new Map(accounts.map((a) => [a.code, a.id]))
-
-      const validLines = entryInput.lines
-        .map((l) => ({ ...l, accountId: codeToId.get(l.accountCode) }))
-        .filter((l) => l.accountId)
-
-      if (validLines.length === entryInput.lines.length) {
-        const totalDebit = validLines.reduce((s, l) => s + l.debit, 0)
-        const totalCredit = validLines.reduce((s, l) => s + l.credit, 0)
-        await db.journalEntry.create({
-          data: {
-            code: `JE-PINV-${code}`,
-            date: issueDate,
-            description: entryInput.description,
-            refType: 'purchase_invoice',
-            refId: created.id,
-            status: 'posted',
-            totalDebit,
-            totalCredit,
-            lines: {
-              create: validLines.map((l) => ({
-                accountId: l.accountId!,
-                debit: l.debit,
-                credit: l.credit,
-                description: l.description,
-              })),
-            },
-          },
-        })
-        for (const l of validLines) {
-          await db.account.update({
-            where: { id: l.accountId! },
-            data: { balance: { increment: l.debit - l.credit } },
-          })
-        }
-      }
-    } catch (journalErr) {
-      console.error('Journal creation failed:', journalErr)
     }
 
-    return NextResponse.json(created, { status: 201 })
+    if (status === 'posted') {
+      const je = await postJournalEntry({
+        companyId: company.id,
+        branchId: branch?.id,
+        journalType: 'purchase',
+        postingDate: body.accountingDate ? new Date(body.accountingDate) : new Date(),
+        description: `فاتورة مشتريات ${code}`,
+        refType: 'purchase_invoice',
+        refId: invoice.id,
+        currencyId: body.currencyId,
+        lines: purchaseInvoicePosting({ total, subtotal, taxTotal, partnerId: body.partnerId }),
+        userId: body.createdBy,
+      })
+
+      await db.purchaseInvoice.update({
+        where: { id: invoice.id },
+        data: { journalEntryId: je.id, status: 'posted' },
+      })
+
+      // Update partner.currentBalance (increase AP — supplier owed)
+      await db.partner.update({
+        where: { id: body.partnerId },
+        data: { currentBalance: { increment: total } },
+      })
+    }
+
+    const result = await db.purchaseInvoice.findUnique({
+      where: { id: invoice.id },
+      include: { lines: { include: { product: true } }, partner: true },
+    })
+    return created(result)
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    return serverError(e.message)
   }
 }

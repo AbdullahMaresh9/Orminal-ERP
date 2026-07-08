@@ -1,21 +1,20 @@
-import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { ok, notFound, badRequest, serverError } from '@/lib/erp/api-response'
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
-    const order = await db.purchaseOrder.findUnique({
+    const item = await db.purchaseOrder.findUnique({
       where: { id },
       include: {
-        supplier: true,
-        branch: true,
-        items: { include: { product: true } },
+        partner: true,
+        lines: { include: { product: true } },
       },
     })
-    if (!order) return NextResponse.json({ error: 'غير موجود' }, { status: 404 })
-    return NextResponse.json(order)
+    if (!item) return notFound('Purchase order not found')
+    return ok(item)
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    return serverError(e.message)
   }
 }
 
@@ -23,41 +22,29 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   try {
     const { id } = await params
     const body = await req.json()
-    const existing = await db.purchaseOrder.findUnique({ where: { id } })
-    if (!existing) return NextResponse.json({ error: 'غير موجود' }, { status: 404 })
+    const exists = await db.purchaseOrder.findUnique({ where: { id } })
+    if (!exists) return notFound('Purchase order not found')
 
-    const updated = await db.purchaseOrder.update({
-      where: { id },
-      data: {
-        status: body.status ?? existing.status,
-        note: body.note ?? existing.note,
-        paid: body.paid !== undefined ? Number(body.paid) : existing.paid,
-      },
-    })
-    return NextResponse.json(updated)
+    const { id: _id, lines, createdAt: _c, updatedAt: _u, ...rest } = body
+    const updated = await db.purchaseOrder.update({ where: { id }, data: rest })
+    return ok(updated)
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    return serverError(e.message)
   }
 }
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
-    const existing = await db.purchaseOrder.findUnique({ where: { id } })
-    if (!existing) return NextResponse.json({ error: 'غير موجود' }, { status: 404 })
-
-    // Reverse supplier balance if credit purchase
-    if (existing.paid < existing.total) {
-      const remaining = existing.total - existing.paid
-      await db.supplier.update({
-        where: { id: existing.supplierId },
-        data: { balance: { decrement: remaining } },
-      })
+    const exists = await db.purchaseOrder.findUnique({ where: { id } })
+    if (!exists) return notFound('Purchase order not found')
+    if (exists.status === 'received' || exists.status === 'paid') {
+      return badRequest('Cannot delete received/paid order')
     }
-
+    await db.purchaseOrderLine.deleteMany({ where: { orderId: id } })
     await db.purchaseOrder.delete({ where: { id } })
-    return NextResponse.json({ success: true })
+    return ok({ success: true })
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    return serverError(e.message)
   }
 }

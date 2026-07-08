@@ -1,98 +1,97 @@
-import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { ok, created, list, badRequest, serverError, parsePagination, parseSearch } from '@/lib/erp/api-response'
 
-// GET /api/erp/accounts — list all accounts with computed balance from JournalLines
+// GET /api/erp/accounts — chart of accounts; balance computed from JournalLines
 export async function GET(req: Request) {
   try {
-    const { searchParams } = new URL(req.url)
-    const type = searchParams.get('type')
-    const active = searchParams.get('active')
-    const q = searchParams.get('q')?.trim()
+    const { page, pageSize, skip } = parsePagination(req)
+    const q = parseSearch(req)
+    const url = new URL(req.url)
+    const type = url.searchParams.get('type')
+    const active = url.searchParams.get('active')
 
     const where: any = {}
-    if (type && type !== 'all') where.type = type
-    if (active === 'true') where.active = true
-    if (active === 'false') where.active = false
     if (q) {
       where.OR = [
         { code: { contains: q } },
-        { name: { contains: q } },
         { nameAr: { contains: q } },
+        { nameEn: { contains: q } },
       ]
     }
+    if (type) where.type = type
+    if (active === 'true') where.active = true
+    if (active === 'false') where.active = false
 
-    const accounts = await db.account.findMany({
-      where,
-      orderBy: [{ type: 'asc' }, { code: 'asc' }],
-      include: { parent: { select: { id: true, code: true, name: true } } },
-    })
-
-    // Aggregate all posted journal lines by accountId
-    const agg = await db.journalLine.groupBy({
-      by: ['accountId'],
-      where: { entry: { status: 'posted' } },
-      _sum: { debit: true, credit: true },
-    })
-    const map = new Map<string, { debit: number; credit: number }>()
-    for (const a of agg) {
-      map.set(a.accountId, { debit: a._sum.debit ?? 0, credit: a._sum.credit ?? 0 })
+    // Tree mode
+    if (url.searchParams.get('tree') === 'true') {
+      const roots = await db.account.findMany({
+        where: { ...where, parentId: null },
+        include: { children: { include: { children: true } } },
+        orderBy: { code: 'asc' },
+      })
+      return list(roots, roots.length, 1, 1000)
     }
 
-    const data = accounts.map((a) => {
-      const sums = map.get(a.id) ?? { debit: 0, credit: 0 }
-      // asset/expense: balance = debit - credit; liability/equity/income: credit - debit
-      const isDebitNormal = a.type === 'asset' || a.type === 'expense'
-      const balance = isDebitNormal
-        ? sums.debit - sums.credit
-        : sums.credit - sums.debit
-      return {
-        ...a,
-        balance,
-        rawDebit: sums.debit,
-        rawCredit: sums.credit,
-      }
-    })
-
-    return NextResponse.json({ data, total: data.length })
+    const [data, total] = await Promise.all([
+      db.account.findMany({
+        where,
+        skip,
+        take: pageSize,
+        include: {
+          parent: { select: { id: true, code: true, nameAr: true } },
+          _count: { select: { journalLines: true } },
+        },
+        orderBy: { code: 'asc' },
+      }),
+      db.account.count({ where }),
+    ])
+    // Recompute balance from journal lines (debit/credit by account type)
+    const accountsWithBalance = await Promise.all(
+      data.map(async (a) => {
+        const lines = await db.journalLine.aggregate({
+          where: { accountId: a.id },
+          _sum: { debit: true, credit: true },
+        })
+        const isDebitNormal = a.type === 'asset' || a.type === 'expense'
+        const computed = isDebitNormal
+          ? (lines._sum.debit ?? 0) - (lines._sum.credit ?? 0)
+          : (lines._sum.credit ?? 0) - (lines._sum.debit ?? 0)
+        return { ...a, computedBalance: computed, lineCount: a._count.journalLines }
+      })
+    )
+    return list(accountsWithBalance, total, page, pageSize)
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    return serverError(e.message)
   }
 }
 
-// POST /api/erp/accounts — create new account
+// POST /api/erp/accounts — create new account (non-system)
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { code, name, nameAr, type, subtype, parentId, active, isSystem } = body
-    if (!code || !name || !type) {
-      return NextResponse.json({ error: 'الرمز والاسم والنوع مطلوبة' }, { status: 400 })
-    }
-    const existing = await db.account.findUnique({ where: { code } })
-    if (existing) {
-      return NextResponse.json({ error: 'الرمز مستخدم بالفعل' }, { status: 400 })
-    }
-    // If parent provided, must match same type
-    if (parentId) {
-      const parent = await db.account.findUnique({ where: { id: parentId } })
-      if (parent && parent.type !== type) {
-        return NextResponse.json({ error: 'نوع الحساب الأب غير مطابق' }, { status: 400 })
-      }
-    }
-    const created = await db.account.create({
+    if (!body.code) return badRequest('code is required')
+    if (!body.nameAr) return badRequest('nameAr is required')
+    if (!body.type) return badRequest('type is required')
+
+    const existing = await db.account.findUnique({ where: { code: body.code } })
+    if (existing) return badRequest('Account code already exists')
+
+    const account = await db.account.create({
       data: {
-        code,
-        name,
-        nameAr: nameAr ?? null,
-        type,
-        subtype: subtype ?? null,
-        parentId: parentId ?? null,
-        active: active ?? true,
-        isSystem: isSystem ?? false,
-        balance: 0,
+        code: body.code,
+        nameAr: body.nameAr,
+        nameEn: body.nameEn,
+        type: body.type,
+        subtype: body.subtype,
+        parentId: body.parentId,
+        isPosting: body.isPosting ?? true,
+        isSystem: false, // cannot create system accounts via API
+        balance: body.balance ?? 0,
+        active: body.active ?? true,
       },
     })
-    return NextResponse.json(created, { status: 201 })
+    return created(account)
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    return serverError(e.message)
   }
 }

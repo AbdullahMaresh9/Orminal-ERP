@@ -1,198 +1,104 @@
-import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { createPurchaseJournalEntry, SYSTEM_ACCOUNTS } from '@/lib/erp/accounting-engine'
+import { ok, created, list, badRequest, serverError, parsePagination, parseSearch } from '@/lib/erp/api-response'
+import { nextNumber } from '@/lib/erp/number-sequence'
 
+// GET /api/erp/purchase-orders
 export async function GET(req: Request) {
   try {
-    const { searchParams } = new URL(req.url)
-    const q = searchParams.get('q')?.trim() || ''
-    const status = searchParams.get('status')
-    const supplierId = searchParams.get('supplierId')
+    const { page, pageSize, skip } = parsePagination(req)
+    const q = parseSearch(req)
+    const url = new URL(req.url)
+    const status = url.searchParams.get('status')
+    const partnerId = url.searchParams.get('partnerId')
 
     const where: any = {}
+    if (q) where.OR = [{ code: { contains: q } }, { notes: { contains: q } }]
     if (status) where.status = status
-    if (supplierId) where.supplierId = supplierId
-    if (q) {
-      where.OR = [
-        { code: { contains: q } },
-        { note: { contains: q } },
-        { supplier: { name: { contains: q } } },
-        { supplier: { code: { contains: q } } },
-      ]
-    }
+    if (partnerId) where.partnerId = partnerId
 
     const [data, total] = await Promise.all([
       db.purchaseOrder.findMany({
         where,
-        orderBy: { createdAt: 'desc' },
+        skip,
+        take: pageSize,
         include: {
-          supplier: { select: { id: true, name: true, code: true, phone: true } },
-          items: {
-            include: {
-              product: { select: { id: true, name: true, nameAr: true, sku: true, unit: true } },
-            },
-          },
+          partner: { select: { id: true, nameAr: true, nameEn: true, code: true } },
+          lines: { include: { product: { select: { id: true, sku: true, nameAr: true } } } },
         },
+        orderBy: { createdAt: 'desc' },
       }),
       db.purchaseOrder.count({ where }),
     ])
-
-    return NextResponse.json({ data, total })
+    return list(data, total, page, pageSize)
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    return serverError(e.message)
   }
 }
 
+// POST /api/erp/purchase-orders — create. On confirm: optional budget check. No posting yet.
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    if (!body.supplierId) return NextResponse.json({ error: 'المورد مطلوب' }, { status: 400 })
-    if (!Array.isArray(body.items) || body.items.length === 0) {
-      return NextResponse.json({ error: 'يجب إضافة عنصر واحد على الأقل' }, { status: 400 })
-    }
+    if (!body.partnerId) return badRequest('partnerId is required')
+    if (!body.lines || body.lines.length === 0) return badRequest('lines are required')
 
-    const supplier = await db.supplier.findUnique({ where: { id: body.supplierId } })
-    if (!supplier) return NextResponse.json({ error: 'المورد غير موجود' }, { status: 404 })
+    const company = await db.company.findFirst()
+    if (!company) return badRequest('no company in db')
+    const branch = await db.branch.findFirst({ where: { companyId: company.id } })
 
-    // Compute totals from line items
-    const items = body.items.map((it: any) => {
-      const quantity = Number(it.quantity) || 0
-      const unitPrice = Number(it.unitPrice) || 0
-      const discount = Number(it.discount) || 0
-      const taxRate = Number(it.taxRate) || 0
-      const lineNet = Math.max(0, quantity * unitPrice - discount)
-      const lineTax = lineNet * (taxRate / 100)
-      const total = lineNet + lineTax
-      return { productId: it.productId, quantity, unitPrice, discount, taxRate, total }
+    const code = await nextNumber('purchase_order', company.id, branch?.id)
+
+    let subtotal = 0
+    let taxTotal = 0
+    const processedLines = body.lines.map((l: any) => {
+      const lineSubtotal = (l.quantity || 0) * (l.unitCost || 0) * (1 - (l.discountPercent || 0) / 100) - (l.discountAmount || 0)
+      const lineTax = lineSubtotal * ((l.taxRate || 0) / 100)
+      const total = lineSubtotal + lineTax
+      subtotal += lineSubtotal
+      taxTotal += lineTax
+      return {
+        productId: l.productId,
+        description: l.description,
+        quantity: l.quantity,
+        uomId: l.uomId,
+        unitCost: l.unitCost,
+        discountPercent: l.discountPercent ?? 0,
+        discountAmount: l.discountAmount ?? 0,
+        taxCodeId: l.taxCodeId,
+        taxRate: l.taxRate ?? 0,
+        total,
+      }
     })
+    const total = subtotal + taxTotal - (body.discount ?? 0)
 
-    const subtotal = items.reduce((s: number, it: any) => s + (it.quantity * it.unitPrice - it.discount), 0)
-    const taxTotal = items.reduce((s: number, it: any) => s + ((it.quantity * it.unitPrice - it.discount) * (it.taxRate / 100)), 0)
-    const orderDiscount = Number(body.discount) || 0
-    const total = Math.max(0, subtotal + taxTotal - orderDiscount)
-
-    const isCash = (body.paymentMethod || 'credit') === 'cash'
-    const status = body.status || (isCash ? 'paid' : 'ordered')
-
-    // Generate code
-    const count = await db.purchaseOrder.count()
-    const code = `PO-${String(count + 1).padStart(4, '0')}`
-
-    // Resolve storehouse (first active)
-    const storehouse = await db.storehouse.findFirst({ where: { active: true } })
-
-    const created = await db.purchaseOrder.create({
+    const po = await db.purchaseOrder.create({
       data: {
+        companyId: company.id,
+        branchId: branch?.id,
         code,
-        supplierId: body.supplierId,
-        branchId: body.branchId || null,
-        status,
+        partnerId: body.partnerId,
+        orderDate: body.orderDate ? new Date(body.orderDate) : new Date(),
+        expectedDate: body.expectedDate ? new Date(body.expectedDate) : undefined,
+        currencyId: body.currencyId,
+        paymentTermId: body.paymentTermId,
+        warehouseId: body.warehouseId,
+        incoterms: body.incoterms,
+        status: body.status ?? 'draft',
         subtotal,
         taxTotal,
-        discount: orderDiscount,
+        discount: body.discount ?? 0,
         total,
-        paid: isCash ? total : 0,
-        note: body.note || null,
-        items: { create: items.map((it: any) => ({ productId: it.productId, quantity: it.quantity, unitPrice: it.unitPrice, discount: it.discount, taxRate: it.taxRate, total: it.total })) },
+        notes: body.notes,
+        createdBy: body.createdBy,
+        lines: { create: processedLines },
       },
       include: {
-        supplier: true,
-        items: { include: { product: { select: { id: true, name: true, nameAr: true, sku: true, unit: true } } } },
+        partner: true,
+        lines: { include: { product: true } },
       },
     })
-
-    // Stock increment + stock movement if storehouse exists
-    if (storehouse) {
-      for (const it of items) {
-        const existing = await db.stockItem.findFirst({
-          where: { productId: it.productId, storehouseId: storehouse.id, batch: null },
-        })
-        if (existing) {
-          await db.stockItem.update({ where: { id: existing.id }, data: { quantity: { increment: it.quantity } } })
-        } else {
-          await db.stockItem.create({
-            data: { productId: it.productId, storehouseId: storehouse.id, quantity: it.quantity },
-          })
-        }
-        await db.stockMovement.create({
-          data: {
-            productId: it.productId,
-            storehouseId: storehouse.id,
-            type: 'in',
-            quantity: it.quantity,
-            refType: 'purchase_order',
-            refId: created.id,
-            note: `أمر شراء ${code}`,
-          },
-        })
-      }
-    }
-
-    // Update supplier balance (credit purchases increase payables)
-    if (!isCash) {
-      await db.supplier.update({
-        where: { id: body.supplierId },
-        data: { balance: { increment: total } },
-      })
-    }
-
-    // Auto journal entry
-    try {
-      const entryInput = createPurchaseJournalEntry({
-        total,
-        taxTotal,
-        subtotal: subtotal - orderDiscount,
-        isCash,
-        refId: created.id,
-        description: `أمر شراء ${code} - ${supplier.name}`,
-      })
-
-      // Resolve accounts by code
-      const codes = [...new Set(entryInput.lines.map((l) => l.accountCode))]
-      const accounts = await db.account.findMany({ where: { code: { in: codes } } })
-      const codeToId = new Map(accounts.map((a) => [a.code, a.id]))
-
-      const validLines = entryInput.lines
-        .map((l) => ({ ...l, accountId: codeToId.get(l.accountCode) }))
-        .filter((l) => l.accountId)
-
-      if (validLines.length === entryInput.lines.length) {
-        const totalDebit = validLines.reduce((s, l) => s + l.debit, 0)
-        const totalCredit = validLines.reduce((s, l) => s + l.credit, 0)
-        await db.journalEntry.create({
-          data: {
-            code: `JE-PO-${code}`,
-            date: new Date(),
-            description: entryInput.description,
-            refType: 'purchase_order',
-            refId: created.id,
-            status: 'posted',
-            totalDebit,
-            totalCredit,
-            lines: {
-              create: validLines.map((l) => ({
-                accountId: l.accountId!,
-                debit: l.debit,
-                credit: l.credit,
-                description: l.description,
-              })),
-            },
-          },
-        })
-        // Update account balances
-        for (const l of validLines) {
-          await db.account.update({
-            where: { id: l.accountId! },
-            data: { balance: { increment: l.debit - l.credit } },
-          })
-        }
-      }
-    } catch (journalErr) {
-      console.error('Journal creation failed:', journalErr)
-    }
-
-    return NextResponse.json(created, { status: 201 })
+    return created(po)
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    return serverError(e.message)
   }
 }

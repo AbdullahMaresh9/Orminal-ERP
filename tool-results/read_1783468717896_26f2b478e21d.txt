@@ -1,0 +1,1327 @@
+     1→**تحليل شامل لمكونات النظام المحاسبي وERP**
+     2→
+     3→تخصيص دقيق حسب Odoo و SAP S/4HANA مع الشجرات، الصلاحيات، سير العمل،
+     4→القيود المحاسبية، التقارير، قواعد الرقابة، وقواعد قاعدة البيانات
+     5→
+     6→إعداد: M365 Copilot
+     7→
+     8→**مخصص لـ: عبدالله Maresh**
+     9→
+    10→تاريخ الإعداد: 06 يوليو 2026
+    11→
+    12→# **مقدمة وتنبيه منهجي**
+    13→
+    14→هذا الملف يجمع كل ما تم تقديمه في المحادثة حول مكونات النظام المحاسبي
+    15→وERP، ثم تخصيصه بدقة حسب Odoo وSAP S/4HANA، مع استكمال مصفوفات الصلاحيات
+    16→وسير العمل والقيود المحاسبية وقواعد الرقابة والجداول المقترحة. تم ترتيب
+    17→المحتوى في وثيقة Word احترافية ومنسقة، مع الحفاظ على جميع الأفكار
+    18→والأوامر والهيكليات التي تم تقديمها سابقًا.
+    19→
+    20→ملاحظة: في Odoo تعتمد البنية غالبًا على التطبيقات Modules / Apps، بينما
+    21→في SAP S/4HANA تعتمد على الوحدات الوظيفية Functional Modules وتطبيقات
+    22→Fiori وسلاسل العمليات. لذلك توجد اختلافات في التسمية، لكن المنطق
+    23→التشغيلي والمحاسبي مترابط.
+    24→
+    25→# **1) مكونات النظام المحاسبي العامة**
+    26→
+    27→## **إدارة المبيعات**
+    28→
+    29→-   الفواتير: فواتير بيع نقدي، فواتير بيع آجل
+    30→
+    31→-   مرتجعات المبيعات: مرتجع كلي، مرتجع جزئي
+    32→
+    33→-   عروض الأسعار
+    34→
+    35→-   أوامر البيع
+    36→
+    37→-   العملاء: بيانات العملاء، تصنيفات العملاء، حدود الائتمان
+    38→
+    39→-   المدفوعات: سندات قبض، شيكات العملاء
+    40→
+    41→-   الخصومات والعروض
+    42→
+    43→-   تقارير المبيعات: المبيعات اليومية، حسب العميل، حسب الصنف
+    44→
+    45→## **إدارة المشتريات**
+    46→
+    47→-   أوامر الشراء
+    48→
+    49→-   فواتير الشراء: نقدية، آجلة
+    50→
+    51→-   مرتجعات المشتريات
+    52→
+    53→-   الموردون: بيانات وتصنيفات الموردين
+    54→
+    55→-   المدفوعات: سندات صرف، شيكات الموردين
+    56→
+    57→-   مصاريف الشراء
+    58→
+    59→-   تقارير المشتريات: حسب المورد، حسب الصنف
+    60→
+    61→## **إدارة المخازن / المستودعات**
+    62→
+    63→-   الأصناف: تعريف الصنف، وحدات القياس، الباركود
+    64→
+    65→-   حركات المخزون: إدخال، إخراج، تحويل بين مخازن
+    66→
+    67→-   الجرد: دوري، مفاجئ
+    68→
+    69→-   تسعير الأصناف: متوسط، FIFO
+    70→
+    71→-   تقارير المخزون: رصيد الصنف، حركة الصنف
+    72→
+    73→## **إدارة الحسابات العامة**
+    74→
+    75→-   دليل الحسابات: الأصول، الخصوم، حقوق الملكية، الإيرادات، المصروفات
+    76→
+    77→-   القيود اليومية: عادية، افتتاحية، إقفال
+    78→
+    79→-   مراكز التكلفة
+    80→
+    81→-   العملات
+    82→
+    83→-   التقارير المالية: الميزانية العمومية، قائمة الدخل، التدفقات النقدية
+    84→
+    85→## **إدارة العملاء / الذمم المدينة**
+    86→
+    87→-   حسابات العملاء
+    88→
+    89→-   أعمار الديون
+    90→
+    91→-   تسويات العملاء
+    92→
+    93→-   إشعارات الخصم والإضافة
+    94→
+    95→-   تقارير العملاء
+    96→
+    97→## **إدارة الموردين / الذمم الدائنة**
+    98→
+    99→-   حسابات الموردين
+   100→
+   101→-   أعمار الديون
+   102→
+   103→-   تسويات الموردين
+   104→
+   105→-   إشعارات الخصم والإضافة
+   106→
+   107→-   تقارير الموردين
+   108→
+   109→## **إدارة الصندوق والبنوك**
+   110→
+   111→-   الصناديق: صندوق رئيسي وصناديق فرعية
+   112→
+   113→-   البنوك: حسابات بنكية
+   114→
+   115→-   الحركات: قبض وصرف
+   116→
+   117→-   التسويات البنكية
+   118→
+   119→-   تقارير النقدية
+   120→
+   121→## **إدارة الأصول الثابتة**
+   122→
+   123→-   تعريف الأصول
+   124→
+   125→-   فئات الأصول
+   126→
+   127→-   الإهلاك: شهري وسنوي
+   128→
+   129→-   إضافة أصل
+   130→
+   131→-   استبعاد أصل
+   132→
+   133→-   تقارير الأصول
+   134→
+   135→## **إدارة الرواتب والموارد البشرية**
+   136→
+   137→-   الموظفون: بيانات الموظف والعقود
+   138→
+   139→-   الرواتب: الراتب الأساسي، البدلات، الخصومات
+   140→
+   141→-   الحضور والانصراف
+   142→
+   143→-   الإجازات
+   144→
+   145→-   تقارير الرواتب
+   146→
+   147→## **إدارة الضرائب**
+   148→
+   149→-   ضريبة المبيعات / VAT
+   150→
+   151→-   الإقرارات الضريبية
+   152→
+   153→-   تسويات ضريبية
+   154→
+   155→-   تقارير الضرائب
+   156→
+   157→## **إدارة التقارير**
+   158→
+   159→-   تقارير مالية
+   160→
+   161→-   تقارير إدارية
+   162→
+   163→-   تقارير تحليلية
+   164→
+   165→-   تقارير مخصصة
+   166→
+   167→# **2) شجرة Odoo ERP بدقة عالية**
+   168→
+   169→## **Accounting / Invoicing --- المحاسبة والفوترة**
+   170→
+   171→Accounting / Invoicing\
+   172→├── Dashboard\
+   173→│ ├── Bank\
+   174→│ ├── Cash\
+   175→│ ├── Customer Invoices\
+   176→│ ├── Vendor Bills\
+   177→│ └── Miscellaneous Operations\
+   178→├── Customers\
+   179→│ ├── Customer Invoices: Draft, Posted, Paid, Overdue\
+   180→│ ├── Credit Notes\
+   181→│ ├── Payments\
+   182→│ ├── Follow-up Reports\
+   183→│ └── Customers Master Data\
+   184→├── Vendors\
+   185→│ ├── Vendor Bills\
+   186→│ ├── Refunds\
+   187→│ ├── Payments\
+   188→│ ├── Vendor Master Data\
+   189→│ └── 3-Way Matching / Bill Control\
+   190→├── Accounting\
+   191→│ ├── Journal Entries\
+   192→│ ├── Journal Items\
+   193→│ ├── Journals: Sales, Purchase, Bank, Cash, Miscellaneous\
+   194→│ ├── Reconciliation\
+   195→│ └── Lock Dates\
+   196→├── Bank & Cash\
+   197→│ ├── Bank Accounts\
+   198→│ ├── Cash Registers\
+   199→│ ├── Bank Statements\
+   200→│ ├── Bank Synchronization\
+   201→│ └── Bank Reconciliation\
+   202→├── Configuration\
+   203→│ ├── Chart of Accounts\
+   204→│ ├── Taxes\
+   205→│ ├── Fiscal Positions\
+   206→│ ├── Payment Terms\
+   207→│ ├── Incoterms\
+   208→│ ├── Currencies\
+   209→│ ├── Journals\
+   210→│ ├── Analytic Accounts / Plans / Distribution\
+   211→│ └── Accounting Settings\
+   212→├── Assets\
+   213→├── Budgets\
+   214→├── Closing\
+   215→└── Reporting: Balance Sheet, P&L, Aged Receivable, Aged Payable, Trial
+   216→Balance, General Ledger, Partner Ledger, Tax Report, Cash Flow
+   217→
+   218→## **Sales --- المبيعات**
+   219→
+   220→Sales\
+   221→├── Orders\
+   222→│ ├── Quotations: Draft, Sent, Expired\
+   223→│ ├── Sales Orders\
+   224→│ ├── Orders to Invoice\
+   225→│ ├── Upselling Opportunities\
+   226→│ └── Locked Orders\
+   227→├── Customers: Customer List, Contacts, Addresses, Pricelist Assignment,
+   228→Payment Terms, Credit Limit\
+   229→├── Products: Products, Variants, Categories, UOM, Pricelists,
+   230→Discounts\
+   231→├── Invoicing: Create Invoice, Down Payments, Delivered / Ordered
+   232→Quantity Invoice, Credit Notes\
+   233→├── Delivery Integration: Delivery Orders, Shipping Methods, Tracking,
+   234→Backorders\
+   235→├── Returns: Return Request, Returned Products, Credit Note, Stock
+   236→Return\
+   237→└── Reporting: Sales Analysis, Salesperson Performance, Product Sales,
+   238→Customer Sales, Forecast
+   239→
+   240→## **CRM --- إدارة علاقات العملاء**
+   241→
+   242→CRM\
+   243→├── Leads: New, Assigned, Lost\
+   244→├── Opportunities: Pipeline, Activities, Meetings, Calls, Emails,
+   245→Probability / Expected Revenue\
+   246→├── Sales Teams: Members, Targets, Lead Assignment Rules, Team Pipeline\
+   247→├── Customers: Contacts, Communication History, Opportunities History\
+   248→└── Reporting: Pipeline Analysis, Activities Analysis, Lost Reasons,
+   249→Forecast
+   250→
+   251→## **Purchase --- المشتريات**
+   252→
+   253→Purchase\
+   254→├── Orders: RFQ, Purchase Orders, Purchase Agreements, Blanket Orders,
+   255→Calls for Tender\
+   256→├── Vendors: Master Data, Pricelists, Payment Terms, Lead Time, Vendor
+   257→Bills\
+   258→├── Products: Purchasable Products, Vendor Product Codes, Categories,
+   259→UOM, Reordering Rules\
+   260→├── Receipts: Incoming Shipments, Partial Receipts, Backorders, Quality
+   261→Checks\
+   262→├── Billing: Vendor Bills, Bill Control, Refunds, Payments\
+   263→├── Returns: Return to Vendor, Debit Note, Stock Adjustment\
+   264→└── Reporting: Purchase Analysis, Vendor Performance, Product Purchases,
+   265→RFQ / PO Status
+   266→
+   267→## **Inventory --- المخزون والمستودعات**
+   268→
+   269→Inventory\
+   270→├── Products: Products, Variants, Categories, UOM, Barcodes, Lots,
+   271→Serial Numbers, Expiration Dates\
+   272→├── Operations: Receipts, Deliveries, Internal Transfers, Manufacturing
+   273→Transfers, Pickings, Packings, Shipments, Scrap\
+   274→├── Warehouses\
+   275→│ ├── Warehouses\
+   276→│ ├── Locations: Vendor, Internal, Customer, Inventory Loss, Production,
+   277→Transit, Virtual\
+   278→│ ├── Storage Categories\
+   279→│ ├── Putaway Rules\
+   280→│ └── Routes\
+   281→├── Replenishment: Reordering Rules, Min/Max, Make to Order, Buy,
+   282→Manufacture, Replenishment Report\
+   283→├── Inventory Adjustments: Physical Inventory, Cycle Counts, Counted
+   284→Qty, Differences, Validation\
+   285→├── Traceability: Lots, Serial Numbers, Traceability Report, Product
+   286→Moves, Expiration Tracking\
+   287→├── Valuation: Stock Valuation, Standard Cost, AVCO, FIFO, Valuation
+   288→Report, Accounting Entries\
+   289→└── Reporting: Inventory Report, Forecasted Inventory, Moves History,
+   290→Stock Valuation, Product Moves
+   291→
+   292→## **Manufacturing / MRP --- التصنيع**
+   293→
+   294→Manufacturing\
+   295→├── Master Data: Products, BOM (Normal, Kit, Multi-level, Variant), Work
+   296→Centers, Routings, Operations\
+   297→├── Planning: MPS, Demand Forecast, Replenishment, MRP Rules, Capacity
+   298→Planning\
+   299→├── Operations: Manufacturing Orders, Work Orders, Shop Floor, Component
+   300→Consumption, Finished Goods Receipt, Backorders, Split, Merge, Unbuild\
+   301→├── Quality Integration: Checks, Points, Alerts, Nonconformity\
+   302→├── Maintenance Integration: Equipment, Preventive/Corrective
+   303→Maintenance, Requests\
+   304→├── Costing: BOM Cost, Work Center Cost, Labor, Overhead, MO Cost\
+   305→└── Reporting: Production Analysis, OEE, Delays, Work Center Loads,
+   306→Allocation Reports
+   307→
+   308→## **Point of Sale --- نقاط البيع**
+   309→
+   310→Point of Sale - POS\
+   311→├── Sessions: Open, Close, Cash Control, Session Validation\
+   312→├── Orders: POS Orders, Receipts, Refunds, Customer Notes\
+   313→├── Products: POS Products, Categories, Barcodes, Pricelists, Discounts\
+   314→├── Payments: Cash, Bank Card, Online Payment, Gift Cards, Customer
+   315→Account\
+   316→├── Configuration: POS Shops, Payment Methods, Receipt Layout, Taxes,
+   317→Cash Rounding\
+   318→└── Reporting: Sales Details, Cash Report, Product Sales, Session Report
+   319→
+   320→## **Human Resources --- الموارد البشرية**
+   321→
+   322→Human Resources\
+   323→├── Employees: Records, Private Information, Work Information,
+   324→Departments, Job Positions, Contracts\
+   325→├── Recruitment: Applications, Pipeline, Interviews, Job Offers\
+   326→├── Attendance: Check In, Check Out, Logs, Reports\
+   327→├── Time Off: Leave Requests, Allocations, Types, Approval Workflow\
+   328→├── Payroll: Salary Structures, Rules, Payslips, Batches, Reports\
+   329→├── Expenses: Claims, Approvals, Reimbursements, Accounting Entries\
+   330→└── Appraisals: Forms, Goals, Feedback, Performance Reports
+   331→
+   332→## **Projects / Services --- المشاريع والخدمات**
+   333→
+   334→Projects\
+   335→├── Projects: List, Stages, Members, Settings\
+   336→├── Tasks: Pipeline, Subtasks, Deadlines, Tags, Activities\
+   337→├── Timesheets: Entries, Billable / Non-billable Hours, Approval\
+   338→├── Billing: Fixed Price, Timesheet Billing, Milestone Billing,
+   339→Invoices\
+   340→└── Reporting: Profitability, Task Analysis, Timesheet Analysis,
+   341→Resource Utilization
+   342→
+   343→# **3) شجرة SAP S/4HANA بدقة عالية**
+   344→
+   345→## **SAP FI --- Financial Accounting / المحاسبة المالية**
+   346→
+   347→SAP FI - Financial Accounting\
+   348→├── FI-GL General Ledger: Chart of Accounts, G/L Accounts, Journal
+   349→Entries, Recurring Entries, Accruals, Period Closing, FSV, Universal
+   350→Journal ACDOCA\
+   351→├── FI-AR Accounts Receivable: Business Partner / Customer, Invoices,
+   352→Incoming Payments, Dunning, Credit Memos, Clearing, Aging, Balance
+   353→Reports\
+   354→├── FI-AP Accounts Payable: Supplier, Vendor Invoices, Outgoing
+   355→Payments, APP, Debit Memos, Clearing, Aging, Balance Reports\
+   356→├── FI-AA Asset Accounting: Asset Classes, Master Data, Acquisition,
+   357→Transfer, Depreciation, Retirement, History Sheet\
+   358→├── FI-BL Bank Accounting: House Banks, Accounts, Statements, EBS, Cash
+   359→Journal, Reconciliation\
+   360→├── Tax Accounting: Input, Output, Withholding, Tax Codes, Tax Reports\
+   361→└── Financial Closing: Month-End, Year-End, FX Valuation, GR/IR
+   362→Clearing, Balance Carryforward, Statements
+   363→
+   364→## **SAP CO --- Controlling / التكاليف والرقابة**
+   365→
+   366→SAP CO\
+   367→├── Cost Element Accounting: Primary, Secondary, Groups\
+   368→├── Cost Center Accounting: Centers, Groups, Actual, Plan, Allocations,
+   369→Reports\
+   370→├── Profit Center Accounting: Centers, Groups, Assignments, Reports\
+   371→├── Internal Orders: Types, Master, Budgeting, Actual Costs, Settlement,
+   372→Reports\
+   373→├── Product Costing: Cost Estimate, Standard Cost, Actual Costing,
+   374→Material Ledger, Variance\
+   375→├── CO-PA: Market Segments, Characteristics, Value Fields, Margin,
+   376→Reports\
+   377→└── Budgeting / Planning: Cost, Revenue, Availability Control, Plan vs
+   378→Actual
+   379→
+   380→## **SAP SD --- Sales and Distribution / المبيعات والتوزيع**
+   381→
+   382→SAP SD\
+   383→├── Master Data: Business Partner / Customer, Material Sales Views,
+   384→Customer-Material Info, Pricing Conditions, Output Records, Credit
+   385→Master\
+   386→├── Pre-Sales: Inquiry, Quotation, Sales Contract, Scheduling Agreement\
+   387→├── Sales Order Processing: Sales Order, Item Categories, Schedule
+   388→Lines, ATP, Pricing, Taxes, Credit Check, Incompletion Log\
+   389→├── Shipping: Outbound Delivery, Picking, Packing, Transportation
+   390→Planning, PGI, POD\
+   391→├── Billing: Billing Documents, Invoice, Credit Memo, Debit Memo,
+   392→Cancellation, Accounting Posting\
+   393→├── Returns: Return Order, Return Delivery, Goods Receipt, Credit Memo
+   394→Request, Refund\
+   395→└── Reporting: Orders, Deliveries, Billing, Customer Analysis, Sales
+   396→Analytics
+   397→
+   398→## **SAP MM --- Materials Management / المشتريات وإدارة المواد**
+   399→
+   400→SAP MM\
+   401→├── Master Data: Material Master, Supplier, Purchasing Info Record,
+   402→Source List, Quota Arrangement, Service Master\
+   403→├── Purchasing: PR, RFQ, Quotation Comparison, PO, Contract, Scheduling
+   404→Agreement, Release Strategy\
+   405→├── Inventory Management MM-IM: GR, GI, Stock Transfer, Transfer
+   406→Posting, Reservation, Batch, Special Stocks\
+   407→├── Invoice Verification LIV: Vendor Invoice, Credit Memo, Three-Way
+   408→Match, Price/Quantity Variance, GR/IR Clearing\
+   409→├── Valuation: Material Valuation, Moving Average, Standard Price, Split
+   410→Valuation, Account Determination\
+   411→└── Reporting: PO Reports, Vendor Evaluation, Stock Reports, Material
+   412→Documents, Inventory Valuation
+   413→
+   414→## **SAP Inventory Management --- MM-IM**
+   415→
+   416→SAP Inventory Management\
+   417→├── Stock Management: Unrestricted, Quality Inspection, Blocked,
+   418→Transfer, Consignment, Project Stock\
+   419→├── Goods Movements: GR for PO/Production/without PO, GI for Sales/Cost
+   420→Center/Production/Scrapping, Transfer Posting, Stock Transfer\
+   421→├── Physical Inventory: Inventory Document, Counting, Differences, Cycle
+   422→Counting, Reports\
+   423→├── Batch / Serial: Batch Master, Classification, Serial Profile,
+   424→Traceability\
+   425→└── Integration: Purchasing, SD, PP, QM, PM, FI
+   426→
+   427→## **SAP EWM / WM --- إدارة المستودعات المتقدمة**
+   428→
+   429→SAP EWM / WM\
+   430→├── Warehouse Structure: Warehouse Number, Storage Type, Section, Bin,
+   431→Activity Area, Queue\
+   432→├── Inbound: Inbound Delivery, GR, Putaway, Deconsolidation, Quality
+   433→Integration\
+   434→├── Outbound: Outbound Delivery, Waves, Picking, Packing, Staging,
+   435→Loading, GI\
+   436→├── Internal Processes: Replenishment, Slotting, Rearrangement, Physical
+   437→Inventory, Posting Changes, Tasks\
+   438→├── Handling Units: Creation, Packing, Movement, Tracking\
+   439→└── Reporting: Warehouse Monitor, Stock Overview, Open Tasks, Resource
+   440→Utilization, KPIs
+   441→
+   442→## **SAP PP --- Production Planning / تخطيط الإنتاج**
+   443→
+   444→SAP PP\
+   445→├── Master Data: Material Master MRP Views, BOM, Work Center, Routing,
+   446→Production Version, Costing Integration\
+   447→├── Demand Management: PIR, Sales Order Demand, Forecast, Demand
+   448→Program\
+   449→├── MRP: MRP Run, Planned Orders, Purchase Requisitions, Exception
+   450→Messages, MRP List\
+   451→├── Production Execution: Orders, Release, Material Staging,
+   452→Confirmation, GI, GR, Settlement\
+   453→├── Capacity Planning: Requirements, Evaluation, Leveling, Work Center
+   454→Load\
+   455→└── Reporting: Production Orders, MRP, Capacity, Variance
+   456→
+   457→## **SAP QM --- Quality Management / إدارة الجودة**
+   458→
+   459→SAP QM\
+   460→├── Quality Planning: Inspection Plans, MIC, Sampling, Quality Info
+   461→Records\
+   462→├── Quality Inspection: Inspection Lot, Results, Usage Decision, Stock
+   463→Posting, Defects\
+   464→├── Notifications: Customer Complaint, Vendor Complaint, Internal
+   465→Problem, Tasks, Corrective Actions\
+   466→├── Integration: Procurement, Production, Delivery, Inventory Stock
+   467→Type\
+   468→└── Reporting: Defects, Vendor Quality, Customer Complaints, Inspection
+   469→Results
+   470→
+   471→## **SAP PM --- Plant Maintenance / الصيانة**
+   472→
+   473→SAP PM\
+   474→├── Technical Objects: Functional Locations, Equipment, Equipment BOM,
+   475→Measuring Points\
+   476→├── Processing: Notification, Order, Work Approval, Reservation,
+   477→Confirmation, TECO\
+   478→├── Preventive: Plans, Items, Task Lists, Scheduling, Call Objects\
+   479→├── Corrective: Breakdown Notification, Repair Order, Spare Parts Issue,
+   480→Cost Settlement\
+   481→└── Reporting: Equipment History, Breakdown, Cost, Backlog
+   482→
+   483→## **SAP HCM / SuccessFactors --- الموارد البشرية**
+   484→
+   485→SAP HCM / SuccessFactors\
+   486→├── Organization Management: Org Units, Positions, Jobs, Reporting
+   487→Structure\
+   488→├── Personnel Administration: Employee Master, Personal, Employment,
+   489→Contract, Personnel Actions\
+   490→├── Time Management: Attendance, Absences, Work Schedules, Time
+   491→Evaluation, Overtime\
+   492→├── Payroll: Wage Types, Payroll Areas, Payroll Run, Posting to
+   493→Accounting, Reports\
+   494→├── Recruitment: Job Requisition, Candidate, Interviews, Hiring\
+   495→└── Talent: Goals, Performance, Learning, Succession
+   496→
+   497→## **SAP PS --- Project System / المشاريع**
+   498→
+   499→SAP PS\
+   500→├── Project Structure: Project Definition, WBS, Networks, Activities,
+   501→Milestones\
+   502→├── Planning: Cost, Revenue, Material, Workforce, Scheduling\
+   503→├── Budgeting: Original Budget, Supplements, Returns, Availability
+   504→Control\
+   505→├── Execution: PRs, Reservations, Confirmations, Goods Movements,
+   506→Service Entry\
+   507→├── Settlement: Rules, Cost, Asset, Profitability\
+   508→└── Reporting: Cost, Budget, Progress, Cash Flow
+   509→
+   510→# **4) مقارنة Odoo و SAP حسب الإدارات**
+   511→
+   512→  -----------------------------------------------------------------------
+   513→  **الإدارة**             **في Odoo**             **في SAP S/4HANA**
+   514→  ----------------------- ----------------------- -----------------------
+   515→  المحاسبة                Accounting / Invoicing  FI + جزء من CO
+   516→
+   517→  المبيعات                Sales + CRM + POS       SD
+   518→
+   519→  المشتريات               Purchase                MM-PUR
+   520→
+   521→  المخزون                 Inventory               MM-IM + EWM/WM
+   522→
+   523→  التصنيع                 Manufacturing / MRP     PP
+   524→
+   525→  الجودة                  Quality                 QM
+   526→
+   527→  الصيانة                 Maintenance             PM
+   528→
+   529→  الموارد البشرية         Employees / Payroll /   HCM / SuccessFactors
+   530→                          Time Off                
+   531→
+   532→  المشاريع                Project + Timesheets    PS
+   533→
+   534→  التكاليف                Analytic Accounting /   CO
+   535→                          Budgets                 
+   536→
+   537→  البنوك والخزينة         Accounting Bank & Cash  FI-BL + Treasury
+   538→
+   539→  الأصول                  Assets                  FI-AA
+   540→
+   541→  التقارير                Reporting داخل كل تطبيق Embedded Analytics +
+   542→                                                  Fiori Reports
+   543→  -----------------------------------------------------------------------
+   544→
+   545→# **5) الشجرة الموحدة المقترحة لمن يريد بناء ERP**
+   546→
+   547→ERP System\
+   548→├── Finance: GL, AR, AP, Cash/Bank, Assets, Taxes, Budgeting, Cost
+   549→Centers, Profit Centers, Reports\
+   550→├── Sales: CRM, Customers, Quotations, Sales Orders, Deliveries,
+   551→Invoices, Returns, Reports\
+   552→├── Procurement: Suppliers, Purchase Requisitions, RFQ, PO, GR, Vendor
+   553→Bills, Payments, Reports\
+   554→├── Inventory and Warehouse: Products, Warehouses, Locations, Receipts,
+   555→Deliveries, Transfers, Adjustments, Valuation, Reports\
+   556→├── Manufacturing: BOM, Work Centers, Routings, Production Orders,
+   557→Consumption, Finished Goods, Costing, Reports\
+   558→├── Quality: Plans, Inspections, Defects, Corrective Actions, Reports\
+   559→├── Maintenance: Equipment, Preventive, Corrective, Work Orders,
+   560→Reports\
+   561→├── Human Resources: Employees, Contracts, Attendance, Leaves, Payroll,
+   562→Reports\
+   563→└── Management and Analytics: Dashboards, KPIs, BI, Audit Logs,
+   564→Approvals, Permissions
+   565→
+   566→# **6) جدول الصلاحيات المقترح لنظام ERP**
+   567→
+   568→الصلاحيات الأساسية المستخدمة في التحليل: Create إنشاء، Read عرض، Update
+   569→تعديل، Delete حذف، Approve اعتماد، Post ترحيل، Print طباعة، Export
+   570→تصدير، Cancel إلغاء، Reverse عكس/إرجاع، Import استيراد.
+   571→
+   572→## **صلاحيات الإدارة المالية Finance**
+   573→
+   574→Finance\
+   575→├── General Ledger\
+   576→│ ├── Chart of Accounts: View, Create, Edit, Delete, Archive\
+   577→│ ├── Journal Entries: Create Draft, Edit Draft, Post, Reverse, Cancel,
+   578→Print, Export\
+   579→│ ├── Journals: Sales, Purchase, Bank, Cash, Miscellaneous\
+   580→│ └── Closing: Month Closing, Year Closing, Lock/Unlock Period, Opening
+   581→Balance\
+   582→├── Accounts Receivable: Customer Invoices, Payments, Customer Reports\
+   583→├── Accounts Payable: Vendor Bills, Vendor Payments, Vendor Reports\
+   584→├── Cash and Bank: Cash Boxes, Bank Accounts, Statements,
+   585→Reconciliation, Transfers, Cash Flow\
+   586→├── Fixed Assets: Categories, Master, Acquisition, Depreciation,
+   587→Transfer, Disposal, Reports\
+   588→├── Taxes: Tax Codes, Input/Output, Withholding, Declaration, Reports\
+   589→└── Financial Reports: Trial Balance, GL, P&L, Balance Sheet, Cash Flow,
+   590→Partner Ledger, Tax Report
+   591→
+   592→## **أدوار المالية**
+   593→
+   594→Finance Manager: Full approval/posting/reports with restricted delete\
+   595→Accountant: Create/Edit draft entries and invoices, limited report
+   596→access, no posting unless authorized\
+   597→Cashier: Create receipt/payment drafts and print, no
+   598→approval/posting/cancel
+   599→
+   600→## **صلاحيات المبيعات Sales**
+   601→
+   602→Sales\
+   603→├── Customers: View, Create, Edit, Credit Limit, Block, Statement\
+   604→├── Quotations: Create, Edit, Send, Approve, Convert to Sales Order,
+   605→Cancel\
+   606→├── Sales Orders: Create, Edit, Confirm, Approve Discount, Check
+   607→Availability, Create Delivery, Cancel\
+   608→├── Invoices: Create from SO, Edit Draft, Post, Register Payment, Credit
+   609→Note, Print\
+   610→├── Returns: Request, Approve, Receive Goods, Credit Note, Close\
+   611→└── Reports: by Customer/Product/Salesperson, Target, Margin, Forecast\
+   612→Roles: Sales Representative owns records with limited discount; Sales
+   613→Manager full sales, approvals, returns and reports.
+   614→
+   615→## **صلاحيات المشتريات Procurement / Purchase**
+   616→
+   617→Purchase\
+   618→├── Suppliers: View, Create, Edit, Approve, Block, Statement\
+   619→├── Purchase Requisitions: Create, Edit, Submit, Approve, Reject,
+   620→Convert to RFQ\
+   621→├── RFQ: Create, Send, Receive Quotation, Compare, Select Supplier,
+   622→Convert to PO\
+   623→├── Purchase Orders: Create, Edit Draft, Approve, Send, Confirm, Cancel,
+   624→Close\
+   625→├── Goods Receipt: Receive, Partial Receipt, Quality, Reject, Return to
+   626→Vendor, Post Receipt\
+   627→├── Vendor Bills: Create from PO, Match PO/GR/Bill, Approve, Post, Debit
+   628→Note\
+   629→└── Reports: by Supplier/Product, Pending RFQs/POs, Supplier
+   630→Performance, Price Variance
+   631→
+   632→## **صلاحيات المخزون والمستودعات Inventory**
+   633→
+   634→Inventory\
+   635→├── Products: View, Create, Edit, Set Cost, Set Sales Price, Barcode,
+   636→UOM, Archive\
+   637→├── Warehouses: View, Create, Edit, Configure Locations, Routes\
+   638→├── Receipts: View, Receive, Validate, Print GRN, Cancel\
+   639→├── Deliveries: View, Pick, Pack, Validate, Print, Cancel\
+   640→├── Internal Transfers: Create, Approve, Validate Source/Destination,
+   641→Cancel\
+   642→├── Inventory Adjustment: Create Count, Enter Count, Review Difference,
+   643→Approve, Post, Print\
+   644→├── Lot / Serial: Create Lot, Assign Serial, Trace, History, Block Lot\
+   645→├── Valuation: Stock Value, Change Costing Method, Post Valuation,
+   646→Accounting Entries\
+   647→└── Reports: Stock On Hand, Forecast, Stock Card, Movement, Valuation,
+   648→Slow Moving, Expired
+   649→
+   650→## **صلاحيات التصنيع Manufacturing**
+   651→
+   652→Manufacturing\
+   653→├── Master Data: BOM, Work Centers, Routings\
+   654→├── Planning: Demand Forecast, MPS, MRP Run, Planned Orders, Convert
+   655→Planned Order\
+   656→├── Production Orders: Create, Confirm, Reserve, Release, Start,
+   657→Consumption, Finished Goods, Close, Cancel\
+   658→├── Shop Floor: Work Orders, Start/Pause/Finish, Scrap, Report Issue\
+   659→├── Production Costing: BOM/Work Center Cost, Variance, Post Cost,
+   660→Settle Order\
+   661→└── Reports: Production Orders, Efficiency, Variance, Scrap, OEE,
+   662→Manufacturing Cost
+   663→
+   664→## **صلاحيات الجودة Quality**
+   665→
+   666→Quality\
+   667→├── Master Data: Points, Plans, Criteria, Sampling, Teams\
+   668→├── Incoming: Inspect, Accept, Reject, Rework, Vendor Complaint\
+   669→├── Production: Inspect Work Order, Measurement, Approve In-process,
+   670→Reject Batch, Alert\
+   671→├── Outgoing: Inspect Delivery, Approve Shipment, Block, Customer
+   672→Complaint\
+   673→├── Nonconformance: NCR, Corrective Action, CAPA, Close\
+   674→└── Reports: Inspection, Defect, Supplier Quality, Complaints, KPI
+   675→
+   676→## **صلاحيات الصيانة Maintenance**
+   677→
+   678→Maintenance\
+   679→├── Equipment: Create, Edit, Assign Location/Responsible, History\
+   680→├── Preventive: Plans, Schedule, Generate Work Order, Approve Plan,
+   681→Close Cycle\
+   682→├── Corrective: Breakdown Request, Assign Technician, Work Order, Spare
+   683→Parts, Repair, Close\
+   684→├── Spare Parts: Request, Issue, Return, Track Consumption\
+   685→└── Reports: Downtime, Cost, Aging, Preventive Compliance, Breakdown
+   686→
+   687→## **صلاحيات الموارد البشرية HR**
+   688→
+   689→HR\
+   690→├── Employees: Create, Edit, Private Data, Salary Data, Archive,
+   691→Documents\
+   692→├── Contracts: Create, Edit, Approve, Renew, End\
+   693→├── Attendance: View, Edit, Correction, Reports\
+   694→├── Leaves: Create, Approve, Refuse, Allocate Balance, Reports\
+   695→├── Payroll: Salary Rules, Payslip, Review, Approve, Post to Accounting,
+   696→Print\
+   697→└── Reports: Employee List, Attendance, Leave Balance, Payroll, End of
+   698→Service
+   699→
+   700→## **صلاحيات المشاريع Projects**
+   701→
+   702→Projects\
+   703→├── Project Master: Create, Edit, Assign Manager/Team, Close\
+   704→├── Tasks: Create, Assign, Progress, Deadline, Close, Reopen\
+   705→├── Timesheets: Create, Submit, Approve, Reject\
+   706→├── Costing: Estimate, Actual, Compare Budget, Approve Additional Cost,
+   707→Settlement\
+   708→├── Billing: Milestone, Timesheet, Fixed Price, Customer Invoice\
+   709→└── Reports: Profitability, Cost, Progress, Resource Utilization, Budget
+   710→vs Actual
+   711→
+   712→# **7) مصفوفة الصلاحيات حسب الدور**
+   713→
+   714→System Administrator\
+   715→├── Users: Create, Edit, Disable, Reset Password, Assign Roles\
+   716→├── Roles and Permissions: Create/Edit/Delete Restricted/Assign/Remove\
+   717→├── System Settings: Company, Branch, Number Sequences Restricted,
+   718→Integrations, Backup\
+   719→└── Restrictions: لا يرحل قيود محاسبية دون دور مالي، لا يعتمد مدفوعات،
+   720→لا يحذف سجلات التدقيق، لا يعدل معاملات مالية مرحلة.\
+   721→\
+   722→CEO / Executive Viewer\
+   723→├── Dashboards: Financial, Sales, Inventory, Purchase, HR\
+   724→├── Reports: P&L, Balance Sheet, Cash Flow, Sales, Valuation, Budget vs
+   725→Actual\
+   726→└── Restrictions: No create/edit/delete/post; approve optional; export
+   727→controlled.\
+   728→\
+   729→Auditor\
+   730→├── Finance Read: Journal Entries, GL, Trial Balance, Tax, Statements\
+   731→├── Operations Read: Sales, Purchase, Inventory, Manufacturing, Payroll
+   732→Summary Restricted\
+   733→├── Audit Tools Read: Audit Logs, Approval History, User Activity,
+   734→Document Changes\
+   735→└── No Create/Edit/Delete/Approve/Post/Cancel.
+   736→
+   737→# **8) Workflows مهمة جدًا في ERP**
+   738→
+   739→دورة البيع Sales Cycle\
+   740→Quotation → Sales Order → Delivery Order → Customer Invoice → Payment
+   741→Receipt → Accounting Posting → Reports\
+   742→Odoo: Quotation → Confirm SO → Delivery → Invoice → Payment → Journal
+   743→Entry\
+   744→SAP: Inquiry/Quotation → Sales Order → Outbound Delivery →
+   745→Picking/Packing → PGI → Billing → FI Posting\
+   746→\
+   747→دورة الشراء Procurement Cycle\
+   748→Purchase Request → RFQ → Supplier Quotation → Purchase Order → Goods
+   749→Receipt → Vendor Bill → Payment → Accounting Posting\
+   750→Odoo: RFQ → PO → Receipt → Vendor Bill → Payment → Journal Entry\
+   751→SAP: PR → RFQ → Quotation Comparison → PO → GR → Invoice Verification →
+   752→Vendor Payment\
+   753→\
+   754→دورة المخزون Inventory Cycle\
+   755→Product Master → Purchase/Production Receipt → Internal Transfer →
+   756→Delivery/Consumption → Inventory Adjustment → Stock Valuation →
+   757→Accounting Entry\
+   758→\
+   759→دورة التصنيع Manufacturing Cycle\
+   760→BOM → MRP/MPS → Production Order → Component Reservation → GI to
+   761→Production → Work Order Execution → Finished Goods Receipt → Production
+   762→Costing → Order Closing
+   763→
+   764→# **9) هيكل ملف Excel المقترح لتحليل ERP**
+   765→
+   766→System \| Module \| Sub Module \| Parent Menu \| Child Menu \| Sub Child
+   767→Menu \| Screen / Form \| Document Type \| Action \| Workflow Step \|
+   768→Status From \| Status To \| Role \| Permission Level \| Create \| Read
+   769→\| Update \| Delete \| Approve \| Post \| Cancel \| Reverse \| Print \|
+   770→Export \| Import \| Company Scope \| Branch Scope \| Warehouse Scope \|
+   771→Cost Center Scope \| Data Ownership \| Audit Required \| Accounting
+   772→Impact \| Inventory Impact \| Approval Required \| Risk Level \| Notes
+   773→
+   774→شرح أهم الأعمدة: System للنظام المرجعي، Module للوحدة الرئيسية، Sub
+   775→Module للوحدة الفرعية، Parent/Child/Sub Child للقوائم، Screen/Form
+   776→للشاشة، Document Type لنوع المستند، Action للإجراء، Workflow Step
+   777→للمرحلة، Status From/To للانتقال، Role للدور، Permission Level لمستوى
+   778→الصلاحية، Scope لتحديد نطاق الشركة/الفرع/المخزن/مركز التكلفة،
+   779→Audit/Accounting/Inventory/Approval/Risk للتحكم والرقابة.
+   780→
+   781→# **10) نماذج صفوف جاهزة لمصفوفة الصلاحيات**
+   782→
+   783→1\) المالية --- إنشاء قيد يومية\
+   784→System: Unified ERP \| Module: Finance \| Sub Module: General Ledger \|
+   785→Action: Create \| Role: Accountant\
+   786→Permission: Create Draft Only \| Create/Read/Update: Yes \|
+   787→Delete/Approve/Post/Cancel/Reverse: No \| Print: Yes \| Export/Import:
+   788→No\
+   789→Accounting Impact: Draft Accounting Impact \| Approval: Chief Accountant
+   790→Approval \| Risk: High\
+   791→Notes: المحاسب ينشئ القيد كمسودة ولا يستطيع ترحيله.\
+   792→\
+   793→2) المالية --- ترحيل القيد\
+   794→Role: Chief Accountant \| Action: Post \| From: Approved \| To: Posted\
+   795→Approve/Post/Reverse/Print/Export: Yes \| Update/Delete/Cancel: No \|
+   796→Audit: Critical \| Risk: Critical\
+   797→Notes: لا يسمح بتعديل القيد بعد الترحيل إلا بعكس قيد.\
+   798→\
+   799→3) المبيعات --- عرض السعر\
+   800→Role: Sales Representative \| Action: Create \| From: None \| To: Draft\
+   801→Create/Read/Update/Print: Yes \| Cancel Draft Only \| No
+   802→Accounting/Inventory Impact \| Risk: Medium\
+   803→Notes: لا ينتج قيد محاسبي ولا حركة مخزون من عرض السعر.\
+   804→\
+   805→4) المبيعات --- تأكيد أمر بيع\
+   806→Role: Sales Manager \| Action: Confirm \| From: Quotation Accepted \|
+   807→To: Sales Order Confirmed\
+   808→Inventory Impact: Reserved Quantity \| Approval: Required if credit
+   809→limit exceeded \| Risk: High\
+   810→\
+   811→5) المخزون --- تسليم بضاعة للعميل\
+   812→Role: Warehouse Manager \| Action: Validate Delivery \| From: Ready \|
+   813→To: Done\
+   814→Accounting: COGS Entry if perpetual inventory \| Inventory: Quantity and
+   815→Value Movement \| Risk: Critical\
+   816→\
+   817→6) المشتريات --- إنشاء أمر شراء\
+   818→Role: Purchase Officer \| Action: Create \| From: RFQ Accepted \| To:
+   819→Draft PO\
+   820→Approval: Purchase Manager Approval \| No Accounting/Inventory Impact
+   821→before receipt/bill \| Risk: High\
+   822→\
+   823→7) المشتريات --- استلام بضاعة\
+   824→Role: Warehouse Keeper \| Action: Validate Receipt \| PO must be
+   825→approved\
+   826→Accounting: Inventory/GRNI entry if automated valuation \| Inventory:
+   827→Quantity and Value Movement \| Risk: Critical\
+   828→\
+   829→8) الحسابات الدائنة --- ترحيل فاتورة مورد\
+   830→Role: AP Accountant \| Action: Post \| From: Approved \| To: Posted\
+   831→Accounting: Vendor Liability Entry \| Approval: Three-Way Match if
+   832→linked to PO \| Risk: Critical
+   833→
+   834→# **11) سير الاعتمادات Approval Workflows**
+   835→
+   836→اعتماد فاتورة مبيعات:\
+   837→Draft Invoice → Review by Accountant → Approval by Chief Accountant →
+   838→Post Invoice → Send to Customer → Register Payment → Reconcile Payment →
+   839→Close Invoice\
+   840→≤ 1,000: Accountant submit → Chief Accountant post\
+   841→\> 1,000 و≤ 10,000: Accountant submit → Chief Accountant approve →
+   842→Finance Manager post\
+   843→\> 10,000: Accountant submit → Chief Accountant review → Finance Manager
+   844→approve → General Manager approval → Posting\
+   845→\
+   846→اعتماد أمر شراء:\
+   847→Purchase Request → Department Manager → RFQ → Supplier Comparison →
+   848→Purchase Manager → Finance Budget Check → GM if high value → PO
+   849→Confirmation\
+   850→≤ 500: Department Manager\
+   851→\> 500 و≤ 5,000: Department Manager + Purchase Manager\
+   852→\> 5,000 و≤ 20,000: Department Manager + Purchase Manager + Finance
+   853→Manager\
+   854→\> 20,000: Department Manager + Purchase Manager + Finance Manager +
+   855→General Manager\
+   856→\
+   857→اعتماد سند صرف:\
+   858→Draft Payment Voucher → AP Accountant Review → Chief Accountant →
+   859→Finance Manager → Cashier/Bank Officer Execution → Posting →
+   860→Reconciliation\
+   861→Cashier should not approve payment; AP Accountant should not execute
+   862→bank transfer; approval and execution separated.\
+   863→\
+   864→اعتماد خصم مبيعات:\
+   865→Quotation/SO → Sales Rep Discount → Check Limit → Sales Manager if
+   866→exceeded → Finance if margin below threshold → Confirm SO\
+   867→Sales Rep 5%, Sales Manager 15%, Finance if margin \<10%, GM if discount
+   868→\>25%.\
+   869→\
+   870→اعتماد تسوية مخزون:\
+   871→Inventory Count → Warehouse Keeper → Inventory Controller → Warehouse
+   872→Manager → Finance Value Review → Adjustment Posted → Accounting Entry\
+   873→Small difference: Warehouse Manager. High value: Warehouse + Finance.
+   874→Critical item: Warehouse + Finance + Internal Audit.
+   875→
+   876→# **12) القيود المحاسبية الناتجة عن العمليات**
+   877→
+   878→فاتورة مبيعات آجلة:\
+   879→Debit: Accounts Receivable\
+   880→Credit: Sales Revenue\
+   881→Credit: Output VAT / Tax Payable\
+   882→وإذا كان الجرد مستمرًا:\
+   883→Debit: Cost of Goods Sold\
+   884→Credit: Inventory\
+   885→\
+   886→تحصيل من عميل:\
+   887→Debit: Bank / Cash\
+   888→Credit: Accounts Receivable\
+   889→\
+   890→مرتجع مبيعات:\
+   891→Debit: Sales Returns\
+   892→Debit: Output VAT / Tax Payable\
+   893→Credit: Accounts Receivable / Cash\
+   894→ومخزنيًا:\
+   895→Debit: Inventory\
+   896→Credit: Cost of Goods Sold\
+   897→\
+   898→فاتورة شراء آجلة:\
+   899→Debit: Purchases / Inventory / Expense\
+   900→Debit: Input VAT / Tax Receivable\
+   901→Credit: Accounts Payable\
+   902→\
+   903→سداد لمورد:\
+   904→Debit: Accounts Payable\
+   905→Credit: Bank / Cash\
+   906→\
+   907→مرتجع مشتريات:\
+   908→Debit: Accounts Payable / Cash\
+   909→Credit: Inventory / Purchases\
+   910→Credit: Input VAT / Tax Receivable\
+   911→\
+   912→استلام بضاعة قبل فاتورة المورد:\
+   913→Debit: Inventory\
+   914→Credit: Goods Received Not Invoiced - GRNI\
+   915→وعند الفاتورة:\
+   916→Debit: GRNI\
+   917→Debit/Credit: Price Difference if any\
+   918→Credit: Accounts Payable\
+   919→\
+   920→إهلاك أصل ثابت:\
+   921→Debit: Depreciation Expense\
+   922→Credit: Accumulated Depreciation\
+   923→\
+   924→شراء أصل ثابت:\
+   925→Debit: Fixed Asset\
+   926→Debit: Input VAT if applicable\
+   927→Credit: Accounts Payable / Bank\
+   928→\
+   929→إثبات الرواتب:\
+   930→Debit: Salaries Expense\
+   931→Debit: Allowances Expense\
+   932→Credit: Employee Payables\
+   933→Credit: Social Insurance Payable\
+   934→Credit: Tax Payable\
+   935→Credit: Other Deductions Payable\
+   936→وعند السداد:\
+   937→Debit: Employee Payables\
+   938→Credit: Bank / Cash\
+   939→\
+   940→أمر تصنيع:\
+   941→صرف مواد: Debit WIP / Credit Raw Materials Inventory\
+   942→تحميل أجور وتكاليف: Debit WIP / Credit Labor Cost / Manufacturing
+   943→Overhead\
+   944→استلام منتج نهائي: Debit Finished Goods Inventory / Credit WIP
+   945→
+   946→# **13) ربط العمليات بين الوحدات**
+   947→
+   948→المبيعات + المخزون + المالية:\
+   949→Sales Order → Reserves Stock → Delivery Order → Reduces Inventory →
+   950→Customer Invoice → Receivable → Payment → Closes Receivable\
+   951→\
+   952→المشتريات + المخزون + المالية:\
+   953→Purchase Order → Expected Receipt → Goods Receipt → Increases Inventory
+   954→→ Vendor Bill → Payable → Payment → Closes Payable\
+   955→\
+   956→التصنيع + المخزون + التكاليف:\
+   957→BOM → Production Order → Raw Material Consumption → WIP → Finished Goods
+   958→Receipt → Cost Calculation → Inventory Valuation\
+   959→\
+   960→الموارد البشرية + المالية:\
+   961→Employee Contract → Attendance/Leaves → Payroll Calculation → Payslip
+   962→Approval → Accounting Entry → Bank Payment\
+   963→\
+   964→المشاريع + المبيعات + المالية:\
+   965→Project → Tasks → Timesheets → Milestones → Customer Invoice → Revenue
+   966→Recognition → Project Profitability
+   967→
+   968→# **14) Mapping بين Odoo و SAP**
+   969→
+   970→  -----------------------------------------------------------------------
+   971→  **Unified ERP**         **Odoo**                **SAP S/4HANA**
+   972→  ----------------------- ----------------------- -----------------------
+   973→  General Ledger          Accounting / Journal    FI-GL / Universal
+   974→                          Entries                 Journal
+   975→
+   976→  Accounts Receivable     Customers / Invoices /  FI-AR
+   977→                          Payments                
+   978→
+   979→  Accounts Payable        Vendors / Bills /       FI-AP
+   980→                          Payments                
+   981→
+   982→  Fixed Assets            Assets                  FI-AA
+   983→
+   984→  Bank and Cash           Bank & Cash /           FI-BL / Cash Management
+   985→                          Reconciliation          
+   986→
+   987→  Quotation               Sales / Quotations      SD / Quotation
+   988→
+   989→  Sales Order             Sales Orders            SD / Sales Order
+   990→
+   991→  Delivery                Inventory / Delivery    SD / Outbound Delivery
+   992→                          Order                   
+   993→
+   994→  Invoice                 Customer Invoice        SD Billing + FI Posting
+   995→
+   996→  Purchase Request        Purchase Requests if    MM / Purchase
+   997→                          installed/customized    Requisition
+   998→
+   999→  RFQ                     Purchase / RFQ          MM / RFQ
+  1000→
+  1001→  Purchase Order          Purchase Order          MM / Purchase Order
+  1002→
+  1003→  Goods Receipt           Inventory Receipt       MM-IM / Goods Receipt
+  1004→
+  1005→  Vendor Bill             Vendor Bill             LIV / Invoice
+  1006→                                                  Verification
+  1007→
+  1008→  Product Master          Products / Variants     Material Master
+  1009→
+  1010→  Warehouse               Warehouse               Plant + Storage
+  1011→                                                  Location + Warehouse
+  1012→                                                  Number
+  1013→
+  1014→  Location                Stock Location          Storage Location / Bin
+  1015→                                                  in EWM
+  1016→
+  1017→  Stock Move              Stock Move / Move Line  Material Document
+  1018→
+  1019→  Inventory Adjustment    Inventory Adjustment    Physical Inventory
+  1020→                                                  Difference Posting
+  1021→
+  1022→  BOM                     Bill of Materials       BOM
+  1023→
+  1024→  Work Center             Work Center             Work Center
+  1025→
+  1026→  Routing                 Routing / Operations    Routing
+  1027→
+  1028→  Production Order        Manufacturing Order     Production Order
+  1029→
+  1030→  Finished Goods Receipt  Mark as Done / Finished Goods Receipt from
+  1031→                          Move                    Production
+  1032→  -----------------------------------------------------------------------
+  1033→
+  1034→# **15) حالات المستندات التفصيلية**
+  1035→
+  1036→Customer Invoice: Draft → Submitted → Approved → Posted → Partially Paid
+  1037→→ Paid / Overdue / Reversed / Cancelled\
+  1038→Vendor Bill: Draft → Pending Match → Matched → Approved → Posted →
+  1039→Partially Paid → Paid / Blocked / Reversed / Cancelled\
+  1040→Sales Order: Draft → Quotation Sent → Customer Accepted → Confirmed →
+  1041→Partially Delivered → Fully Delivered → Partially Invoiced → Fully
+  1042→Invoiced → Closed / Cancelled\
+  1043→Purchase Order: Draft → Submitted → Approved → Sent to Supplier →
+  1044→Confirmed → Partially Received → Fully Received → Partially Billed →
+  1045→Fully Billed → Closed / Cancelled\
+  1046→Stock Transfer: Draft → Waiting → Ready → Partially Available → Done /
+  1047→Cancelled\
+  1048→Production Order: Draft → Planned → Confirmed → Materials Reserved →
+  1049→Released → In Progress → Partially Produced → Produced → Costed → Closed
+  1050→/ Cancelled\
+  1051→Payroll: Draft → Calculated → Reviewed → Approved → Posted to Accounting
+  1052→→ Paid / Cancelled
+  1053→
+  1054→# **16) التقارير المطلوبة لكل إدارة**
+  1055→
+  1056→Finance Reports: Trial Balance, General Ledger, Journal Entries, Journal
+  1057→Items, Balance Sheet, P&L, Cash Flow, Aged Receivable/Payable,
+  1058→Customer/Vendor Statement, Tax, Bank Reconciliation, Fixed Assets
+  1059→Register, Depreciation, Budget vs Actual, Cost/Profit Center.\
+  1060→Sales Reports: Sales by
+  1061→Customer/Product/Salesperson/Region/Branch/Period, Margin, Quotation
+  1062→Conversion, Order Status, Delivery Status, Invoice Status, Returns,
+  1063→Discount Analysis, Credit Limit.\
+  1064→Procurement Reports: Purchase by Supplier/Product/Category, Pending
+  1065→PR/RFQ/PO, Quotation Comparison, PO Status, Goods Receipt Status, Vendor
+  1066→Bill Matching, Purchase Price Variance, Supplier
+  1067→Performance/Delay/Returns.\
+  1068→Inventory Reports: Stock On Hand, Forecasted Stock, Stock Card, Product
+  1069→Movement, Warehouse/Location Balance, Valuation, Aging, Slow/Fast
+  1070→Moving, Expired, Lot/Serial Traceability, Negative Stock, Reorder,
+  1071→Adjustments.\
+  1072→Manufacturing Reports: Production Order Status, Production Plan, MRP,
+  1073→BOM Cost, Material Consumption, WIP, Finished Goods, Work Center
+  1074→Efficiency, OEE, Variance, Scrap, Manufacturing Cost, Capacity
+  1075→Utilization.\
+  1076→HR Reports: Employee List, Contracts, Attendance, Late Attendance,
+  1077→Absence, Leave Balance, Payroll Summary, Payslip, End of Service,
+  1078→Headcount, Turnover, Recruitment Pipeline.\
+  1079→Management Dashboard: Revenue, Gross Profit, Net Profit, Cash/Bank
+  1080→Balance, Receivables, Payables, Inventory Value, Sales Target, Purchase
+  1081→Commitments, Production Efficiency, Payroll Cost, Top
+  1082→Customers/Suppliers, Low Stock Alerts, Overdue Invoices, Pending
+  1083→Approvals.
+  1084→
+  1085→# **17) قواعد الرقابة الداخلية Internal Controls**
+  1086→
+  1087→فصل المهام:\
+  1088→- من ينشئ المورد لا يعتمد مدفوعاته.\
+  1089→- من ينشئ الدفع لا يعتمد نفس الدفع.\
+  1090→- أمين المخزن لا يغير تكلفة المنتج.\
+  1091→- مندوب المبيعات لا يعتمد الخصومات العالية.\
+  1092→- المحاسب لا يفتح الفترات المغلقة.\
+  1093→- مسؤول النظام لا يرحل قيودًا محاسبية افتراضيًا.\
+  1094→- أمين الصندوق لا يطابق البنوك منفردًا.\
+  1095→- مسؤول المشتريات لا يعتمد بيانات المورد منفردًا.\
+  1096→\
+  1097→ضوابط مالية:\
+  1098→- المستندات المرحلة لا تحذف.\
+  1099→- القيود المرحلة تعكس فقط.\
+  1100→- الإلغاء يجب أن يحتفظ بسبب.\
+  1101→- كل مستند مرحل له Audit Trail.\
+  1102→- الحركات بتاريخ سابق تحتاج صلاحية خاصة.\
+  1103→- الفترات المقفلة لا تقبل ترحيلًا.\
+  1104→- القيود اليدوية تحتاج اعتمادًا.\
+  1105→- العمليات عالية القيمة تحتاج اعتمادًا متعدد المستويات.\
+  1106→\
+  1107→ضوابط المخزون:\
+  1108→- المخزون السالب يحتاج اعتمادًا.\
+  1109→- التسوية المخزنية تحتاج اعتمادًا.\
+  1110→- تغيير تكلفة المنتج يحتاج موافقة مالية.\
+  1111→- التحويل المخزني يجب اعتماده من المصدر والوجهة.\
+  1112→- الهالك يحتاج سببًا.\
+  1113→- المنتجات المتتبعة لا تتحرك دون Lot/Serial.\
+  1114→- المنتجات المنتهية لا تباع إلا بتصريح.\
+  1115→\
+  1116→ضوابط المبيعات:\
+  1117→- فحص حد الائتمان قبل تأكيد أمر البيع.\
+  1118→- العميل المحظور لا يستقبل أوامر بيع جديدة.\
+  1119→- الخصم العالي يحتاج اعتمادًا.\
+  1120→- البيع تحت التكلفة يحتاج موافقة مالية.\
+  1121→- لا تسليم قبل تأكيد أمر البيع.\
+  1122→- لا ترحيل فاتورة إذا كان أمر البيع محظورًا.\
+  1123→- المرتجع يجب أن يشير للفاتورة أو التسليم الأصلي.\
+  1124→\
+  1125→ضوابط المشتريات:\
+  1126→- المورد يجب أن يكون معتمدًا قبل PO.\
+  1127→- PO فوق الحد يحتاج اعتمادًا.\
+  1128→- فاتورة المورد تطابق PO وGR.\
+  1129→- فرق السعر/الكمية يحتاج مراجعة.\
+  1130→- الدفع لا يتجاوز الفاتورة المعتمدة.\
+  1131→- منع تكرار رقم فاتورة المورد.
+  1132→
+  1133→# **18) الجداول الرئيسية للصلاحيات وقاعدة البيانات**
+  1134→
+  1135→الجداول العامة:\
+  1136→companies, branches, departments, users, roles, permissions,
+  1137→approval_workflows, documents, attachments, audit_logs, currencies,
+  1138→exchange_rates\
+  1139→\
+  1140→مالية:\
+  1141→chart_of_accounts, account_groups, journals, journal_entries,
+  1142→journal_entry_lines, fiscal_years, periods, taxes, tax_groups,
+  1143→payment_terms, cost_centers, profit_centers, analytic_accounts, budgets,
+  1144→budget_lines\
+  1145→\
+  1146→عملاء وموردون:\
+  1147→partners, partner_categories, customer_profiles, supplier_profiles,
+  1148→partner_contacts, partner_addresses, partner_bank_accounts,
+  1149→partner_credit_limits, partner_statements\
+  1150→\
+  1151→مبيعات:\
+  1152→sales_quotations, sales_quotation_lines, sales_orders,
+  1153→sales_order_lines, sales_invoices, sales_invoice_lines, sales_returns,
+  1154→sales_return_lines, sales_payments, commissions, targets\
+  1155→\
+  1156→مشتريات:\
+  1157→purchase_requests, purchase_request_lines, rfqs, rfq_lines,
+  1158→supplier_quotations, supplier_quotation_lines, purchase_orders,
+  1159→purchase_order_lines, goods_receipts, goods_receipt_lines, vendor_bills,
+  1160→vendor_bill_lines, purchase_returns\
+  1161→\
+  1162→مخزون:\
+  1163→products, product_variants, product_categories, units_of_measure,
+  1164→barcodes, warehouses, stock_locations, stock_moves, stock_move_lines,
+  1165→stock_quants, stock_lots, serial_numbers, inventory_adjustments,
+  1166→stock_valuation_layers\
+  1167→\
+  1168→تصنيع:\
+  1169→boms, bom_lines, work_centers, routings, routing_operations,
+  1170→manufacturing_orders, work_orders, production_consumptions,
+  1171→finished_goods_receipts, scrap_orders, production_costs\
+  1172→\
+  1173→موارد بشرية:\
+  1174→employees, contracts, job_positions, departments, attendance_logs,
+  1175→leave_types, leave_requests, payroll_structures, salary_rules, payslips,
+  1176→payslip_lines, employee_documents\
+  1177→\
+  1178→صلاحيات:\
+  1179→users(id, username, password_hash, employee_id, email, phone,
+  1180→default_company_id, default_branch_id, is_active, last_login_at,
+  1181→created_at, updated_at)\
+  1182→roles(id, code, name_ar, name_en, description, is_system_role,
+  1183→is_active, created_at, updated_at)\
+  1184→permissions(id, module_code, menu_code, action_code, name_ar, name_en,
+  1185→risk_level, requires_audit, is_active, created_at)\
+  1186→role_permissions(id, role_id, permission_id, can_create, can_read,
+  1187→can_update, can_delete, can_approve, can_post, can_cancel, can_reverse,
+  1188→can_print, can_export, can_import, data_scope, company_scope,
+  1189→branch_scope, warehouse_scope, created_at)\
+  1190→user_roles(id, user_id, role_id, company_id, branch_id, warehouse_id,
+  1191→valid_from, valid_to, is_active, created_at)\
+  1192→audit_logs(id, user_id, module_code, document_type, document_id, action,
+  1193→old_value, new_value, ip_address, device_info, action_at, notes)
+  1194→
+  1195→# **19) إعداد Number Sequences لكل مستند**
+  1196→
+  1197→Sales Quotation: SQ-YYYY-000001\
+  1198→Sales Order: SO-YYYY-000001\
+  1199→Customer Invoice: INV-YYYY-000001\
+  1200→Credit Note: CN-YYYY-000001\
+  1201→Purchase Request: PR-YYYY-000001\
+  1202→RFQ: RFQ-YYYY-000001\
+  1203→Purchase Order: PO-YYYY-000001\
+  1204→Goods Receipt: GRN-YYYY-000001\
+  1205→Vendor Bill: VB-YYYY-000001\
+  1206→Payment Voucher: PV-YYYY-000001\
+  1207→Receipt Voucher: RV-YYYY-000001\
+  1208→Journal Entry: JE-YYYY-000001\
+  1209→Stock Transfer: ST-YYYY-000001\
+  1210→Inventory Adjustment: IA-YYYY-000001\
+  1211→Production Order: MO-YYYY-000001\
+  1212→Payslip: PAY-YYYY-000001\
+  1213→\
+  1214→قواعد الترقيم:\
+  1215→- لكل شركة Sequence مستقل.\
+  1216→- لكل فرع Sequence مستقل عند الحاجة.\
+  1217→- لا تعدل الأرقام بعد الترحيل.\
+  1218→- أرقام الإلغاء لا يعاد استخدامها.\
+  1219→- الترقيم اليدوي مقيد.\
+  1220→- فجوات الترقيم تظهر في تقرير.\
+  1221→- إعادة التصفير سنويًا أو شهريًا أو لا تتم حسب السياسة.
+  1222→
+  1223→# **20) الحقول الإلزامية وقواعد منع الأخطاء**
+  1224→
+  1225→حقول إلزامية:\
+  1226→Sales Order: Customer, Order Date, Pricelist, Payment Terms, Warehouse,
+  1227→Salesperson, Product, Quantity, Unit Price, Taxes, Delivery Address,
+  1228→Invoice Address\
+  1229→Customer Invoice: Customer, Invoice Date, Due Date, Journal, Currency,
+  1230→Lines, Revenue Account, Tax, Payment Terms, Reference\
+  1231→Purchase Order: Supplier, Date, Currency, Payment Terms,
+  1232→Warehouse/Receiving Location, Product, Quantity, Unit Price, Taxes,
+  1233→Expected Date, Buyer\
+  1234→Vendor Bill: Supplier, Bill Date, Accounting Date, Vendor Bill Number,
+  1235→PO Reference, Journal, Currency, Lines, Account, Tax, Due Date\
+  1236→Stock Transfer: Source, Destination, Operation Type, Product, Demand
+  1237→Qty, Done Qty, Lot/Serial, Scheduled Date, Responsible\
+  1238→Journal Entry: Journal, Accounting Date, Reference, Debit Account,
+  1239→Credit Account, Debit, Credit, Currency, Cost Center, Description\
+  1240→\
+  1241→Validation Rules:\
+  1242→Financial: Debit=Credit, open period, active account, tax configured,
+  1243→currency rate exists, partner required for AR/AP, cost center required
+  1244→for expenses, due date follows terms, duplicate vendor bill blocked.\
+  1245→Sales: active/non-blocked customer, credit limit check, sellable
+  1246→product, qty \> 0, price not below minimum unless approved, discount
+  1247→within limit, warehouse required, delivery not exceeding ordered qty
+  1248→unless allowed.\
+  1249→Purchases: approved supplier, purchasable product, qty \> 0, price
+  1250→variance checked, PO approval by amount, receipt tolerance, vendor bill
+  1251→not exceeding received qty unless allowed.\
+  1252→Inventory: location required, lot/serial required when tracked, unique
+  1253→serial, sufficient stock unless negative allowed, adjustment reason,
+  1254→valuation account configured, source ≠ destination, expired lot blocked
+  1255→unless authorized.\
+  1256→Manufacturing: BOM required, components available/procurement triggered,
+  1257→active work center, qty \> 0, consumption variance approval, finished
+  1258→qty variance approval, cannot close before costing.
+  1259→
+  1260→# **21) الصلاحيات الحرجة حسب الوحدة**
+  1261→
+  1262→Finance Critical: Post Journal Entry, Reverse Posted Entry, Unlock
+  1263→Period, Change CoA, Tax Configuration, Bank Account, Post Payment,
+  1264→Cancel Posted Invoice, Export Statements, Change FX Rate.\
+  1265→Sales Critical: Approve High Discount, Sell Below Cost, Override Credit
+  1266→Limit, Cancel Confirmed SO, Create Credit Note, Approve Return, Change
+  1267→Credit Limit, Edit Confirmed SO.\
+  1268→Procurement Critical: Approve Supplier, Approve PO, Change Supplier Bank
+  1269→Account, Approve Price/Quantity Variance, Cancel Confirmed PO, Create
+  1270→Vendor Without Approval, Approve Payment.\
+  1271→Inventory Critical: Validate Adjustment, Allow Negative Stock, Change
+  1272→Product Cost, Scrap Stock, Transfer Between Warehouses, Create Lot
+  1273→Manually, Change Valuation, Backdate Movement.\
+  1274→Manufacturing Critical: Approve BOM, Change BOM Version, Release/Close
+  1275→Production Order, Approve Overconsumption/Scrap, Change Work Center
+  1276→Cost, Settle Production Cost.\
+  1277→HR Critical: View/Edit Salary, Approve Payroll, Post Payroll, View
+  1278→Private Info, Terminate Employee, Change Contract, Export Payroll.
+  1279→
+  1280→# **22) أفضل هيكل نهائي للنظام بصيغة تنفيذية**
+  1281→
+  1282→ERP\
+  1283→├── Core Setup: Companies, Branches, Departments, Cost Centers,
+  1284→Warehouses, Currencies, Taxes, Number Sequences, Approval Rules\
+  1285→├── Master Data: Business Partners, Customers, Suppliers, Contacts,
+  1286→Products, Categories, UOM, Price Lists, Payment Terms, Banks\
+  1287→├── Operations: Sales, Procurement, Inventory, Manufacturing, Quality,
+  1288→Maintenance, Projects, HR\
+  1289→├── Finance: GL, Receivables, Payables, Cash/Bank, Assets, Taxes,
+  1290→Budgets, Closing\
+  1291→├── Control: Roles, Permissions, Workflows, Audit Logs, Data Access
+  1292→Rules, Internal Controls\
+  1293→└── Reporting: Operational, Financial, Management, BI Dashboards, Audit
+  1294→Reports\
+  1295→\
+  1296→النتيجة النهائية التي يجب اعتمادها:\
+  1297→1. Core Setup\
+  1298→2. Master Data\
+  1299→3. Finance\
+  1300→4. Sales\
+  1301→5. CRM\
+  1302→6. Procurement\
+  1303→7. Inventory\
+  1304→8. Warehouse\
+  1305→9. Manufacturing\
+  1306→10. Quality\
+  1307→11. Maintenance\
+  1308→12. Human Resources\
+  1309→13. Projects\
+  1310→14. Administration\
+  1311→15. Audit and Compliance\
+  1312→16. Business Intelligence\
+  1313→\
+  1314→كل وحدة يجب أن تحتوي على:\
+  1315→Menus, Screens, Documents, Actions, Roles, Permissions, Workflows,
+  1316→Statuses, Accounting Impact, Inventory Impact, Reports, Audit Logs,
+  1317→Validation Rules, Approval Rules.
+  1318→
+  1319→# **23) ملحق: مصادر عامة تم استخدامها عند التخصيص**
+  1320→
+  1321→Odoo Documentation 19.0: Accounting and Invoicing, Supply Chain,
+  1322→Inventory Management, Manufacturing, Master Production Schedule.
+  1323→
+  1324→SAP Help Portal / SAP S/4HANA: Finance, Procurement, Inventory
+  1325→Management and Physical Inventory MM-IM، بالإضافة إلى وصف SAP S/4HANA
+  1326→Sales architecture كمرجع سياقي لدورة المبيعات والتوزيع.
+  1327→

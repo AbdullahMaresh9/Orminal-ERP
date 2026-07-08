@@ -1,0 +1,1309 @@
+     1→**Enterprise ERP Software Blueprint**
+     2→
+     3→**Volume 2 --- Engineering Blueprint for a Next-Generation ERP
+     4→Platform**
+     5→
+     6→Post-Benchmark Architecture Document: not a benchmark, not an SRS, not
+     7→an implementation guide.
+     8→
+     9→Audience: Solution Architects, Software Architects, Backend/Frontend
+    10→Engineers, DB Architects, UX, QA, DevOps, Technical Writers and PMs.
+    11→
+    12→Prepared for: Abdullah Maresh \| Prepared by: M365 Copilot \| Date: 07
+    13→July 2026
+    14→
+    15→# **Document Control and Architecture Positioning**
+    16→
+    17→This Software Blueprint begins after the Benchmark phase. It uses the
+    18→completed Enterprise ERP Benchmark as architectural evidence, but does
+    19→not compare vendors again and does not recreate benchmark content. It
+    20→defines how the new ERP platform shall be built at engineering level:
+    21→architecture, domains, information architecture, business rules,
+    22→workflows, database, APIs, security, screen specifications, UI system,
+    23→notifications, reporting, integrations, performance and engineering
+    24→standards.
+    25→
+    26→  -----------------------------------------------------------------------------
+    27→  **Blueprint Scope**     **Defines**             **Does Not Define**
+    28→  ----------------------- ----------------------- -----------------------------
+    29→  Architecture            System decomposition,   Detailed sprint backlog or
+    30→                          quality attributes,     vendor benchmark comparisons.
+    31→                          deployment topology,    
+    32→                          integration boundaries, 
+    33→                          extensibility,          
+    34→                          reliability and         
+    35→                          maintainability         
+    36→                          decisions.              
+    37→
+    38→  Domain Model            Bounded contexts,       Final database schema
+    39→                          aggregates, events,     migration scripts.
+    40→                          policies, services,     
+    41→                          transaction boundaries  
+    42→                          and cross-domain        
+    43→                          communication.          
+    44→
+    45→  Information & UX        Navigation, screen      Pixel-perfect visual mockups.
+    46→                          hierarchy, design       
+    47→                          system, interactions,   
+    48→                          accessibility,          
+    49→                          responsive behavior and 
+    50→                          screen specifications.  
+    51→
+    52→  Engineering             API standards, database Language/framework-specific
+    53→                          guidelines, security    implementation code.
+    54→                          controls,               
+    55→                          observability, CI/CD,   
+    56→                          coding and release      
+    57→                          standards.              
+    58→  -----------------------------------------------------------------------------
+    59→
+    60→# **BOOK 1 --- Enterprise Software Architecture**
+    61→
+    62→## **1.1 Architectural Vision**
+    63→
+    64→The platform shall be a modular, domain-oriented, event-aware,
+    65→audit-first ERP system with a single operational truth for finance,
+    66→inventory, documents, approvals and master data. The system shall
+    67→support multi-company operations, role-based workspaces, immutable
+    68→posted transactions, append-only ledgers, governed extensibility and
+    69→integration through secure APIs/events.
+    70→
+    71→## **1.2 Design Goals**
+    72→
+    73→-   Enable enterprise-grade financial and operational control without
+    74→    copying any vendor architecture.
+    75→
+    76→-   Keep business logic in explicit domain services and policies rather
+    77→    than hidden UI scripts.
+    78→
+    79→-   Make every legally relevant document traceable from source to
+    80→    posting to report.
+    81→
+    82→-   Support configuration and extension without breaking upgradeability.
+    83→
+    84→-   Separate transactional workloads from analytical/reporting
+    85→    workloads.
+    86→
+    87→-   Design for observability, auditability, recovery and compliance from
+    88→    day one.
+    89→
+    90→## **1.3 Architecture Principles**
+    91→
+    92→  --------------------------------------------------------------------------------------
+    93→  **Principle**     **Decision**              **Rationale**          **Rejected
+    94→                                                                     Alternative /
+    95→                                                                     Trade-off**
+    96→  ----------------- ------------------------- ---------------------- -------------------
+    97→  Domain-first      Use bounded contexts and  ERP complexity         Single monolith by
+    98→  modularity        explicit modules with     requires stable        screens; simpler
+    99→                    clear ownership.          business boundaries.   initially but
+   100→                                                                     becomes
+   101→                                                                     unmaintainable.
+   102→
+   103→  Ledger            Posted financial and      Supports audit, legal  Editable posted
+   104→  immutability      stock records are         retention and reliable records; faster
+   105→                    append-only.              reporting.             corrections but
+   106→                                                                     unsafe.
+   107→
+   108→  API-first         All external systems      Prevents direct        Direct DB
+   109→  integration       integrate through         database coupling and  integration; fast
+   110→                    governed APIs/events.     enables                but high risk.
+   111→                                              validation/security.   
+   112→
+   113→  Workflow as       Approvals and state       Avoids inconsistent    Hard-coded
+   114→  platform          machines use central      module-level approval  approvals; fast but
+   115→  capability        workflow engine.          logic.                 brittle.
+   116→
+   117→  Configuration     Prefer                    Supports               Hard-code
+   118→  before            metadata/configuration;   maintainability and    customer-specific
+   119→  customization     code only when policy     upgrades.              rules.
+   120→                    requires.                                        
+   121→
+   122→  Observability by  Every service emits       ERP failures must be   Ad-hoc
+   123→  design            structured logs, metrics, diagnosable quickly.   troubleshooting
+   124→                    traces and audit events.                         after production
+   125→                                                                     incidents.
+   126→  --------------------------------------------------------------------------------------
+   127→
+   128→## **1.4 Target Architecture**
+   129→
+   130→mermaid\
+   131→flowchart TB\
+   132→UI\[Web / Mobile / Desktop UI\] \--\> Gateway\[API Gateway\]\
+   133→Gateway \--\> IAM\[Identity & Access Service\]\
+   134→Gateway \--\> App\[Application Services\]\
+   135→App \--\> Domain\[Domain Services & Policies\]\
+   136→Domain \--\> Posting\[Posting Engine\]\
+   137→Domain \--\> Workflow\[Workflow Engine\]\
+   138→Domain \--\> Notification\[Notification Engine\]\
+   139→Domain \--\> Doc\[Document Service\]\
+   140→Domain \--\> Integration\[Integration Orchestrator\]\
+   141→Posting \--\> Ledger\[(Financial & Inventory Ledgers)\]\
+   142→Domain \--\> OLTP\[(Operational Database)\]\
+   143→Domain \--\> Outbox\[(Outbox / Event Store)\]\
+   144→Outbox \--\> Bus\[Event Bus / Message Queue\]\
+   145→Bus \--\> BI\[Reporting / Analytics Store\]\
+   146→Bus \--\> External\[External Systems\]\
+   147→OLTP \--\> Audit\[(Audit Store)\]
+   148→
+   149→## **1.5 Quality Attributes**
+   150→
+   151→  -----------------------------------------------------------------------
+   152→  **Attribute**           **Target Design**       **Engineering
+   153→                                                  Mechanism**
+   154→  ----------------------- ----------------------- -----------------------
+   155→  Scalability             Scale UI/API/app        Stateless services,
+   156→                          workers horizontally;   queue workers,
+   157→                          scale reporting         partitioned ledgers,
+   158→                          independently.          read replicas.
+   159→
+   160→  Performance             Fast operational        Indexes, caching, async
+   161→                          screens and predictable jobs, pagination, query
+   162→                          posting.                budgets, N+1
+   163→                                                  prevention.
+   164→
+   165→  Security                Least privilege,        RBAC+ABAC+PBAC,
+   166→                          scope-aware access and  MFA/SSO, scoped APIs,
+   167→                          zero-trust integration. encrypted secrets.
+   168→
+   169→  Availability            Core ERP must remain    Circuit breakers,
+   170→                          available during        retries, queues,
+   171→                          non-critical            degradation modes.
+   172→                          integration failures.   
+   173→
+   174→  Reliability             No lost postings,       Idempotency keys,
+   175→                          duplicate external      outbox pattern,
+   176→                          transactions or silent  retries, dead-letter
+   177→                          workflow failure.       queues.
+   178→
+   179→  Extensibility           Add fields, rules,      Metadata layer,
+   180→                          workflows, reports and  plugins, events,
+   181→                          integrations safely.    extension points,
+   182→                                                  versioned APIs.
+   183→
+   184→  Maintainability         Codebase and            DDD boundaries, coding
+   185→                          configuration remain    standards, ADRs,
+   186→                          readable and testable.  automated tests, code
+   187→                                                  reviews.
+   188→
+   189→  Upgradeability          Platform can evolve     Semantic versioning,
+   190→                          without breaking        compatibility
+   191→                          customers.              contracts, migrations,
+   192→                                                  deprecation policy.
+   193→  -----------------------------------------------------------------------
+   194→
+   195→## **1.6 Deployment Strategy**
+   196→
+   197→Deploy the platform as a modular service-oriented monolith at first,
+   198→with strict internal bounded contexts and event contracts. Extract
+   199→services only when scaling, compliance, deployment independence or team
+   200→ownership justifies it. This avoids premature microservice complexity
+   201→while preserving future decomposition paths.
+   202→
+   203→  ----------------------------------------------------------------------------
+   204→  **Option**        **Selected?**     **Why**                **Trade-off**
+   205→  ----------------- ----------------- ---------------------- -----------------
+   206→  Modular monolith  Yes for core ERP  Strong consistency,    Requires
+   207→  with internal     start             simpler transactions,  discipline to
+   208→  bounded contexts                    lower operational      prevent boundary
+   209→                                      complexity.            erosion.
+   210→
+   211→  Microservices     No                ERP has many           Later extraction
+   212→  from day one                        consistency-critical   needs careful
+   213→                                      workflows; distributed refactoring.
+   214→                                      transactions would add 
+   215→                                      risk.                  
+   216→
+   217→  Single database   Yes initially     Supports consistent    Requires database
+   218→  with schema                         posting and reporting. governance and
+   219→  boundaries                                                 modular
+   220→                                                             ownership.
+   221→
+   222→  Separate read     Yes               Protects OLTP          Introduces data
+   223→  model / analytics                   performance and        latency and
+   224→  store                               supports BI.           lineage
+   225→                                                             requirements.
+   226→  ----------------------------------------------------------------------------
+   227→
+   228→# **BOOK 2 --- Domain Architecture**
+   229→
+   230→  ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+   231→  **Domain**      **Business       **Bounded       **Subdomains**   **Aggregate Roots**      **Entities**           **Value Objects**  **Domain Services**        **Domain Events**      **Policies**               **Ownership /
+   232→                  Purpose**        Context**                                                                                                                                                                        Dependencies**
+   233→  --------------- ---------------- --------------- ---------------- ------------------------ ---------------------- ------------------ -------------------------- ---------------------- -------------------------- ----------------
+   234→  Financial       Maintain legal   Finance         GL, AR, AP, Tax, JournalEntry, Payment,   Account, JournalLine,  Money, Currency,   PostingService,            JournalPosted,         PeriodOpenPolicy,          Owns financial
+   235→  Accounting      financial truth.                 Assets, Bank,    Invoice, Asset           TaxLine                FiscalPeriod,      TaxService,                PaymentMatched,        BalancedEntryPolicy        ledger; consumes
+   236→                                                   Budget                                                           PostingDate        ReconciliationService      PeriodClosed                                      events from
+   237→                                                                                                                                                                                                                    sales,
+   238→                                                                                                                                                                                                                    procurement,
+   239→                                                                                                                                                                                                                    inventory,
+   240→                                                                                                                                                                                                                    payroll,
+   241→                                                                                                                                                                                                                    projects.
+   242→
+   243→  Customer Order  Manage           Sales           CRM, Pricing,    SalesOrder, Quotation,   SalesLine, Discount,   Price, Quantity,   PricingService,            SalesOrderConfirmed,   CreditPolicy,              Depends on
+   244→  Management      demand-to-cash                   Sales Orders,    CustomerInvoiceRequest   DeliveryInstruction    Address,           CreditCheckService         CreditBlocked,         DiscountPolicy             Inventory for
+   245→                  lifecycle.                       Returns, Billing                                                 CreditStatus                                  InvoiceRequested                                  ATP and Finance
+   246→                                                   Requests                                                                                                                                                         for posting.
+   247→
+   248→  Supplier        Manage           Procurement     Requisition,     PurchaseOrder, RFQ,      POLine, SupplierQuote, Tolerance,         SupplierApprovalService,   POApproved,            SupplierPolicy,            Depends on
+   249→  Procurement     source-to-pay                    Sourcing, PO,    VendorBillRequest        ReceiptLine            DeliveryDate,      MatchingService            GoodsReceived,         TolerancePolicy            Inventory,
+   250→                  lifecycle.                       Receiving,                                                       PaymentTerm                                   MatchExceptionRaised                              Finance, Quality
+   251→                                                   Matching                                                                                                                                                         and Budget.
+   252→
+   253→  Inventory       Maintain         Inventory       Stock Ledger,    StockMove,               MoveLine, Reservation, LotNumber,         AvailabilityService,       StockReserved,         NegativeStockPolicy,       Provides stock
+   254→  Control         physical and                     Warehouse,       StockTransfer,           ValuationLayer         SerialNumber,      ValuationService           StockMoved,            LotTraceabilityPolicy      events to sales,
+   255→                  valued stock                     Reservations,    InventoryAdjustment                             Quantity                                      AdjustmentPosted                                  procurement,
+   256→                  truth.                           Traceability,                                                                                                                                                    manufacturing
+   257→                                                   Valuation                                                                                                                                                        and finance.
+   258→
+   259→  Manufacturing   Plan and execute Manufacturing   BOM, Routing,    ProductionOrder,         BOMLine, Operation,    OperationTime,     MRPService,                ProductionReleased,    OverConsumptionPolicy,     Consumes
+   260→  Execution       production.                      MRP, Work        WorkOrder, BOM           ConsumptionLine        ScrapReason, Yield CostRollupService          ComponentConsumed,     BOMApprovalPolicy          inventory and
+   261→                                                   Orders, WIP,                                                                                                   FGReceived                                        posts WIP/FG to
+   262→                                                   Costing                                                                                                                                                          Finance.
+   263→
+   264→  Human Capital   Control people,  HR              Employee,        Employee, PayrollRun,    AttendanceLine,        SalaryAmount,      PayrollService,            PayrollPosted,         SalarySecurityPolicy,      Posts payroll to
+   265→                  time and                         Contract, Time,  ExpenseClaim             PayslipLine            LeaveBalance       LeaveAccrualService        LeaveApproved          PayrollApprovalPolicy      Finance;
+   266→                  payroll.                         Leave, Payroll,                                                                                                                                                  provides users
+   267→                                                   Expense                                                                                                                                                          to IAM.
+   268→
+   269→  Project Control Manage project   Projects        Tasks,           Project, Task,           Milestone,             ProgressPercent,   ProjectBillingService,     MilestoneCompleted,    BudgetAvailabilityPolicy   Interacts with
+   270→                  cost, revenue                    milestones,      Timesheet, ProjectBudget ProjectCostLine        WorkDate           BudgetControlService       TimesheetApproved                                 Sales,
+   271→                  and delivery.                    budgets,                                                                                                                                                         Procurement, HR
+   272→                                                   timesheets,                                                                                                                                                      and Finance.
+   273→                                                   billing                                                                                                                                                          
+   274→
+   275→  Platform        Control users,   Platform        Identity, RBAC,  User, Role,              Permission, ScopeRule, Scope,             AuthorizationService,      PermissionChanged,     SODPolicy, SecretsPolicy   Cross-cutting
+   276→  Governance      configuration,                   Workflow, Audit, WorkflowDefinition,      NotificationTemplate   PermissionCode,    WorkflowService,           ApprovalRequested,                                shared kernel
+   277→                  workflow, audit                  Notification,    IntegrationEndpoint                             Locale             NotificationService        IntegrationFailed                                 for all domains.
+   278→                  and integration.                 Integration                                                                                                                                                      
+   279→  ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+   280→
+   281→## **2.1 Context Mapping**
+   282→
+   283→mermaid\
+   284→graph LR\
+   285→Sales \--\>\|reserve stock / request delivery\| Inventory\
+   286→Sales \--\>\|invoice request\| Finance\
+   287→Procurement \--\>\|goods receipt\| Inventory\
+   288→Procurement \--\>\|vendor liability request\| Finance\
+   289→Manufacturing \--\>\|consume / receive\| Inventory\
+   290→Manufacturing \--\>\|WIP / variance\| Finance\
+   291→HR \--\>\|payroll posting\| Finance\
+   292→Projects \--\> Sales\
+   293→Projects \--\> Procurement\
+   294→Projects \--\> Finance\
+   295→Platform \--\>\|identity, workflow, audit, notifications\| Sales\
+   296→Platform \--\> Finance\
+   297→Platform \--\> Inventory
+   298→
+   299→## **2.2 Transaction Boundaries and CQRS Opportunities**
+   300→
+   301→  -----------------------------------------------------------------------
+   302→  **Process**             **Consistency           **CQRS / Event
+   303→                          Boundary**              Opportunity**
+   304→  ----------------------- ----------------------- -----------------------
+   305→  Post customer invoice   Invoice aggregate +     Publish InvoicePosted
+   306→                          journal posting + tax   event to BI,
+   307→                          lines must commit       notifications and
+   308→                          atomically.             customer portal.
+   309→
+   310→  Validate stock delivery Stock move +            Update stock
+   311→                          reservation release +   projections
+   312→                          valuation/COGS must be  asynchronously.
+   313→                          consistent.             
+   314→
+   315→  Approve purchase order  PO state + approval     Supplier analytics and
+   316→                          audit + notification    spend commitments
+   317→                          commit together.        update asynchronously.
+   318→
+   319→  Close payroll           Payroll run +           Employee portal payslip
+   320→                          payslips + accounting   views and BI payroll
+   321→                          request must be         dashboards
+   322→                          controlled.             asynchronous.
+   323→
+   324→  Close fiscal period     Period locks + closing  Financial snapshots and
+   325→                          entries + audit trail   executive dashboards
+   326→                          must be consistent.     asynchronous.
+   327→  -----------------------------------------------------------------------
+   328→
+   329→# **BOOK 3 --- Information Architecture**
+   330→
+   331→Navigation is built around role workspaces, module menus, object pages
+   332→and global search. Every user must be able to answer: what requires my
+   333→action, where is the document, what is its status, what caused it, what
+   334→it affects, and what I can do next.
+   335→
+   336→mermaid\
+   337→flowchart LR\
+   338→Login \--\> RoleWorkspace\
+   339→RoleWorkspace \--\> ModuleDashboard\
+   340→RoleWorkspace \--\> ApprovalInbox\
+   341→RoleWorkspace \--\> TaskInbox\
+   342→ModuleDashboard \--\> WorkQueue\
+   343→ModuleDashboard \--\> MasterData\
+   344→ModuleDashboard \--\> Reports\
+   345→WorkQueue \--\> ListView\
+   346→ListView \--\> ObjectPage\
+   347→ObjectPage \--\> RelatedDocuments\
+   348→ObjectPage \--\> AuditTimeline\
+   349→ObjectPage \--\> Actions\
+   350→GlobalSearch \--\> ObjectPage\
+   351→CommandPalette \--\> Actions
+   352→
+   353→  -----------------------------------------------------------------------
+   354→  **Navigation Element**              **Blueprint Specification**
+   355→  ----------------------------------- -----------------------------------
+   356→  Top Navigation                      Company/branch selector, work date,
+   357→                                      global search, command palette,
+   358→                                      notifications, approval inbox, help
+   359→                                      and profile.
+   360→
+   361→  Sidebar                             Role-aware modules only; expandable
+   362→                                      groups; pinned favorites; no
+   363→                                      unauthorized menu exposure.
+   364→
+   365→  Workspace                           KPI cards, pending approvals,
+   366→                                      exceptions, recent documents, quick
+   367→                                      create, saved filters and role
+   368→                                      reports.
+   369→
+   370→  Menu Hierarchy                      Module → Dashboard → Transactions →
+   371→                                      Master Data → Reports → Analytics →
+   372→                                      Configuration → Administration.
+   373→
+   374→  Screen Hierarchy                    Object header → status → primary
+   375→                                      actions → tabs/sections → lines →
+   376→                                      attachments → activity → audit →
+   377→                                      related records.
+   378→
+   379→  Quick Actions                       Create, import, scan barcode,
+   380→                                      approve, post, export, print,
+   381→                                      email, schedule report, open
+   382→                                      related documents.
+   383→
+   384→  Global Search                       Search documents, masters, reports,
+   385→                                      settings and help using scoped
+   386→                                      permissions.
+   387→
+   388→  Saved Filters                       Personal, team and system filters
+   389→                                      with owner and permission metadata.
+   390→
+   391→  Breadcrumbs                         Functional path plus document
+   392→                                      lineage: Sales Order → Delivery →
+   393→                                      Invoice → Payment.
+   394→
+   395→  Role-Based Navigation               Menu and actions calculated from
+   396→                                      role, data scope, workflow state,
+   397→                                      ownership and SOD policies.
+   398→  -----------------------------------------------------------------------
+   399→
+   400→## **3.1 Navigation Consistency Rules**
+   401→
+   402→-   Every document list must expose status, owner, date,
+   403→    amount/quantity, next action and risk indicator.
+   404→
+   405→-   Every object page must expose source documents, target documents,
+   406→    accounting impact, inventory impact and audit.
+   407→
+   408→-   Every dashboard must distinguish KPI, exception, pending action and
+   409→    trend.
+   410→
+   411→-   Every configuration page must show last modified by/date and
+   412→    affected modules.
+   413→
+   414→-   Every menu item must have a unique menu code, permission code and
+   415→    help reference.
+   416→
+   417→# **BOOK 4 --- Business Rules Encyclopedia**
+   418→
+   419→  -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+   420→  **Rule ID**  **Description**   **Trigger**      **Condition / Validation** **Exception**   **Approval**        **Accounting /   **Audit        **Notification**       **Recovery
+   421→                                                                                                                 Inventory        Impact**                              Strategy**
+   422→                                                                                                                 Impact**                                               
+   423→  ------------ ----------------- ---------------- -------------------------- --------------- ------------------- ---------------- -------------- ---------------------- -------------
+   424→  BR-FIN-001   Balanced Journal  Before posting   Total debit equals total   Reject posting; No approval can     No posting       Critical audit User notified with     Correct lines
+   425→               Entry             journal entry    credit in company currency show imbalance  override imbalance. created.         entry for      line-level errors.     and repost.
+   426→                                                  and transaction currency   by currency and                                      failed post                           
+   427→                                                  where applicable.          line.                                                attempt.                              
+   428→
+   429→  BR-FIN-002   Open Period       Any financial    Posting date falls within  Reject or route Finance manager     Controls         Backdate       Notify requester and   Change date
+   430→               Validation        posting          open fiscal period and     to period       approval if         GL/subledger     attempt        controller.            or request
+   431→                                                  user allowed posting date  override        backdate allowed.   posting.         logged.                               approval.
+   432→                                                  range.                     workflow.                                                                                  
+   433→
+   434→  BR-SAL-001   Credit Limit      Confirm sales    Customer exposure + order  Block           Credit              Prevents AR      Credit         Notify sales and       Collect
+   435→               Control           order            amount must not exceed     confirmation or manager/finance     exposure.        override       credit owner.          payment,
+   436→                                                  approved credit limit.     require         approval.                            logged.                               reduce order
+   437→                                                                             approval.                                                                                  or approve.
+   438→
+   439→  BR-SAL-002   Discount          Quotation/SO     Discount must be within    Route to        Sales               No posting until Discount       Notify approver.       Adjust
+   440→               Threshold         save or confirm  role threshold and margin  approval if     manager/finance     approved.        exception                             discount or
+   441→                                                  rules.                     exceeded.       based on margin.                     logged.                               approve.
+   442→
+   443→  BR-PUR-001   Approved Supplier Create/confirm   Supplier must be active,   Reject PO       Supplier onboarding Prevents         Supplier block Notify buyer.          Approve
+   444→                                 PO               approved and not blocked.  confirmation.   approval.           AP/procurement   reference                             supplier or
+   445→                                                                                                                 risk.            logged.                               select
+   446→                                                                                                                                                                        another.
+   447→
+   448→  BR-PUR-002   Three-Way Match   Post vendor bill Vendor bill must match PO  Block posting   AP/Procurement      Controls AP      Variance audit Notify AP and buyer.   Adjust bill,
+   449→                                 linked to PO     and receipt within         or create match approval for        liability and    logged.                               receipt or
+   450→                                                  tolerance.                 exception.      variance.           inventory cost.                                        approve
+   451→                                                                                                                                                                        variance.
+   452→
+   453→  BR-INV-001   Negative Stock    Validate stock   Available quantity must    Reject or       Warehouse/finance   Affects stock    Attempt        Notify warehouse       Receive
+   454→               Control           issue            cover issue unless policy  approval        approval if         ledger and COGS. logged.        manager.               stock,
+   455→                                                  permits negative stock.    workflow.       allowed.                                                                   transfer
+   456→                                                                                                                                                                        stock or
+   457→                                                                                                                                                                        approve.
+   458→
+   459→  BR-INV-002   Lot/Serial        Move tracked     Required lot/serial must   Reject          No approval unless  Traceability     Missing        Notify user.           Scan or
+   460→               Mandatory         product          be provided and valid for  operation.      emergency override  preserved.       traceability                          assign valid
+   461→                                                  product/location/status.                   configured.                          attempt                               lot/serial.
+   462→                                                                                                                                  logged.                               
+   463→
+   464→  BR-MFG-001   Approved BOM      Release          Manufactured item must     Reject release. Engineering         Controls         BOM missing    Notify                 Approve BOM
+   465→               Required          production order have active approved                       approval of BOM.    components and   logged.        planner/engineering.   or revise
+   466→                                                  BOM/version.                                                   cost.                                                  order.
+   467→
+   468→  BR-HR-001    Salary Field      View/edit        User must have salary      Hide or deny    HR director         Payroll data     Sensitive      Security alert         Request
+   469→               Security          employee         permission and employee    access.         approval for        protected.       access logged. optional.              temporary
+   470→                                 compensation     scope.                                     exception.                                                                 access.
+   471→
+   472→  BR-SEC-001   Maker-Checker     Approve          Approver cannot be creator Reject approval No override except  Prevents fraud.  SOD violation  Notify alternate       Route to
+   473→                                 sensitive        for configured high-risk   action.         break-glass with                     logged.        approver.              another
+   474→                                 transaction      actions.                                   audit.                                                                     approver.
+   475→
+   476→  BR-API-001   Idempotent        Create/post via  Idempotency key must be    Reject          No business         Prevents         Duplicate      Notify integration     Resend with
+   477→               Posting API       API              unique per external        duplicate or    approval.           duplicate        request        monitor.               same key or
+   478→                                                  transaction.               return original                     postings.        logged.                               correct
+   479→                                                                             result.                                                                                    payload.
+   480→  -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+   481→
+   482→# **BOOK 5 --- Workflow Specification**
+   483→
+   484→  ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+   485→  **Workflow**     **Actors**     **Trigger**   **States**       **Approvals**      **Exceptions**   **Rollback /        **Accounting Posting**        **Inventory      **Events**             **Related
+   486→                                                                                                     Cancellation /                                    Posting**                               Documents**
+   487→                                                                                                     Reversal**                                                                                
+   488→  ---------------- -------------- ------------- ---------------- ------------------ ---------------- ------------------- ----------------------------- ---------------- ---------------------- -------------
+   489→  Order-to-Cash    Sales rep,     Quotation     Draft →          Discount/credit    Credit block,    Reverse invoice,    Revenue, AR, tax, COGS        Reservation,     SalesOrderConfirmed,   Customer
+   490→                   sales manager, accepted      Confirmed →      approvals          stock shortage,  return delivery,                                  goods issue      DeliveryPosted,        invoice,
+   491→                   warehouse, AR                Reserved →                          price mismatch   cancel                                                             InvoicePosted,         delivery
+   492→                   accountant,                  Delivered →                                          draft/undelivered                                                  PaymentMatched         note, receipt
+   493→                   cashier,                     Invoiced → Paid                                      order                                                                                     
+   494→                   customer                     → Closed                                                                                                                                       
+   495→
+   496→  Procure-to-Pay   Requester,     Approved      Draft PR →       Amount, budget,    Supplier         Cancel draft PO,    GRNI, AP, tax, inventory cost Goods receipt,   POApproved,            PR, RFQ, PO,
+   497→                   department     purchase      Approved PR →    supplier, variance blocked,         return goods, debit                               return to vendor GoodsReceived,         GRN, vendor
+   498→                   manager,       request       RFQ → PO         approvals          quantity/price   note, reverse bill                                                 MatchException,        bill, payment
+   499→                   buyer,                       Approved →                          variance, late                                                                      VendorBillPosted       
+   500→                   warehouse, AP                Receipt → Bill                      delivery                                                                                                   
+   501→                   accountant,                  Matched → Paid →                                                                                                                               
+   502→                   supplier                     Closed                                                                                                                                         
+   503→
+   504→  Inventory        Warehouse      Transfer      Draft → Approved High value or      Short pick,      Cancel before       Valuation movement if         Source issue,    TransferApproved,      Stock
+   505→  Transfer         source,        request       → Picked → In    restricted item    damaged, wrong   dispatch, reverse   required                      destination      StockMoved,            transfer,
+   506→                   warehouse                    Transit →        approval           destination      transfer,                                         receipt          TransferReceived       pick list
+   507→                   destination,                 Received → Done                                      adjustment                                                                                
+   508→                   inventory                                                                                                                                                                   
+   509→                   controller                                                                                                                                                                  
+   510→
+   511→  Manufacturing    Planner,       MRP or manual Draft → Planned  BOM,               Material         Cancel before       WIP, variance, FG inventory   Component issue, ProductionReleased,    MO, work
+   512→  Execution        production     production    → Released → In  overconsumption,   shortage, failed issue, reverse                                    FG receipt       OperationCompleted,    order, job
+   513→                   supervisor,    order         Progress →       scrap approvals    quality, machine consumption, rework                                                FGReceived             card,
+   514→                   operator,                    Quality →                           breakdown        order                                                                                     inspection
+   515→                   quality, cost                Received →                                                                                                                                     
+   516→                   accountant                   Costed → Closed                                                                                                                                
+   517→
+   518→  Payroll          HR officer,    Payroll       Draft →          Payroll approval,  Missing          Reverse payroll     Salary                        None             PayrollCalculated,     Payslip,
+   519→                   payroll        period end    Calculated →     bank disbursement  attendance,      entry, correction   expense/liabilities/payment                    PayrollPosted,         payroll
+   520→                   officer, HR                  Reviewed →       approval           contract change, run                                                                BankFileSubmitted      journal, bank
+   521→                   manager,                     Approved →                          bank rejection                                                                                             file
+   522→                   finance, bank                Posted → Paid →                                                                                                                                
+   523→                   officer                      Closed                                                                                                                                         
+   524→
+   525→  Financial        Accountants,   Period end    Open → Subledger Close approval and Unreconciled     Reopen period with  Closing entries, revaluation, Inventory        PeriodCloseStarted,    Close
+   526→  Closing          chief                        Review →         unlock approval    bank, inventory  approval; reversal  depreciation                  reconciliation   PeriodLocked,          checklist,
+   527→                   accountant,                  Adjustments →                       mismatch,        entries                                                            StatementGenerated     financial
+   528→                   finance                      Reconciliation →                    pending postings                                                                                           statements
+   529→                   manager,                     Review → Locked                                                                                                                                
+   530→                   auditor                      → Reported                                                                                                                                     
+   531→  ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+   532→
+   533→## **5.1 Sequence Diagram Example --- Order-to-Cash**
+   534→
+   535→mermaid\
+   536→sequenceDiagram\
+   537→participant Sales\
+   538→participant Workflow\
+   539→participant Inventory\
+   540→participant Finance\
+   541→participant Customer\
+   542→Sales-\>\>Workflow: Submit Sales Order\
+   543→Workflow-\>\>Finance: Credit Check\
+   544→Finance\--\>\>Workflow: Approved / Blocked\
+   545→Workflow-\>\>Inventory: Reserve Stock\
+   546→Inventory\--\>\>Workflow: Reservation Confirmed\
+   547→Workflow-\>\>Sales: Confirm Order\
+   548→Inventory-\>\>Finance: Post Goods Issue / COGS\
+   549→Sales-\>\>Finance: Request Invoice\
+   550→Finance-\>\>Customer: Send Invoice\
+   551→Customer-\>\>Finance: Payment\
+   552→Finance-\>\>Finance: Reconcile and Close
+   553→
+   554→# **BOOK 6 --- Enterprise Database Blueprint**
+   555→
+   556→## **6.1 Conceptual Data Model**
+   557→
+   558→mermaid\
+   559→erDiagram\
+   560→COMPANY \|\|\--o{ BRANCH : has\
+   561→COMPANY \|\|\--o{ FISCAL_PERIOD : defines\
+   562→BUSINESS_PARTNER \|\|\--o{ CUSTOMER_PROFILE : role\
+   563→BUSINESS_PARTNER \|\|\--o{ SUPPLIER_PROFILE : role\
+   564→PRODUCT \|\|\--o{ PRODUCT_VARIANT : has\
+   565→WAREHOUSE \|\|\--o{ STOCK_LOCATION : contains\
+   566→SALES_ORDER \|\|\--o{ SALES_ORDER_LINE : contains\
+   567→PURCHASE_ORDER \|\|\--o{ PURCHASE_ORDER_LINE : contains\
+   568→JOURNAL_ENTRY \|\|\--o{ JOURNAL_ENTRY_LINE : contains\
+   569→STOCK_MOVE \|\|\--o{ STOCK_MOVE_LINE : contains\
+   570→PRODUCTION_ORDER \|\|\--o{ WORK_ORDER : executes\
+   571→USER \|\|\--o{ USER_ROLE : assigned
+   572→
+   573→  --------------------------------------------------------------------------
+   574→  **Data Category**       **Design                **Ownership / Governance**
+   575→                          Specification**         
+   576→  ----------------------- ----------------------- --------------------------
+   577→  Master Data             Business partner,       Data stewards approve
+   578→                          product, employee,      creation/changes;
+   579→                          warehouse, account,     duplicate detection
+   580→                          tax, asset, project,    required.
+   581→                          work center.            
+   582→
+   583→  Reference Data          Currencies, countries,  Centrally managed;
+   584→                          UOMs, status codes,     versioned if business
+   585→                          payment terms, reason   meaning changes.
+   586→                          codes.                  
+   587→
+   588→  Configuration Data      Posting rules, tax      Change-controlled,
+   589→                          rules, workflows,       audited,
+   590→                          approvals, calendars,   environment-transported.
+   591→                          sequences, permissions. 
+   592→
+   593→  Transactional Data      Orders, invoices,       Immutable after post;
+   594→                          receipts, payments,     correction by
+   595→                          stock moves,            reverse/amend/cancel.
+   596→                          production, payroll.    
+   597→
+   598→  Historical Data         Status, cost, price,    Effective dating and
+   599→                          exchange rate, employee lineage required.
+   600→                          and configuration       
+   601→                          history.                
+   602→
+   603→  Analytical Data         Facts, dimensions,      Derived from operational
+   604→                          snapshots, aggregates   events; no manual edits.
+   605→                          and cubes.              
+   606→
+   607→  Audit Data              Before/after values,    Append-only and
+   608→                          actor, action, IP,      access-restricted.
+   609→                          device, approval, API   
+   610→                          request.                
+   611→
+   612→  Archive Data            Closed old documents    Retained according to
+   613→                          and inactive masters.   legal policy; searchable.
+   614→  --------------------------------------------------------------------------
+   615→
+   616→## **6.2 Physical Design Guidelines**
+   617→
+   618→-   Primary keys use opaque UUID/ULID or database-generated IDs;
+   619→    document numbers are business keys, not primary keys.
+   620→
+   621→-   Foreign keys must be enforced for master references unless
+   622→    high-volume event tables intentionally decouple with validated IDs.
+   623→
+   624→-   Every transaction table includes company_id, branch_id where
+   625→    applicable, status, created_by, created_at, updated_by, updated_at.
+   626→
+   627→-   Posted financial and stock ledger tables are append-only; never
+   628→    update amounts/quantities after posting except technical metadata.
+   629→
+   630→-   Indexes must support common filters: company, branch, date, status,
+   631→    partner, product, warehouse, cost center, document number.
+   632→
+   633→-   Partition ledgers, stock moves, audit and event tables by
+   634→    company/period when volume justifies it.
+   635→
+   636→-   Use optimistic concurrency version columns for drafts and
+   637→    configuration; use posting locks for sequence and ledger posting.
+   638→
+   639→-   Soft delete allowed only for non-posted, non-legal configuration or
+   640→    drafts; otherwise archive/block/cancel.
+   641→
+   642→  ---------------------------------------------------------------------------
+   643→  **Naming Standard**                 **Rule**
+   644→  ----------------------------------- ---------------------------------------
+   645→  Tables                              snake_case plural nouns: sales_orders,
+   646→                                      journal_entries, stock_moves.
+   647→
+   648→  Columns                             snake_case semantic names: company_id,
+   649→                                      posting_date, approved_by.
+   650→
+   651→  Indexes                             idx\_\<table\>\_\<columns\>:
+   652→                                      idx_sales_orders_company_status_date.
+   653→
+   654→  Foreign Keys                        fk\_\<from\>\_\<to\>:
+   655→                                      fk_sales_orders_customers.
+   656→
+   657→  Constraints                         ck\_\<table\>\_\<rule\>:
+   658→                                      ck_journal_entries_balanced_status.
+   659→
+   660→  Events                              Past-tense business names:
+   661→                                      SalesOrderConfirmed, InvoicePosted.
+   662→  ---------------------------------------------------------------------------
+   663→
+   664→# **BOOK 7 --- API Blueprint**
+   665→
+   666→  -----------------------------------------------------------------------
+   667→  **API Standard**                    **Blueprint Decision**
+   668→  ----------------------------------- -----------------------------------
+   669→  REST                                Primary external API style using
+   670→                                      resource-oriented endpoints and
+   671→                                      JSON.
+   672→
+   673→  Versioning                          URI major version: /api/v1;
+   674→                                      backward-compatible minor changes
+   675→                                      allowed; deprecations announced.
+   676→
+   677→  Authentication                      OAuth2/OpenID Connect for users and
+   678→                                      services; API keys only for
+   679→                                      controlled legacy integrations.
+   680→
+   681→  Authorization                       Every endpoint evaluates
+   682→                                      permission, data scope, workflow
+   683→                                      state and field masking.
+   684→
+   685→  DTOs                                Separate request/response DTOs from
+   686→                                      domain entities; never expose
+   687→                                      internal database schema directly.
+   688→
+   689→  Validation                          Syntactic validation in API layer;
+   690→                                      business validation in
+   691→                                      application/domain services.
+   692→
+   693→  Error Model                         Consistent error codes:
+   694→                                      VALIDATION_ERROR,
+   695→                                      AUTHORIZATION_DENIED, CONFLICT,
+   696→                                      NOT_FOUND, RATE_LIMITED,
+   697→                                      POSTING_FAILED.
+   698→
+   699→  Pagination                          Cursor pagination for high-volume
+   700→                                      lists; page size limits enforced.
+   701→
+   702→  Filtering/Sorting                   Whitelisted fields only; no
+   703→                                      unrestricted raw query exposure.
+   704→
+   705→  Searching                           Global search API with
+   706→                                      permission-aware indexing and
+   707→                                      result categories.
+   708→
+   709→  OpenAPI                             Every public API documented and
+   710→                                      contract-tested.
+   711→
+   712→  Rate Limiting                       Per client, user, tenant, endpoint
+   713→                                      and risk category.
+   714→
+   715→  Caching                             ETag/Last-Modified for reference
+   716→                                      data and read-heavy endpoints;
+   717→                                      never cache sensitive write
+   718→                                      responses incorrectly.
+   719→
+   720→  Idempotency                         Required for
+   721→                                      create/post/payment/integration
+   722→                                      endpoints.
+   723→
+   724→  Webhooks                            Signed payloads, retries,
+   725→                                      dead-letter handling and event
+   726→                                      schemas.
+   727→  -----------------------------------------------------------------------
+   728→
+   729→Example endpoint standards:\
+   730→POST /api/v1/sales-orders\
+   731→POST /api/v1/sales-orders/{id}/confirm\
+   732→POST /api/v1/customer-invoices/{id}/post\
+   733→GET
+   734→/api/v1/stock-moves?companyId=&warehouseId=&fromDate=&status=&cursor=\
+   735→POST /api/v1/integration/events/{eventType}/webhook-test
+   736→
+   737→# **BOOK 8 --- Enterprise Security Blueprint**
+   738→
+   739→  -----------------------------------------------------------------------
+   740→  **Security Area**                   **Implementation Blueprint**
+   741→  ----------------------------------- -----------------------------------
+   742→  RBAC                                Roles map to job functions; role
+   743→                                      permissions define actions on
+   744→                                      modules, menus, screens, reports
+   745→                                      and APIs.
+   746→
+   747→  ABAC                                Attributes include company, branch,
+   748→                                      warehouse, department, project,
+   749→                                      cost center, owner, amount and
+   750→                                      document state.
+   751→
+   752→  PBAC                                Policy engine evaluates high-risk
+   753→                                      decisions such as posting,
+   754→                                      approval, export, bank change and
+   755→                                      period unlock.
+   756→
+   757→  Record-Level Security               Queries automatically apply data
+   758→                                      scope filters.
+   759→
+   760→  Field-Level Security                Sensitive fields masked or hidden:
+   761→                                      salary, bank account, cost, margin,
+   762→                                      tax IDs, private HR.
+   763→
+   764→  Approval Permissions                Approval requires explicit
+   765→                                      permission, threshold authority and
+   766→                                      SOD clearance.
+   767→
+   768→  Segregation of Duties               Conflict matrix prevents risky
+   769→                                      combinations and same-user
+   770→                                      approval.
+   771→
+   772→  Zero Trust                          Verify identity, device/session
+   773→                                      context, permission and request
+   774→                                      risk for sensitive actions.
+   775→
+   776→  Audit Trail                         Append-only logs for auth,
+   777→                                      permission changes, document
+   778→                                      changes, postings, approvals and
+   779→                                      API actions.
+   780→
+   781→  Encryption                          TLS in transit, encryption at rest,
+   782→                                      field-level encryption for secrets
+   783→                                      and regulated fields.
+   784→
+   785→  MFA/SSO                             Mandatory MFA for admin, finance
+   786→                                      posting, payroll, bank and API
+   787→                                      management roles.
+   788→
+   789→  Compliance                          Retention, access review, export
+   790→                                      governance, data subject handling
+   791→                                      and tamper-evident audit.
+   792→  -----------------------------------------------------------------------
+   793→
+   794→# **BOOK 9 --- Screen Specification**
+   795→
+   796→Screen specifications are defined as reusable enterprise screen
+   797→archetypes and a core screen catalog. Detailed field-level SRS will
+   798→instantiate these patterns per module.
+   799→
+   800→  ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+   801→  **Screen**      **Purpose**   **Actors**                     **Permissions**       **Layout**             **Filters / Validation**       **Actions**   **Responsive /
+   802→                                                                                                                                                         Accessibility**
+   803→  --------------- ------------- ------------------------------ --------------------- ---------------------- ------------------------------ ------------- --------------------
+   804→  Role Workspace  Show daily    All operational roles          Read dashboard; act   KPI cards, work        Company/branch/date; saved     Open          Keyboard command
+   805→                  work, KPIs,                                  on assigned           queues, charts, task   filters; role widgets.         document,     palette; responsive
+   806→                  approvals,                                   permissions.          inbox, approval inbox,                                approve,      cards; WCAG labels.
+   807→                  exceptions                                                         recent documents.                                     reject,       
+   808→                  and quick                                                                                                                create,       
+   809→                  actions.                                                                                                                 export        
+   810→                                                                                                                                           allowed       
+   811→                                                                                                                                           reports.      
+   812→
+   813→  Document List   Find and      Module users                   Read/list permission  Filter bar, table,     Status, date, partner, amount, Open, bulk    Accessible table
+   814→                  process                                      and data scope.       status badges, bulk    owner, branch, approval state. approve,      navigation;
+   815→                  documents.                                                         actions, saved views.                                 export,       compact/default
+   816→                                                                                                                                           print,        density.
+   817→                                                                                                                                           assign,       
+   818→                                                                                                                                           archive where 
+   819→                                                                                                                                           allowed.      
+   820→
+   821→  Document Object Create,       Creators, approvers, auditors  Action-specific       Header, status bar,    Header and line validations;   Save, submit, Mobile sections
+   822→  Page            review,                                      permissions.          tabs, lines grid,      required fields; cross-field   approve,      stacked; keyboard
+   823→                  approve, post                                                      totals, attachments,   checks.                        post, cancel, shortcuts for
+   824→                  and audit a                                                        timeline, audit.                                      reverse,      save/search/lines.
+   825→                  document.                                                                                                                print, email. 
+   826→
+   827→  Master Data     Govern master Data stewards and module       Create/edit/approve   Identity, roles/views, Uniqueness, required fields,   Create,       Change history
+   828→  Form            data          admins                         master permissions.   accounting/logistics   approval for sensitive         approve,      visible; field-level
+   829→                  lifecycle.                                                         tabs, status,          changes.                       block, merge, security.
+   830→                                                                                     duplicates, audit.                                    archive.      
+   831→
+   832→  Report Viewer   Run           Authorized report users        Report permission +   Parameters, result     Date/company/branch/security   Run, save     Export warning for
+   833→                  operational                                  data scope.           grid/chart, drilldown, filters.                       parameters,   sensitive data.
+   834→                  and                                                                export, schedule.                                     schedule,     
+   835→                  analytical                                                                                                               export,       
+   836→                  reports.                                                                                                                 drilldown.    
+   837→
+   838→  Configuration   Configure     Administrators/configuration   Admin permission and  Settings sections,     Strict validation and          Save draft,   Show affected
+   839→  Screen          rules,        owners                         change control.       versioning, impact     dependency checks.             submit        modules before
+   840→                  workflows and                                                      analysis, test button,                                change,       activation.
+   841→                  integration                                                        audit.                                                approve,      
+   842→                  settings.                                                                                                                activate,     
+   843→                                                                                                                                           rollback.     
+   844→  ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+   845→
+   846→## **9.1 Required Screen Elements**
+   847→
+   848→-   Purpose statement and help link.
+   849→
+   850→-   Actor-specific toolbar actions.
+   851→
+   852→-   Permission-aware buttons and disabled states with reason.
+   853→
+   854→-   Attachments, comments, timeline and audit on all documents.
+   855→
+   856→-   Navigation links to source/target documents.
+   857→
+   858→-   Keyboard shortcuts for save, search, command palette, add line and
+   859→    submit.
+   860→
+   861→-   Responsive behavior defined for desktop, tablet and mobile.
+   862→
+   863→-   Error messages tied to fields and business rules.
+   864→
+   865→# **BOOK 10 --- Enterprise UI Design System**
+   866→
+   867→  -----------------------------------------------------------------------
+   868→  **Design System Area**              **Blueprint Standard**
+   869→  ----------------------------------- -----------------------------------
+   870→  Design Language                     Professional, dense-but-readable
+   871→                                      enterprise UI with clear hierarchy
+   872→                                      and risk/status semantics.
+   873→
+   874→  Grid System                         12-column responsive grid for
+   875→                                      dashboards; form sections use
+   876→                                      2/3-column desktop, single-column
+   877→                                      mobile.
+   878→
+   879→  Spacing                             4px base scale: 4, 8, 12, 16, 24,
+   880→                                      32.
+   881→
+   882→  Typography                          Readable sans-serif; clear scale
+   883→                                      for page title, section title,
+   884→                                      field label, body and metadata.
+   885→
+   886→  Colors                              Semantic colors for success,
+   887→                                      warning, danger, info; financial
+   888→                                      negative values consistent.
+   889→
+   890→  Elevation                           Subtle cards and modals; avoid
+   891→                                      decorative shadows in financial
+   892→                                      screens.
+   893→
+   894→  Icons                               Consistent stroke icons; never rely
+   895→                                      on icons without text for critical
+   896→                                      actions.
+   897→
+   898→  Forms                               Grouped sections, required markers,
+   899→                                      validation hints, inline errors and
+   900→                                      field help.
+   901→
+   902→  Tables                              Sticky headers, column manage,
+   903→                                      sorting, filtering, grouping,
+   904→                                      totals and row density control.
+   905→
+   906→  Dialogs                             Use for confirmation and focused
+   907→                                      tasks; destructive actions require
+   908→                                      reason capture.
+   909→
+   910→  Charts                              Use accessible colors, labels,
+   911→                                      drilldown, data source and refresh
+   912→                                      timestamp.
+   913→
+   914→  Notifications                       Actionable, categorized and
+   915→                                      dismissible; approvals remain in
+   916→                                      inbox until resolved.
+   917→
+   918→  Dark Theme                          Optional token-driven theme;
+   919→                                      maintain contrast ratios.
+   920→
+   921→  Accessibility                       Keyboard navigation, focus
+   922→                                      indicators, ARIA labels,
+   923→                                      screen-reader titles and non-color
+   924→                                      status cues.
+   925→
+   926→  Design Tokens                       color.\*, spacing.\*, font.\*,
+   927→                                      radius.\*, elevation.\*, status.\*,
+   928→                                      density.\*.
+   929→
+   930→  Consistency Rules                   Same object status/action names
+   931→                                      across modules; same placement for
+   932→                                      audit, attachments and related
+   933→                                      documents.
+   934→  -----------------------------------------------------------------------
+   935→
+   936→# **BOOK 11 --- Notification Architecture**
+   937→
+   938→mermaid\
+   939→flowchart LR\
+   940→DomainEvent \--\> NotificationEngine\
+   941→Workflow \--\> NotificationEngine\
+   942→NotificationEngine \--\> TemplateService\
+   943→TemplateService \--\> ChannelRouter\
+   944→ChannelRouter \--\> Email\
+   945→ChannelRouter \--\> SMS\
+   946→ChannelRouter \--\> Push\
+   947→ChannelRouter \--\> InApp\
+   948→ChannelRouter \--\> WhatsApp\
+   949→ChannelRouter \--\> DeliveryLog
+   950→
+   951→  -----------------------------------------------------------------------
+   952→  **Component**                       **Specification**
+   953→  ----------------------------------- -----------------------------------
+   954→  Notification Engine                 Consumes domain/workflow events and
+   955→                                      creates notification jobs.
+   956→
+   957→  Channels                            Email, SMS, push, in-app, approval
+   958→                                      inbox, optional WhatsApp based on
+   959→                                      compliance.
+   960→
+   961→  Templates                           Localized templates with variables,
+   962→                                      preview, versioning and approval
+   963→                                      for legal/customer messages.
+   964→
+   965→  Reminder Engine                     Escalate pending approvals/tasks
+   966→                                      based on SLA calendars and
+   967→                                      delegation rules.
+   968→
+   969→  Retry Strategy                      Exponential backoff, provider
+   970→                                      failover, dead-letter queue and
+   971→                                      manual resend.
+   972→
+   973→  Delivery Tracking                   Sent, delivered, failed,
+   974→                                      opened/read where available, action
+   975→                                      taken.
+   976→
+   977→  Security                            No sensitive details in insecure
+   978→                                      channels unless policy allows; link
+   979→                                      requires authentication.
+   980→  -----------------------------------------------------------------------
+   981→
+   982→# **BOOK 12 --- Reporting Architecture**
+   983→
+   984→  -----------------------------------------------------------------------
+   985→  **Report Type**                     **Architecture Blueprint**
+   986→  ----------------------------------- -----------------------------------
+   987→  Operational Reports                 Run on optimized operational read
+   988→                                      models with strict pagination and
+   989→                                      filters.
+   990→
+   991→  Financial Reports                   Use ledger/reporting views with
+   992→                                      period, company, currency and
+   993→                                      dimension controls.
+   994→
+   995→  Management Reports                  Use curated metrics and snapshots;
+   996→                                      include source lineage.
+   997→
+   998→  Executive Dashboards                Show KPIs, trends, exceptions and
+   999→                                      drilldowns; refresh strategy
+  1000→                                      explicit.
+  1001→
+  1002→  Analytical Reports                  Use analytical store/data
+  1003→                                      warehouse; do not overload OLTP.
+  1004→
+  1005→  KPIs                                Define owner, formula, data source,
+  1006→                                      refresh, drill path and security.
+  1007→
+  1008→  Drill-Down                          Dashboard → report → document →
+  1009→                                      ledger/audit/source document.
+  1010→
+  1011→  Forecasting                         Separate forecast model outputs
+  1012→                                      from actual accounting records.
+  1013→
+  1014→  BI Integration                      Power BI/data lake via governed
+  1015→                                      datasets and semantic model.
+  1016→
+  1017→  Export                              PDF, Excel, CSV with
+  1018→                                      watermark/classification and export
+  1019→                                      audit.
+  1020→
+  1021→  Scheduling                          Scheduled reports run as service
+  1022→                                      user with scoped permissions and
+  1023→                                      delivery logs.
+  1024→
+  1025→  Performance                         Materialized views/snapshots for
+  1026→                                      heavy reports; query timeout
+  1027→                                      policies.
+  1028→  -----------------------------------------------------------------------
+  1029→
+  1030→# **BOOK 13 --- Integration Architecture**
+  1031→
+  1032→  -----------------------------------------------------------------------
+  1033→  **Integration Domain**              **Blueprint**
+  1034→  ----------------------------------- -----------------------------------
+  1035→  Payment Gateways                    Tokenized payments, idempotent
+  1036→                                      transactions, reconciliation
+  1037→                                      callbacks, PCI boundary separation.
+  1038→
+  1039→  Banks                               Bank statement import/API, payment
+  1040→                                      file/API, approval separation,
+  1041→                                      acknowledgement tracking.
+  1042→
+  1043→  Tax Authorities                     E-invoicing, VAT/GST submission,
+  1044→                                      digital signatures where required,
+  1045→                                      legal response storage.
+  1046→
+  1047→  Shipping Providers                  Rate quote, label generation,
+  1048→                                      tracking updates, delivery
+  1049→                                      confirmation events.
+  1050→
+  1051→  Barcode/RFID/IoT                    Device identity, offline queues,
+  1052→                                      scan validation, event timestamp
+  1053→                                      and location.
+  1054→
+  1055→  Microsoft 365 / Google              Email/calendar/docs integration
+  1056→                                      through OAuth and scoped
+  1057→                                      permissions.
+  1058→
+  1059→  Power BI / Excel                    Governed datasets and controlled
+  1060→                                      Excel import/export; no bypass of
+  1061→                                      validation/posting.
+  1062→
+  1063→  Email/SMS/WhatsApp                  Notification channels through
+  1064→                                      provider abstraction and delivery
+  1065→                                      logs.
+  1066→
+  1067→  External ERP/CRM/HR                 Master data sync, document
+  1068→                                      exchange, event contracts and
+  1069→                                      anti-corruption layer.
+  1070→
+  1071→  Government APIs                     Certified connectors where
+  1072→                                      required; legal audit storage.
+  1073→
+  1074→  Identity Providers                  OIDC/SAML federation, SCIM
+  1075→                                      provisioning where available.
+  1076→
+  1077→  Event Bus / Queue                   Outbox, retries, deduplication,
+  1078→                                      dead-letter processing and event
+  1079→                                      schema registry.
+  1080→  -----------------------------------------------------------------------
+  1081→
+  1082→# **BOOK 14 --- Performance & Scalability**
+  1083→
+  1084→  -----------------------------------------------------------------------
+  1085→  **Area**                            **Blueprint Decision**
+  1086→  ----------------------------------- -----------------------------------
+  1087→  Caching                             Cache reference/config data with
+  1088→                                      TTL and invalidation; avoid caching
+  1089→                                      permission-sensitive financial
+  1090→                                      results without scope keys.
+  1091→
+  1092→  Async Processing                    Use queues for emails, exports,
+  1093→                                      integrations, BI projections, heavy
+  1094→                                      recalculations and non-blocking
+  1095→                                      notifications.
+  1096→
+  1097→  Background Jobs                     Schedulable, idempotent,
+  1098→                                      observable, retryable and
+  1099→                                      cancelable.
+  1100→
+  1101→  Index Optimization                  Review slow queries; enforce index
+  1102→                                      budget for
+  1103→                                      company/date/status/entity filters.
+  1104→
+  1105→  Horizontal Scaling                  Stateless UI/API/app workers behind
+  1106→                                      load balancers.
+  1107→
+  1108→  Vertical Scaling                    Apply to database/posting
+  1109→                                      bottlenecks before complex
+  1110→                                      sharding.
+  1111→
+  1112→  Observability                       Metrics, structured logs, traces,
+  1113→                                      audit, health checks and business
+  1114→                                      process monitors.
+  1115→
+  1116→  Backup                              Encrypted backups, tested restores,
+  1117→                                      point-in-time recovery and
+  1118→                                      retention by environment.
+  1119→
+  1120→  Disaster Recovery                   Defined RPO/RTO, failover runbooks,
+  1121→                                      DR drills and dependency mapping.
+  1122→
+  1123→  High Availability                   Multi-node app layer, managed
+  1124→                                      database HA, queue HA, storage
+  1125→                                      redundancy.
+  1126→
+  1127→  Capacity Planning                   Forecast users, transactions/day,
+  1128→                                      ledger lines, stock moves, reports,
+  1129→                                      integrations and storage growth.
+  1130→
+  1131→  Load Balancing                      Route stateless traffic; sticky
+  1132→                                      sessions avoided unless justified.
+  1133→  -----------------------------------------------------------------------
+  1134→
+  1135→Performance budgets:\
+  1136→- Dashboard initial load: target \< 3 seconds for normal data scope.\
+  1137→- Document save draft: target \< 1 second excluding integrations.\
+  1138→- Document post: target \< 3 seconds for standard documents; longer
+  1139→postings queued with progress if needed.\
+  1140→- List endpoint: mandatory pagination; no unbounded export through UI
+  1141→request thread.\
+  1142→- Report execution: operational report target \< 10 seconds; heavy
+  1143→analytics scheduled/asynchronous.
+  1144→
+  1145→# **BOOK 15 --- Engineering Standards**
+  1146→
+  1147→  -----------------------------------------------------------------------
+  1148→  **Standard Area**                   **Blueprint Standard**
+  1149→  ----------------------------------- -----------------------------------
+  1150→  Folder Structure                    Organize by bounded context/module;
+  1151→                                      separate domain, application,
+  1152→                                      infrastructure, API, UI, tests and
+  1153→                                      migrations.
+  1154→
+  1155→  Coding Standards                    Clean code, typed DTOs, explicit
+  1156→                                      errors, no hidden business rules in
+  1157→                                      UI, no direct DB access from
+  1158→                                      controllers.
+  1159→
+  1160→  Naming Conventions                  Consistent names for modules,
+  1161→                                      entities, APIs, events, commands,
+  1162→                                      permissions and configs.
+  1163→
+  1164→  Git Strategy                        Trunk-based or GitFlow-light with
+  1165→                                      protected main, pull requests and
+  1166→                                      release branches.
+  1167→
+  1168→  Commit Standards                    Conventional commits: feat, fix,
+  1169→                                      refactor, docs, test, chore,
+  1170→                                      security, migration.
+  1171→
+  1172→  Testing Standards                   Unit tests for policies/services;
+  1173→                                      integration tests for
+  1174→                                      posting/workflows; contract tests
+  1175→                                      for APIs; E2E for critical flows.
+  1176→
+  1177→  Documentation                       ADRs, API OpenAPI, data
+  1178→                                      dictionaries, workflow specs,
+  1179→                                      screen specs and runbooks must be
+  1180→                                      versioned.
+  1181→
+  1182→  CI/CD                               Automated build, tests, static
+  1183→                                      analysis, dependency scan,
+  1184→                                      migration validation and deploy
+  1185→                                      gates.
+  1186→
+  1187→  Deployment                          Blue/green or rolling strategy;
+  1188→                                      database migrations
+  1189→                                      backward-compatible where possible.
+  1190→
+  1191→  Monitoring                          Every service exposes health,
+  1192→                                      metrics, logs and traces.
+  1193→
+  1194→  Logging                             Structured JSON logs with
+  1195→                                      correlation ID, user ID,
+  1196→                                      tenant/company, action, document ID
+  1197→                                      and severity.
+  1198→
+  1199→  Code Review                         Minimum two reviewers for
+  1200→                                      finance/security/posting changes;
+  1201→                                      checklist includes tests, audit,
+  1202→                                      security and performance.
+  1203→
+  1204→  Quality Gates                       No critical security findings, no
+  1205→                                      failing tests, migration dry-run
+  1206→                                      pass, API contract pass,
+  1207→                                      performance checks for hotspots.
+  1208→
+  1209→  Release Management                  Semantic versioning, release notes,
+  1210→                                      migration plan, rollback plan,
+  1211→                                      feature flags.
+  1212→
+  1213→  Technical Debt                      Logged, prioritized, owner assigned
+  1214→                                      and reviewed in architecture board.
+  1215→  -----------------------------------------------------------------------
+  1216→
+  1217→## **15.1 Recommended Repository Structure**
+  1218→
+  1219→/erp-platform\
+  1220→/apps\
+  1221→/web\
+  1222→/mobile\
+  1223→/services\
+  1224→/identity\
+  1225→/platform\
+  1226→/finance\
+  1227→/sales\
+  1228→/procurement\
+  1229→/inventory\
+  1230→/manufacturing\
+  1231→/hr\
+  1232→/projects\
+  1233→/reporting\
+  1234→/integration\
+  1235→/libs\
+  1236→/domain-kernel\
+  1237→/security-kernel\
+  1238→/workflow-kernel\
+  1239→/ui-design-system\
+  1240→/database\
+  1241→/migrations\
+  1242→/seed\
+  1243→/data-dictionary\
+  1244→/docs\
+  1245→/adrs\
+  1246→/api\
+  1247→/architecture\
+  1248→/workflows\
+  1249→/screens\
+  1250→/tests\
+  1251→/unit\
+  1252→/integration\
+  1253→/contract\
+  1254→/e2e
+  1255→
+  1256→# **Cross-Book Dependency Map**
+  1257→
+  1258→  ------------------------------------------------------------------------
+  1259→  **Book**                **Depends On**           **Feeds Into**
+  1260→  ----------------------- ------------------------ -----------------------
+  1261→  Book 1 Architecture     Benchmark Volume 1       All books, deployment,
+  1262→                                                   engineering standards.
+  1263→
+  1264→  Book 2 Domain           Architecture principles  Database, APIs,
+  1265→                                                   workflows, business
+  1266→                                                   rules.
+  1267→
+  1268→  Book 3 Information      Domain and UX principles Screen specs, UI design
+  1269→  Architecture                                     system.
+  1270→
+  1271→  Book 4 Business Rules   Domain policies          Workflows, APIs,
+  1272→                                                   security, QA tests.
+  1273→
+  1274→  Book 5 Workflows        Business rules and       Screen actions,
+  1275→                          domain events            notifications, audit,
+  1276→                                                   APIs.
+  1277→
+  1278→  Book 6 Database         Domain aggregates and    Physical schema,
+  1279→                          reporting needs          migrations,
+  1280→                                                   performance.
+  1281→
+  1282→  Book 7 API              Domain services and      Integration, frontend,
+  1283→                          security                 external systems.
+  1284→
+  1285→  Book 8 Security         Architecture and data    All screens, APIs,
+  1286→                          classification           workflows, reports.
+  1287→
+  1288→  Book 9 Screens          IA, UX, workflows,       Frontend implementation
+  1289→                          security                 and QA.
+  1290→
+  1291→  Book 10 UI System       Brand/UX/accessibility   Screen implementation.
+  1292→                          principles               
+  1293→
+  1294→  Book 11 Notifications   Workflows and events     User tasks, SLA,
+  1295→                                                   escalation.
+  1296→
+  1297→  Book 12 Reporting       Data architecture and    BI, dashboards,
+  1298→                          security                 exports.
+  1299→
+  1300→  Book 13 Integration     API/events/security      External system
+  1301→                                                   implementation.
+  1302→
+  1303→  Book 14 Performance     Architecture, database,  Infrastructure, DevOps
+  1304→                          API                      and capacity planning.
+  1305→
+  1306→  Book 15 Engineering     All architecture         Development execution.
+  1307→                          decisions                
+  1308→  ------------------------------------------------------------------------
+  1309→

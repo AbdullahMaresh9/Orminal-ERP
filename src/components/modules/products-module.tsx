@@ -1,148 +1,124 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useT } from '@/lib/i18n/use-t'
-import { formatCurrency, formatNumber, formatDate } from '@/lib/format'
-import { exportToCSV, printHTML } from '@/lib/export'
 import { ModuleShell } from '@/components/erp/module-shell'
 import { KpiCard } from '@/components/erp/kpi-card'
 import { StatusBadge } from '@/components/erp/status-badge'
+import { useT } from '@/lib/i18n/use-t'
+import { formatCurrency, formatInt } from '@/lib/format'
+import { exportToCSV } from '@/lib/export'
+import { toast } from 'sonner'
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table'
+import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
-import { Card } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { Badge } from '@/components/ui/badge'
 import {
-  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
-} from '@/components/ui/table'
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from '@/components/ui/dialog'
-import {
-  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
-} from '@/components/ui/select'
-import {
-  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
-} from '@/components/ui/dropdown-menu'
-import { toast } from 'sonner'
-import {
-  Package, AlertTriangle, DollarSign, Tag, MoreVertical, Pencil, Trash2, Plus, Boxes, PackageCheck,
-} from 'lucide-react'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Package, Boxes, Tag, Plus, Pencil, Trash2 } from 'lucide-react'
 
+interface Category { id: string; code: string; nameAr: string }
+interface Uom { id: string; code: string; nameAr: string }
+interface TaxCode { id: string; code: string; rate: number }
 interface Product {
   id: string
   sku: string
-  barcode: string | null
-  name: string
-  nameAr: string | null
-  description: string | null
-  categoryId: string | null
-  unit: string
+  barcode?: string
+  nameAr: string
+  nameEn?: string
+  type: string
   costPrice: number
   salePrice: number
-  taxRate: number
   minStock: number
-  type: string
   active: boolean
-  createdAt: string
-  category?: { id: string; name: string; nameAr: string | null } | null
-  stockItems?: { quantity: number }[]
+  category?: Category
+  uom?: Uom
+  taxCode?: TaxCode
 }
 
-const EMPTY_FORM = {
-  sku: '', barcode: '', name: '', nameAr: '', description: '',
-  categoryId: '', unit: 'piece', costPrice: 0, salePrice: 0,
-  taxRate: 15, minStock: 0, type: 'product', active: true,
+const TYPE_LABELS: Record<string, string> = {
+  product: 'منتج',
+  service: 'خدمة',
+  raw_material: 'مادة خام',
+  finished: 'منتج نهائي',
+  consumable: 'مستهلك',
 }
-
-const TYPE_OPTIONS = [
-  { value: 'product', label: 'منتج' },
-  { value: 'service', label: 'خدمة' },
-  { value: 'raw_material', label: 'مادة خام' },
-  { value: 'finished', label: 'منتج نهائي' },
-]
-
-const UNIT_OPTIONS = [
-  { value: 'piece', label: 'قطعة' },
-  { value: 'kg', label: 'كجم' },
-  { value: 'liter', label: 'لتر' },
-  { value: 'box', label: 'صندوق' },
-  { value: 'pack', label: 'عبوة' },
-  { value: 'meter', label: 'متر' },
-]
 
 export function ProductsModule() {
   const { t } = useT()
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
-  const [typeFilter, setTypeFilter] = useState('all')
+  const [filterType, setFilterType] = useState('all')
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [form, setForm] = useState<any>(EMPTY_FORM)
+  const [editing, setEditing] = useState<Product | null>(null)
+  const [page, setPage] = useState(1)
+  const pageSize = 15
 
-  const { data, isLoading } = useQuery<{ data: Product[]; total: number }>({
-    queryKey: ['products', search, typeFilter],
+  const { data, isLoading } = useQuery<{ data: Product[]; meta: any }>({
+    queryKey: ['products', search, filterType, page],
     queryFn: async () => {
       const params = new URLSearchParams()
       if (search) params.set('q', search)
-      if (typeFilter !== 'all') params.set('type', typeFilter)
+      if (filterType !== 'all') params.set('type', filterType)
+      params.set('page', String(page))
+      params.set('pageSize', String(pageSize))
       const r = await fetch(`/api/erp/products?${params}`)
-      if (!r.ok) throw new Error('fetch failed')
+      if (!r.ok) throw new Error('Failed')
       return r.json()
     },
   })
 
-  const { data: categoriesData } = useQuery<{ data: any[] }>({
-    queryKey: ['categories-for-products'],
+  const { data: catsData } = useQuery<{ data: Category[] }>({
+    queryKey: ['categories-list'],
     queryFn: async () => {
-      const r = await fetch('/api/erp/categories')
-      if (!r.ok) throw new Error('fetch failed')
+      const r = await fetch('/api/erp/categories?pageSize=100')
+      if (!r.ok) return { data: [] }
       return r.json()
     },
   })
 
   const products = data?.data ?? []
-  const categories = categoriesData?.data ?? []
+  const total = data?.meta?.pagination?.total ?? 0
+  const totalPages = data?.meta?.pagination?.totalPages ?? 1
+  const categories = catsData?.data ?? []
 
-  // KPIs
-  const kpis = useMemo(() => {
-    const total = products.length
-    const lowStock = products.filter(p => {
-      const qty = (p.stockItems ?? []).reduce((s, x) => s + x.quantity, 0)
-      return qty <= p.minStock
-    }).length
-    const totalValue = products.reduce((s, p) => {
-      const qty = (p.stockItems ?? []).reduce((s, x) => s + x.quantity, 0)
-      return s + qty * p.costPrice
-    }, 0)
-    const avgPrice = total > 0 ? products.reduce((s, p) => s + p.salePrice, 0) / total : 0
-    return { total, lowStock, totalValue, avgPrice }
-  }, [products])
+  const stats = {
+    total,
+    active: products.filter((p) => p.active).length,
+    totalValue: products.reduce((s, p) => s + p.costPrice, 0),
+    avgPrice: products.length ? products.reduce((s, p) => s + p.salePrice, 0) / products.length : 0,
+  }
 
   const saveMutation = useMutation({
     mutationFn: async (payload: any) => {
-      const isEdit = !!editingId
-      const url = isEdit ? `/api/erp/products/${editingId}` : '/api/erp/products'
+      const url = editing ? `/api/erp/products/${editing.id}` : '/api/erp/products'
+      const method = editing ? 'PUT' : 'POST'
       const r = await fetch(url, {
-        method: isEdit ? 'PUT' : 'POST',
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
       if (!r.ok) {
-        const err = await r.json()
-        throw new Error(err.error || 'save failed')
+        const err = await r.json().catch(() => ({}))
+        throw new Error(err?.error?.message ?? 'Failed')
       }
       return r.json()
     },
     onSuccess: () => {
       toast.success('تم الحفظ بنجاح')
       qc.invalidateQueries({ queryKey: ['products'] })
-      qc.invalidateQueries({ queryKey: ['dashboard'] })
       setDialogOpen(false)
+      setEditing(null)
     },
     onError: (e: any) => toast.error(e.message || 'حدث خطأ'),
   })
@@ -150,296 +126,212 @@ export function ProductsModule() {
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const r = await fetch(`/api/erp/products/${id}`, { method: 'DELETE' })
-      if (!r.ok) {
-        const err = await r.json()
-        throw new Error(err.error || 'delete failed')
-      }
+      if (!r.ok) throw new Error('Failed')
+      return r.json()
     },
     onSuccess: () => {
       toast.success('تم الحذف بنجاح')
       qc.invalidateQueries({ queryKey: ['products'] })
     },
-    onError: (e: any) => toast.error(e.message || 'حدث خطأ'),
+    onError: () => toast.error('حدث خطأ'),
   })
 
-  function openAdd() {
-    setForm(EMPTY_FORM)
-    setEditingId(null)
-    setDialogOpen(true)
+  const handleSave = (formData: FormData) => {
+    const payload: any = {
+      sku: formData.get('sku') || undefined,
+      barcode: formData.get('barcode') || undefined,
+      nameAr: formData.get('nameAr'),
+      nameEn: formData.get('nameEn') || undefined,
+      categoryId: formData.get('categoryId') || undefined,
+      uomId: formData.get('uomId') || undefined,
+      type: formData.get('type'),
+      costPrice: Number(formData.get('costPrice')) || 0,
+      salePrice: Number(formData.get('salePrice')) || 0,
+      minStock: Number(formData.get('minStock')) || 0,
+      active: formData.get('active') === 'on',
+    }
+    saveMutation.mutate(payload)
   }
-  function openEdit(p: Product) {
-    setForm({
-      sku: p.sku, barcode: p.barcode ?? '', name: p.name, nameAr: p.nameAr ?? '',
-      description: p.description ?? '', categoryId: p.categoryId ?? '',
-      unit: p.unit, costPrice: p.costPrice, salePrice: p.salePrice,
-      taxRate: p.taxRate, minStock: p.minStock, type: p.type, active: p.active,
-    })
-    setEditingId(p.id)
-    setDialogOpen(true)
-  }
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!form.name.trim()) return toast.error('الاسم مطلوب')
-    saveMutation.mutate(form)
-  }
-  function handleExport() {
-    exportToCSV('products', products.map(p => ({
-      sku: p.sku,
-      barcode: p.barcode ?? '',
-      name: p.name,
-      nameAr: p.nameAr ?? '',
-      category: p.category?.name ?? '',
-      type: p.type,
-      unit: p.unit,
-      costPrice: p.costPrice,
-      salePrice: p.salePrice,
-      taxRate: p.taxRate,
-      minStock: p.minStock,
-      stock: (p.stockItems ?? []).reduce((s, x) => s + x.quantity, 0),
-      active: p.active ? 'نعم' : 'لا',
-    })), [
-      { key: 'sku', label: 'SKU' },
-      { key: 'barcode', label: 'باركود' },
-      { key: 'name', label: 'الاسم' },
-      { key: 'nameAr', label: 'الاسم العربي' },
-      { key: 'category', label: 'الفئة' },
-      { key: 'type', label: 'النوع' },
-      { key: 'unit', label: 'الوحدة' },
-      { key: 'costPrice', label: 'سعر التكلفة' },
-      { key: 'salePrice', label: 'سعر البيع' },
-      { key: 'taxRate', label: 'الضريبة %' },
-      { key: 'minStock', label: 'الحد الأدنى' },
-      { key: 'stock', label: 'المخزون' },
-      { key: 'active', label: 'نشط' },
-    ])
-  }
-  function handlePrint() {
-    const rows = products.map(p => `
-      <tr>
-        <td>${p.sku}</td>
-        <td>${p.name}${p.nameAr ? ' / ' + p.nameAr : ''}</td>
-        <td>${p.category?.name ?? '—'}</td>
-        <td>${TYPE_OPTIONS.find(x => x.value === p.type)?.label ?? p.type}</td>
-        <td>${p.unit}</td>
-        <td>${formatNumber(p.costPrice)}</td>
-        <td>${formatNumber(p.salePrice)}</td>
-        <td>${(p.stockItems ?? []).reduce((s, x) => s + x.quantity, 0)}</td>
-      </tr>`).join('')
-    printHTML(`
-      <div class="doc-header">
-        <div class="company">
-          <div class="logo">A</div>
-          <div class="info"><h2>نظام الأستاذ المحاسبي</h2><p>قائمة المنتجات</p></div>
-        </div>
-        <div class="doc-meta">
-          <div class="type">قائمة المنتجات</div>
-          <div class="code">${products.length} منتج</div>
-          <div class="date">${formatDate(new Date())}</div>
-        </div>
-      </div>
-      <table>
-        <thead><tr><th>SKU</th><th>الاسم</th><th>الفئة</th><th>النوع</th><th>الوحدة</th><th>التكلفة</th><th>البيع</th><th>المخزون</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-    `, 'قائمة المنتجات')
+
+  const handleExport = () => {
+    const rows = products.map((p) => ({
+      'SKU': p.sku,
+      'الباركود': p.barcode ?? '',
+      'الاسم': p.nameAr,
+      'الفئة': p.category?.nameAr ?? '',
+      'النوع': TYPE_LABELS[p.type] ?? p.type,
+      'الوحدة': p.uom?.nameAr ?? '',
+      'سعر التكلفة': p.costPrice,
+      'سعر البيع': p.salePrice,
+      'الحد الأدنى': p.minStock,
+      'الحالة': p.active ? 'نشط' : 'غير نشط',
+    }))
+    exportToCSV('products', rows)
+    toast.success('تم تصدير الملف')
   }
 
   return (
     <ModuleShell
       title={t('module.products')}
-      description="إدارة كتالوج المنتجات والخدمات والمواد الخام"
+      description="إدارة المنتجات والخدمات والمواد الخام"
       icon={<Package className="size-5" />}
       searchValue={search}
       onSearch={setSearch}
-      searchPlaceholder="ابحث بالاسم أو SKU أو الباركود..."
-      onAdd={openAdd}
-      addLabel="منتج جديد"
+      searchPlaceholder="ابحث برمز SKU أو الاسم..."
+      onAdd={() => { setEditing(null); setDialogOpen(true) }}
+      addLabel={t('action.add')}
       onExport={handleExport}
-      onPrint={handlePrint}
       filters={
-        <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+        <Select value={filterType} onValueChange={setFilterType}>
+          <SelectTrigger className="w-40"><SelectValue placeholder="النوع" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">كل الأنواع</SelectItem>
-            {TYPE_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+            <SelectItem value="all">الكل</SelectItem>
+            <SelectItem value="product">منتج</SelectItem>
+            <SelectItem value="service">خدمة</SelectItem>
+            <SelectItem value="raw_material">مادة خام</SelectItem>
+            <SelectItem value="finished">منتج نهائي</SelectItem>
           </SelectContent>
         </Select>
       }
     >
-      {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {isLoading ? (
-          Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />)
-        ) : (
-          <>
-            <KpiCard title="إجمالي المنتجات" value={String(kpis.total)} icon={<Boxes className="size-5" />} accent="emerald" />
-            <KpiCard title="مخزون منخفض" value={String(kpis.lowStock)} icon={<AlertTriangle className="size-5" />} accent="amber" />
-            <KpiCard title="قيمة المخزون" value={formatCurrency(kpis.totalValue)} icon={<DollarSign className="size-5" />} accent="teal" />
-            <KpiCard title="متوسط سعر البيع" value={formatCurrency(kpis.avgPrice)} icon={<Tag className="size-5" />} accent="violet" />
-          </>
-        )}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+        <KpiCard title="إجمالي المنتجات" value={formatInt(total)} icon={<Package className="size-5" />} accent="emerald" />
+        <KpiCard title="المنتجات النشطة" value={formatInt(stats.active)} icon={<Boxes className="size-5" />} accent="teal" />
+        <KpiCard title="قيمة التكلفة" value={formatCurrency(stats.totalValue)} icon={<Tag className="size-5" />} accent="amber" />
+        <KpiCard title="متوسط سعر البيع" value={formatCurrency(stats.avgPrice)} icon={<Tag className="size-5" />} accent="violet" />
       </div>
 
-      {/* Table */}
-      <div className="rounded-xl border bg-card overflow-hidden">
+      <Card className="rounded-xl overflow-hidden">
         <ScrollArea className="max-h-[60vh]">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>SKU</TableHead>
+              <TableRow className="bg-muted/50">
+                <TableHead className="ps-4">SKU</TableHead>
                 <TableHead>الاسم</TableHead>
                 <TableHead>الفئة</TableHead>
                 <TableHead>النوع</TableHead>
                 <TableHead>الوحدة</TableHead>
-                <TableHead className="text-end">التكلفة</TableHead>
-                <TableHead className="text-end">البيع</TableHead>
-                <TableHead className="text-end">المخزون</TableHead>
-                <TableHead className="text-end">الحالة</TableHead>
+                <TableHead className="text-end num-cell">التكلفة</TableHead>
+                <TableHead className="text-end num-cell">البيع</TableHead>
+                <TableHead className="text-end num-cell">الحد الأدنى</TableHead>
+                <TableHead>الحالة</TableHead>
                 <TableHead className="text-end">إجراءات</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>
-                    {Array.from({ length: 10 }).map((_, j) => <TableCell key={j}><Skeleton className="h-6" /></TableCell>)}
-                  </TableRow>
-                ))
+                <TableRow><TableCell colSpan={10} className="text-center py-10 text-muted-foreground">جاري التحميل...</TableCell></TableRow>
               ) : products.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={10} className="text-center py-16 text-muted-foreground">
-                    <Package className="size-10 mx-auto mb-2 opacity-50" />
-                    لا توجد منتجات مطابقة. ابدأ بإضافة منتج جديد.
+                <TableRow><TableCell colSpan={10} className="text-center py-10 text-muted-foreground">لا توجد منتجات. ابدأ بإضافة أول منتج.</TableCell></TableRow>
+              ) : products.map((p) => (
+                <TableRow key={p.id} className="hover:bg-muted/40">
+                  <TableCell className="ps-4 font-mono text-xs" dir="ltr">{p.sku}</TableCell>
+                  <TableCell className="font-medium">{p.nameAr}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{p.category?.nameAr ?? '—'}</TableCell>
+                  <TableCell><Badge variant="outline" className="text-[10px]">{TYPE_LABELS[p.type] ?? p.type}</Badge></TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{p.uom?.nameAr ?? '—'}</TableCell>
+                  <TableCell className="text-end num-cell"><span className="num tabular-nums" dir="ltr">{formatCurrency(p.costPrice)}</span></TableCell>
+                  <TableCell className="text-end num-cell"><span className="num tabular-nums font-semibold" dir="ltr">{formatCurrency(p.salePrice)}</span></TableCell>
+                  <TableCell className="text-end num-cell"><span className="num tabular-nums" dir="ltr">{formatInt(p.minStock)}</span></TableCell>
+                  <TableCell><StatusBadge status={p.active ? 'active' : 'inactive'} /></TableCell>
+                  <TableCell className="text-end">
+                    <div className="flex items-center justify-end gap-1">
+                      <Button size="icon" variant="ghost" className="size-8" onClick={() => { setEditing(p); setDialogOpen(true) }}>
+                        <Pencil className="size-3.5" />
+                      </Button>
+                      <Button size="icon" variant="ghost" className="size-8 text-rose-500 hover:text-rose-600" onClick={() => deleteMutation.mutate(p.id)}>
+                        <Trash2 className="size-3.5" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
-              ) : products.map(p => {
-                const stock = (p.stockItems ?? []).reduce((s, x) => s + x.quantity, 0)
-                const low = stock <= p.minStock
-                return (
-                  <TableRow key={p.id}>
-                    <TableCell className="font-mono text-xs">{p.sku}</TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{p.name}</span>
-                        {p.nameAr && <span className="text-xs text-muted-foreground">{p.nameAr}</span>}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm">{p.category?.name ?? '—'}</TableCell>
-                    <TableCell>
-                      <span className="text-xs">{TYPE_OPTIONS.find(o => o.value === p.type)?.label ?? p.type}</span>
-                    </TableCell>
-                    <TableCell className="text-xs">{p.unit}</TableCell>
-                    <TableCell className="text-end tabular-nums">{formatNumber(p.costPrice)}</TableCell>
-                    <TableCell className="text-end tabular-nums font-medium">{formatNumber(p.salePrice)}</TableCell>
-                    <TableCell className="text-end tabular-nums">
-                      <span className={low ? 'text-amber-600 font-bold' : ''}>{formatNumber(stock)}</span>
-                      {low && <AlertTriangle className="inline size-3 ms-1 text-amber-500" />}
-                    </TableCell>
-                    <TableCell className="text-end">
-                      <StatusBadge status={p.active ? 'active' : 'inactive'} />
-                    </TableCell>
-                    <TableCell className="text-end">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="size-8"><MoreVertical className="size-4" /></Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openEdit(p)}><Pencil className="size-4 ms-2" /> تعديل</DropdownMenuItem>
-                          <DropdownMenuItem className="text-rose-600" onClick={() => {
-                            if (confirm(`حذف المنتج "${p.name}"؟`)) deleteMutation.mutate(p.id)
-                          }}><Trash2 className="size-4 ms-2" /> حذف</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
+              ))}
             </TableBody>
           </Table>
         </ScrollArea>
+      </Card>
+
+      <div className="flex items-center justify-between mt-4 text-sm">
+        <p className="text-muted-foreground">
+          عرض {products.length === 0 ? 0 : (page - 1) * pageSize + 1}–{(page - 1) * pageSize + products.length} من {total}
+        </p>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}>السابق</Button>
+          <span className="text-xs text-muted-foreground">صفحة {page} من {totalPages}</span>
+          <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>التالي</Button>
+        </div>
       </div>
 
-      {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-xl">
           <DialogHeader>
-            <DialogTitle>{editingId ? 'تعديل منتج' : 'منتج جديد'}</DialogTitle>
-            <DialogDescription>{editingId ? 'تحديث بيانات المنتج' : 'إضافة منتج جديد إلى الكتالوج'}</DialogDescription>
+            <DialogTitle>{editing ? 'تعديل منتج' : 'إضافة منتج جديد'}</DialogTitle>
+            <DialogDescription>أدخل بيانات المنتج</DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto p-1">
-            <div className="space-y-1.5">
-              <Label>SKU *</Label>
-              <Input value={form.sku} onChange={e => setForm({ ...form, sku: e.target.value })} placeholder="تلقائي إن تُرك فارغاً" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>الباركود</Label>
-              <Input value={form.barcode} onChange={e => setForm({ ...form, barcode: e.target.value })} />
-            </div>
-            <div className="space-y-1.5 col-span-2">
-              <Label>الاسم *</Label>
-              <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
-            </div>
-            <div className="space-y-1.5 col-span-2">
-              <Label>الاسم (عربي)</Label>
-              <Input value={form.nameAr} onChange={e => setForm({ ...form, nameAr: e.target.value })} dir="rtl" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>الفئة</Label>
-              <Select value={form.categoryId || 'none'} onValueChange={v => setForm({ ...form, categoryId: v === 'none' ? '' : v })}>
-                <SelectTrigger className="w-full"><SelectValue placeholder="بدون فئة" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">بدون فئة</SelectItem>
-                  {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}{c.nameAr ? ' / ' + c.nameAr : ''}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>النوع</Label>
-              <Select value={form.type} onValueChange={v => setForm({ ...form, type: v })}>
-                <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {TYPE_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>الوحدة</Label>
-              <Select value={form.unit} onValueChange={v => setForm({ ...form, unit: v })}>
-                <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {UNIT_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>سعر التكلفة</Label>
-              <Input type="number" step="0.01" value={form.costPrice} onChange={e => setForm({ ...form, costPrice: Number(e.target.value) })} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>سعر البيع</Label>
-              <Input type="number" step="0.01" value={form.salePrice} onChange={e => setForm({ ...form, salePrice: Number(e.target.value) })} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>نسبة الضريبة %</Label>
-              <Input type="number" step="0.01" value={form.taxRate} onChange={e => setForm({ ...form, taxRate: Number(e.target.value) })} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>الحد الأدنى للمخزون</Label>
-              <Input type="number" step="0.01" value={form.minStock} onChange={e => setForm({ ...form, minStock: Number(e.target.value) })} />
-            </div>
-            <div className="space-y-1.5 col-span-2">
-              <Label>الوصف</Label>
-              <Textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={2} />
-            </div>
-            <div className="flex items-center gap-2 col-span-2">
-              <Switch checked={form.active} onCheckedChange={c => setForm({ ...form, active: c })} id="active" />
-              <Label htmlFor="active">المنتج نشط</Label>
-            </div>
-            <DialogFooter className="col-span-2">
+          <form onSubmit={(e) => { e.preventDefault(); handleSave(new FormData(e.currentTarget)) }}>
+            <ScrollArea className="max-h-[60vh] pe-2">
+              <div className="grid grid-cols-2 gap-4 p-1">
+                <div className="space-y-1.5">
+                  <Label htmlFor="sku">SKU (تلقائي)</Label>
+                  <Input id="sku" name="sku" defaultValue={editing?.sku} placeholder="SKU-00001" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="barcode">الباركود</Label>
+                  <Input id="barcode" name="barcode" defaultValue={editing?.barcode} dir="ltr" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="nameAr">الاسم (عربي) *</Label>
+                  <Input id="nameAr" name="nameAr" defaultValue={editing?.nameAr} required />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="nameEn">الاسم (إنجليزي)</Label>
+                  <Input id="nameEn" name="nameEn" defaultValue={editing?.nameEn} dir="ltr" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="categoryId">الفئة</Label>
+                  <Select name="categoryId" defaultValue={editing?.category?.id}>
+                    <SelectTrigger><SelectValue placeholder="اختر الفئة" /></SelectTrigger>
+                    <SelectContent>
+                      {categories.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>{c.nameAr}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="type">النوع</Label>
+                  <Select name="type" defaultValue={editing?.type ?? 'product'}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="product">منتج</SelectItem>
+                      <SelectItem value="service">خدمة</SelectItem>
+                      <SelectItem value="raw_material">مادة خام</SelectItem>
+                      <SelectItem value="finished">منتج نهائي</SelectItem>
+                      <SelectItem value="consumable">مستهلك</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="costPrice">سعر التكلفة</Label>
+                  <Input id="costPrice" name="costPrice" type="number" step="0.01" defaultValue={editing?.costPrice ?? 0} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="salePrice">سعر البيع</Label>
+                  <Input id="salePrice" name="salePrice" type="number" step="0.01" defaultValue={editing?.salePrice ?? 0} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="minStock">الحد الأدنى للمخزون</Label>
+                  <Input id="minStock" name="minStock" type="number" step="0.01" defaultValue={editing?.minStock ?? 0} />
+                </div>
+                <div className="flex items-center gap-2 pt-6">
+                  <Switch id="active" name="active" defaultChecked={editing?.active ?? true} />
+                  <Label htmlFor="active">نشط</Label>
+                </div>
+              </div>
+            </ScrollArea>
+            <DialogFooter className="mt-4">
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>إلغاء</Button>
-              <Button type="submit" disabled={saveMutation.isPending}>
-                {saveMutation.isPending ? 'جاري الحفظ...' : 'حفظ'}
-              </Button>
+              <Button type="submit" disabled={saveMutation.isPending}>{saveMutation.isPending ? 'جاري الحفظ...' : 'حفظ'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

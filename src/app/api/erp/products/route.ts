@@ -1,78 +1,96 @@
-import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { ok, created, list, badRequest, serverError, parsePagination, parseSearch } from '@/lib/erp/api-response'
 
+// GET /api/erp/products
 export async function GET(req: Request) {
   try {
+    const { page, pageSize, skip } = parsePagination(req)
+    const q = parseSearch(req)
     const url = new URL(req.url)
-    const search = url.searchParams.get('q') || ''
-    const categoryId = url.searchParams.get('categoryId') || undefined
-    const onlyActive = url.searchParams.get('active')
+    const categoryId = url.searchParams.get('categoryId')
+    const type = url.searchParams.get('type')
+    const active = url.searchParams.get('active')
 
     const where: any = {}
-    if (search) {
+    if (q) {
       where.OR = [
-        { name: { contains: search } },
-        { nameAr: { contains: search } },
-        { sku: { contains: search } },
-        { barcode: { contains: search } },
+        { sku: { contains: q } },
+        { barcode: { contains: q } },
+        { nameAr: { contains: q } },
+        { nameEn: { contains: q } },
       ]
     }
     if (categoryId) where.categoryId = categoryId
-    if (onlyActive === 'true') where.active = true
+    if (type) where.type = type
+    if (active === 'true') where.active = true
+    if (active === 'false') where.active = false
 
     const [data, total] = await Promise.all([
       db.product.findMany({
         where,
-        orderBy: { name: 'asc' },
-        take: 200,
+        skip,
+        take: pageSize,
         include: {
-          category: { select: { name: true, nameAr: true } },
-          stockItems: { select: { quantity: true, storehouseId: true } },
+          category: { select: { id: true, nameAr: true, code: true } },
+          uom: { select: { id: true, nameAr: true, code: true } },
+          taxCode: { select: { id: true, code: true, rate: true } },
+          valuationAccount: { select: { id: true, code: true, nameAr: true } },
+          cogsAccount: { select: { id: true, code: true, nameAr: true } },
+          revenueAccount: { select: { id: true, code: true, nameAr: true } },
         },
+        orderBy: { createdAt: 'desc' },
       }),
       db.product.count({ where }),
     ])
-
-    // Flatten stock total per product
-    const enriched = data.map((p) => ({
-      ...p,
-      stock: p.stockItems.reduce((s, si) => s + si.quantity, 0),
-      stockItems: undefined,
-    }))
-
-    return NextResponse.json({ data: enriched, total })
+    return list(data, total, page, pageSize)
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    return serverError(e.message)
   }
 }
 
+// POST /api/erp/products
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const count = await db.product.count()
-    const sku = body.sku?.trim() || `PROD-${String(count + 1).padStart(4, '0')}`
+    if (!body.nameAr) return badRequest('nameAr is required')
 
-    const created = await db.product.create({
+    const company = await db.company.findFirst()
+    if (!company) return badRequest('no company in db')
+
+    let sku = body.sku
+    if (!sku) {
+      const count = await db.product.count()
+      sku = `SKU-${String(count + 1).padStart(5, '0')}`
+    }
+
+    const product = await db.product.create({
       data: {
         sku,
-        barcode: body.barcode || null,
-        name: body.name,
-        nameAr: body.nameAr || null,
-        description: body.description || null,
-        categoryId: body.categoryId || null,
-        unit: body.unit || 'piece',
-        costPrice: Number(body.costPrice ?? 0),
-        salePrice: Number(body.salePrice ?? 0),
-        taxRate: Number(body.taxRate ?? 15),
-        minStock: Number(body.minStock ?? 0),
-        type: body.type || 'product',
-        image: body.image || null,
+        barcode: body.barcode,
+        nameAr: body.nameAr,
+        nameEn: body.nameEn,
+        description: body.description,
+        companyId: company.id,
+        categoryId: body.categoryId,
+        uomId: body.uomId,
+        type: body.type ?? 'product',
+        tracking: body.tracking ?? 'none',
+        costPrice: body.costPrice ?? 0,
+        salePrice: body.salePrice ?? 0,
+        costingMethod: body.costingMethod ?? 'fifo',
+        taxCodeId: body.taxCodeId,
+        minStock: body.minStock ?? 0,
+        maxStock: body.maxStock ?? 0,
+        reorderPoint: body.reorderPoint ?? 0,
+        valuationAccountId: body.valuationAccountId,
+        cogsAccountId: body.cogsAccountId,
+        revenueAccountId: body.revenueAccountId,
+        image: body.image,
         active: body.active ?? true,
       },
-      include: { category: true },
     })
-    return NextResponse.json(created, { status: 201 })
+    return created(product)
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    return serverError(e.message)
   }
 }

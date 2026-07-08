@@ -1,134 +1,95 @@
-import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { SYSTEM_ACCOUNTS } from '@/lib/erp/accounting-engine'
+import { ok, created, list, badRequest, serverError, parsePagination, parseSearch } from '@/lib/erp/api-response'
+import { nextNumber } from '@/lib/erp/number-sequence'
+import { reverseJournalEntry } from '@/lib/erp/accounting-engine'
 
+// GET /api/erp/sales-credit-notes
 export async function GET(req: Request) {
   try {
-    const { searchParams } = new URL(req.url)
-    const q = searchParams.get('q') ?? ''
-    const status = searchParams.get('status')
+    const { page, pageSize, skip } = parsePagination(req)
+    const q = parseSearch(req)
+    const url = new URL(req.url)
+    const status = url.searchParams.get('status')
+    const partnerId = url.searchParams.get('partnerId')
 
     const where: any = {}
-    if (q) {
-      where.OR = [
-        { code: { contains: q } },
-        { reason: { contains: q } },
-        { client: { name: { contains: q } } },
-      ]
-    }
-    if (status && status !== 'all') where.status = status
+    if (q) where.OR = [{ code: { contains: q } }, { reason: { contains: q } }]
+    if (status) where.status = status
+    if (partnerId) where.partnerId = partnerId
 
     const [data, total] = await Promise.all([
       db.salesCreditNote.findMany({
         where,
+        skip,
+        take: pageSize,
+        include: { partner: { select: { id: true, nameAr: true, nameEn: true, code: true } } },
         orderBy: { createdAt: 'desc' },
-        include: {
-          client: { select: { id: true, name: true, code: true, phone: true } },
-        },
       }),
       db.salesCreditNote.count({ where }),
     ])
-
-    const totalCredit = data.reduce((s, c) => s + c.total, 0)
-    const now = new Date()
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-    const thisMonth = data.filter((c) => new Date(c.createdAt) >= monthStart).reduce((s, c) => s + c.total, 0)
-
-    return NextResponse.json({
-      data,
-      total,
-      stats: { totalCredit, count: total, thisMonth },
-    })
+    return list(data, total, page, pageSize)
   } catch (e: any) {
-    console.error('sales-credit-notes GET error', e)
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    return serverError(e.message)
   }
 }
 
+// POST /api/erp/sales-credit-notes — create + reverse original invoice journal
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const subtotal = Number(body.subtotal ?? body.total ?? 0) || 0
-    const taxTotal = Number(body.taxTotal ?? 0) || 0
-    const total = subtotal + taxTotal || Number(body.total ?? 0)
+    if (!body.partnerId) return badRequest('partnerId is required')
 
-    const count = await db.salesCreditNote.count()
-    const code = `CN-${String(count + 1).padStart(4, '0')}`
+    const company = await db.company.findFirst()
+    if (!company) return badRequest('no company in db')
+    const branch = await db.branch.findFirst({ where: { companyId: company.id } })
 
-    const created = await db.$transaction(async (tx) => {
-      const cn = await tx.salesCreditNote.create({
-        data: {
-          code,
-          clientId: body.clientId,
-          invoiceId: body.invoiceId ?? null,
-          status: body.status ?? 'posted',
-          issueDate: body.issueDate ? new Date(body.issueDate) : new Date(),
-          subtotal,
-          taxTotal,
-          total,
-          reason: body.reason ?? null,
-          note: body.note ?? null,
-        },
-      })
+    const code = await nextNumber('sales_credit_note', company.id, branch?.id)
 
-      // Reduce client balance (credit note reduces AR)
-      await tx.client.update({
-        where: { id: body.clientId },
-        data: { balance: { decrement: total } },
-      })
+    const cn = await db.salesCreditNote.create({
+      data: {
+        companyId: company.id,
+        branchId: branch?.id,
+        code,
+        partnerId: body.partnerId,
+        invoiceId: body.invoiceId,
+        date: body.date ? new Date(body.date) : new Date(),
+        reason: body.reason,
+        status: body.status ?? 'draft',
+        subtotal: body.subtotal ?? 0,
+        taxTotal: body.taxTotal ?? 0,
+        total: body.total ?? 0,
+        notes: body.notes,
+      },
+      include: { partner: true },
+    })
 
-      // Reverse the original invoice's journal: Dr Sales Revenue + Output VAT, Cr AR
-      // Build reversed lines
-      const arAcc = await tx.account.findUnique({ where: { code: SYSTEM_ACCOUNTS.ACCOUNTS_RECEIVABLE } })
-      const salesAcc = await tx.account.findUnique({ where: { code: SYSTEM_ACCOUNTS.SALES_REVENUE } })
-      const vatAcc = await tx.account.findUnique({ where: { code: SYSTEM_ACCOUNTS.OUTPUT_VAT } })
-
-      const jeCount = await tx.journalEntry.count()
-      const jeCode = `JE-${String(jeCount + 1).padStart(5, '0')}`
-
-      const lines = [
-        { accountId: salesAcc!.id, debit: subtotal, credit: 0, description: 'عكس إيراد مبيعات' },
-        { accountId: vatAcc!.id, debit: taxTotal, credit: 0, description: 'عكس ضريبة قيمة مضافة' },
-        { accountId: arAcc!.id, debit: 0, credit: total, description: 'عكس ذمم مدينة' },
-      ]
-
-      await tx.journalEntry.create({
-        data: {
-          code: jeCode,
-          date: new Date(),
-          description: `إشعار دائن ${code}`,
-          refType: 'sales_credit_note',
-          refId: cn.id,
-          status: 'posted',
-          totalDebit: subtotal + taxTotal,
-          totalCredit: total,
-          lines: { create: lines },
-        },
-      })
-
-      // Update account balances
-      for (const l of lines) {
-        const acc = await tx.account.findUnique({ where: { id: l.accountId } })
-        if (!acc) continue
-        await tx.account.update({
-          where: { id: acc.id },
-          data: {
-            balance: { increment: (acc.type === 'asset' ? l.debit - l.credit : l.credit - l.debit) },
-          },
+    // If invoiceId provided and status posted: reverse the original invoice's journal
+    if (body.invoiceId && body.status === 'posted') {
+      const origInvoice = await db.salesInvoice.findUnique({ where: { id: body.invoiceId } })
+      if (origInvoice?.journalEntryId) {
+        const reversal = await reverseJournalEntry(
+          origInvoice.journalEntryId,
+          body.userId,
+          `إشعار دائن ${code}`
+        )
+        await db.salesCreditNote.update({
+          where: { id: cn.id },
+          data: { journalEntryId: reversal.id },
+        })
+        // Update partner.currentBalance (decrease AR for credit note)
+        await db.partner.update({
+          where: { id: body.partnerId },
+          data: { currentBalance: { decrement: body.total ?? 0 } },
         })
       }
+    }
 
-      return cn
+    const result = await db.salesCreditNote.findUnique({
+      where: { id: cn.id },
+      include: { partner: true },
     })
-
-    const fullCn = await db.salesCreditNote.findUnique({
-      where: { id: created.id },
-      include: { client: true },
-    })
-
-    return NextResponse.json(fullCn, { status: 201 })
+    return created(result)
   } catch (e: any) {
-    console.error('sales-credit-note POST error', e)
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    return serverError(e.message)
   }
 }

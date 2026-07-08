@@ -1,17 +1,17 @@
-import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { ok, notFound, badRequest, serverError } from '@/lib/erp/api-response'
 
-export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
-    const payment = await db.salesPayment.findUnique({
+    const item = await db.salesPayment.findUnique({
       where: { id },
-      include: { client: true },
+      include: { partner: true },
     })
-    if (!payment) return NextResponse.json({ error: 'not found' }, { status: 404 })
-    return NextResponse.json(payment)
+    if (!item) return notFound('Payment not found')
+    return ok(item)
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    return serverError(e.message)
   }
 }
 
@@ -19,28 +19,28 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   try {
     const { id } = await params
     const body = await req.json()
-    const updated = await db.salesPayment.update({
-      where: { id },
-      data: {
-        method: body.method,
-        reference: body.reference ?? null,
-        description: body.description ?? null,
-        status: body.status ?? 'completed',
-      },
-    })
-    return NextResponse.json(updated)
+    const exists = await db.salesPayment.findUnique({ where: { id } })
+    if (!exists) return notFound('Payment not found')
+    if (exists.status !== 'draft') return badRequest('Only draft payments can be edited')
+
+    const { id: _id, createdAt: _c, updatedAt: _u, ...rest } = body
+    const updated = await db.salesPayment.update({ where: { id }, data: rest })
+    return ok(updated)
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    return serverError(e.message)
   }
 }
 
-export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
-    await db.journalEntry.deleteMany({ where: { refType: 'sales_payment', refId: id } })
+    const exists = await db.salesPayment.findUnique({ where: { id } })
+    if (!exists) return notFound('Payment not found')
+    if (exists.status !== 'draft') return badRequest('Only draft payments can be deleted')
+
     await db.salesPayment.delete({ where: { id } })
-    return NextResponse.json({ success: true })
+    return ok({ success: true })
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    return serverError(e.message)
   }
 }

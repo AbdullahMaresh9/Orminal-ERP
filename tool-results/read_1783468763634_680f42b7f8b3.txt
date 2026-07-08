@@ -1,0 +1,232 @@
+  1001→                  Approval          debt and        selling.        controls.                           calculation, approval    B2B/credit       low-risk    mode.             enterprise      
+  1002→                                    loss-making                                                         thresholds.              sales.           sales may                     control.        
+  1003→                                    orders.                                                                                                       be simpler.                                   
+  1004→
+  1005→  Procurement     Three-Way Match   Avoid           Fraud           Automated        Exception          Tolerance rules and      Use for material Low-value   Two-way match for Global          Recommended
+  1006→                                    overpayment.    reduction.      matching.        workload.          exception queues.        procurement.     petty cash  services with     procurement     
+  1007→                                                                                                                                                  may be      approval.         practice.       
+  1008→                                                                                                                                                  excluded.                                     
+  1009→
+  1010→  Inventory       Append-only Stock Trace stock     Inventory       Reliable         Increases data     Partitioning/indexing.   Use for all      Do not      Snapshot +        ERP standard.   Recommended
+  1011→                  Ledger            truth.          auditability.   valuation.       volume.                                     stock postings.  overwrite   ledger.                           
+  1012→                                                                                                                                                  stock                                         
+  1013→                                                                                                                                                  balances                                      
+  1014→                                                                                                                                                  only.                                         
+  1015→
+  1016→  Manufacturing   BOM Version       Prevent         Engineering     Traceable        More               Effective dates,         Use in           Simple kits Template BOM.     Manufacturing   Recommended
+  1017→                  Control           uncontrolled    governance.     production.      administration.    approvals, ECO workflow. manufacturing.   may need                      best practice.  
+  1018→                                    product                                                                                                       lighter                                       
+  1019→                                    cost/quality                                                                                                  control.                                      
+  1020→                                    changes.                                                                                                                                                    
+  1021→
+  1022→  Security        Quarterly Access  Reduce          Audit           Lower breach     Requires           Role owners and review   Use in all       Do not rely Automated         SOX-like        Recommended
+  1023→                  Review            privilege       assurance.      impact.          governance.        reports.                 regulated        solely on   certification.    practice.       
+  1024→                                    creep.                                                                                       environments.    initial                                       
+  1025→                                                                                                                                                  setup.                                        
+  1026→
+  1027→  Integration     Idempotent APIs   Prevent         Reliable        Safe retries.    Requires key       External IDs, request    Use for all      Not needed  Message           Enterprise      Recommended
+  1028→                                    duplicate       integration.                     design.            hash, duplicate policy.  create/post      for simple  deduplication.    integration     
+  1029→                                    transactions.                                                                                APIs.            read APIs.                    standard.       
+  1030→
+  1031→  UX              Exception-first   Present what    Higher          Reduces search   Requires KPI/event Task inbox and alerts.   Use for all      Avoid       Report-first      Modern ERP UX.  Recommended
+  1032→                  Workspaces        needs action.   productivity.   time.            design.                                     operational      dashboard   dashboards.                       
+  1033→                                                                                                                                 roles.           clutter.                                      
+  1034→  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  1035→
+  1036→# **VOLUME 11 --- Global Gap Analysis**
+  1037→
+  1038→  ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  1039→  **Capability**   **Winner**             **Runner-up**          **Weakest**   **Reason**                      **Enterprise              **Risk**   **Complexity**   **Implementation   **Customization   **Future
+  1040→                                                                                                               Recommendation**                                      Cost**             Level**           Readiness**
+  1041→  ---------------- ---------------------- ---------------------- ------------- ------------------------------- ------------------------- ---------- ---------------- ------------------ ----------------- -------------
+  1042→  Enterprise       SAP S/4HANA            NetSuite               ERPNext       S/4HANA strongest for large     Adopt SAP-like finance    High       High             High               Low-Medium        High
+  1043→  Finance Depth                                                                enterprise finance; NetSuite    control model with                                                                         
+  1044→                                                                               strong cloud finance; ERPNext   NetSuite-like cloud                                                                        
+  1045→                                                                               needs customization for deep    workflow.                                                                                  
+  1046→                                                                               enterprise compliance.                                                                                                     
+  1047→
+  1048→  SME Simplicity   SAP Business One       Business Central       SAP S/4HANA   SAP B1 targets SME operations;  Adopt simplified          Medium     Medium           Medium             Medium            Medium
+  1049→                                                                               BC close runner-up with         operational flows for                                                                      
+  1050→                                                                               Microsoft ecosystem.            small                                                                                      
+  1051→                                                                                                               companies/subsidiaries.                                                                    
+  1052→
+  1053→  Customization    Odoo Enterprise        ERPNext                SAP S/4HANA   Odoo and ERPNext allow rapid    Adopt metadata/custom     Medium     Medium           Medium             High              High
+  1054→  Agility                                                        Public Cloud  model/UI changes; public cloud  field strategy with                                                                        
+  1055→                                                                               ERPs favor controlled           governance.                                                                                
+  1056→                                                                               extensibility.                                                                                                             
+  1057→
+  1058→  Cloud-native     NetSuite               Business Central       SAP Business  NetSuite is native SaaS; BC     Use SaaS-safe extension   Medium     Medium           Medium             Medium            High
+  1059→  Suite                                                          One on-prem   online also strong; B1 often    and upgrade model.                                                                         
+  1060→                                                                 deployments   deployed                                                                                                                   
+  1061→                                                                               partner/on-prem/cloud-hosted.                                                                                              
+  1062→
+  1063→  Microsoft        Business Central       NetSuite/Odoo          ERPNext       BC has strongest Microsoft      Adopt deep Excel/Power    Low        Medium           Medium             Medium            High
+  1064→  Productivity                            connectors             native        365/Power Platform alignment.   BI/Teams integration                                                                       
+  1065→                                                                                                               patterns.                                                                                  
+  1066→
+  1067→  Open Source      ERPNext                Odoo                   Closed SaaS   ERPNext provides source-level   Adopt transparent         Medium     Medium           Low-Medium         High              Medium
+  1068→  Transparency                            Community/Enterprise   suites        transparency; Odoo partially    metadata and open                                                                          
+  1069→                                          model                                depending edition.              integration                                                                                
+  1070→                                                                                                               documentation.                                                                             
+  1071→
+  1072→  Advanced         SAP S/4HANA EWM        NetSuite/Odoo with     ERPNext       SAP EWM is deepest for complex  Adopt multi-level         High       High             High               Medium            High
+  1073→  Warehouse                               add-ons                native        warehouse scenarios.            warehouse hierarchy and                                                                    
+  1074→                                                                                                               task engine where                                                                          
+  1075→                                                                                                               required.                                                                                  
+  1076→
+  1077→  UX Usability     Odoo Enterprise        Business Central       Classic       Odoo and BC are strong for      Adopt hybrid UX: Fiori    Medium     Medium           Medium             Medium            High
+  1078→                                                                 SAP/B1 dense  day-to-day usability; SAP Fiori role model + Odoo smart                                                                    
+  1079→                                                                 forms         strong if governed.             navigation + BC command                                                                    
+  1080→                                                                                                               search.                                                                                    
+  1081→
+  1082→  AI Readiness     Business               Odoo                   ERPNext       Microsoft, SAP and Oracle have  Build AI as               High       High             Medium             Medium            High
+  1083→                   Central/SAP/NetSuite                                        stronger current enterprise AI  permission-inheriting                                                                      
+  1084→                                                                               roadmaps.                       assistant, not                                                                             
+  1085→                                                                                                               uncontrolled automation.                                                                   
+  1086→
+  1087→  Workflow         NetSuite SuiteFlow     Odoo/Business Central  SAP B1 native SuiteFlow strong                Adopt visual workflow +   Medium     Medium           Medium             Medium            High
+  1088→  Automation                                                                   point-and-click; Odoo/BC        policy engine + audit                                                                      
+  1089→                                                                               flexible; B1 often              trail.                                                                                     
+  1090→                                                                               add-on/framework.                                                                                                          
+  1091→  ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  1092→
+  1093→# **VOLUME 12 --- Architecture Decision Records (ADR)**
+  1094→
+  1095→  -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  1096→  **Decision   **Title**         **Status**   **Context**                **Problem Statement** **Options Considered**   **Decision**                     **Consequences /
+  1097→  ID**                                                                                                                                                   Trade-offs**
+  1098→  ------------ ----------------- ------------ -------------------------- --------------------- ------------------------ -------------------------------- ------------------------
+  1099→  ADR-001      Adopt Unified     Accepted     Customers, suppliers,      Need one party        Unified BP, separate     Adopt unified Business Partner   Lower duplication and
+  1100→               Business Partner               contacts and related       identity with         customer/supplier        with role extensions.            better 360 view;
+  1101→               Model                          parties are often          multiple roles.       tables, hybrid.                                           requires migration/dedup
+  1102→                                              duplicated when modeled                                                                                    governance.
+  1103→                                              separately.                                                                                                
+  1104→
+  1105→  ADR-002      Use               Accepted     All modules generate       Need consistent legal Module-specific          Adopt central posting service    Stronger controls;
+  1106→               Ledger-Centric                 financial impact.          posting and audit.    postings, central        with immutable ledger entries.   performance and service
+  1107→               Accounting Engine                                                               posting engine.                                           availability critical.
+  1108→
+  1109→  ADR-003      Adopt Universal   Accepted     Finance needs one source   Need                  Separate ledgers,        Adopt universal journal concept  Simplifies reporting;
+  1110→               Journal Concept                for                        reconciliation-free   universal line-item      where feasible, not necessarily  requires careful
+  1111→               as Benchmark                   GL/subledger/controlling   analytics.            model.                   SAP table clone.                 dimensions model.
+  1112→               Pattern                        reporting.                                                                                                 
+  1113→
+  1114→  ADR-004      Workflow Engine   Accepted     Approvals exist across     Avoid each module     Module workflows only,   Adopt platform workflow engine   Consistency; must
+  1115→               as Cross-Cutting               finance, procurement, HR,  creating inconsistent platform workflow        with module policies.            support exceptions and
+  1116→               Platform Service               inventory and projects.    workflows.            engine.                                                   delegation.
+  1117→
+  1118→  ADR-005      Approval Engine   Accepted     Approval thresholds vary   Need configurable     Hard-coded approvals,    Adopt policy-based approval      Flexible; requires
+  1119→               with Policy                    by amount, risk, org unit  approvals.            policy matrix.           engine.                          governance and testing.
+  1120→               Matrix                         and document type.                                                                                         
+  1121→
+  1122→  ADR-006      Warehouse         Accepted     Different companies need   Need scalable         Flat warehouse,          Adopt hierarchical structure     Supports growth; may add
+  1123→               Hierarchy                      simple and advanced        location model.       hierarchical warehouse.  with optional advanced task      complexity for small
+  1124→               Supports                       warehouse operations.                                                     layer.                           users.
+  1125→               Warehouse → Zone                                                                                                                          
+  1126→               → Location → Bin                                                                                                                          
+  1127→
+  1128→  ADR-007      Inventory Ledger  Accepted     Stock balances can be      Need traceable stock  Balance-only,            Use append-only stock ledger and Higher data volume;
+  1129→               Append-only                    manipulated if only        movement.             append-only ledger plus  valuation layers.                requires
+  1130→                                              current quantity is                              calculated balance.                                       indexing/partitioning.
+  1131→                                              stored.                                                                                                    
+  1132→
+  1133→  ADR-008      Pricing Engine    Accepted     Pricing logic spans sales, Need reusable         Inline price rules,      Adopt pricing engine service.    Powerful but requires
+  1134→               Separated from                 contracts, promotions,     pricing.              separate pricing engine.                                  explainability.
+  1135→               Sales Documents                customers and currencies.                                                                                  
+  1136→
+  1137→  ADR-009      Security Model    Accepted     Role alone cannot control  Need fine-grained     RBAC only, ABAC only,    Adopt hybrid security with       More secure; higher
+  1138→               Combines RBAC +                enterprise data            access.               hybrid.                  scopes.                          design complexity.
+  1139→               ABAC + Data                    boundaries.                                                                                                
+  1140→               Scopes                                                                                                                                    
+  1141→
+  1142→  ADR-010      API Strategy is   Accepted     Integrations require       Avoid direct DB       Direct DB, ad-hoc APIs,  Use versioned APIs through       Governance overhead;
+  1143→               API Gateway +                  secure, stable interfaces. integrations.         governed API gateway.    gateway with OAuth/scopes/audit. safer integrations.
+  1144→               Versioned                                                                                                                                 
+  1145→               Services                                                                                                                                  
+  1146→
+  1147→  ADR-011      Event-Driven      Accepted     Posting and external sync  Need reliable async   Synchronous only,        Adopt outbox/event bus for       Eventual consistency;
+  1148→               Integration for                can be slow/unreliable.    processing.           event-driven.            integration side effects.        requires monitoring.
+  1149→               Cross-System Side                                                                                                                         
+  1150→               Effects                                                                                                                                   
+  1151→
+  1152→  ADR-012      Reporting         Accepted     Heavy reports degrade      Need performance and  Report on OLTP only,     Use operational reports for      Data latency; lineage
+  1153→               Strategy                       transactions.              analytics.            data                     real-time and analytical store   required.
+  1154→               Separates                                                                       warehouse/projections.   for BI.                          
+  1155→               Operational and                                                                                                                           
+  1156→               Analytical                                                                                                                                
+  1157→               Workloads                                                                                                                                 
+  1158→
+  1159→  ADR-013      Notification      Accepted     Emails, in-app alerts and  Need traceable        Module-specific          Adopt central notification       Requires preference and
+  1160→               Strategy Uses                  approvals are scattered.   notification          messages, central        service with templates and       retry design.
+  1161→               Central                                                   delivery.             notification service.    channels.                        
+  1162→               Notification                                                                                                                              
+  1163→               Service                                                                                                                                   
+  1164→
+  1165→  ADR-014      Audit Strategy is Accepted     Audit records are legal    Need trustworthy      Editable logs,           Adopt append-only audit with     Storage growth; archival
+  1166→               Append-only and                and security evidence.     trail.                append-only logs.        restricted access and retention. policies needed.
+  1167→               Tamper-evident                                                                                                                            
+  1168→
+  1169→  ADR-015      Master Data       Accepted     Bad master data causes     Need governance.      Open master creation,    Adopt steward-owned approvals,   More process steps;
+  1170→               Strategy Requires              downstream errors and                            governed lifecycle.      duplicates detection and         higher data quality.
+  1171→               Stewardship and                fraud.                                                                    versioning.                      
+  1172→               Approval                                                                                                                                  
+  1173→
+  1174→  ADR-016      Number Sequence   Accepted     Document numbers are legal Need compliant        Reusable numbers, scoped Adopt                            Gaps must be reported,
+  1175→               Strategy is                    identifiers.               numbering.            sequences.               company/branch/document/fiscal   not hidden.
+  1176→               Legal, Scoped and                                                                                        sequence rules with no reuse     
+  1177→               Non-Reusable                                                                                             after cancellation.              
+  1178→
+  1179→  ADR-017      Costing Method is Accepted     Different industries use   Need flexible         Single global method,    Support policy-driven costing    Complex reconciliation;
+  1180→               Configurable by                standard, AVCO, FIFO or    valuation.            configurable costing.    with strong financial controls.  requires education.
+  1181→               Product/Company                specific identification.                                                                                   
+  1182→               Policy                                                                                                                                    
+  1183→
+  1184→  ADR-018      Posting           Accepted     Posted documents must      Need correction       Edit posted records,     Use reversal/amendment model.    Users must understand
+  1185→               Architecture                   remain legally stable.     mechanism.            reversal/amendment.                                       correction patterns.
+  1186→               Allows Draft →                                                                                                                            
+  1187→               Post → Reverse,                                                                                                                           
+  1188→               Not Edit Posted                                                                                                                           
+  1189→  -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  1190→
+  1191→# **Appendix A --- Official Vendor Concept Register**
+  1192→
+  1193→  -----------------------------------------------------------------------
+  1194→  **Vendor**                          **Concepts Referenced for
+  1195→                                      Benchmarking**
+  1196→  ----------------------------------- -----------------------------------
+  1197→  SAP S/4HANA                         Universal Journal, Business
+  1198→                                      Partner, Material Master, Fiori
+  1199→                                      Launchpad, HANA/CDS, Clean Core,
+  1200→                                      SAP BTP extensibility, EWM,
+  1201→                                      embedded analytics.
+  1202→
+  1203→  SAP Business One                    Business Partner and Item masters,
+  1204→                                      marketing documents, automatic
+  1205→                                      journal entries, SDK, Service
+  1206→                                      Layer, Integration Framework,
+  1207→                                      company database model.
+  1208→
+  1209→  Odoo Enterprise                     Apps/modules, Odoo ORM,
+  1210→                                      res.partner, account.move,
+  1211→                                      stock.move, smart buttons, chatter,
+  1212→                                      Studio, external APIs, Odoo.sh.
+  1213→
+  1214→  Oracle NetSuite                     SuiteCloud, SuiteFlow, SuiteScript,
+  1215→                                      custom records/fields/segments,
+  1216→                                      OneWorld, multi-book, saved
+  1217→                                      searches, system notes, role
+  1218→                                      centers.
+  1219→
+  1220→  Microsoft Dynamics 365 Business     Role Centers, Tell Me search, AL
+  1221→  Central                             extensions, permission sets,
+  1222→                                      dimensions, posting groups, item
+  1223→                                      ledger/value entries, Power
+  1224→                                      Platform, Copilot.
+  1225→
+  1226→  ERPNext                             Frappe DocTypes, role-based
+  1227→                                      permissions, user permissions,
+  1228→                                      workflow states, GL Entry, Stock
+  1229→                                      Ledger Entry, naming series, REST
+  1230→                                      API.
+  1231→  -----------------------------------------------------------------------
+  1232→
