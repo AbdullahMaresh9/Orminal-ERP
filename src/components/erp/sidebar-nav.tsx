@@ -222,9 +222,11 @@ export function SidebarNav() {
                       : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
                   )}
                 >
+                  {/* Icon first (right in RTL, left in LTR) */}
                   <GroupIcon className={cn('size-4 shrink-0', hasActiveChild ? 'text-primary' : 'text-muted-foreground group-hover:text-sidebar-accent-foreground')} />
+                  {/* Text */}
                   <span className="truncate flex-1">{t(group.labelKey)}</span>
-                  {/* Chevron — rotates on expand. In RTL, the chevron points left when collapsed. */}
+                  {/* Chevron at the END (left in RTL, right in LTR) — rotates on expand */}
                   <ChevronDown
                     className={cn(
                       'size-4 shrink-0 text-muted-foreground transition-transform duration-200',
