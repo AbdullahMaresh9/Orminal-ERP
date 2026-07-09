@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useNav, type ModuleKey } from '@/stores/nav-store'
 import { useT } from '@/lib/i18n/use-t'
 import { cn } from '@/lib/utils'
@@ -10,8 +11,9 @@ import {
   BarChart3, Building2, Handshake, Activity, UserCircle, ShieldCheck,
   ScrollText, Bell, UserCog, Settings, ClipboardList, FileSpreadsheet,
   ArrowLeftRight, FileBarChart, FilePlus, FileMinus, PackageCheck,
-  Boxes, Factory, Cog, ClipboardList as ClipboardListIcon, Users, UsersRound,
-  CalendarDays, CalendarCheck, Banknote, type LucideIcon,
+  Boxes, Factory, Cog, Users, UsersRound,
+  CalendarDays, CalendarCheck, Banknote, ChevronDown, ChevronLeft,
+  type LucideIcon,
 } from 'lucide-react'
 import { RoleBadge } from './role-badge'
 
@@ -26,7 +28,6 @@ interface NavGroup {
   items: NavItem[]
 }
 
-// 10 unified groups per Ormenal spec (16 modules)
 const NAV: NavGroup[] = [
   {
     labelKey: 'nav.group.overview',
@@ -77,7 +78,7 @@ const NAV: NavGroup[] = [
       { key: 'stock-on-hand', labelKey: 'module.stock-on-hand', icon: Package },
       { key: 'stock-transfers', labelKey: 'module.stock-transfers', icon: ArrowLeftRight },
       { key: 'deliveries', labelKey: 'module.deliveries', icon: Truck },
-      { key: 'inventory-adjustments', labelKey: 'module.inventory-adjustments', icon: ClipboardListIcon },
+      { key: 'inventory-adjustments', labelKey: 'module.inventory-adjustments', icon: ClipboardList },
       { key: 'stock-moves', labelKey: 'module.stock-moves', icon: FileSpreadsheet },
     ],
   },
@@ -136,13 +137,41 @@ const NAV: NavGroup[] = [
 
 export function SidebarNav() {
   const { activeModule, setActiveModule } = useNav()
-  const { t } = useT()
+  const { t, isRTL } = useT()
+
+  // Track which groups are expanded. Default: the group containing the active module is expanded.
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => {
+    const initial = new Set<string>()
+    for (const group of NAV) {
+      if (group.items.some((item) => item.key === activeModule)) {
+        initial.add(group.labelKey)
+      }
+    }
+    // Always expand single-item groups (like Overview, Reports)
+    for (const group of NAV) {
+      if (group.items.length === 1) initial.add(group.labelKey)
+    }
+    return initial
+  })
+
+  const toggleGroup = (labelKey: string) => {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev)
+      if (next.has(labelKey)) next.delete(labelKey)
+      else next.add(labelKey)
+      return next
+    })
+  }
+
+  const handleItemClick = (key: ModuleKey) => {
+    setActiveModule(key)
+  }
 
   return (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
       {/* Brand */}
       <div className="flex items-center gap-3 px-4 h-16 shrink-0 border-b border-sidebar-border">
-        <img src="/logo.png" alt="أورمنال" className="size-9 rounded-xl shadow-sm object-contain" />
+        <img src="/logo.png" alt="أورمنال" className="size-9 rounded-xl shadow-sm object-contain shrink-0" />
         <div className="min-w-0">
           <p className="font-bold text-sm leading-tight truncate">{t('app.name')}</p>
           <p className="text-[10px] text-muted-foreground leading-tight truncate">{t('app.tagline')}</p>
@@ -151,36 +180,83 @@ export function SidebarNav() {
 
       {/* Nav */}
       <ScrollArea className="flex-1 min-h-0 px-2 py-3 scrollbar-thin">
-        <nav className="flex flex-col gap-1">
+        <nav className="flex flex-col gap-0.5">
           {NAV.map((group) => {
             const GroupIcon = group.icon
+            const isExpanded = expandedGroups.has(group.labelKey)
+            const hasActiveChild = group.items.some((item) => item.key === activeModule)
+            const isSingleItem = group.items.length === 1
+
+            // For single-item groups, render directly as a nav item (no expand/collapse)
+            if (isSingleItem) {
+              const item = group.items[0]
+              const Icon = item.icon
+              const active = activeModule === item.key
+              return (
+                <button
+                  key={group.labelKey}
+                  onClick={() => handleItemClick(item.key)}
+                  className={cn(
+                    'group flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors text-start w-full',
+                    active
+                      ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-sm'
+                      : 'text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+                  )}
+                >
+                  <Icon className={cn('size-4 shrink-0', active ? 'text-sidebar-primary-foreground' : 'text-muted-foreground group-hover:text-sidebar-accent-foreground')} />
+                  <span className="truncate flex-1">{t(item.labelKey)}</span>
+                </button>
+              )
+            }
+
+            // For multi-item groups, render as collapsible parent
             return (
-              <div key={group.labelKey} className="mb-2">
-                <div className="flex items-center gap-2 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">
-                  <GroupIcon className="size-3" />
-                  <span>{t(group.labelKey)}</span>
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  {group.items.map((item) => {
-                    const Icon = item.icon
-                    const active = activeModule === item.key
-                    return (
-                      <button
-                        key={item.key}
-                        onClick={() => setActiveModule(item.key)}
-                        className={cn(
-                          'group flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors text-start',
-                          active
-                            ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-sm'
-                            : 'text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
-                        )}
-                      >
-                        <Icon className={cn('size-4 shrink-0', active ? 'text-sidebar-primary-foreground' : 'text-muted-foreground group-hover:text-sidebar-accent-foreground')} />
-                        <span className="truncate">{t(item.labelKey)}</span>
-                      </button>
-                    )
-                  })}
-                </div>
+              <div key={group.labelKey} className="mb-0.5">
+                {/* Parent button */}
+                <button
+                  onClick={() => toggleGroup(group.labelKey)}
+                  className={cn(
+                    'group flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-semibold transition-colors w-full text-start',
+                    hasActiveChild
+                      ? 'text-sidebar-foreground'
+                      : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+                  )}
+                >
+                  <GroupIcon className={cn('size-4 shrink-0', hasActiveChild ? 'text-primary' : 'text-muted-foreground group-hover:text-sidebar-accent-foreground')} />
+                  <span className="truncate flex-1">{t(group.labelKey)}</span>
+                  {/* Chevron — rotates on expand. In RTL, the chevron points left when collapsed. */}
+                  <ChevronDown
+                    className={cn(
+                      'size-4 shrink-0 text-muted-foreground transition-transform duration-200',
+                      isExpanded ? 'rotate-180' : ''
+                    )}
+                  />
+                </button>
+
+                {/* Children — collapsible */}
+                {isExpanded && (
+                  <div className="flex flex-col gap-0.5 mt-0.5 ms-4 ps-2 border-s border-sidebar-border/60">
+                    {group.items.map((item) => {
+                      const Icon = item.icon
+                      const active = activeModule === item.key
+                      return (
+                        <button
+                          key={item.key}
+                          onClick={() => handleItemClick(item.key)}
+                          className={cn(
+                            'group flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-sm transition-colors text-start w-full',
+                            active
+                              ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-sm font-medium'
+                              : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground font-normal'
+                          )}
+                        >
+                          <Icon className={cn('size-3.5 shrink-0', active ? 'text-sidebar-primary-foreground' : 'text-muted-foreground group-hover:text-sidebar-accent-foreground')} />
+                          <span className="truncate flex-1">{t(item.labelKey)}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
             )
           })}
