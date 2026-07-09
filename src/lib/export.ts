@@ -56,7 +56,7 @@ export function printHTML(html: string, title = 'مستند') {
   body { font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif; color: #1a1a1a; padding: 24px; background: #fff; }
   .doc-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #16a34a; padding-bottom: 16px; margin-bottom: 20px; }
   .doc-header .company { display: flex; gap: 12px; align-items: center; }
-  .doc-header .company .logo { width: 56px; height: 56px; background: #16a34a; color: #fff; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-weight: 800; font-size: 20px; }
+  .doc-header .company .logo { width: 56px; height: 56px; object-fit: contain; border-radius: 8px; }
   .doc-header .company .info h2 { font-size: 18px; color: #16a34a; }
   .doc-header .company .info p { font-size: 12px; color: #555; margin-top: 2px; }
   .doc-header .doc-meta { text-align: left; }
@@ -94,7 +94,7 @@ export function printHTML(html: string, title = 'مستند') {
 <body>
 ${html}
 <div class="footer">
-  ${title} · تم إنشاؤه بواسطة نظام الأستاذ المحاسبي · ${new Date().toLocaleString('ar-SA')}
+  ${title} · تم إنشاؤه بواسطة نظام أورمنال المحاسبي · ${new Date().toLocaleString('ar-SA')}
 </div>
 <script>
   window.onload = function() { setTimeout(function() { window.print(); }, 300); }

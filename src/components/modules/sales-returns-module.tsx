@@ -256,9 +256,9 @@ export function SalesReturnsModule() {
     const html = `
       <div class="doc-header">
         <div class="company">
-          <div class="logo">أ</div>
+          <img src="/logo.png" class="logo" style="width:56px;height:56px;object-fit:contain;border-radius:8px;" />
           <div class="info">
-            <h2>الأستاذ</h2>
+            <h2>أورمنال</h2>
             <p>نظام المحاسبة والإدارة المالية</p>
           </div>
         </div>

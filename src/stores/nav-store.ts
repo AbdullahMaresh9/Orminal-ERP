@@ -47,7 +47,7 @@ export const useNav = create<NavState>()(
       setMobileSidebarOpen: (v) => set({ mobileSidebarOpen: v }),
     }),
     {
-      name: 'alostaz-nav-v2',
+      name: 'ormenal-nav-v2',
       skipHydration: true,
       partialize: (s) => ({ activeModule: s.activeModule, sidebarCollapsed: s.sidebarCollapsed }),
     }

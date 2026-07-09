@@ -170,8 +170,8 @@ export function PayrollRunsModule() {
     const html = `
       <div class="doc-header">
         <div class="company">
-          <div class="logo">أ</div>
-          <div class="info"><h2>الأستاذ</h2><p>ملخص رواتب الموظفين</p></div>
+          <img src="/logo.png" class="logo" style="width:56px;height:56px;object-fit:contain;border-radius:8px;" />
+          <div class="info"><h2>أورمنال</h2><p>ملخص رواتب الموظفين</p></div>
         </div>
         <div class="doc-meta">
           <div class="type">تشغيل رواتب</div>

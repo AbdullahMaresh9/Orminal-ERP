@@ -22,12 +22,12 @@ const cairo = Cairo({
 });
 
 export const metadata: Metadata = {
-  title: "الأستاذ — نظام المحاسبة والإدارة المالية",
+  title: "أورمنال — نظام المحاسبة والإدارة المالية",
   description: "نظام محاسبي متكامل لإدارة المبيعات والمشتريات والمخزون والمحاسبة والمالية",
   keywords: ["محاسبة", "إدارة", "ERP", "فواتير", "قيود", "مخزون"],
-  authors: [{ name: "Alostaz" }],
+  authors: [{ name: "Ormenal" }],
   icons: {
-    icon: "/logo.svg",
+    icon: "/logo.png",
   },
 };
 

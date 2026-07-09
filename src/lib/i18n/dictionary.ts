@@ -5,7 +5,7 @@ export type Locale = 'ar' | 'en'
 
 export const dictionary = {
   // App
-  'app.name': { ar: 'الأستاذ', en: 'Alostaz' },
+  'app.name': { ar: 'أورمنال', en: 'Ormenal' },
   'app.tagline': { ar: 'نظام المحاسبة والإدارة المالية', en: 'Accounting & Financial Management System' },
 
   // Common actions
@@ -376,7 +376,7 @@ export const dictionary = {
 
   // Reports
   'reports.balanceSheet': { ar: 'الميزانية العمومية', en: 'Balance Sheet' },
-  'reports.generalLedger': { ar: 'الأستاذ العام', en: 'General Ledger' },
+  'reports.generalLedger': { ar: 'أورمنال العام', en: 'General Ledger' },
   'reports.incomeStatement': { ar: 'قائمة الدخل', en: 'Income Statement' },
   'reports.trialBalance': { ar: 'ميزان المراجعة', en: 'Trial Balance' },
   'reports.taxDetailed': { ar: 'التقارير الضريبية المفصّلة', en: 'Detailed Tax Report' },

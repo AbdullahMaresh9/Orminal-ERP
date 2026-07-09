@@ -225,7 +225,7 @@ export function Topbar() {
           <DropdownMenuLabel>
             <div className="flex flex-col">
               <span className="text-sm font-semibold">مدير النظام</span>
-              <span className="text-xs text-muted-foreground font-normal">admin@alostaz.io</span>
+              <span className="text-xs text-muted-foreground font-normal">admin@ormenal.io</span>
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />

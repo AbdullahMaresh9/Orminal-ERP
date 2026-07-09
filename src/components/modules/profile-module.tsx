@@ -146,7 +146,7 @@ export function ProfileModule() {
   // density is read from localStorage AFTER mount to avoid hydration mismatch.
   const [density, setDensity] = useState<'comfortable' | 'compact'>('comfortable')
   useEffect(() => {
-    const saved = localStorage.getItem('alostaz-density') as 'comfortable' | 'compact' | null
+    const saved = localStorage.getItem('ormenal-density') as 'comfortable' | 'compact' | null
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (saved) setDensity(saved)
   }, [])
@@ -217,7 +217,7 @@ export function ProfileModule() {
       locale,
       timezone,
     })
-    localStorage.setItem('alostaz-density', density)
+    localStorage.setItem('ormenal-density', density)
     toast.success('تم حفظ التفضيلات')
   }
 

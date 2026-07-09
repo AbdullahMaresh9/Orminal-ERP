@@ -232,9 +232,9 @@ export function ClientsModule() {
     const html = `
       <div class="doc-header">
         <div class="company">
-          <div class="logo">أ</div>
+          <img src="/logo.png" class="logo" style="width:56px;height:56px;object-fit:contain;border-radius:8px;" />
           <div class="info">
-            <h2>الأستاذ للأنظمة المحاسبية</h2>
+            <h2>أورمنال للأنظمة المحاسبية</h2>
             <p>كشف حساب عميل</p>
           </div>
         </div>

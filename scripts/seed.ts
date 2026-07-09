@@ -60,15 +60,15 @@ async function main() {
   const company = await db.company.create({
     data: {
       code: 'HQ',
-      nameAr: 'مؤسسة الأستاذ التجارية',
-      nameEn: 'Alostaz Trading Co.',
-      legalName: 'Alostaz Trading Establishment',
+      nameAr: 'مؤسسة أورمنال التجارية',
+      nameEn: 'Ormenal Trading Co.',
+      legalName: 'Ormenal Trading Establishment',
       taxNumber: '300000000000003',
       vatNumber: '300000000000003',
       crNumber: '1010000000',
       address: 'الرياض، المملكة العربية السعودية',
       phone: '0112345678',
-      email: 'info@alostaz.io',
+      email: 'info@ormenal.io',
       currencyId: sar.id,
       timezone: 'Asia/Riyadh',
       locale: 'ar',
@@ -218,7 +218,7 @@ async function main() {
   const admin = await db.user.create({
     data: {
       username: 'admin',
-      email: 'admin@alostaz.io',
+      email: 'admin@ormenal.io',
       nameAr: 'مدير النظام',
       nameEn: 'System Administrator',
       passwordHash: '$2a$10$placeholderhash', // In production, use bcrypt
@@ -299,12 +299,12 @@ async function main() {
 
   // === Settings ===
   const settings = [
-    { key: 'company.name', value: 'مؤسسة الأستاذ التجارية' },
+    { key: 'company.name', value: 'مؤسسة أورمنال التجارية' },
     { key: 'company.currency', value: 'SAR' },
     { key: 'company.timezone', value: 'Asia/Riyadh' },
     { key: 'company.address', value: 'الرياض، المملكة العربية السعودية' },
     { key: 'company.phone', value: '0112345678' },
-    { key: 'company.email', value: 'info@alostaz.io' },
+    { key: 'company.email', value: 'info@ormenal.io' },
     { key: 'company.taxNumber', value: '300000000000003' },
     { key: 'company.vatNumber', value: '300000000000003' },
     { key: 'accounting.defaultTaxRate', value: '15' },
@@ -316,7 +316,7 @@ async function main() {
     { key: 'appearance.language', value: 'ar' },
     { key: 'zatca.enabled', value: 'false' },
     { key: 'zatca.environment', value: 'sandbox' },
-    { key: 'doc.headerTitle', value: 'الأستاذ — نظام المحاسبة' },
+    { key: 'doc.headerTitle', value: 'أورمنال — نظام المحاسبة' },
     { key: 'doc.footerNote', value: 'شكراً لتعاملكم معنا' },
   ]
   for (const s of settings) {
@@ -368,7 +368,7 @@ async function main() {
   console.log(`   Products: ${products.length}`)
   console.log(`   Partners: ${partners.length} (${partners.filter(p => p.isCustomer).length} customers, ${partners.filter(p => p.isSupplier).length} suppliers)`)
   console.log(`   Roles: ${roles.length}`)
-  console.log(`   User: admin@alostaz.io (password: admin123 — set hash in production)`)
+  console.log(`   User: admin@ormenal.io (password: admin123 — set hash in production)`)
 }
 
 main()

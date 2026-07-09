@@ -26,7 +26,7 @@ interface NavGroup {
   items: NavItem[]
 }
 
-// 10 unified groups per Alostaz spec (16 modules)
+// 10 unified groups per Ormenal spec (16 modules)
 const NAV: NavGroup[] = [
   {
     labelKey: 'nav.group.overview',
@@ -142,9 +142,7 @@ export function SidebarNav() {
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
       {/* Brand */}
       <div className="flex items-center gap-3 px-4 h-16 shrink-0 border-b border-sidebar-border">
-        <div className="size-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-extrabold text-lg shadow-sm">
-          أ
-        </div>
+        <img src="/logo.png" alt="أورمنال" className="size-9 rounded-xl shadow-sm object-contain" />
         <div className="min-w-0">
           <p className="font-bold text-sm leading-tight truncate">{t('app.name')}</p>
           <p className="text-[10px] text-muted-foreground leading-tight truncate">{t('app.tagline')}</p>

@@ -177,8 +177,8 @@ export function PosModule() {
     const html = `
       <div class="doc-header">
         <div class="company">
-          <div class="logo">أ</div>
-          <div class="info"><h2>مؤسسة الأستاذ</h2><p>نقطة البيع</p></div>
+          <img src="/logo.png" class="logo" style="width:56px;height:56px;object-fit:contain;border-radius:8px;" />
+          <div class="info"><h2>مؤسسة أورمنال</h2><p>نقطة البيع</p></div>
         </div>
         <div class="doc-meta">
           <div class="type">إيصال</div>

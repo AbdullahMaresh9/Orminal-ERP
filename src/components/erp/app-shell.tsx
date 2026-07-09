@@ -47,7 +47,7 @@ export function AppShell() {
         <main className="flex-1 overflow-y-auto overscroll-contain scrollbar-thin min-h-0">
           <ActiveModule />
           <footer className="mt-auto border-t bg-muted/30 py-4 px-6 text-center text-xs text-muted-foreground shrink-0">
-            <span className="font-semibold text-foreground">الأستاذ</span> — نظام المحاسبة والإدارة المالية ·
+            <span className="font-semibold text-foreground">أورمنال</span> — نظام المحاسبة والإدارة المالية ·
             جميع الحقوق محفوظة © {year}
           </footer>
         </main>
