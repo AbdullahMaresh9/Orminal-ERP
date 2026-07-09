@@ -228,7 +228,7 @@ export function SalesInvoicesModule() {
           <img src="/logo.png" class="logo" style="width:56px;height:56px;object-fit:contain;border-radius:8px;" />
           <div class="info">
             <h2>أورمنال</h2>
-            <p>نظام المحاسبة والإدارة المالية</p>
+            <p>نظام إدارة موارد المؤسسات ERP</p>
           </div>
         </div>
         <div class="doc-meta">

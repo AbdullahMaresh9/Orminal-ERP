@@ -203,7 +203,7 @@ export function SuppliersModule() {
         <div class="company">
           <img src="/logo.png" class="logo" style="width:56px;height:56px;object-fit:contain;border-radius:8px;" />
           <div class="info">
-            <h2>أورمنال — نظام محاسبي</h2>
+            <h2>أورمنال — نظام إدارة موارد المؤسسات ERP</h2>
             <p>كشف حساب مورد</p>
           </div>
         </div>

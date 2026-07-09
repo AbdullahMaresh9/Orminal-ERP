@@ -188,3 +188,41 @@ td.num-cell .num, th.num-cell .num {
   direction: ltr;
   unicode-bidi: embed;
 }
+
+/* Table cell overflow protection — prevents data from one column bleeding into another.
+   Text cells get max-width + ellipsis; numeric cells stay compact. */
+td {
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+td.num-cell {
+  max-width: 160px;
+}
+
+/* Cells with explicit truncate class — tighter max-width */
+td.cell-truncate {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Action button cells — no max-width restriction */
+td:last-child,
+td:has(.flex.items-center.gap-0\.5) {
+  max-width: none;
+}
+
+/* Code/SKU cells — monospace, compact */
+td .font-mono {
+  letter-spacing: -0.02em;
+}
+
+/* Table row hover — subtle highlight */
+table tbody tr:hover {
+  background-color: oklch(0.97 0.01 150 / 0.6);
+}
+.dark table tbody tr:hover {
+  background-color: oklch(0.27 0.02 160 / 0.4);
+}

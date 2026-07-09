@@ -1,15 +1,26 @@
-// Formatting utilities for currency, numbers, dates — Arabic-first
+// Formatting utilities — clean Latin digits with Arabic currency suffix
+// Numbers always render with Latin digits (1,234.50) for table readability;
+// currency uses compact "ر.س" suffix. Locale-aware date formatting.
 
-const CURRENCY = 'SAR'
+const CURRENCY_SUFFIX_AR = 'ر.س'
+const CURRENCY_SUFFIX_EN = 'SAR'
 
-export function formatCurrency(amount: number | null | undefined, currency: string = CURRENCY): string {
+export function formatCurrency(amount: number | null | undefined, currency: string = 'SAR'): string {
   const v = Number(amount ?? 0)
-  return new Intl.NumberFormat('ar-SA', {
-    style: 'currency',
-    currency,
+  const num = new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(v)
+  return `${num} ${CURRENCY_SUFFIX_AR}`
+}
+
+export function formatCurrencyEn(amount: number | null | undefined, currency: string = 'SAR'): string {
+  const v = Number(amount ?? 0)
+  const num = new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(v)
+  return `${CURRENCY_SUFFIX_EN} ${num}`
 }
 
 export function formatNumber(n: number | null | undefined, decimals = 2): string {
@@ -34,34 +45,27 @@ export function formatDate(date: Date | string | null | undefined, locale: 'ar' 
   if (!date) return '—'
   const d = typeof date === 'string' ? new Date(date) : date
   if (isNaN(d.getTime())) return '—'
-  return new Intl.DateTimeFormat(locale === 'ar' ? 'ar-SA' : 'en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  }).format(d)
+  if (locale === 'ar') {
+    const months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر']
+    return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`
+  }
+  return new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric' }).format(d)
 }
 
 export function formatDateTime(date: Date | string | null | undefined, locale: 'ar' | 'en' = 'ar'): string {
   if (!date) return '—'
   const d = typeof date === 'string' ? new Date(date) : date
   if (isNaN(d.getTime())) return '—'
-  return new Intl.DateTimeFormat(locale === 'ar' ? 'ar-SA' : 'en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(d)
+  const dateStr = formatDate(d, locale)
+  const timeStr = new Intl.DateTimeFormat('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }).format(d)
+  return `${dateStr} ${timeStr}`
 }
 
 export function formatTime(date: Date | string | null | undefined): string {
   if (!date) return '—'
   const d = typeof date === 'string' ? new Date(date) : date
   if (isNaN(d.getTime())) return '—'
-  return new Intl.DateTimeFormat('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(d)
+  return new Intl.DateTimeFormat('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }).format(d)
 }
 
 export function relativeTime(date: Date | string): string {

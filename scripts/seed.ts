@@ -316,7 +316,7 @@ async function main() {
     { key: 'appearance.language', value: 'ar' },
     { key: 'zatca.enabled', value: 'false' },
     { key: 'zatca.environment', value: 'sandbox' },
-    { key: 'doc.headerTitle', value: 'أورمنال — نظام المحاسبة' },
+    { key: 'doc.headerTitle', value: 'أورمنال — نظام إدارة موارد المؤسسات ERP' },
     { key: 'doc.footerNote', value: 'شكراً لتعاملكم معنا' },
   ]
   for (const s of settings) {

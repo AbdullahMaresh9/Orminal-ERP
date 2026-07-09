@@ -6,7 +6,7 @@ export type Locale = 'ar' | 'en'
 export const dictionary = {
   // App
   'app.name': { ar: 'أورمنال', en: 'Ormenal' },
-  'app.tagline': { ar: 'نظام المحاسبة والإدارة المالية', en: 'Accounting & Financial Management System' },
+  'app.tagline': { ar: 'نظام إدارة موارد المؤسسات ERP', en: 'Enterprise Resource Planning System' },
 
   // Common actions
   'action.save': { ar: 'حفظ', en: 'Save' },
