@@ -409,7 +409,7 @@ export function JournalEntriesModule() {
             <DialogTitle>قيد محاسبي جديد</DialogTitle>
             <DialogDescription>أضف بنود القيد وتأكد من توازن المدين والدائن</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+                              <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
               <div className="space-y-1.5 md:col-span-2">
                 <Label htmlFor="description">البيان</Label>
@@ -543,6 +543,7 @@ export function JournalEntriesModule() {
             </div>
           </div>
 
+          
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>إلغاء</Button>
             <Button
@@ -563,6 +564,7 @@ export function JournalEntriesModule() {
               {saveMutation.isPending ? 'جاري الحفظ...' : 'حفظ وترحيل'}
             </Button>
           </DialogFooter>
+        
         </DialogContent>
       </Dialog>
 
@@ -573,7 +575,7 @@ export function JournalEntriesModule() {
             <DialogTitle>تفاصيل القيد {viewing?.code}</DialogTitle>
             <DialogDescription>{viewing?.description}</DialogDescription>
           </DialogHeader>
-          {viewing && (
+                              {viewing && (
             <div className="space-y-4">
               <div className="grid grid-cols-3 gap-3 text-sm">
                 <div className="p-3 rounded-lg bg-muted/40">
@@ -620,7 +622,8 @@ export function JournalEntriesModule() {
                   </TableFooter>
                 </Table>
               </Card>
-              <DialogFooter>
+              
+          <DialogFooter>
                 <Button variant="outline" onClick={() => handlePrint(viewing)} className="gap-1.5">
                   <Printer className="size-4" /> طباعة
                 </Button>
@@ -633,6 +636,7 @@ export function JournalEntriesModule() {
               </DialogFooter>
             </div>
           )}
+        
         </DialogContent>
       </Dialog>
     </ModuleShell>

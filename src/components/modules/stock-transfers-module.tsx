@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody} from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ArrowLeftRight, Plus, Pencil, Trash2, Download, CheckCircle, Clock, Package } from 'lucide-react'
@@ -83,12 +83,14 @@ export function StockTransfersModule() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-xl">
           <DialogHeader><DialogTitle>تحويل جديد</DialogTitle></DialogHeader>
-          <div className="grid grid-cols-2 gap-4 py-2">
+          <DialogBody>          <DialogBody>          <div className="grid grid-cols-2 gap-4 py-2">
             <div><Label className="text-xs mb-1.5 block">من مستودع *</Label><Input value={form.fromWarehouseId} onChange={e => setForm({...form, fromWarehouseId: e.target.value})} placeholder="معرف المستودع" /></div>
             <div><Label className="text-xs mb-1.5 block">إلى مستودع *</Label><Input value={form.toWarehouseId} onChange={e => setForm({...form, toWarehouseId: e.target.value})} placeholder="معرف المستودع" /></div>
             <div className="col-span-2"><Label className="text-xs mb-1.5 block">ملاحظات</Label><Input value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} /></div>
           </div>
+          </DialogBody>
           <DialogFooter><Button variant="outline" onClick={() => setDialogOpen(false)}>إلغاء</Button><Button onClick={() => createMut.mutate()} disabled={!form.fromWarehouseId || !form.toWarehouseId}>إنشاء</Button></DialogFooter>
+        </DialogBody>
         </DialogContent>
       </Dialog>
     </ModuleShell>

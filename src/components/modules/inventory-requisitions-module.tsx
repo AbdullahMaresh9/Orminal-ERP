@@ -295,7 +295,7 @@ export function InventoryRequisitionsModule() {
             <DialogTitle>طلب صرف جديد</DialogTitle>
             <DialogDescription>إنشاء طلب صرف من مخزون مستودع</DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="grid gap-4 max-h-[70vh] overflow-y-auto p-1">
+                              <form onSubmit={handleSubmit} className="grid gap-4 max-h-[70vh] overflow-y-auto p-1">
             <div className="space-y-1.5">
               <Label>المستودع *</Label>
               <Select value={form.storehouseId} onValueChange={v => setForm({ ...form, storehouseId: v })}>
@@ -363,13 +363,15 @@ export function InventoryRequisitionsModule() {
               <Textarea value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} rows={2} />
             </div>
 
-            <DialogFooter>
+            
+          <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>إلغاء</Button>
               <Button type="submit" disabled={createMutation.isPending}>
                 {createMutation.isPending ? 'جاري الحفظ...' : 'إنشاء الطلب'}
               </Button>
             </DialogFooter>
           </form>
+        
         </DialogContent>
       </Dialog>
 
@@ -380,7 +382,7 @@ export function InventoryRequisitionsModule() {
             <DialogTitle>تفاصيل طلب الصرف {detailReq?.code}</DialogTitle>
             <DialogDescription>{detailReq?.storehouse.name}</DialogDescription>
           </DialogHeader>
-          {detailReq && (
+                              {detailReq && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div><span className="text-muted-foreground">التاريخ:</span> {formatDate(detailReq.createdAt)}</div>
@@ -414,7 +416,8 @@ export function InventoryRequisitionsModule() {
                   <span className="text-muted-foreground">ملاحظات:</span> {detailReq.note}
                 </div>
               )}
-              <DialogFooter>
+              
+          <DialogFooter>
                 {detailReq.status === 'draft' && (
                   <>
                     <Button variant="outline" onClick={() => updateMutation.mutate({ id: detailReq.id, body: { status: 'approved' } })}>
@@ -434,6 +437,7 @@ export function InventoryRequisitionsModule() {
               </DialogFooter>
             </div>
           )}
+        
         </DialogContent>
       </Dialog>
     </ModuleShell>

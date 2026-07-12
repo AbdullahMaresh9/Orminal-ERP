@@ -21,7 +21,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogBody,
 } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
@@ -321,7 +321,7 @@ export function EmployeesModule() {
             <DialogTitle>{editing ? 'تعديل موظف' : 'إضافة موظف جديد'}</DialogTitle>
             <DialogDescription>أدخل بيانات الموظف الوظيفية والشخصية</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <DialogBody>          <DialogBody>          <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>الاسم (عربي) *</Label>
@@ -376,12 +376,14 @@ export function EmployeesModule() {
               </div>
             </div>
           </div>
+          </DialogBody>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>إلغاء</Button>
             <Button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
               {saveMutation.isPending ? 'جاري الحفظ...' : 'حفظ'}
             </Button>
           </DialogFooter>
+        </DialogBody>
         </DialogContent>
       </Dialog>
     </ModuleShell>

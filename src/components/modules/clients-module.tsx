@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogBody, DialogFooter,
 } from '@/components/ui/dialog'
 import {
   Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
@@ -439,7 +439,7 @@ export function ClientsModule() {
             <DialogTitle>{editId ? 'تعديل عميل' : 'عميل جديد'}</DialogTitle>
             <DialogDescription>أدخل بيانات العميل بدقة. الحقول التي تحمل علامة * مطلوبة.</DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-2 gap-4 py-2">
+          <DialogBody>          <DialogBody>          <div className="grid grid-cols-2 gap-4 py-2">
             <Field label="الرمز" hint="تلقائي إذا تُرك فارغاً">
               <Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="CL-0001" />
             </Field>
@@ -472,12 +472,14 @@ export function ClientsModule() {
               <Label htmlFor="active" className="cursor-pointer">عميل نشط</Label>
             </div>
           </div>
+          </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>{t('action.cancel')}</Button>
             <Button onClick={handleSubmit} disabled={createMut.isPending || updateMut.isPending} className="gap-1.5">
               {editId ? <>{t('action.save')}</> : <><Plus className="size-4" /> {t('action.create')}</>}
             </Button>
           </DialogFooter>
+        </DialogBody>
         </DialogContent>
       </Dialog>
 
@@ -512,7 +514,7 @@ export function ClientsModule() {
               {statementData ? `${statementData.name} · ${statementData.code}` : '...'}
             </DialogDescription>
           </DialogHeader>
-
+          <DialogBody>          <DialogBody>
           {statementLoading ? (
             <div className="space-y-2 py-4">
               {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-8" />)}
@@ -579,12 +581,14 @@ export function ClientsModule() {
             </div>
           ) : null}
 
+          </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => setStatementId(null)}>{t('action.close')}</Button>
             <Button onClick={handlePrintStatement} disabled={!statementData} className="gap-1.5">
               <FileText className="size-4" /> طباعة الكشف
             </Button>
           </DialogFooter>
+        </DialogBody>
         </DialogContent>
       </Dialog>
     </ModuleShell>

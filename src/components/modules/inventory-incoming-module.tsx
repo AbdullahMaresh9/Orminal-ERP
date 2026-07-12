@@ -271,7 +271,7 @@ export function InventoryIncomingModule() {
             <DialogTitle>تسجيل توريد جديد</DialogTitle>
             <DialogDescription>إضافة كمية واردة إلى مستودع</DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="grid gap-4 max-h-[70vh] overflow-y-auto p-1">
+                              <form onSubmit={handleSubmit} className="grid gap-4 max-h-[70vh] overflow-y-auto p-1">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>المستودع *</Label>
@@ -368,13 +368,15 @@ export function InventoryIncomingModule() {
               <Label htmlFor="create-inv">إنشاء فاتورة شراء مرتبطة</Label>
             </div>
 
-            <DialogFooter>
+            
+          <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>إلغاء</Button>
               <Button type="submit" disabled={saveMutation.isPending}>
                 {saveMutation.isPending ? 'جاري الحفظ...' : 'تسجيل التوريد'}
               </Button>
             </DialogFooter>
           </form>
+        
         </DialogContent>
       </Dialog>
     </ModuleShell>

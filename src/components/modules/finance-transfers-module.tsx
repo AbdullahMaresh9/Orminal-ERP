@@ -16,7 +16,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogBody,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -345,7 +345,7 @@ export function FinanceTransfersModule() {
             <DialogTitle>تحويل نقدي جديد</DialogTitle>
             <DialogDescription>سيتم إنشاء قيد محاسبي (مدين: الحساب الوجهة، دائن: الحساب المصدر) وتحديث رصيدي الحسابين.</DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <DialogBody>          <DialogBody>          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>التاريخ</Label>
               <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
@@ -391,12 +391,14 @@ export function FinanceTransfersModule() {
               <Textarea rows={2} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} placeholder="سبب التحويل..." />
             </div>
           </div>
+          </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>إلغاء</Button>
             <Button onClick={submit} disabled={createMut.isPending}>
               {createMut.isPending ? 'جاري الحفظ...' : 'تسجيل التحويل'}
             </Button>
           </DialogFooter>
+        </DialogBody>
         </DialogContent>
       </Dialog>
     </ModuleShell>

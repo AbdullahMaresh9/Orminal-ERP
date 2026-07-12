@@ -16,7 +16,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogBody,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -324,7 +324,7 @@ export function FinanceRequisitionsModule() {
             <DialogTitle>طلب صرف مالي جديد</DialogTitle>
             <DialogDescription>سيتم إنشاء الطلب بحالة "مسودة" ويمكن اعتماده أو رفضه أو تنفيذه لاحقاً.</DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <DialogBody>          <DialogBody>          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>المبلغ *</Label>
               <Input type="number" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })} />
@@ -348,12 +348,14 @@ export function FinanceRequisitionsModule() {
               <Textarea rows={3} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} placeholder="السبب أو البيان التفصيلي..." />
             </div>
           </div>
+          </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>إلغاء</Button>
             <Button onClick={submit} disabled={createMut.isPending}>
               {createMut.isPending ? 'جاري الحفظ...' : 'إنشاء الطلب'}
             </Button>
           </DialogFooter>
+        </DialogBody>
         </DialogContent>
       </Dialog>
     </ModuleShell>

@@ -16,7 +16,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogBody,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -388,7 +388,7 @@ export function SuppliersModule() {
             <DialogTitle>{editId ? 'تعديل مورد' : 'إضافة مورد'}</DialogTitle>
             <DialogDescription>أدخل بيانات المورد. الرصيد الافتتاخي يُسجّل كرصيد مبدئي للمورد.</DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <DialogBody>          <DialogBody>          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>الرمز</Label>
               <Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="SUP-0001 (تلقائي عند الإفراغ)" />
@@ -429,12 +429,14 @@ export function SuppliersModule() {
               <Switch checked={form.active} onCheckedChange={(v) => setForm({ ...form, active: v })} />
             </div>
           </div>
+          </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>إلغاء</Button>
             <Button onClick={submit} disabled={saveMut.isPending}>
               {saveMut.isPending ? 'جاري الحفظ...' : editId ? 'تحديث' : 'إضافة'}
             </Button>
           </DialogFooter>
+        </DialogBody>
         </DialogContent>
       </Dialog>
 
@@ -447,7 +449,7 @@ export function SuppliersModule() {
               الرمز: {viewData?.code ?? ''} · الرصيد الحالي: <span className="num">{formatCurrency(viewData?.balance ?? 0)}</span>
             </DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto">
+          <DialogBody>          <DialogBody>          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto">
             <Card className="p-4">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-semibold text-sm">الفواتير</h3>
@@ -537,12 +539,14 @@ export function SuppliersModule() {
               </div>
             </Card>
           </div>
+          </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => setViewOpen(false)}>إغلاق</Button>
             <Button onClick={() => handlePrintStatement(viewData)} className="gap-1.5">
               <Printer className="size-4" /> طباعة الكشف
             </Button>
           </DialogFooter>
+        </DialogBody>
         </DialogContent>
       </Dialog>
     </ModuleShell>

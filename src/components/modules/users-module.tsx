@@ -22,7 +22,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogBody,
 } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
@@ -334,7 +334,7 @@ export function UsersModule() {
               {editing ? `تعديل بيانات: ${editing.nameAr}` : 'أدخل بيانات المستخدم الجديد'}
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit}>
+          <DialogBody>          <form onSubmit={handleSubmit}>
             <ScrollArea className="max-h-[60vh] pe-2">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-1">
                 {!editing && (
@@ -480,6 +480,7 @@ export function UsersModule() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogBody>
         </DialogContent>
       </Dialog>
     </ModuleShell>

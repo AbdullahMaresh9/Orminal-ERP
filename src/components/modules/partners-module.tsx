@@ -19,7 +19,7 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogBody,
 } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
@@ -254,7 +254,7 @@ export function PartnersModule() {
             <DialogTitle>{editing ? 'تعديل شريك' : 'إضافة شريك جديد'}</DialogTitle>
             <DialogDescription>أدخل بيانات الشريك التجاري</DialogDescription>
           </DialogHeader>
-          <form onSubmit={(e) => { e.preventDefault(); handleSave(new FormData(e.currentTarget)) }}>
+          <DialogBody>          <form onSubmit={(e) => { e.preventDefault(); handleSave(new FormData(e.currentTarget)) }}>
             <ScrollArea className="max-h-[60vh] pe-2">
               <div className="grid grid-cols-2 gap-4 p-1">
                 <div className="space-y-1.5">
@@ -318,6 +318,7 @@ export function PartnersModule() {
               <Button type="submit" disabled={saveMutation.isPending}>{saveMutation.isPending ? 'جاري الحفظ...' : 'حفظ'}</Button>
             </DialogFooter>
           </form>
+        </DialogBody>
         </DialogContent>
       </Dialog>
     </ModuleShell>

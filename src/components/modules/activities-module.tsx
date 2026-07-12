@@ -15,8 +15,8 @@ import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody} from '@/components/ui/dialog'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, DialogBody, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 
 interface ActivityRow {
   id: string; name: string; code?: string | null; branchId: string; createdAt: string
@@ -173,7 +173,7 @@ export function ActivitiesModule() {
           <DialogHeader>
             <DialogTitle>{editing ? 'تعديل نشاط' : 'نشاط جديد'}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-2">
+          <DialogBody>          <DialogBody>          <div className="space-y-4 py-2">
             <div className="space-y-1.5">
               <Label htmlFor="name">اسم النشاط *</Label>
               <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="تجارة التجزئة" />
@@ -192,12 +192,14 @@ export function ActivitiesModule() {
               </Select>
             </div>
           </div>
+          </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>{t('action.cancel')}</Button>
             <Button onClick={handleSave} disabled={saveMutation.isPending}>
               {saveMutation.isPending ? t('loading') : t('action.save')}
             </Button>
           </DialogFooter>
+        </DialogBody>
         </DialogContent>
       </Dialog>
 

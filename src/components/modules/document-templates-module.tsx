@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody} from '@/components/ui/dialog'
 
 interface Template {
   id: string; name: string; description: string; category: string; lastEdited?: string
@@ -133,7 +133,7 @@ export function DocumentTemplatesModule() {
               {editing ? `تعديل: ${editing.name}` : 'قالب جديد'}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-2 max-h-[70vh] overflow-y-auto scrollbar-thin">
+          <DialogBody>          <DialogBody>          <div className="space-y-4 py-2 max-h-[70vh] overflow-y-auto scrollbar-thin">
             <div className="space-y-1.5">
               <Label htmlFor="tpl-name">اسم القالب</Label>
               <Input id="tpl-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="فاتورة ضريبية مخصصة" />
@@ -171,12 +171,14 @@ export function DocumentTemplatesModule() {
               </div>
             </div>
           </div>
+          </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>{t('action.cancel')}</Button>
             <Button onClick={handleSave} className="gap-1.5">
               <FileText className="size-4" /> {t('action.save')}
             </Button>
           </DialogFooter>
+        </DialogBody>
         </DialogContent>
       </Dialog>
     </ModuleShell>

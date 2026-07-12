@@ -15,7 +15,7 @@ import { Switch } from '@/components/ui/switch'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogBody,
 } from '@/components/ui/dialog'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -244,7 +244,7 @@ export function AnalyticAccountsModule() {
             <DialogTitle>{editing ? 'تعديل مركز تكلفة' : 'مركز تكلفة جديد'}</DialogTitle>
             <DialogDescription>أدخل بيانات مركز التكلفة</DialogDescription>
           </DialogHeader>
-          <div className="grid gap-3">
+          <DialogBody>          <DialogBody>          <div className="grid gap-3">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>الرمز *</Label>
@@ -272,6 +272,7 @@ export function AnalyticAccountsModule() {
               <Switch id="active" checked={form.active} onCheckedChange={(v) => setForm({ ...form, active: v })} />
             </div>
           </div>
+          </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>إلغاء</Button>
             <Button
@@ -281,6 +282,7 @@ export function AnalyticAccountsModule() {
               {saveMutation.isPending ? 'جارٍ الحفظ...' : 'حفظ'}
             </Button>
           </DialogFooter>
+        </DialogBody>
         </DialogContent>
       </Dialog>
     </ModuleShell>

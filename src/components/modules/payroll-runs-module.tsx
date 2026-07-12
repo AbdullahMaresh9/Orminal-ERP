@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogBody,
 } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
@@ -302,7 +302,7 @@ export function PayrollRunsModule() {
             <DialogTitle>تشغيل رواتب جديد</DialogTitle>
             <DialogDescription>أدخل الفترة والتواريخ</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <DialogBody>          <DialogBody>          <div className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="period">الفترة (YYYY-MM) *</Label>
               <Input id="period" type="month" value={draft.period} onChange={(e) => {
@@ -321,12 +321,14 @@ export function PayrollRunsModule() {
               </div>
             </div>
           </div>
+          </DialogBody>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>إلغاء</Button>
             <Button type="button" disabled={createMutation.isPending} onClick={() => createMutation.mutate()}>
               {createMutation.isPending ? 'جاري الإنشاء...' : 'إنشاء'}
             </Button>
           </DialogFooter>
+        </DialogBody>
         </DialogContent>
       </Dialog>
 
@@ -338,7 +340,7 @@ export function PayrollRunsModule() {
               {viewing?.payslips?.length ?? 0} موظف · إجمالي {viewing ? formatCurrency(viewing.totalGross) : ''} · صافي {viewing ? formatCurrency(viewing.totalNet) : ''}
             </DialogDescription>
           </DialogHeader>
-          <Card className="rounded-lg overflow-hidden">
+          <DialogBody>          <DialogBody>          <Card className="rounded-lg overflow-hidden">
             <ScrollArea className="max-h-[55vh]">
               <Table>
                 <TableHeader>
@@ -381,12 +383,14 @@ export function PayrollRunsModule() {
               </Table>
             </ScrollArea>
           </Card>
+          </DialogBody>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setViewDialogOpen(false)}>إغلاق</Button>
             <Button type="button" onClick={handleViewPrint} className="gap-1.5">
               <Printer className="size-4" /> طباعة الملخص
             </Button>
           </DialogFooter>
+        </DialogBody>
         </DialogContent>
       </Dialog>
     </ModuleShell>

@@ -243,7 +243,7 @@ export function StorehousesModule() {
             <DialogTitle>{editingId ? 'تعديل مستودع' : 'مستودع جديد'}</DialogTitle>
             <DialogDescription>{editingId ? 'تحديث بيانات المستودع' : 'إضافة مستودع جديد'}</DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="grid gap-4">
+                              <form onSubmit={handleSubmit} className="grid gap-4">
             <div className="space-y-1.5">
               <Label>الاسم *</Label>
               <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
@@ -264,13 +264,15 @@ export function StorehousesModule() {
               <Switch checked={form.active} onCheckedChange={c => setForm({ ...form, active: c })} id="wh-active" />
               <Label htmlFor="wh-active">المستودع نشط</Label>
             </div>
-            <DialogFooter>
+            
+          <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>إلغاء</Button>
               <Button type="submit" disabled={saveMutation.isPending}>
                 {saveMutation.isPending ? 'جاري الحفظ...' : 'حفظ'}
               </Button>
             </DialogFooter>
           </form>
+        
         </DialogContent>
       </Dialog>
     </ModuleShell>

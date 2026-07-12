@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody} from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 
 interface Product {
@@ -427,7 +427,7 @@ export function PosModule() {
               تمت العملية بنجاح
             </DialogTitle>
           </DialogHeader>
-          {receipt && (
+          <DialogBody>          <DialogBody>          {receipt && (
             <div className="py-2 space-y-3">
               <div className="text-center">
                 <p className="text-xs text-muted-foreground">رقم الإيصال</p>
@@ -450,6 +450,7 @@ export function PosModule() {
               </div>
             </div>
           )}
+          </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => setReceipt(null)} className="gap-1.5">
               {t('action.close')}
@@ -458,6 +459,7 @@ export function PosModule() {
               <Printer className="size-4" /> طباعة الإيصال
             </Button>
           </DialogFooter>
+        </DialogBody>
         </DialogContent>
       </Dialog>
     </div>

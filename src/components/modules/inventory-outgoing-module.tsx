@@ -263,7 +263,7 @@ export function InventoryOutgoingModule() {
             <DialogTitle>تسجيل صرف جديد</DialogTitle>
             <DialogDescription>صرف كمية من مخزون مستودع</DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="grid gap-4 max-h-[70vh] overflow-y-auto p-1">
+                              <form onSubmit={handleSubmit} className="grid gap-4 max-h-[70vh] overflow-y-auto p-1">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>المستودع *</Label>
@@ -350,13 +350,15 @@ export function InventoryOutgoingModule() {
               <Textarea value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} rows={2} />
             </div>
 
-            <DialogFooter>
+            
+          <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>إلغاء</Button>
               <Button type="submit" disabled={saveMutation.isPending}>
                 {saveMutation.isPending ? 'جاري الحفظ...' : 'تسجيل الصرف'}
               </Button>
             </DialogFooter>
           </form>
+        
         </DialogContent>
       </Dialog>
     </ModuleShell>

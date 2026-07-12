@@ -299,7 +299,7 @@ export function StockTakesModule() {
             <DialogTitle>جرد مخزون جديد</DialogTitle>
             <DialogDescription>سيتم تحميل الأصناف الحالية تلقائياً عند الإنشاء</DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="grid gap-4">
+                              <form onSubmit={handleSubmit} className="grid gap-4">
             <div className="space-y-1.5">
               <Label>المستودع *</Label>
               <Select value={form.storehouseId} onValueChange={v => setForm({ ...form, storehouseId: v })}>
@@ -313,13 +313,15 @@ export function StockTakesModule() {
               <Label>ملاحظات</Label>
               <Textarea value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} rows={2} />
             </div>
-            <DialogFooter>
+            
+          <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>إلغاء</Button>
               <Button type="submit" disabled={createMutation.isPending}>
                 {createMutation.isPending ? 'جاري الإنشاء...' : 'إنشاء الجرد'}
               </Button>
             </DialogFooter>
           </form>
+        
         </DialogContent>
       </Dialog>
 
@@ -332,7 +334,7 @@ export function StockTakesModule() {
               {detailTake?.storehouse.name} · {detailTake?.status === 'draft' ? 'أدخل الكميات الفعلية' : 'عرض الجرد'}
             </DialogDescription>
           </DialogHeader>
-          {detailTake && (
+                              {detailTake && (
             <div className="space-y-4 max-h-[70vh] overflow-y-auto p-1">
               <div className="grid grid-cols-3 gap-3">
                 <div className="rounded-lg border p-3 text-center">
@@ -385,7 +387,8 @@ export function StockTakesModule() {
                   </TableBody>
                 </Table>
               </div>
-              <DialogFooter>
+              
+          <DialogFooter>
                 <Button variant="outline" onClick={() => setDetailTake(null)}>إغلاق</Button>
                 {detailTake.status === 'draft' && (
                   <Button onClick={completeTake} disabled={updateMutation.isPending}>
@@ -395,6 +398,7 @@ export function StockTakesModule() {
               </DialogFooter>
             </div>
           )}
+        
         </DialogContent>
       </Dialog>
     </ModuleShell>

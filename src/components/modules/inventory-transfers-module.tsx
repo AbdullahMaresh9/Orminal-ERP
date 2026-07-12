@@ -311,7 +311,7 @@ export function InventoryTransfersModule() {
             <DialogTitle>تحويل مخزون جديد</DialogTitle>
             <DialogDescription>إنشاء تحويل بين مستودعين</DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="grid gap-4 max-h-[70vh] overflow-y-auto p-1">
+                              <form onSubmit={handleSubmit} className="grid gap-4 max-h-[70vh] overflow-y-auto p-1">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>من مستودع *</Label>
@@ -397,13 +397,15 @@ export function InventoryTransfersModule() {
               <Textarea value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} rows={2} />
             </div>
 
-            <DialogFooter>
+            
+          <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>إلغاء</Button>
               <Button type="submit" disabled={saveMutation.isPending}>
                 {saveMutation.isPending ? 'جاري الحفظ...' : 'إنشاء التحويل'}
               </Button>
             </DialogFooter>
           </form>
+        
         </DialogContent>
       </Dialog>
 
@@ -416,7 +418,7 @@ export function InventoryTransfersModule() {
               {detailTransfer?.fromStorehouse.name} ← {detailTransfer?.toStorehouse.name}
             </DialogDescription>
           </DialogHeader>
-          {detailTransfer && (
+                              {detailTransfer && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div><span className="text-muted-foreground">التاريخ:</span> {formatDate(detailTransfer.createdAt)}</div>
@@ -448,7 +450,8 @@ export function InventoryTransfersModule() {
                   <span className="text-muted-foreground">ملاحظات:</span> {detailTransfer.note}
                 </div>
               )}
-              <DialogFooter>
+              
+          <DialogFooter>
                 {detailTransfer.status === 'draft' && (
                   <Button variant="outline" onClick={() => updateMutation.mutate({ id: detailTransfer.id, body: { status: 'in_transit' } })}>
                     <Truck className="size-4 ms-2" /> تحويل للنقل
@@ -463,6 +466,7 @@ export function InventoryTransfersModule() {
               </DialogFooter>
             </div>
           )}
+        
         </DialogContent>
       </Dialog>
     </ModuleShell>

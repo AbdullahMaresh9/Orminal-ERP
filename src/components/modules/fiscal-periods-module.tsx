@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody} from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CalendarClock, Plus, Download, Lock, Unlock, CheckCircle, AlertCircle } from 'lucide-react'
@@ -90,12 +90,14 @@ export function FiscalPeriodsModule() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-xl">
           <DialogHeader><DialogTitle>سنة مالية جديدة</DialogTitle></DialogHeader>
-          <div className="grid grid-cols-1 gap-4 py-2">
+          <DialogBody>          <DialogBody>          <div className="grid grid-cols-1 gap-4 py-2">
             <div><Label className="text-xs mb-1.5 block">اسم السنة *</Label><Input value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="2026" /></div>
             <div><Label className="text-xs mb-1.5 block">تاريخ البداية *</Label><Input type="date" value={form.startDate} onChange={e => setForm({...form, startDate: e.target.value})} /></div>
             <div><Label className="text-xs mb-1.5 block">تاريخ النهاية *</Label><Input type="date" value={form.endDate} onChange={e => setForm({...form, endDate: e.target.value})} /></div>
           </div>
+          </DialogBody>
           <DialogFooter><Button variant="outline" onClick={() => setDialogOpen(false)}>إلغاء</Button><Button onClick={() => createYearMut.mutate()} disabled={!form.name || !form.startDate || !form.endDate}>إنشاء</Button></DialogFooter>
+        </DialogBody>
         </DialogContent>
       </Dialog>
     </ModuleShell>

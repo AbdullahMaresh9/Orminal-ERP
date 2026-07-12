@@ -285,7 +285,7 @@ export function ClosedPeriodsModule() {
             <DialogTitle>فترة مالية جديدة</DialogTitle>
             <DialogDescription>تعريف فترة مالية جديدة (تبدأ كمفتوحة)</DialogDescription>
           </DialogHeader>
-          <div className="grid gap-3">
+                              <div className="grid gap-3">
             <div className="space-y-1.5">
               <Label>اسم الفترة *</Label>
               <Input
@@ -305,6 +305,7 @@ export function ClosedPeriodsModule() {
               </div>
             </div>
           </div>
+          
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>إلغاء</Button>
             <Button
@@ -314,6 +315,7 @@ export function ClosedPeriodsModule() {
               {createMutation.isPending ? 'جارٍ الحفظ...' : 'إنشاء'}
             </Button>
           </DialogFooter>
+        
         </DialogContent>
       </Dialog>
 
@@ -335,7 +337,7 @@ export function ClosedPeriodsModule() {
                   الفترة: <span className="font-semibold">{confirmAction.period.name}</span>
                 </DialogDescription>
               </DialogHeader>
-
+                    
               {(confirmAction.action === 'close' || confirmAction.action === 'lock') && (
                 <div className="flex items-start gap-2 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 p-3 text-sm text-amber-700 dark:text-amber-400">
                   <AlertTriangle className="size-4 mt-0.5 shrink-0" />
@@ -356,7 +358,8 @@ export function ClosedPeriodsModule() {
                 </p>
               )}
 
-              <DialogFooter>
+              
+          <DialogFooter>
                 <Button variant="outline" onClick={() => setConfirmAction(null)}>إلغاء</Button>
                 <Button
                   variant={confirmAction.action === 'reopen' ? 'default' : 'destructive'}
@@ -368,6 +371,7 @@ export function ClosedPeriodsModule() {
               </DialogFooter>
             </>
           )}
+        
         </DialogContent>
       </Dialog>
     </ModuleShell>

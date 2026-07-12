@@ -21,7 +21,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogBody,
 } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Building2, Plus, Pencil, Trash2, Network, Layers, Users, CheckCircle2 } from 'lucide-react'
@@ -249,7 +249,7 @@ export function DepartmentsModule() {
             <DialogTitle>{editing ? 'تعديل قسم' : 'إضافة قسم جديد'}</DialogTitle>
             <DialogDescription>أدخل بيانات القسم</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <DialogBody>          <DialogBody>          <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="code">الرمز *</Label>
@@ -285,12 +285,14 @@ export function DepartmentsModule() {
               </div>
             </div>
           </div>
+          </DialogBody>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>إلغاء</Button>
             <Button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
               {saveMutation.isPending ? 'جاري الحفظ...' : 'حفظ'}
             </Button>
           </DialogFooter>
+        </DialogBody>
         </DialogContent>
       </Dialog>
     </ModuleShell>

@@ -21,7 +21,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogBody,
 } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
@@ -416,7 +416,7 @@ export function PurchaseRequestsModule() {
             <DialogTitle>طلب شراء جديد</DialogTitle>
             <DialogDescription>حدد الإدارة والبنود المطلوبة مع التواريخ ومراكز التكلفة</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <DialogBody>          <DialogBody>          <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>الإدارة</Label>
@@ -508,12 +508,14 @@ export function PurchaseRequestsModule() {
             </div>
           </div>
 
+          </DialogBody>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>إلغاء</Button>
             <Button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
               {saveMutation.isPending ? 'جاري الحفظ...' : 'إنشاء وتقديم'}
             </Button>
           </DialogFooter>
+        </DialogBody>
         </DialogContent>
       </Dialog>
 
@@ -525,7 +527,7 @@ export function PurchaseRequestsModule() {
               اختر المورد لإنشاء أمر شراء من الطلب {convertTarget?.code}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <DialogBody>          <DialogBody>          <div className="space-y-4">
             <div className="space-y-1.5">
               <Label>المورد *</Label>
               <Select value={convertPartnerId} onValueChange={setConvertPartnerId}>
@@ -550,12 +552,14 @@ export function PurchaseRequestsModule() {
               </div>
             )}
           </div>
+          </DialogBody>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => { setConvertTarget(null); setConvertPartnerId('') }}>إلغاء</Button>
             <Button type="button" disabled={actionMutation.isPending || !convertPartnerId} onClick={() => convertTarget && actionMutation.mutate({ req: convertTarget, action: 'convert', partnerId: convertPartnerId })}>
               {actionMutation.isPending ? 'جاري التحويل...' : 'تحويل'}
             </Button>
           </DialogFooter>
+        </DialogBody>
         </DialogContent>
       </Dialog>
     </ModuleShell>

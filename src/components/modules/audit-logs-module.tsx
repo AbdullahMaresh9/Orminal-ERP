@@ -20,7 +20,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogBody,
 } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
@@ -317,7 +317,7 @@ export function AuditLogsModule() {
               {viewing && <span>سجل بتاريخ <span className="num" dir="ltr">{formatDateTime(viewing.createdAt)}</span> — للقراءة فقط</span>}
             </DialogDescription>
           </DialogHeader>
-          {viewing && (
+          <DialogBody>          <DialogBody>          {viewing && (
             <ScrollArea className="max-h-[70vh] pe-2">
               <div className="space-y-4 p-1">
                 <div className="grid grid-cols-2 gap-3">
@@ -350,9 +350,11 @@ export function AuditLogsModule() {
               </div>
             </ScrollArea>
           )}
+          </DialogBody>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setViewOpen(false)}>إغلاق</Button>
           </DialogFooter>
+        </DialogBody>
         </DialogContent>
       </Dialog>
     </ModuleShell>

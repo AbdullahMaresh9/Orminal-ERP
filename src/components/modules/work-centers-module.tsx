@@ -18,7 +18,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogBody,
 } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Factory, Plus, Pencil, Trash2, Cog, Gauge, Coins } from 'lucide-react'
@@ -191,7 +191,7 @@ export function WorkCentersModule() {
             <DialogTitle>{editing ? 'تعديل مركز عمل' : 'إضافة مركز عمل جديد'}</DialogTitle>
             <DialogDescription>أدخل بيانات مركز العمل</DialogDescription>
           </DialogHeader>
-          <form onSubmit={(e) => { e.preventDefault(); handleSave(new FormData(e.currentTarget)) }}>
+          <DialogBody>          <form onSubmit={(e) => { e.preventDefault(); handleSave(new FormData(e.currentTarget)) }}>
             <div className="grid grid-cols-2 gap-4 p-1">
               <div className="space-y-1.5">
                 <Label htmlFor="code">الرمز *</Label>
@@ -223,6 +223,7 @@ export function WorkCentersModule() {
               <Button type="submit" disabled={saveMutation.isPending}>{saveMutation.isPending ? 'جاري الحفظ...' : 'حفظ'}</Button>
             </DialogFooter>
           </form>
+        </DialogBody>
         </DialogContent>
       </Dialog>
     </ModuleShell>
