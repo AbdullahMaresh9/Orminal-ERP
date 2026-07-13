@@ -30,9 +30,10 @@ export function AppShell() {
   const ActiveModule = moduleRegistry[activeModule] ?? moduleRegistry.dashboard
 
   return (
-    <div className="h-screen overflow-hidden flex bg-background">
+    <div className="h-screen overflow-hidden flex bg-background" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
       {/* Desktop sidebar */}
       <aside
+        dir={locale === 'ar' ? 'rtl' : 'ltr'}
         className={cn(
           'hidden lg:flex shrink-0 transition-[width] duration-200 border-e border-sidebar-border',
           sidebarCollapsed ? 'w-0 overflow-hidden' : 'w-64'

@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { useNav, type ModuleKey } from '@/stores/nav-store'
 import { useT } from '@/lib/i18n/use-t'
 import { cn } from '@/lib/utils'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   LayoutDashboard, FileText, Receipt, Wallet, Truck, Package, FolderTree,
   Warehouse, BookOpen, CalendarClock, GitBranch, Landmark, PiggyBank,
@@ -179,8 +178,8 @@ export function SidebarNav() {
       </div>
 
       {/* Nav */}
-      <ScrollArea className="flex-1 min-h-0 px-2 py-3 scrollbar-thin">
-        <nav className="flex flex-col gap-0.5">
+      <div className="flex-1 min-h-0 px-2 py-3 overflow-y-auto scrollbar-thin" dir={typeof window !== 'undefined' ? (document.documentElement.getAttribute('dir') || 'rtl') : 'rtl'}>
+        <nav className="flex flex-col gap-0.5" dir="rtl">
           {NAV.map((group) => {
             const GroupIcon = group.icon
             const isExpanded = expandedGroups.has(group.labelKey)
@@ -226,11 +225,12 @@ export function SidebarNav() {
                   <GroupIcon className={cn('size-4 shrink-0', hasActiveChild ? 'text-primary' : 'text-muted-foreground group-hover:text-sidebar-accent-foreground')} />
                   {/* Text */}
                   <span className="truncate flex-1">{t(group.labelKey)}</span>
-                  {/* Chevron at the END (left in RTL, right in LTR) — rotates on expand */}
+                  {/* Chevron at the END (left in RTL, right in LTR) */}
+                  {/* ▼ when expanded, ▶ when collapsed */}
                   <ChevronDown
                     className={cn(
-                      'size-4 shrink-0 text-muted-foreground transition-transform duration-200',
-                      isExpanded ? 'rotate-180' : ''
+                      'size-4 shrink-0 text-muted-foreground/70 transition-transform duration-200',
+                      isExpanded ? '' : '-rotate-90'
                     )}
                   />
                 </button>
@@ -263,7 +263,7 @@ export function SidebarNav() {
             )
           })}
         </nav>
-      </ScrollArea>
+      </div>
 
       {/* Footer / user card */}
       <div className="border-t border-sidebar-border p-3 shrink-0">
