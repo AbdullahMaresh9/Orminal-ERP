@@ -44,74 +44,100 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/* =============================================================================
+   DESIGN SYSTEM — Professional Enterprise ERP Theme
+   High contrast, crisp borders, soft shadows, refined typography
+   ============================================================================= */
+
 :root {
-  --radius: 0.625rem;
-  /* Light theme — emerald/teal accounting palette (no indigo/blue) */
-  --background: oklch(0.99 0.005 145);
-  --foreground: oklch(0.18 0.02 160);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.02 160);
+  --radius: 0.5rem;
+
+  /* Backgrounds — cool gray app bg, pure white cards */
+  --background: oklch(0.975 0.003 250);       /* very light cool gray (#F8FAFC) */
+  --foreground: oklch(0.21 0.03 264);          /* deep slate (#1E293B) */
+
+  /* Cards & Popovers — pure white for maximum contrast */
+  --card: oklch(1 0 0);                        /* pure white (#FFFFFF) */
+  --card-foreground: oklch(0.21 0.03 264);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.02 160);
-  --primary: oklch(0.55 0.13 160); /* emerald */
+  --popover-foreground: oklch(0.21 0.03 264);
+
+  /* Primary — emerald green (trust, growth, finance) */
+  --primary: oklch(0.52 0.14 162);             /* #059669 */
   --primary-foreground: oklch(0.99 0.01 145);
-  --secondary: oklch(0.96 0.02 150);
-  --secondary-foreground: oklch(0.25 0.04 160);
-  --muted: oklch(0.96 0.01 145);
-  --muted-foreground: oklch(0.5 0.02 155);
-  --accent: oklch(0.93 0.04 155);
-  --accent-foreground: oklch(0.25 0.04 160);
-  --destructive: oklch(0.58 0.22 27);
-  --border: oklch(0.9 0.01 150);
-  --input: oklch(0.92 0.01 150);
-  --ring: oklch(0.55 0.13 160);
-  --chart-1: oklch(0.55 0.13 160);  /* emerald */
-  --chart-2: oklch(0.65 0.18 70);   /* amber */
-  --chart-3: oklch(0.6 0.2 25);     /* orange-red */
-  --chart-4: oklch(0.7 0.15 145);   /* teal */
-  --chart-5: oklch(0.55 0.12 290);  /* purple */
-  --sidebar: oklch(0.985 0.008 150);
-  --sidebar-foreground: oklch(0.22 0.03 160);
-  --sidebar-primary: oklch(0.55 0.13 160);
+
+  /* Secondary — light slate for buttons/badges */
+  --secondary: oklch(0.96 0.005 250);          /* #F1F5F9 */
+  --secondary-foreground: oklch(0.21 0.03 264);
+
+  /* Muted — subtle backgrounds */
+  --muted: oklch(0.967 0.003 250);             /* #F8FAFC */
+  --muted-foreground: oklch(0.55 0.015 250);   /* #64748B */
+
+  /* Accent — soft emerald tint */
+  --accent: oklch(0.94 0.02 162);
+  --accent-foreground: oklch(0.30 0.05 162);
+
+  /* Destructive — confident red */
+  --destructive: oklch(0.55 0.22 27);          /* #DC2626 */
+  --destructive-foreground: oklch(0.99 0.01 27);
+
+  /* Borders — clearly visible gray */
+  --border: oklch(0.88 0.005 250);             /* #E2E8F0 */
+  --input: oklch(0.82 0.008 250);              /* #CBD5E1 */
+  --ring: oklch(0.52 0.14 162);                /* matches primary */
+
+  /* Charts */
+  --chart-1: oklch(0.52 0.14 162);
+  --chart-2: oklch(0.62 0.17 70);
+  --chart-3: oklch(0.55 0.20 25);
+  --chart-4: oklch(0.68 0.13 145);
+  --chart-5: oklch(0.55 0.12 290);
+
+  /* Sidebar — slightly darker than app bg for depth */
+  --sidebar: oklch(0.99 0.002 250);            /* near white */
+  --sidebar-foreground: oklch(0.21 0.03 264);
+  --sidebar-primary: oklch(0.52 0.14 162);
   --sidebar-primary-foreground: oklch(0.99 0.01 145);
-  --sidebar-accent: oklch(0.94 0.03 155);
-  --sidebar-accent-foreground: oklch(0.25 0.04 160);
-  --sidebar-border: oklch(0.9 0.01 150);
-  --sidebar-ring: oklch(0.55 0.13 160);
+  --sidebar-accent: oklch(0.95 0.01 250);
+  --sidebar-accent-foreground: oklch(0.21 0.03 264);
+  --sidebar-border: oklch(0.88 0.005 250);
+  --sidebar-ring: oklch(0.52 0.14 162);
 }
 
 .dark {
-  --background: oklch(0.16 0.015 160);
-  --foreground: oklch(0.97 0.01 145);
-  --card: oklch(0.21 0.02 160);
-  --card-foreground: oklch(0.97 0.01 145);
-  --popover: oklch(0.21 0.02 160);
-  --popover-foreground: oklch(0.97 0.01 145);
-  --primary: oklch(0.7 0.15 160);
-  --primary-foreground: oklch(0.16 0.02 160);
-  --secondary: oklch(0.27 0.025 160);
-  --secondary-foreground: oklch(0.97 0.01 145);
-  --muted: oklch(0.25 0.02 160);
-  --muted-foreground: oklch(0.7 0.02 150);
-  --accent: oklch(0.3 0.04 160);
-  --accent-foreground: oklch(0.97 0.01 145);
-  --destructive: oklch(0.7 0.19 22);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.7 0.15 160);
-  --chart-1: oklch(0.7 0.15 160);
-  --chart-2: oklch(0.72 0.17 70);
-  --chart-3: oklch(0.68 0.19 25);
-  --chart-4: oklch(0.72 0.14 145);
-  --chart-5: oklch(0.68 0.13 290);
-  --sidebar: oklch(0.19 0.02 160);
-  --sidebar-foreground: oklch(0.97 0.01 145);
-  --sidebar-primary: oklch(0.7 0.15 160);
-  --sidebar-primary-foreground: oklch(0.16 0.02 160);
-  --sidebar-accent: oklch(0.27 0.03 160);
-  --sidebar-accent-foreground: oklch(0.97 0.01 145);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.7 0.15 160);
+  --background: oklch(0.14 0.015 264);
+  --foreground: oklch(0.95 0.005 250);
+  --card: oklch(0.18 0.015 264);
+  --card-foreground: oklch(0.95 0.005 250);
+  --popover: oklch(0.18 0.015 264);
+  --popover-foreground: oklch(0.95 0.005 250);
+  --primary: oklch(0.68 0.15 162);
+  --primary-foreground: oklch(0.14 0.015 264);
+  --secondary: oklch(0.25 0.015 264);
+  --secondary-foreground: oklch(0.95 0.005 250);
+  --muted: oklch(0.22 0.015 264);
+  --muted-foreground: oklch(0.65 0.01 250);
+  --accent: oklch(0.28 0.03 162);
+  --accent-foreground: oklch(0.95 0.005 250);
+  --destructive: oklch(0.65 0.20 25);
+  --destructive-foreground: oklch(0.99 0.01 27);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 18%);
+  --ring: oklch(0.68 0.15 162);
+  --chart-1: oklch(0.68 0.15 162);
+  --chart-2: oklch(0.70 0.17 70);
+  --chart-3: oklch(0.65 0.19 25);
+  --chart-4: oklch(0.70 0.14 145);
+  --chart-5: oklch(0.65 0.13 290);
+  --sidebar: oklch(0.16 0.015 264);
+  --sidebar-foreground: oklch(0.95 0.005 250);
+  --sidebar-primary: oklch(0.68 0.15 162);
+  --sidebar-primary-foreground: oklch(0.14 0.015 264);
+  --sidebar-accent: oklch(0.25 0.02 162);
+  --sidebar-accent-foreground: oklch(0.95 0.005 250);
+  --sidebar-border: oklch(1 0 0 / 12%);
+  --sidebar-ring: oklch(0.68 0.15 162);
 }
 
 @layer base {
@@ -121,8 +147,9 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
-  /* RTL-friendly base tweaks */
   html[dir="rtl"] body {
     font-family: var(--font-arabic), var(--font-geist-sans), system-ui, sans-serif;
   }
@@ -131,98 +158,130 @@
   }
 }
 
-/* Custom scrollbar */
+/* =============================================================================
+   CUSTOM SCROLLBAR
+   ============================================================================= */
 .scrollbar-thin::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
 }
 .scrollbar-thin::-webkit-scrollbar-track {
   background: transparent;
 }
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: oklch(0.8 0.01 150);
+  background: oklch(0.80 0.005 250);
   border-radius: 4px;
 }
 .dark .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: oklch(0.35 0.02 160);
+  background: oklch(0.35 0.01 264);
 }
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: oklch(0.7 0.02 150);
+  background: oklch(0.65 0.01 250);
 }
 
-/* Print styles */
+/* =============================================================================
+   PRINT STYLES
+   ============================================================================= */
 @media print {
-  body * {
-    visibility: hidden;
-  }
-  .print-area, .print-area * {
-    visibility: visible;
-  }
-  .print-area {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-  }
-  .no-print {
-    display: none !important;
-  }
+  body * { visibility: hidden; }
+  .print-area, .print-area * { visibility: visible; }
+  .print-area { position: absolute; inset: 0; width: 100%; }
+  .no-print { display: none !important; }
 }
 
-/* Number font for tabular figures in tables */
-.tabular-nums {
-  font-variant-numeric: tabular-nums;
-}
+/* =============================================================================
+   TABLES — Professional data grid styling
+   ============================================================================= */
+.tabular-nums { font-variant-numeric: tabular-nums; }
 
-/* RTL table direction — ensures columns flow right-to-left in Arabic mode.
-   Radix ScrollArea sets dir="ltr" on its viewport wrapper, which would
-   make tables render LTR even in RTL mode. This rule forces RTL direction
-   on tables when the document is RTL. LTR is the default, no rule needed. */
 [dir="rtl"] table { direction: rtl !important; }
 table { text-align: start; }
 
-/* Numeric cells — always LTR for digits, aligned to end (left in RTL, right in LTR) */
-td.num-cell, th.num-cell {
-  text-align: end;
-}
+/* Numeric cells */
+td.num-cell, th.num-cell { text-align: end; }
 td.num-cell .num, th.num-cell .num {
   direction: ltr;
   unicode-bidi: embed;
+  font-variant-numeric: tabular-nums;
 }
 
-/* Table cell overflow protection — prevents data from one column bleeding into another.
-   Text cells get max-width + ellipsis; numeric cells stay compact. */
-td {
-  max-width: 280px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+/* Cell overflow protection */
+td { max-width: 280px; overflow: hidden; text-overflow: ellipsis; }
+td.num-cell { max-width: 160px; }
+td.cell-truncate { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+td:last-child, td:has(.flex.items-center.gap-0\.5) { max-width: none; }
+td .font-mono { letter-spacing: -0.02em; }
+
+/* Table headers — distinct, uppercase, semibold */
+table thead th {
+  background: oklch(0.96 0.003 250) !important;
+  color: oklch(0.40 0.02 250) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+  border-bottom: 2px solid oklch(0.85 0.005 250) !important;
 }
-td.num-cell {
-  max-width: 160px;
+.dark table thead th {
+  background: oklch(0.22 0.015 264) !important;
+  color: oklch(0.70 0.01 250) !important;
+  border-bottom-color: oklch(0.30 0.015 264) !important;
 }
 
-/* Cells with explicit truncate class — tighter max-width */
-td.cell-truncate {
-  max-width: 180px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+/* Alternating rows */
+table tbody tr:nth-child(even) {
+  background: oklch(0.98 0.002 250);
+}
+.dark table tbody tr:nth-child(even) {
+  background: oklch(0.16 0.01 264);
 }
 
-/* Action button cells — no max-width restriction */
-td:last-child,
-td:has(.flex.items-center.gap-0\.5) {
-  max-width: none;
-}
-
-/* Code/SKU cells — monospace, compact */
-td .font-mono {
-  letter-spacing: -0.02em;
-}
-
-/* Table row hover — subtle highlight */
+/* Row hover — subtle blue-gray highlight */
 table tbody tr:hover {
-  background-color: oklch(0.97 0.01 150 / 0.6);
+  background: oklch(0.95 0.01 250) !important;
 }
 .dark table tbody tr:hover {
-  background-color: oklch(0.27 0.02 160 / 0.4);
+  background: oklch(0.24 0.015 264) !important;
+}
+
+/* Table sticky header */
+.table-sticky thead { position: sticky; top: 0; z-index: 10; }
+.table-sticky thead th { background: oklch(0.96 0.003 250); }
+.dark .table-sticky thead th { background: oklch(0.22 0.015 264); }
+
+/* =============================================================================
+   FOCUS STATES — clear ring on all interactive elements
+   ============================================================================= */
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px oklch(0.52 0.14 162 / 0.15);
+  border-color: oklch(0.52 0.14 162) !important;
+}
+.dark input:focus, .dark textarea:focus, .dark select:focus {
+  box-shadow: 0 0 0 3px oklch(0.68 0.15 162 / 0.2);
+  border-color: oklch(0.68 0.15 162) !important;
+}
+
+/* =============================================================================
+   SHADOWS — soft depth for cards and modals
+   ============================================================================= */
+.shadow-soft {
+  box-shadow: 0 1px 3px 0 oklch(0.21 0.03 264 / 0.06), 0 1px 2px -1px oklch(0.21 0.03 264 / 0.06);
+}
+.shadow-card {
+  box-shadow: 0 1px 3px 0 oklch(0.21 0.03 264 / 0.08), 0 1px 2px -1px oklch(0.21 0.03 264 / 0.08);
+}
+.shadow-modal {
+  box-shadow: 0 10px 40px -10px oklch(0.21 0.03 264 / 0.15), 0 4px 12px -4px oklch(0.21 0.03 264 / 0.08);
+}
+
+/* =============================================================================
+   NUMBER UTILITY
+   ============================================================================= */
+.num {
+  direction: ltr;
+  unicode-bidi: embed;
+  display: inline-block;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }

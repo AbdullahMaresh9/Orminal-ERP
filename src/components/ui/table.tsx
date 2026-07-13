@@ -5,21 +5,6 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 
 function Table({ className, ...props }: React.ComponentProps<"table">) {
-  // Read the document direction to ensure table columns flow correctly.
-  // This is needed because Radix ScrollArea sets dir="ltr" on its viewport,
-  // which would make tables render LTR even in Arabic (RTL) mode.
-  const [dir, setDir] = React.useState<"rtl" | "ltr">("rtl")
-  React.useEffect(() => {
-    const updateDir = () => {
-      setDir(document.documentElement.getAttribute("dir") === "ltr" ? "ltr" : "rtl")
-    }
-    updateDir()
-    // Observe direction changes (when user switches language)
-    const observer = new MutationObserver(updateDir)
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["dir"] })
-    return () => observer.disconnect()
-  }, [])
-
   return (
     <div
       data-slot="table-container"
@@ -28,7 +13,7 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
       <table
         data-slot="table"
         className={cn("w-full caption-bottom text-sm", className)}
-        dir={dir}
+        dir="rtl"
         {...props}
       />
     </div>
@@ -39,7 +24,7 @@ function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
   return (
     <thead
       data-slot="table-header"
-      className={cn("[&_tr]:border-b", className)}
+      className="[&_tr]:border-b"
       {...props}
     />
   )
@@ -49,7 +34,7 @@ function TableBody({ className, ...props }: React.ComponentProps<"tbody">) {
   return (
     <tbody
       data-slot="table-body"
-      className={cn("[&_tr:last-child]:border-0", className)}
+      className="[&_tr:last-child]:border-0"
       {...props}
     />
   )
@@ -59,10 +44,7 @@ function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {
   return (
     <tfoot
       data-slot="table-footer"
-      className={cn(
-        "bg-muted/50 border-t font-medium [&>tr]:last:border-b-0",
-        className
-      )}
+      className="bg-muted/50 border-t font-medium [&>tr]:last:border-b-0"
       {...props}
     />
   )
@@ -72,10 +54,7 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
   return (
     <tr
       data-slot="table-row"
-      className={cn(
-        "hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors",
-        className
-      )}
+      className="hover:bg-muted/50 data-[state=selected]:bg-muted border-b border-gray-100 transition-colors"
       {...props}
     />
   )
