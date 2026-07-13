@@ -53,7 +53,9 @@ export function printHTML(html: string, title = 'مستند') {
 <title>${title}</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif; color: #1a1a1a; padding: 40px 48px; background: #fff; line-height: 1.6; }
+  html { margin: 0; padding: 0; }
+  body { font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif; color: #1a1a1a; background: #fff; line-height: 1.7; }
+  .doc-page { max-width: 210mm; margin: 0 auto; padding: 25mm 22mm; background: #fff; }
   .doc-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #2563EB; padding-bottom: 20px; margin-bottom: 24px; }
   .doc-header .company { display: flex; gap: 14px; align-items: center; }
   .doc-header .company .logo { width: 56px; height: 56px; object-fit: contain; border-radius: 8px; }
@@ -86,19 +88,26 @@ export function printHTML(html: string, title = 'مستند') {
   .info-item { padding: 10px 14px; background: #f9fafb; border-radius: 6px; }
   .info-item .label { font-size: 10px; color: #6b7280; text-transform: uppercase; font-weight: 600; }
   .info-item .value { font-size: 14px; font-weight: 500; margin-top: 2px; }
-  @page { margin: 1.5cm 2cm; }
+  @page { margin: 0; size: A4; }
   @media print {
-    body { padding: 0; }
+    body { background: #fff; }
+    .doc-page { padding: 15mm 18mm; max-width: 100%; }
     .no-print { display: none !important; }
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
+  @media screen {
+    body { background: #e5e7eb; padding: 20px; }
+    .doc-page { box-shadow: 0 4px 20px rgba(0,0,0,0.1); border-radius: 4px; }
+  }
 </style>
 </head>
 <body>
+<div class="doc-page">
 ${html}
 <div class="footer">
-  ${title} · تم إنشاؤه بواسطة نظام أورمنال المحاسبي · ${new Date().toLocaleString('ar-SA')}
+  ${title} · تم إنشاؤه بواسطة نظام أورمنال ERP · ${new Date().toLocaleString('ar-SA')}
+</div>
 </div>
 <script>
   window.onload = function() { setTimeout(function() { window.print(); }, 300); }
