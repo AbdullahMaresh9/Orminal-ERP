@@ -45,10 +45,10 @@ interface Account {
 }
 
 const TYPE_META: Record<string, { label: string; color: string; ring: string }> = {
-  asset: { label: 'أصول', color: 'text-emerald-600 dark:text-emerald-400', ring: 'ring-emerald-200 dark:ring-emerald-900 bg-emerald-50 dark:bg-emerald-950/40' },
+  asset: { label: 'أصول', color: 'text-blue-600 dark:text-blue-400', ring: 'ring-blue-200 dark:ring-blue-900 bg-blue-50 dark:bg-blue-950/40' },
   liability: { label: 'التزامات', color: 'text-rose-600 dark:text-rose-400', ring: 'ring-rose-200 dark:ring-rose-900 bg-rose-50 dark:bg-rose-950/40' },
   equity: { label: 'حقوق ملكية', color: 'text-violet-600 dark:text-violet-400', ring: 'ring-violet-200 dark:ring-violet-900 bg-violet-50 dark:bg-violet-950/40' },
-  income: { label: 'إيرادات', color: 'text-teal-600 dark:text-teal-400', ring: 'ring-teal-200 dark:ring-teal-900 bg-teal-50 dark:bg-teal-950/40' },
+  income: { label: 'إيرادات', color: 'text-sky-600 dark:text-sky-400', ring: 'ring-sky-200 dark:ring-sky-900 bg-sky-50 dark:bg-sky-950/40' },
   expense: { label: 'مصروفات', color: 'text-amber-600 dark:text-amber-400', ring: 'ring-amber-200 dark:ring-amber-900 bg-amber-50 dark:bg-amber-950/40' },
 }
 
@@ -166,9 +166,9 @@ export function ChartOfAccountsModule() {
       onExport={handleExport}
     >
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <KpiCard title="إجمالي الحسابات" value={formatInt(stats.total)} icon={<BookOpen className="size-5" />} accent="emerald" />
+        <KpiCard title="إجمالي الحسابات" value={formatInt(stats.total)} icon={<BookOpen className="size-5" />} accent="blue" />
         <KpiCard title="حسابات نظامية" value={formatInt(stats.system)} icon={<Lock className="size-5" />} accent="amber" />
-        <KpiCard title="إجمالي الأصول" value={formatCurrency(stats.assets)} icon={<Layers className="size-5" />} accent="teal" />
+        <KpiCard title="إجمالي الأصول" value={formatCurrency(stats.assets)} icon={<Layers className="size-5" />} accent="sky" />
         <KpiCard title="الالتزامات + حقوق الملكية" value={formatCurrency(stats.liabilitiesEquity)} icon={<Layers className="size-5" />} accent="violet" />
       </div>
 

@@ -336,9 +336,9 @@ export function PurchaseReturnsModule() {
       }
     >
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <KpiCard title="إجمالي المرتجعات" value={formatInt(stats.total)} icon={<Undo2 className="size-5" />} accent="emerald" />
+        <KpiCard title="إجمالي المرتجعات" value={formatInt(stats.total)} icon={<Undo2 className="size-5" />} accent="blue" />
         <KpiCard title="قيد المعالجة" value={formatInt(stats.pending)} icon={<Clock className="size-5" />} accent="amber" />
-        <KpiCard title="تم الشحن" value={formatInt(stats.shipped)} icon={<Truck className="size-5" />} accent="teal" />
+        <KpiCard title="تم الشحن" value={formatInt(stats.shipped)} icon={<Truck className="size-5" />} accent="sky" />
         <KpiCard title="إجمالي القيمة" value={formatCurrency(stats.totalValue)} icon={<Coins className="size-5" />} accent="violet" />
       </div>
 
@@ -382,12 +382,12 @@ export function PurchaseReturnsModule() {
                         </Button>
                       )}
                       {r.status === 'shipped' && (
-                        <Button size="sm" variant="ghost" className="h-8 text-xs gap-1.5 text-emerald-600" disabled={actionMutation.isPending} onClick={() => actionMutation.mutate({ ret: r, action: 'debit' })}>
+                        <Button size="sm" variant="ghost" className="h-8 text-xs gap-1.5 text-blue-600" disabled={actionMutation.isPending} onClick={() => actionMutation.mutate({ ret: r, action: 'debit' })}>
                           <Coins className="size-3.5" /> إصدار إشعار مدين
                         </Button>
                       )}
                       {r.status === 'debited' && (
-                        <Button size="sm" variant="ghost" className="h-8 text-xs gap-1.5 text-emerald-700" disabled={actionMutation.isPending} onClick={() => actionMutation.mutate({ ret: r, action: 'close' })}>
+                        <Button size="sm" variant="ghost" className="h-8 text-xs gap-1.5 text-blue-700" disabled={actionMutation.isPending} onClick={() => actionMutation.mutate({ ret: r, action: 'close' })}>
                           إغلاق
                         </Button>
                       )}

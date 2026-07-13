@@ -363,8 +363,8 @@ export function SalesQuotationsModule() {
       }
     >
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <KpiCard title="إجمالي العروض" value={formatInt(stats.total)} icon={<FileSignature className="size-5" />} accent="emerald" />
-        <KpiCard title="المقبولة" value={formatInt(stats.accepted)} icon={<CheckCircle2 className="size-5" />} accent="teal" />
+        <KpiCard title="إجمالي العروض" value={formatInt(stats.total)} icon={<FileSignature className="size-5" />} accent="blue" />
+        <KpiCard title="المقبولة" value={formatInt(stats.accepted)} icon={<CheckCircle2 className="size-5" />} accent="sky" />
         <KpiCard title="قيد الانتظار" value={formatInt(stats.pending)} icon={<Clock className="size-5" />} accent="amber" />
         <KpiCard title="معدل التحويل" value={`${stats.conversionRate.toFixed(1)}%`} icon={<Percent className="size-5" />} accent="violet" />
       </div>
@@ -402,7 +402,7 @@ export function SalesQuotationsModule() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-8 gap-1.5 text-emerald-600"
+                          className="h-8 gap-1.5 text-blue-600"
                           disabled={convertMutation.isPending}
                           onClick={() => convertMutation.mutate(q)}
                         >
@@ -547,9 +547,9 @@ export function SalesQuotationsModule() {
                 <p className="text-xs text-muted-foreground">الضريبة</p>
                 <p className="font-bold tabular-nums" dir="ltr">{formatCurrency(computed.taxTotal)}</p>
               </div>
-              <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900">
-                <p className="text-xs text-emerald-700 dark:text-emerald-400">الإجمالي</p>
-                <p className="font-bold tabular-nums text-emerald-700 dark:text-emerald-400" dir="ltr">{formatCurrency(computed.total)}</p>
+              <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900">
+                <p className="text-xs text-blue-700 dark:text-blue-400">الإجمالي</p>
+                <p className="font-bold tabular-nums text-blue-700 dark:text-blue-400" dir="ltr">{formatCurrency(computed.total)}</p>
               </div>
             </div>
 

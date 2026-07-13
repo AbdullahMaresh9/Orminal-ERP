@@ -291,7 +291,7 @@ export function ExpensesModule() {
           <>
             <KpiCard title="مصروفات الشهر" value={formatCurrency(totalMonth)} icon={<TrendingDown className="size-5" />} accent="rose" />
             <KpiCard title="عدد المصروفات" value={formatInt(monthExpenses.length)} icon={<ReceiptText className="size-5" />} accent="amber" />
-            <KpiCard title="متوسط المصروف" value={formatCurrency(avgMonth)} icon={<BarChart3 className="size-5" />} accent="teal" />
+            <KpiCard title="متوسط المصروف" value={formatCurrency(avgMonth)} icon={<BarChart3 className="size-5" />} accent="sky" />
             <KpiCard
               title="أعلى فئة مصروف"
               value={Array.from(byCategory.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] ?? '—'}

@@ -198,7 +198,7 @@ export function InventoryOutgoingModule() {
             <KpiCard title="إجمالي عمليات الصرف" value={String(kpis.total)} icon={<ArrowUpFromLine className="size-5" />} accent="rose" />
             <KpiCard title="الكمية المصروفة" value={formatNumber(kpis.totalQty, 0)} icon={<Boxes className="size-5" />} accent="amber" />
             <KpiCard title="قيمة المصروف" value={formatCurrency(kpis.totalValue)} icon={<Package className="size-5" />} accent="violet" />
-            <KpiCard title="منتجات متنوعة" value={String(kpis.uniqueProducts)} icon={<Package className="size-5" />} accent="teal" />
+            <KpiCard title="منتجات متنوعة" value={String(kpis.uniqueProducts)} icon={<Package className="size-5" />} accent="sky" />
           </>
         )}
       </div>

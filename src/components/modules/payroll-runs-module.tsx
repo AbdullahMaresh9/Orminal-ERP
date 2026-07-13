@@ -230,8 +230,8 @@ export function PayrollRunsModule() {
       onExport={handleExport}
     >
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <KpiCard title="إجمالي التشغيلات" value={formatInt(stats.total)} icon={<Wallet className="size-5" />} accent="emerald" />
-        <KpiCard title="مُرحّلة" value={formatInt(stats.posted)} icon={<CheckCircle2 className="size-5" />} accent="teal" />
+        <KpiCard title="إجمالي التشغيلات" value={formatInt(stats.total)} icon={<Wallet className="size-5" />} accent="blue" />
+        <KpiCard title="مُرحّلة" value={formatInt(stats.posted)} icon={<CheckCircle2 className="size-5" />} accent="sky" />
         <KpiCard title="صافي الرواتب" value={formatCurrency(stats.totalNet)} icon={<Coins className="size-5" />} accent="violet" />
         <KpiCard title="هذا الشهر" value={formatInt(stats.thisMonth)} icon={<Calculator className="size-5" />} accent="amber" />
       </div>
@@ -264,7 +264,7 @@ export function PayrollRunsModule() {
                   <TableCell className="text-sm">{formatDate(r.endDate)}</TableCell>
                   <TableCell className="text-end num-cell"><span className="num tabular-nums" dir="ltr">{formatCurrency(r.totalGross)}</span></TableCell>
                   <TableCell className="text-end num-cell"><span className="num tabular-nums text-rose-600" dir="ltr">{formatCurrency(r.totalDeductions)}</span></TableCell>
-                  <TableCell className="text-end num-cell"><span className="num tabular-nums font-semibold text-emerald-600" dir="ltr">{formatCurrency(r.totalNet)}</span></TableCell>
+                  <TableCell className="text-end num-cell"><span className="num tabular-nums font-semibold text-blue-600" dir="ltr">{formatCurrency(r.totalNet)}</span></TableCell>
                   <TableCell className="text-end num-cell"><span className="num tabular-nums" dir="ltr">{r._count?.payslips ?? 0}</span></TableCell>
                   <TableCell><StatusBadge status={r.status} /></TableCell>
                   <TableCell className="text-end">
@@ -275,7 +275,7 @@ export function PayrollRunsModule() {
                         </Button>
                       )}
                       {['calculated', 'reviewed', 'approved'].includes(r.status) && (
-                        <Button size="icon" variant="ghost" className="size-8 text-emerald-600" title="ترحيل" onClick={() => actionMutation.mutate({ id: r.id, action: 'post' })}>
+                        <Button size="icon" variant="ghost" className="size-8 text-blue-600" title="ترحيل" onClick={() => actionMutation.mutate({ id: r.id, action: 'post' })}>
                           <Send className="size-3.5" />
                         </Button>
                       )}
@@ -365,7 +365,7 @@ export function PayrollRunsModule() {
                       <TableCell className="text-end num-cell"><span className="num tabular-nums" dir="ltr">{formatCurrency(p.grossSalary)}</span></TableCell>
                       <TableCell className="text-end num-cell"><span className="num tabular-nums" dir="ltr">{formatCurrency(p.allowances)}</span></TableCell>
                       <TableCell className="text-end num-cell"><span className="num tabular-nums text-rose-600" dir="ltr">{formatCurrency(p.deductions)}</span></TableCell>
-                      <TableCell className="text-end num-cell"><span className="num tabular-nums font-semibold text-emerald-600" dir="ltr">{formatCurrency(p.netSalary)}</span></TableCell>
+                      <TableCell className="text-end num-cell"><span className="num tabular-nums font-semibold text-blue-600" dir="ltr">{formatCurrency(p.netSalary)}</span></TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -376,7 +376,7 @@ export function PayrollRunsModule() {
                       <TableCell className="text-end num-cell"><span className="num font-bold tabular-nums" dir="ltr">{formatCurrency(viewing.totalGross)}</span></TableCell>
                       <TableCell className="text-end num-cell"><span className="num tabular-nums" dir="ltr">—</span></TableCell>
                       <TableCell className="text-end num-cell"><span className="num font-bold tabular-nums text-rose-600" dir="ltr">{formatCurrency(viewing.totalDeductions)}</span></TableCell>
-                      <TableCell className="text-end num-cell"><span className="num font-bold tabular-nums text-emerald-600" dir="ltr">{formatCurrency(viewing.totalNet)}</span></TableCell>
+                      <TableCell className="text-end num-cell"><span className="num font-bold tabular-nums text-blue-600" dir="ltr">{formatCurrency(viewing.totalNet)}</span></TableCell>
                     </TableRow>
                   </TableFooter>
                 )}

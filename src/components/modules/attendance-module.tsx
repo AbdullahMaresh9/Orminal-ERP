@@ -220,7 +220,7 @@ export function AttendanceModule() {
       }
     >
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <KpiCard title="حاضرون اليوم" value={formatInt(stats.present)} icon={<UserCheck className="size-5" />} accent="emerald" />
+        <KpiCard title="حاضرون اليوم" value={formatInt(stats.present)} icon={<UserCheck className="size-5" />} accent="blue" />
         <KpiCard title="غائبون اليوم" value={formatInt(stats.absent)} icon={<UserX className="size-5" />} accent="rose" />
         <KpiCard title="متأخرون" value={formatInt(stats.late)} icon={<Clock className="size-5" />} accent="amber" />
         <KpiCard title="في إجازة" value={formatInt(stats.onLeave)} icon={<CalendarOff className="size-5" />} accent="violet" />

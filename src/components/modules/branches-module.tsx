@@ -135,9 +135,9 @@ export function BranchesModule() {
       onExport={handleExport}
     >
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard title="إجمالي الفروع" value={String(totalBranches)} icon={<Store className="size-5" />} accent="emerald" />
+        <KpiCard title="إجمالي الفروع" value={String(totalBranches)} icon={<Store className="size-5" />} accent="blue" />
         <KpiCard title="الفرع الرئيسي" value={String(mainBranch)} icon={<Star className="size-5" />} accent="amber" />
-        <KpiCard title="الفروع النشطة" value={String(activeBranches)} icon={<CheckCircle2 className="size-5" />} accent="teal" />
+        <KpiCard title="الفروع النشطة" value={String(activeBranches)} icon={<CheckCircle2 className="size-5" />} accent="sky" />
         <KpiCard title="إجمالي المستخدمين" value={String(totalUsers)} icon={<Users className="size-5" />} accent="violet" />
       </div>
 

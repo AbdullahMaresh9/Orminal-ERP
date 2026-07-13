@@ -216,9 +216,9 @@ export function StockTakesModule() {
           Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />)
         ) : (
           <>
-            <KpiCard title="إجمالي عمليات الجرد" value={String(kpis.total)} icon={<ClipboardList className="size-5" />} accent="emerald" />
+            <KpiCard title="إجمالي عمليات الجرد" value={String(kpis.total)} icon={<ClipboardList className="size-5" />} accent="blue" />
             <KpiCard title="جلسات نشطة" value={String(kpis.draft)} icon={<ClipboardCheck className="size-5" />} accent="amber" />
-            <KpiCard title="مكتملة" value={String(kpis.completed)} icon={<CheckCircle2 className="size-5" />} accent="teal" />
+            <KpiCard title="مكتملة" value={String(kpis.completed)} icon={<CheckCircle2 className="size-5" />} accent="sky" />
             <KpiCard title="ملغية" value={String(kpis.cancelled)} icon={<XCircle className="size-5" />} accent="rose" />
           </>
         )}
@@ -343,11 +343,11 @@ export function StockTakesModule() {
                 </div>
                 <div className="rounded-lg border p-3 text-center">
                   <p className="text-xs text-muted-foreground">اختلافات</p>
-                  <p className={`text-xl font-bold ${mismatched > 0 ? 'text-amber-600' : 'text-emerald-600'}`}><span className="num">{mismatched}</span></p>
+                  <p className={`text-xl font-bold ${mismatched > 0 ? 'text-amber-600' : 'text-blue-600'}`}><span className="num">{mismatched}</span></p>
                 </div>
                 <div className="rounded-lg border p-3 text-center">
                   <p className="text-xs text-muted-foreground">صافي الفرق</p>
-                  <p className={`text-xl font-bold ${totalDiff !== 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                  <p className={`text-xl font-bold ${totalDiff !== 0 ? 'text-rose-600' : 'text-blue-600'}`}>
                     <span className="num">{totalDiff > 0 ? '+' : ''}{formatNumber(totalDiff, 0)}</span>
                   </p>
                 </div>
@@ -378,7 +378,7 @@ export function StockTakesModule() {
                           />
                         </TableCell>
                         <TableCell className="num-cell text-sm">
-                          <span className={`num ${it.diff > 0 ? 'text-emerald-600 font-bold' : it.diff < 0 ? 'text-rose-600 font-bold' : 'text-muted-foreground'}`}>
+                          <span className={`num ${it.diff > 0 ? 'text-blue-600 font-bold' : it.diff < 0 ? 'text-rose-600 font-bold' : 'text-muted-foreground'}`}>
                             {it.diff > 0 ? '+' : ''}{formatNumber(it.diff, 0)}
                           </span>
                         </TableCell>

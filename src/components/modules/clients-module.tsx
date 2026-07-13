@@ -322,7 +322,7 @@ export function ClientsModule() {
               title="إجمالي العملاء"
               value={String(data?.total ?? 0)}
               icon={<Users className="size-5" />}
-              accent="emerald"
+              accent="blue"
             />
             <KpiCard
               title="إجمالي المستحقات"
@@ -340,7 +340,7 @@ export function ClientsModule() {
               title="العملاء النشطون"
               value={String(stats?.activeClients ?? 0)}
               icon={<UserCheck className="size-5" />}
-              accent="teal"
+              accent="sky"
             />
           </>
         )}
@@ -402,7 +402,7 @@ export function ClientsModule() {
                     </TableCell>
                     <TableCell className="text-sm cell-truncate">{c.contactName || '—'}</TableCell>
                     <TableCell className="text-sm tabular-nums" dir="ltr">{c.phone || '—'}</TableCell>
-                    <TableCell className={`num-cell font-semibold ${c.balance > 0 ? 'text-rose-600 dark:text-rose-400' : c.balance < 0 ? 'text-emerald-600 dark:text-emerald-400' : ''}`}>
+                    <TableCell className={`num-cell font-semibold ${c.balance > 0 ? 'text-rose-600 dark:text-rose-400' : c.balance < 0 ? 'text-blue-600 dark:text-blue-400' : ''}`}>
                       <span className="num">{formatCurrency(c.balance)}</span>
                     </TableCell>
                     <TableCell className="num-cell text-muted-foreground">
@@ -525,7 +525,7 @@ export function ClientsModule() {
               <div className="grid grid-cols-3 gap-3">
                 <Card className="p-3">
                   <p className="text-xs text-muted-foreground">الرصيد الحالي</p>
-                  <p className={`text-lg font-bold ${statementData.balance > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                  <p className={`text-lg font-bold ${statementData.balance > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400'}`}>
                     <span className="num">{formatCurrency(statementData.balance)}</span>
                   </p>
                 </Card>

@@ -250,8 +250,8 @@ export function UsersModule() {
       }
     >
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <KpiCard title="إجمالي المستخدمين" value={formatInt(stats.total)} icon={<UsersIcon className="size-5" />} accent="emerald" />
-        <KpiCard title="المستخدمون النشطون" value={formatInt(stats.active)} icon={<UserCheck className="size-5" />} accent="teal" />
+        <KpiCard title="إجمالي المستخدمين" value={formatInt(stats.total)} icon={<UsersIcon className="size-5" />} accent="blue" />
+        <KpiCard title="المستخدمون النشطون" value={formatInt(stats.active)} icon={<UserCheck className="size-5" />} accent="sky" />
         <KpiCard title="الأكثر دوراً" value={topRoleLabel} icon={<KeyRound className="size-5" />} accent="amber" />
         <KpiCard title="مع التحقق الثنائي (MFA)" value={formatInt(stats.withMfa)} icon={<ShieldCheck className="size-5" />} accent="violet" />
       </div>
@@ -284,7 +284,7 @@ export function UsersModule() {
                   <TableCell className="text-sm font-mono" dir="ltr">{u.email}</TableCell>
                   <TableCell>
                     {u.userRoles?.[0]?.role ? (
-                      <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 text-[11px]">
+                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 text-[11px]">
                         {u.userRoles[0].role.nameAr}
                       </Badge>
                     ) : <span className="text-xs text-muted-foreground">—</span>}

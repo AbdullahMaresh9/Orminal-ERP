@@ -337,9 +337,9 @@ export function PurchaseRequestsModule() {
       }
     >
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <KpiCard title="إجمالي الطلبات" value={formatInt(stats.total)} icon={<ClipboardList className="size-5" />} accent="emerald" />
+        <KpiCard title="إجمالي الطلبات" value={formatInt(stats.total)} icon={<ClipboardList className="size-5" />} accent="blue" />
         <KpiCard title="قيد المعالجة" value={formatInt(stats.pending)} icon={<Clock className="size-5" />} accent="amber" />
-        <KpiCard title="معتمدة" value={formatInt(stats.approved)} icon={<CheckCircle2 className="size-5" />} accent="teal" />
+        <KpiCard title="معتمدة" value={formatInt(stats.approved)} icon={<CheckCircle2 className="size-5" />} accent="sky" />
         <KpiCard title="مُحوّلة" value={formatInt(stats.converted)} icon={<FileCheck2 className="size-5" />} accent="violet" />
       </div>
 
@@ -374,7 +374,7 @@ export function PurchaseRequestsModule() {
                     <div className="flex items-center justify-end gap-1">
                       {r.status === 'submitted' && (
                         <>
-                          <Button size="sm" variant="ghost" className="h-8 text-xs gap-1.5 text-emerald-600" disabled={actionMutation.isPending} onClick={() => actionMutation.mutate({ req: r, action: 'approve' })}>
+                          <Button size="sm" variant="ghost" className="h-8 text-xs gap-1.5 text-blue-600" disabled={actionMutation.isPending} onClick={() => actionMutation.mutate({ req: r, action: 'approve' })}>
                             <CheckCircle2 className="size-3.5" /> اعتماد
                           </Button>
                           <Button size="sm" variant="ghost" className="h-8 text-xs gap-1.5 text-rose-600" disabled={actionMutation.isPending} onClick={() => actionMutation.mutate({ req: r, action: 'reject' })}>

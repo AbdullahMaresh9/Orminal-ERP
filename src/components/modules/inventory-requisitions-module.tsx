@@ -204,9 +204,9 @@ export function InventoryRequisitionsModule() {
           Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />)
         ) : (
           <>
-            <KpiCard title="إجمالي الطلبات" value={String(kpis.total)} icon={<FileText className="size-5" />} accent="emerald" />
+            <KpiCard title="إجمالي الطلبات" value={String(kpis.total)} icon={<FileText className="size-5" />} accent="blue" />
             <KpiCard title="بانتظار الاعتماد" value={String(kpis.draft)} icon={<ClipboardCheck className="size-5" />} accent="amber" />
-            <KpiCard title="معتمدة" value={String(kpis.approved)} icon={<CheckCircle2 className="size-5" />} accent="teal" />
+            <KpiCard title="معتمدة" value={String(kpis.approved)} icon={<CheckCircle2 className="size-5" />} accent="sky" />
             <KpiCard title="مُنفّذة" value={String(kpis.fulfilled)} icon={<Package className="size-5" />} accent="violet" />
           </>
         )}

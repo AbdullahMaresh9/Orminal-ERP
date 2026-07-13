@@ -342,9 +342,9 @@ export function GoodsReceiptsModule() {
       }
     >
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <KpiCard title="إجمالي السندات" value={formatInt(stats.total)} icon={<PackageCheck className="size-5" />} accent="emerald" />
+        <KpiCard title="إجمالي السندات" value={formatInt(stats.total)} icon={<PackageCheck className="size-5" />} accent="blue" />
         <KpiCard title="قيد المعالجة" value={formatInt(stats.pending)} icon={<Clock className="size-5" />} accent="amber" />
-        <KpiCard title="مُتحقَّق" value={formatInt(stats.validated)} icon={<CheckCircle2 className="size-5" />} accent="teal" />
+        <KpiCard title="مُتحقَّق" value={formatInt(stats.validated)} icon={<CheckCircle2 className="size-5" />} accent="sky" />
         <KpiCard title="إجمالي القيمة" value={formatCurrency(stats.totalValue)} icon={<Coins className="size-5" />} accent="violet" />
       </div>
 
@@ -378,7 +378,7 @@ export function GoodsReceiptsModule() {
                   <TableCell className="text-end">
                     <div className="flex items-center justify-end gap-1">
                       {r.status === 'draft' && (
-                        <Button size="sm" variant="ghost" className="h-8 text-xs gap-1.5 text-emerald-600" disabled={validateMutation.isPending} onClick={() => validateMutation.mutate(r)}>
+                        <Button size="sm" variant="ghost" className="h-8 text-xs gap-1.5 text-blue-600" disabled={validateMutation.isPending} onClick={() => validateMutation.mutate(r)}>
                           <CheckCircle2 className="size-3.5" /> تحقق
                         </Button>
                       )}

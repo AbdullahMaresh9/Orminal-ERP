@@ -82,14 +82,14 @@ const MODULES = [
 ]
 
 const ACTION_BADGE: Record<string, string> = {
-  create: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400',
+  create: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400',
   update: 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/40 dark:text-sky-400',
   delete: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-400',
   post: 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/40 dark:text-violet-400',
   reverse: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400',
   cancel: 'bg-muted text-muted-foreground',
-  approve: 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/40 dark:text-teal-400',
-  login: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400',
+  approve: 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/40 dark:text-sky-400',
+  login: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400',
   logout: 'bg-muted text-muted-foreground',
   export: 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/40 dark:text-violet-400',
 }
@@ -228,8 +228,8 @@ export function AuditLogsModule() {
       }
     >
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <KpiCard title="إجمالي السجلات" value={formatInt(totalLogs)} icon={<ScrollText className="size-5" />} accent="emerald" />
-        <KpiCard title="سجلات اليوم" value={formatInt(todayCount)} icon={<CalendarClock className="size-5" />} accent="teal" />
+        <KpiCard title="إجمالي السجلات" value={formatInt(totalLogs)} icon={<ScrollText className="size-5" />} accent="blue" />
+        <KpiCard title="سجلات اليوم" value={formatInt(todayCount)} icon={<CalendarClock className="size-5" />} accent="sky" />
         <KpiCard title="الأكثر إجراءً" value={topActionLabel} icon={<Activity className="size-5" />} accent="amber" />
         <KpiCard title="الأكثر وحدةً" value={topModuleLabel} icon={<FileEdit className="size-5" />} accent="violet" />
       </div>

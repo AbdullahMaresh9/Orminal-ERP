@@ -258,8 +258,8 @@ export function EmployeesModule() {
       }
     >
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <KpiCard title="إجمالي الموظفين" value={formatInt(stats.total)} icon={<Users className="size-5" />} accent="emerald" />
-        <KpiCard title="نشطون" value={formatInt(stats.active)} icon={<UserCheck className="size-5" />} accent="teal" />
+        <KpiCard title="إجمالي الموظفين" value={formatInt(stats.total)} icon={<Users className="size-5" />} accent="blue" />
+        <KpiCard title="نشطون" value={formatInt(stats.active)} icon={<UserCheck className="size-5" />} accent="sky" />
         <KpiCard title="أعلى إدارة" value={stats.topDept} icon={<Building2 className="size-5" />} accent="amber" />
         <KpiCard title="موقوفون" value={formatInt(stats.onLeave)} icon={<CalendarOff className="size-5" />} accent="violet" />
       </div>

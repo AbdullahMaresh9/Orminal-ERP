@@ -52,8 +52,8 @@ export function InventoryAdjustmentsModule() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {isLoading ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />) : (
           <>
-            <KpiCard title="إجمالي التسويات" value={String(rows.length)} icon={<ClipboardCheck className="size-5" />} accent="emerald" />
-            <KpiCard title="مرحّلة" value={String(rows.filter((r:any)=>r.status==='posted').length)} icon={<CheckCircle className="size-5" />} accent="teal" />
+            <KpiCard title="إجمالي التسويات" value={String(rows.length)} icon={<ClipboardCheck className="size-5" />} accent="blue" />
+            <KpiCard title="مرحّلة" value={String(rows.filter((r:any)=>r.status==='posted').length)} icon={<CheckCircle className="size-5" />} accent="sky" />
             <KpiCard title="قيد المراجعة" value={String(rows.filter((r:any)=>['draft','counted','approved'].includes(r.status)).length)} icon={<Clock className="size-5" />} accent="amber" />
             <KpiCard title="ملغاة" value={String(rows.filter((r:any)=>r.status==='cancelled').length)} icon={<AlertTriangle className="size-5" />} accent="rose" />
           </>

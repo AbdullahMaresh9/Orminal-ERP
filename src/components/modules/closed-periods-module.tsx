@@ -180,8 +180,8 @@ export function ClosedPeriodsModule() {
           Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />)
         ) : (
           <>
-            <KpiCard title="إجمالي الفترات" value={String(kpis.total)} icon={<CalendarRange className="size-5" />} accent="emerald" />
-            <KpiCard title="فترات مفتوحة" value={String(kpis.open)} icon={<CalendarDays className="size-5" />} accent="teal" />
+            <KpiCard title="إجمالي الفترات" value={String(kpis.total)} icon={<CalendarRange className="size-5" />} accent="blue" />
+            <KpiCard title="فترات مفتوحة" value={String(kpis.open)} icon={<CalendarDays className="size-5" />} accent="sky" />
             <KpiCard title="مُقفلة" value={String(kpis.closed)} icon={<FileCheck className="size-5" />} accent="amber" />
             <KpiCard title="مقفولة نهائياً" value={String(kpis.locked)} icon={<Lock className="size-5" />} accent="rose" />
           </>
@@ -253,7 +253,7 @@ export function ClosedPeriodsModule() {
                             )}
                             {(p.status === 'closed' || p.status === 'locked') && (
                               <DropdownMenuItem onClick={() => setConfirmAction({ period: p, action: 'reopen' })}>
-                                <Unlock className="size-3.5 me-2 text-emerald-600" />
+                                <Unlock className="size-3.5 me-2 text-blue-600" />
                                 إعادة فتح
                               </DropdownMenuItem>
                             )}
@@ -328,7 +328,7 @@ export function ClosedPeriodsModule() {
                 <DialogTitle className="flex items-center gap-2">
                   {confirmAction.action === 'close' && <FileCheck className="size-5 text-amber-600" />}
                   {confirmAction.action === 'lock' && <ShieldAlert className="size-5 text-rose-600" />}
-                  {confirmAction.action === 'reopen' && <Unlock className="size-5 text-emerald-600" />}
+                  {confirmAction.action === 'reopen' && <Unlock className="size-5 text-blue-600" />}
                   {confirmAction.action === 'close' && 'تأكيد إقفال الفترة'}
                   {confirmAction.action === 'lock' && 'تأكيد القفل النهائي'}
                   {confirmAction.action === 'reopen' && 'تأكيد إعادة الفتح'}

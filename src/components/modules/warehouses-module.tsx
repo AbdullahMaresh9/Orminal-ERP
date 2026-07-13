@@ -58,8 +58,8 @@ export function WarehousesModule() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {isLoading ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />) : (
           <>
-            <KpiCard title="إجمالي المستودعات" value={String(rows.length)} icon={<Warehouse className="size-5" />} accent="emerald" />
-            <KpiCard title="النشطة" value={String(rows.filter((r:any)=>r.active).length)} icon={<CheckCircle className="size-5" />} accent="teal" />
+            <KpiCard title="إجمالي المستودعات" value={String(rows.length)} icon={<Warehouse className="size-5" />} accent="blue" />
+            <KpiCard title="النشطة" value={String(rows.filter((r:any)=>r.active).length)} icon={<CheckCircle className="size-5" />} accent="sky" />
             <KpiCard title="بالفروع" value={String(new Set(rows.map((r:any)=>r.branchId).filter(Boolean)).size)} icon={<Building2 className="size-5" />} accent="violet" />
             <KpiCard title="إجمالي الأصناف" value={String(rows.length)} icon={<Boxes className="size-5" />} accent="amber" />
           </>

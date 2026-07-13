@@ -124,9 +124,9 @@ export function ActivitiesModule() {
       onExport={handleExport}
     >
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard title="إجمالي الأنشطة" value={String(total)} icon={<Activity className="size-5" />} accent="emerald" />
+        <KpiCard title="إجمالي الأنشطة" value={String(total)} icon={<Activity className="size-5" />} accent="blue" />
         <KpiCard title="عدد الفروع" value={String(branchesCount)} icon={<Building2 className="size-5" />} accent="amber" />
-        <KpiCard title="متوسط لكل فرع" value={branchesCount ? (total / branchesCount).toFixed(1) : '0'} icon={<Layers className="size-5" />} accent="teal" />
+        <KpiCard title="متوسط لكل فرع" value={branchesCount ? (total / branchesCount).toFixed(1) : '0'} icon={<Layers className="size-5" />} accent="sky" />
         <KpiCard title="إجمالي مع رمز" value={String((data?.data ?? []).filter((a) => a.code).length)} icon={<Layers className="size-5" />} accent="violet" />
       </div>
 

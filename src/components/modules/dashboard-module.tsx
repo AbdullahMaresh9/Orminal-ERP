@@ -85,7 +85,7 @@ export function DashboardModule() {
               title={t('kpi.totalSales')}
               value={formatCurrency(k?.totalSales ?? 0)}
               icon={<TrendingUp className="size-5" />}
-              accent="emerald"
+              accent="blue"
               delta={8.2}
               deltaLabel="هذا الشهر"
             />
@@ -101,7 +101,7 @@ export function DashboardModule() {
               title={t('kpi.netProfit')}
               value={formatCurrency(k?.netProfit ?? 0)}
               icon={<Wallet className="size-5" />}
-              accent={(k?.netProfit ?? 0) >= 0 ? 'teal' : 'rose'}
+              accent={(k?.netProfit ?? 0) >= 0 ? 'sky' : 'rose'}
               delta={12.4}
               deltaLabel="هذا الشهر"
             />
@@ -121,7 +121,7 @@ export function DashboardModule() {
               label={t('kpi.totalClients')}
               value={formatInt(k?.totalCustomers ?? 0)}
               icon={<Users className="size-4" />}
-              accent="emerald"
+              accent="blue"
             />
             <MiniStat
               label={t('kpi.totalSuppliers')}
@@ -139,7 +139,7 @@ export function DashboardModule() {
               label={t('kpi.receivables')}
               value={formatCurrency(k?.receivables ?? 0)}
               icon={<ArrowUpRight className="size-4" />}
-              accent="teal"
+              accent="sky"
             />
             <MiniStat
               label={t('kpi.payables')}
@@ -151,7 +151,7 @@ export function DashboardModule() {
               label="الرصيد النقدي"
               value={formatCurrency(k?.cashBalance ?? 0)}
               icon={<Banknote className="size-4" />}
-              accent="emerald"
+              accent="blue"
             />
           </div>
 
@@ -166,7 +166,7 @@ export function DashboardModule() {
                 </div>
                 <div className="flex items-center gap-3 text-xs">
                   <span className="flex items-center gap-1.5">
-                    <span className="size-2.5 rounded-full bg-emerald-500" />
+                    <span className="size-2.5 rounded-full bg-blue-500" />
                     المبيعات
                   </span>
                   <span className="flex items-center gap-1.5">
@@ -258,7 +258,7 @@ export function DashboardModule() {
                       <div key={p.id} className="space-y-1.5">
                         <div className="flex items-center justify-between text-sm">
                           <div className="flex items-center gap-2 min-w-0">
-                            <span className="size-5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 text-[10px] font-bold flex items-center justify-center shrink-0">
+                            <span className="size-5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400 text-[10px] font-bold flex items-center justify-center shrink-0">
                               {i + 1}
                             </span>
                             <span className="truncate font-medium">{p.name}</span>
@@ -266,7 +266,7 @@ export function DashboardModule() {
                           <span className="text-xs font-semibold tabular-nums" dir="ltr">{formatCurrency(p.revenue)}</span>
                         </div>
                         <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                          <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${pct}%` }} />
+                          <div className="h-full bg-blue-500 rounded-full" style={{ width: `${pct}%` }} />
                         </div>
                       </div>
                     )
@@ -341,13 +341,13 @@ export function DashboardModule() {
   )
 }
 
-function MiniStat({ label, value, icon, accent }: { label: string; value: string; icon: React.ReactNode; accent: 'emerald' | 'amber' | 'rose' | 'violet' | 'teal' }) {
+function MiniStat({ label, value, icon, accent }: { label: string; value: string; icon: React.ReactNode; accent: 'blue' | 'amber' | 'rose' | 'violet' | 'sky' }) {
   const accentClasses = {
-    emerald: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400',
+    emerald: 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400',
     amber: 'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400',
     rose: 'bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400',
     violet: 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-400',
-    teal: 'bg-teal-50 text-teal-600 dark:bg-teal-950/40 dark:text-teal-400',
+    teal: 'bg-sky-50 text-sky-600 dark:bg-sky-950/40 dark:text-sky-400',
   }
   return (
     <Card className="p-3.5 flex items-center gap-3 hover:shadow-sm transition-shadow">

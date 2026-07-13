@@ -203,8 +203,8 @@ export function InventoryIncomingModule() {
           Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />)
         ) : (
           <>
-            <KpiCard title="إجمالي عمليات التوريد" value={String(kpis.total)} icon={<ArrowDownToLine className="size-5" />} accent="emerald" />
-            <KpiCard title="الكمية الواردة" value={formatNumber(kpis.totalQty, 0)} icon={<Boxes className="size-5" />} accent="teal" />
+            <KpiCard title="إجمالي عمليات التوريد" value={String(kpis.total)} icon={<ArrowDownToLine className="size-5" />} accent="blue" />
+            <KpiCard title="الكمية الواردة" value={formatNumber(kpis.totalQty, 0)} icon={<Boxes className="size-5" />} accent="sky" />
             <KpiCard title="قيمة الوارد" value={formatCurrency(kpis.totalValue)} icon={<Package className="size-5" />} accent="violet" />
             <KpiCard title="منتجات متنوعة" value={String(kpis.uniqueProducts)} icon={<Package className="size-5" />} accent="amber" />
           </>
@@ -248,7 +248,7 @@ export function InventoryIncomingModule() {
                   <TableCell className="font-mono text-xs">{m.product.sku}</TableCell>
                   <TableCell className="text-sm">{m.storehouse.name}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">{m.refType ?? '—'}</TableCell>
-                  <TableCell className="num-cell text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                  <TableCell className="num-cell text-sm font-medium text-blue-600 dark:text-blue-400">
                     <span className="num">+{formatNumber(m.quantity, 0)}</span>
                   </TableCell>
                   <TableCell className="num-cell text-xs">

@@ -28,12 +28,12 @@ type ReportType = 'trial-balance' | 'income' | 'balance-sheet' | 'sales-summary'
 
 const REPORTS = {
   accounting: [
-    { type: 'trial-balance' as ReportType, title: 'ميزان المراجعة', icon: Scale, color: 'emerald' },
-    { type: 'income' as ReportType, title: 'قائمة الدخل', icon: TrendingUp, color: 'teal' },
+    { type: 'trial-balance' as ReportType, title: 'ميزان المراجعة', icon: Scale, color: 'blue' },
+    { type: 'income' as ReportType, title: 'قائمة الدخل', icon: TrendingUp, color: 'sky' },
     { type: 'balance-sheet' as ReportType, title: 'الميزانية العمومية', icon: BookOpen, color: 'violet' },
   ],
   sales: [
-    { type: 'sales-summary' as ReportType, title: 'ملخص المبيعات', icon: FileText, color: 'emerald' },
+    { type: 'sales-summary' as ReportType, title: 'ملخص المبيعات', icon: FileText, color: 'blue' },
   ],
   purchases: [
     { type: 'purchases-summary' as ReportType, title: 'ملخص المشتريات', icon: FileText, color: 'amber' },
@@ -44,8 +44,8 @@ const REPORTS = {
 }
 
 const COLOR_CLASSES: Record<string, string> = {
-  emerald: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 ring-emerald-200 dark:ring-emerald-900',
-  teal: 'bg-teal-50 text-teal-600 dark:bg-teal-950/40 dark:text-teal-400 ring-teal-200 dark:ring-teal-900',
+  emerald: 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 ring-blue-200 dark:ring-blue-900',
+  teal: 'bg-sky-50 text-sky-600 dark:bg-sky-950/40 dark:text-sky-400 ring-sky-200 dark:ring-sky-900',
   violet: 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-400 ring-violet-200 dark:ring-violet-900',
   amber: 'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400 ring-amber-200 dark:ring-amber-900',
 }
@@ -394,8 +394,8 @@ function ReportResults({ type, data }: { type: ReportType; data: any }) {
     return (
       <div className="space-y-5">
         <Card className="rounded-lg overflow-hidden">
-          <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 border-b">
-            <p className="font-semibold text-emerald-700 dark:text-emerald-400">الإيرادات</p>
+          <div className="p-3 bg-blue-50 dark:bg-blue-950/30 border-b">
+            <p className="font-semibold text-blue-700 dark:text-blue-400">الإيرادات</p>
           </div>
           <Table>
             <TableBody>
@@ -403,7 +403,7 @@ function ReportResults({ type, data }: { type: ReportType; data: any }) {
                 <TableRow key={i}>
                   <TableCell className="ps-3 font-mono text-xs" dir="ltr">{r.code}</TableCell>
                   <TableCell className="font-medium">{r.nameAr}</TableCell>
-                  <TableCell className="text-end num-cell"><span className="num tabular-nums font-semibold text-emerald-600" dir="ltr">{formatCurrency(r.amount)}</span></TableCell>
+                  <TableCell className="text-end num-cell"><span className="num tabular-nums font-semibold text-blue-600" dir="ltr">{formatCurrency(r.amount)}</span></TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -426,17 +426,17 @@ function ReportResults({ type, data }: { type: ReportType; data: any }) {
           </Table>
         </Card>
         <div className="grid grid-cols-3 gap-3">
-          <Card className="p-4 bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900">
+          <Card className="p-4 bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-900">
             <p className="text-xs text-muted-foreground">إجمالي الإيرادات</p>
-            <p className="font-bold text-lg text-emerald-700 dark:text-emerald-400 tabular-nums" dir="ltr">{formatCurrency(data.totals?.revenue ?? 0)}</p>
+            <p className="font-bold text-lg text-blue-700 dark:text-blue-400 tabular-nums" dir="ltr">{formatCurrency(data.totals?.revenue ?? 0)}</p>
           </Card>
           <Card className="p-4 bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900">
             <p className="text-xs text-muted-foreground">إجمالي المصروفات</p>
             <p className="font-bold text-lg text-amber-700 dark:text-amber-400 tabular-nums" dir="ltr">{formatCurrency(data.totals?.expense ?? 0)}</p>
           </Card>
-          <Card className={`p-4 ${(data.totals?.netProfit ?? 0) >= 0 ? 'bg-teal-50 dark:bg-teal-950/30 border-teal-200 dark:border-teal-900' : 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900'}`}>
+          <Card className={`p-4 ${(data.totals?.netProfit ?? 0) >= 0 ? 'bg-sky-50 dark:bg-sky-950/30 border-sky-200 dark:border-sky-900' : 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900'}`}>
             <p className="text-xs text-muted-foreground">صافي الربح</p>
-            <p className={`font-bold text-lg tabular-nums ${(data.totals?.netProfit ?? 0) >= 0 ? 'text-teal-700 dark:text-teal-400' : 'text-rose-700 dark:text-rose-400'}`} dir="ltr">{formatCurrency(data.totals?.netProfit ?? 0)}</p>
+            <p className={`font-bold text-lg tabular-nums ${(data.totals?.netProfit ?? 0) >= 0 ? 'text-sky-700 dark:text-sky-400' : 'text-rose-700 dark:text-rose-400'}`} dir="ltr">{formatCurrency(data.totals?.netProfit ?? 0)}</p>
           </Card>
         </div>
       </div>

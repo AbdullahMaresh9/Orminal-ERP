@@ -267,7 +267,7 @@ export function PosModule() {
                     <p className="text-[10px] text-muted-foreground font-mono mt-0.5">{p.sku}</p>
                     <div className="flex items-center justify-between mt-2">
                       <span className="text-sm font-bold text-primary"><span className="num">{formatCurrency(p.salePrice)}</span></span>
-                      <Badge variant="outline" className={cn('text-[9px]', p.stock > 0 ? 'text-emerald-600' : 'text-rose-600')}>
+                      <Badge variant="outline" className={cn('text-[9px]', p.stock > 0 ? 'text-blue-600' : 'text-rose-600')}>
                         {p.stock > 0 ? <><span className="num">{formatNumber(p.stock, 0)}</span> {p.unit}</> : 'نفد'}
                       </Badge>
                     </div>
@@ -379,7 +379,7 @@ export function PosModule() {
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-medium text-muted-foreground">المبلغ المستلم</p>
                   {received >= total && (
-                    <Badge variant="outline" className="text-[10px] text-emerald-700 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950/40">
+                    <Badge variant="outline" className="text-[10px] text-blue-700 bg-blue-50 dark:text-blue-400 dark:bg-blue-950/40">
                       الباقي: <span className="num">{formatCurrency(change)}</span>
                     </Badge>
                   )}
@@ -422,7 +422,7 @@ export function PosModule() {
       <Dialog open={!!receipt} onOpenChange={(o) => !o && setReceipt(null)}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 justify-center text-emerald-600">
+            <DialogTitle className="flex items-center gap-2 justify-center text-blue-600">
               <CheckCircle2 className="size-6" />
               تمت العملية بنجاح
             </DialogTitle>

@@ -234,7 +234,7 @@ export function ProfileModule() {
           {/* Profile header card */}
           <Card className="p-5">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              <Avatar className="size-16 ring-2 ring-emerald-200 dark:ring-emerald-900">
+              <Avatar className="size-16 ring-2 ring-blue-200 dark:ring-blue-900">
                 <AvatarFallback className="bg-primary/10 text-primary font-bold text-xl">
                   {initials(profile.nameAr || profile.username)}
                 </AvatarFallback>
@@ -243,7 +243,7 @@ export function ProfileModule() {
                 <div className="flex items-center gap-2 flex-wrap">
                   <h2 className="text-lg font-bold">{profile.nameAr}</h2>
                   {profile.userRoles?.[0]?.role && (
-                    <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 text-[11px]">
+                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 text-[11px]">
                       {profile.userRoles[0].role.nameAr}
                     </Badge>
                   )}
@@ -365,7 +365,7 @@ export function ProfileModule() {
                     <div>
                       <p className="font-medium text-sm">تفعيل MFA</p>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        الحالة: {mfaEnabled ? <span className="text-emerald-600 font-medium">مفعّل</span> : <span className="text-muted-foreground">معطّل</span>}
+                        الحالة: {mfaEnabled ? <span className="text-blue-600 font-medium">مفعّل</span> : <span className="text-muted-foreground">معطّل</span>}
                       </p>
                     </div>
                     <Switch checked={mfaEnabled} onCheckedChange={handleToggleMfa} />
@@ -490,8 +490,8 @@ export function ProfileModule() {
             {/* Activity */}
             <TabsContent value="activity">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-                <KpiCard title="عضو منذ" value={formatDate(profile.createdAt)} icon={<Calendar className="size-5" />} accent="emerald" />
-                <KpiCard title="آخر دخول" value={profile.lastLoginAt ? formatDateTime(profile.lastLoginAt) : '—'} icon={<Clock className="size-5" />} accent="teal" />
+                <KpiCard title="عضو منذ" value={formatDate(profile.createdAt)} icon={<Calendar className="size-5" />} accent="blue" />
+                <KpiCard title="آخر دخول" value={profile.lastLoginAt ? formatDateTime(profile.lastLoginAt) : '—'} icon={<Clock className="size-5" />} accent="sky" />
                 <KpiCard title="إجمالي النشاطات" value={String(activity.length)} icon={<Activity className="size-5" />} accent="violet" />
               </div>
               <Card className="rounded-xl overflow-hidden">
@@ -509,7 +509,7 @@ export function ProfileModule() {
                     <ul className="divide-y">
                       {activity.map((log) => (
                         <li key={log.id} className="p-3 flex items-center gap-3 hover:bg-muted/40 transition-colors">
-                          <div className="size-9 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                          <div className="size-9 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
                             <Activity className="size-4" />
                           </div>
                           <div className="flex-1 min-w-0">

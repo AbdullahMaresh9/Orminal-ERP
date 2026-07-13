@@ -56,8 +56,8 @@ export function FiscalPeriodsModule() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {isLoading ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />) : (
           <>
-            <KpiCard title="السنوات المالية" value={String(years.length)} icon={<CalendarClock className="size-5" />} accent="emerald" />
-            <KpiCard title="فترات مفتوحة" value={String(periods.filter((p:any)=>p.state==='open').length)} icon={<Unlock className="size-5" />} accent="teal" />
+            <KpiCard title="السنوات المالية" value={String(years.length)} icon={<CalendarClock className="size-5" />} accent="blue" />
+            <KpiCard title="فترات مفتوحة" value={String(periods.filter((p:any)=>p.state==='open').length)} icon={<Unlock className="size-5" />} accent="sky" />
             <KpiCard title="فترات مغلقة" value={String(periods.filter((p:any)=>p.state==='closed').length)} icon={<Lock className="size-5" />} accent="amber" />
             <KpiCard title="فترات مقفلة" value={String(periods.filter((p:any)=>p.state==='locked').length)} icon={<AlertCircle className="size-5" />} accent="rose" />
           </>

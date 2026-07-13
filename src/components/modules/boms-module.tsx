@@ -271,8 +271,8 @@ export function BomsModule() {
       onExport={handleExport}
     >
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <KpiCard title="إجمالي القوائم" value={formatInt(stats.total)} icon={<ClipboardList className="size-5" />} accent="emerald" />
-        <KpiCard title="معتمدة" value={formatInt(stats.approved)} icon={<FileCheck className="size-5" />} accent="teal" />
+        <KpiCard title="إجمالي القوائم" value={formatInt(stats.total)} icon={<ClipboardList className="size-5" />} accent="blue" />
+        <KpiCard title="معتمدة" value={formatInt(stats.approved)} icon={<FileCheck className="size-5" />} accent="sky" />
         <KpiCard title="نشطة" value={formatInt(stats.active)} icon={<CheckCircle2 className="size-5" />} accent="amber" />
         <KpiCard title="منتجات مغطّاة" value={formatInt(stats.byProduct)} icon={<Package className="size-5" />} accent="violet" />
       </div>
@@ -314,7 +314,7 @@ export function BomsModule() {
                   <TableCell className="text-end">
                     <div className="flex items-center justify-end gap-1">
                       {b.status === 'draft' && (
-                        <Button size="icon" variant="ghost" className="size-8 text-emerald-600" title="اعتماد" onClick={() => approveMutation.mutate(b.id)}>
+                        <Button size="icon" variant="ghost" className="size-8 text-blue-600" title="اعتماد" onClick={() => approveMutation.mutate(b.id)}>
                           <CheckCircle2 className="size-3.5" />
                         </Button>
                       )}

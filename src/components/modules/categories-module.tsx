@@ -72,8 +72,8 @@ export function CategoriesModule() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {isLoading ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />) : (
           <>
-            <KpiCard title="إجمالي الفئات" value={String(categories.length)} icon={<Boxes className="size-5" />} accent="emerald" />
-            <KpiCard title="الفئات الجذرية" value={String(rootCount)} icon={<GitBranch className="size-5" />} accent="teal" />
+            <KpiCard title="إجمالي الفئات" value={String(categories.length)} icon={<Boxes className="size-5" />} accent="blue" />
+            <KpiCard title="الفئات الجذرية" value={String(rootCount)} icon={<GitBranch className="size-5" />} accent="sky" />
             <KpiCard title="النشطة" value={String(activeCount)} icon={<CheckCircle className="size-5" />} accent="violet" />
             <KpiCard title="بالمنتجات" value={String(categories.filter((c:any)=>c._count?.products>0).length)} icon={<FolderTree className="size-5" />} accent="amber" />
           </>

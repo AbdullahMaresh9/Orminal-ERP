@@ -63,7 +63,7 @@ const LEAVE_LABELS: Record<string, string> = {
 }
 
 const LEAVE_COLORS: Record<string, string> = {
-  annual: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-900',
+  annual: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900',
   sick: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-900',
   emergency: 'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-900',
   unpaid: 'bg-muted text-muted-foreground',
@@ -220,9 +220,9 @@ export function LeaveRequestsModule() {
       }
     >
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <KpiCard title="إجمالي الطلبات" value={formatInt(stats.total)} icon={<FileClock className="size-5" />} accent="emerald" />
+        <KpiCard title="إجمالي الطلبات" value={formatInt(stats.total)} icon={<FileClock className="size-5" />} accent="blue" />
         <KpiCard title="قيد الانتظار" value={formatInt(stats.pending)} icon={<Clock className="size-5" />} accent="amber" />
-        <KpiCard title="معتمدة" value={formatInt(stats.approved)} icon={<CheckCircle2 className="size-5" />} accent="teal" />
+        <KpiCard title="معتمدة" value={formatInt(stats.approved)} icon={<CheckCircle2 className="size-5" />} accent="sky" />
         <KpiCard title="مرفوضة" value={formatInt(stats.rejected)} icon={<XCircle className="size-5" />} accent="rose" />
       </div>
 
@@ -266,7 +266,7 @@ export function LeaveRequestsModule() {
                     <div className="flex items-center justify-end gap-1">
                       {l.status === 'submitted' && (
                         <>
-                          <Button size="icon" variant="ghost" className="size-8 text-emerald-600" title="اعتماد" onClick={() => actionMutation.mutate({ id: l.id, action: 'approve' })}>
+                          <Button size="icon" variant="ghost" className="size-8 text-blue-600" title="اعتماد" onClick={() => actionMutation.mutate({ id: l.id, action: 'approve' })}>
                             <CheckCircle2 className="size-3.5" />
                           </Button>
                           <Button size="icon" variant="ghost" className="size-8 text-rose-500" title="رفض" onClick={() => actionMutation.mutate({ id: l.id, action: 'reject' })}>

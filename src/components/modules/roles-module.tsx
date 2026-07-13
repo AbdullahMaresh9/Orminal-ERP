@@ -268,9 +268,9 @@ export function RolesModule() {
       }
     >
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <KpiCard title="إجمالي الأدوار" value={formatInt(stats.total)} icon={<Shield className="size-5" />} accent="emerald" />
+        <KpiCard title="إجمالي الأدوار" value={formatInt(stats.total)} icon={<Shield className="size-5" />} accent="blue" />
         <KpiCard title="أدوار النظام" value={formatInt(stats.system)} icon={<Crown className="size-5" />} accent="amber" />
-        <KpiCard title="أدوار مخصصة" value={formatInt(stats.custom)} icon={<KeyRound className="size-5" />} accent="teal" />
+        <KpiCard title="أدوار مخصصة" value={formatInt(stats.custom)} icon={<KeyRound className="size-5" />} accent="sky" />
         <KpiCard title="إجمالي الصلاحيات" value={formatInt(stats.perms)} icon={<ShieldCheck className="size-5" />} accent="violet" />
       </div>
 
@@ -306,7 +306,7 @@ export function RolesModule() {
                     {r.isSystem ? (
                       <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 text-[10px]">نظام</Badge>
                     ) : (
-                      <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 text-[10px]">مخصص</Badge>
+                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 text-[10px]">مخصص</Badge>
                     )}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground line-clamp-1 max-w-xs">{r.description ?? '—'}</TableCell>

@@ -256,8 +256,8 @@ export function SalesCreditNotesModule() {
       }
     >
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <KpiCard title="إجمالي الإشعارات" value={formatCurrency(stats.total)} icon={<Coins className="size-5" />} accent="emerald" />
-        <KpiCard title="عدد الإشعارات" value={formatInt(stats.count)} icon={<Hash className="size-5" />} accent="teal" />
+        <KpiCard title="إجمالي الإشعارات" value={formatCurrency(stats.total)} icon={<Coins className="size-5" />} accent="blue" />
+        <KpiCard title="عدد الإشعارات" value={formatInt(stats.count)} icon={<Hash className="size-5" />} accent="sky" />
         <KpiCard title="هذا الشهر" value={formatCurrency(stats.thisMonthTotal)} icon={<CalendarDays className="size-5" />} accent="amber" />
         <KpiCard title="عدد هذا الشهر" value={formatInt(stats.thisMonthCount)} icon={<ReceiptText className="size-5" />} accent="violet" />
       </div>
@@ -389,9 +389,9 @@ export function SalesCreditNotesModule() {
                 <p className="text-xs text-muted-foreground">الضريبة</p>
                 <p className="font-bold tabular-nums" dir="ltr">{formatCurrency(taxTotal)}</p>
               </div>
-              <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900">
-                <p className="text-xs text-emerald-700 dark:text-emerald-400">الإجمالي</p>
-                <p className="font-bold tabular-nums text-emerald-700 dark:text-emerald-400" dir="ltr">{formatCurrency(total_)}</p>
+              <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900">
+                <p className="text-xs text-blue-700 dark:text-blue-400">الإجمالي</p>
+                <p className="font-bold tabular-nums text-blue-700 dark:text-blue-400" dir="ltr">{formatCurrency(total_)}</p>
               </div>
             </div>
 

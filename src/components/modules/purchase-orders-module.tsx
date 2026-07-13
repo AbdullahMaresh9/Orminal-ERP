@@ -305,9 +305,9 @@ export function PurchaseOrdersModule() {
       }
     >
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <KpiCard title="إجمالي الطلبات" value={formatInt(total)} icon={<ShoppingCart className="size-5" />} accent="emerald" />
+        <KpiCard title="إجمالي الطلبات" value={formatInt(total)} icon={<ShoppingCart className="size-5" />} accent="blue" />
         <KpiCard title="إجمالي المشتريات" value={formatCurrency(stats.totalPurchases)} icon={<Coins className="size-5" />} accent="amber" />
-        <KpiCard title="المدفوع" value={formatCurrency(stats.totalPaid)} icon={<Wallet className="size-5" />} accent="teal" />
+        <KpiCard title="المدفوع" value={formatCurrency(stats.totalPaid)} icon={<Wallet className="size-5" />} accent="sky" />
         <KpiCard title="المتبقي" value={formatCurrency(stats.outstanding)} icon={<Wallet className="size-5" />} accent="rose" />
       </div>
 

@@ -121,8 +121,8 @@ export function StockOnHandModule() {
       }
     >
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <KpiCard title="عدد الأصناف" value={formatInt(stats.totalItems)} icon={<Boxes className="size-5" />} accent="emerald" />
-        <KpiCard title="إجمالي الكمية" value={formatInt(stats.totalQuantity)} icon={<Package className="size-5" />} accent="teal" />
+        <KpiCard title="عدد الأصناف" value={formatInt(stats.totalItems)} icon={<Boxes className="size-5" />} accent="blue" />
+        <KpiCard title="إجمالي الكمية" value={formatInt(stats.totalQuantity)} icon={<Package className="size-5" />} accent="sky" />
         <KpiCard title="قيمة المخزون" value={formatCurrency(stats.totalValue)} icon={<Coins className="size-5" />} accent="violet" />
         <KpiCard title="تنبيهات منخفضة" value={formatInt(stats.lowStockCount)} icon={<AlertTriangle className="size-5" />} accent="amber" />
       </div>
@@ -157,7 +157,7 @@ export function StockOnHandModule() {
                   <TableCell className="text-sm text-muted-foreground">{r.product.uom?.nameAr ?? '—'}</TableCell>
                   <TableCell className="text-end num-cell"><span className="num tabular-nums font-semibold" dir="ltr">{formatInt(r.quantity)}</span></TableCell>
                   <TableCell className="text-end num-cell"><span className="num tabular-nums text-amber-600" dir="ltr">{formatInt(r.reservedQty)}</span></TableCell>
-                  <TableCell className="text-end num-cell"><span className="num tabular-nums font-semibold text-emerald-600" dir="ltr">{formatInt(r.available)}</span></TableCell>
+                  <TableCell className="text-end num-cell"><span className="num tabular-nums font-semibold text-blue-600" dir="ltr">{formatInt(r.available)}</span></TableCell>
                   <TableCell className="text-end num-cell"><span className="num tabular-nums" dir="ltr">{formatCurrency(r.product.costPrice)}</span></TableCell>
                   <TableCell className="text-end num-cell"><span className="num tabular-nums font-semibold" dir="ltr">{formatCurrency(r.value)}</span></TableCell>
                   <TableCell>
@@ -166,7 +166,7 @@ export function StockOnHandModule() {
                         <AlertTriangle className="size-2.5" /> منخفض
                       </Badge>
                     ) : (
-                      <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 text-[10px]">
+                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 text-[10px]">
                         متاح
                       </Badge>
                     )}

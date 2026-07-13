@@ -192,7 +192,7 @@ export function Topbar() {
                   className={`flex flex-col gap-1 w-full p-3 border-b text-start hover:bg-muted/50 transition-colors ${!n.isRead ? 'bg-primary/5' : ''}`}
                 >
                   <div className="flex items-start gap-2">
-                    <span className={`mt-1 size-2 rounded-full shrink-0 ${n.type === 'warning' ? 'bg-amber-500' : n.type === 'error' ? 'bg-rose-500' : n.type === 'success' ? 'bg-emerald-500' : 'bg-sky-500'}`} />
+                    <span className={`mt-1 size-2 rounded-full shrink-0 ${n.type === 'warning' ? 'bg-amber-500' : n.type === 'error' ? 'bg-rose-500' : n.type === 'success' ? 'bg-blue-500' : 'bg-sky-500'}`} />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold truncate">{n.title}</p>
                       <p className="text-xs text-muted-foreground line-clamp-2">{n.message}</p>

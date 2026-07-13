@@ -176,8 +176,8 @@ export function PartnersModule() {
       }
     >
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <KpiCard title="إجمالي الشركاء" value={formatInt(total)} icon={<Handshake className="size-5" />} accent="emerald" />
-        <KpiCard title="العملاء" value={formatInt(stats.customers)} icon={<Users className="size-5" />} accent="teal" />
+        <KpiCard title="إجمالي الشركاء" value={formatInt(total)} icon={<Handshake className="size-5" />} accent="blue" />
+        <KpiCard title="العملاء" value={formatInt(stats.customers)} icon={<Users className="size-5" />} accent="sky" />
         <KpiCard title="الموردون" value={formatInt(stats.suppliers)} icon={<Truck className="size-5" />} accent="amber" />
         <KpiCard title="إجمالي الأرصدة" value={formatCurrency(stats.totalBalance)} icon={<Building2 className="size-5" />} accent="violet" />
       </div>
@@ -208,7 +208,7 @@ export function PartnersModule() {
                   <TableCell className="font-medium">{p.nameAr}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
-                      {p.isCustomer && <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 text-[10px]">عميل</Badge>}
+                      {p.isCustomer && <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 text-[10px]">عميل</Badge>}
                       {p.isSupplier && <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 text-[10px]">مورد</Badge>}
                     </div>
                   </TableCell>

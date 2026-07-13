@@ -285,8 +285,8 @@ export function RevenuesModule() {
           Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />)
         ) : (
           <>
-            <KpiCard title="إيرادات الشهر" value={formatCurrency(totalMonth)} icon={<TrendingUp className="size-5" />} accent="emerald" />
-            <KpiCard title="عدد الإيرادات" value={formatInt(monthRevenues.length)} icon={<CircleDollarSign className="size-5" />} accent="teal" />
+            <KpiCard title="إيرادات الشهر" value={formatCurrency(totalMonth)} icon={<TrendingUp className="size-5" />} accent="blue" />
+            <KpiCard title="عدد الإيرادات" value={formatInt(monthRevenues.length)} icon={<CircleDollarSign className="size-5" />} accent="sky" />
             <KpiCard title="متوسط الإيراد" value={formatCurrency(avgMonth)} icon={<BarChart3 className="size-5" />} accent="violet" />
             <KpiCard
               title="أعلى فئة إيراد"
@@ -304,7 +304,7 @@ export function RevenuesModule() {
           <div className="flex flex-wrap items-center gap-3">
             <span className="text-sm font-medium text-muted-foreground">توزيع إيرادات الشهر حسب الفئة:</span>
             {Array.from(byCategory.entries()).sort((a, b) => b[1] - a[1]).map(([name, v]) => (
-              <span key={name} className="text-xs px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 font-semibold">
+              <span key={name} className="text-xs px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400 font-semibold">
                 {name}: <span className="num">{formatCurrency(v)}</span>
               </span>
             ))}
@@ -347,7 +347,7 @@ export function RevenuesModule() {
                   <TableCell><span className="font-mono text-xs font-semibold text-primary">{e.code}</span></TableCell>
                   <TableCell className="text-xs text-muted-foreground">{formatDate(e.date)}</TableCell>
                   <TableCell className="font-medium text-sm cell-truncate">{e.payee || '—'}</TableCell>
-                  <TableCell className="num-cell font-semibold text-emerald-600 dark:text-emerald-400">
+                  <TableCell className="num-cell font-semibold text-blue-600 dark:text-blue-400">
                     <span className="num">{formatCurrency(e.amount)}</span>
                   </TableCell>
                   <TableCell className="text-xs">

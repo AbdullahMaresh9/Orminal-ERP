@@ -188,8 +188,8 @@ export function AnalyticAccountsModule() {
           Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />)
         ) : (
           <>
-            <KpiCard title="إجمالي المراكز" value={String(kpis.total)} icon={<Layers className="size-5" />} accent="emerald" />
-            <KpiCard title="المراكز النشطة" value={String(kpis.active)} icon={<CheckCircle2 className="size-5" />} accent="teal" />
+            <KpiCard title="إجمالي المراكز" value={String(kpis.total)} icon={<Layers className="size-5" />} accent="blue" />
+            <KpiCard title="المراكز النشطة" value={String(kpis.active)} icon={<CheckCircle2 className="size-5" />} accent="sky" />
             <KpiCard title="مراكز رئيسية" value={String(kpis.parents)} icon={<FolderTree className="size-5" />} accent="violet" />
             <KpiCard title="مراكز فرعية" value={String(kpis.children)} icon={<Network className="size-5" />} accent="amber" />
           </>

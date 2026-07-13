@@ -213,10 +213,10 @@ export function InventoryTransfersModule() {
           Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />)
         ) : (
           <>
-            <KpiCard title="إجمالي التحويلات" value={String(kpis.total)} icon={<ArrowLeftRight className="size-5" />} accent="emerald" />
+            <KpiCard title="إجمالي التحويلات" value={String(kpis.total)} icon={<ArrowLeftRight className="size-5" />} accent="blue" />
             <KpiCard title="مسودة" value={String(kpis.draft)} icon={<Package className="size-5" />} accent="amber" />
             <KpiCard title="قيد النقل" value={String(kpis.inTransit)} icon={<Truck className="size-5" />} accent="violet" />
-            <KpiCard title="مستلمة" value={String(kpis.received)} icon={<CheckCircle2 className="size-5" />} accent="teal" />
+            <KpiCard title="مستلمة" value={String(kpis.received)} icon={<CheckCircle2 className="size-5" />} accent="sky" />
           </>
         )}
       </div>

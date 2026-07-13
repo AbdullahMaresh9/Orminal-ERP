@@ -135,8 +135,8 @@ export function WorkCentersModule() {
       onExport={handleExport}
     >
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <KpiCard title="إجمالي المراكز" value={formatInt(stats.total)} icon={<Factory className="size-5" />} accent="emerald" />
-        <KpiCard title="المراكز النشطة" value={formatInt(stats.active)} icon={<Cog className="size-5" />} accent="teal" />
+        <KpiCard title="إجمالي المراكز" value={formatInt(stats.total)} icon={<Factory className="size-5" />} accent="blue" />
+        <KpiCard title="المراكز النشطة" value={formatInt(stats.active)} icon={<Cog className="size-5" />} accent="sky" />
         <KpiCard title="إجمالي السعة/ساعة" value={formatNumber(stats.totalCapacity, 0)} icon={<Gauge className="size-5" />} accent="amber" />
         <KpiCard title="متوسط التكلفة/ساعة" value={formatCurrency(stats.avgCost)} icon={<Coins className="size-5" />} accent="violet" />
       </div>

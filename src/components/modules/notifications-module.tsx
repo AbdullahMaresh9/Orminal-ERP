@@ -76,7 +76,7 @@ const READ_FILTERS = [
 
 const TYPE_META: Record<string, { icon: React.ReactNode; badge: string }> = {
   info: { icon: <Info className="size-4" />, badge: 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/40 dark:text-sky-400' },
-  success: { icon: <CheckCircle2 className="size-4" />, badge: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400' },
+  success: { icon: <CheckCircle2 className="size-4" />, badge: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400' },
   warning: { icon: <AlertTriangle className="size-4" />, badge: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400' },
   error: { icon: <XCircle className="size-4" />, badge: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-400' },
 }
@@ -234,7 +234,7 @@ export function NotificationsModule() {
       }
     >
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <KpiCard title="إجمالي الإشعارات" value={formatInt(stats.total)} icon={<Bell className="size-5" />} accent="emerald" />
+        <KpiCard title="إجمالي الإشعارات" value={formatInt(stats.total)} icon={<Bell className="size-5" />} accent="blue" />
         <KpiCard title="غير مقروءة" value={formatInt(stats.unread)} icon={<BellOff className="size-5" />} accent="rose" />
         <KpiCard title="الأكثر نوعاً" value={topTypeLabel} icon={<Info className="size-5" />} accent="amber" />
         <KpiCard title="الأكثر تصنيفاً" value={topCategoryLabel} icon={<Mail className="size-5" />} accent="violet" />
@@ -265,7 +265,7 @@ export function NotificationsModule() {
                 return (
                   <TableRow
                     key={n.id}
-                    className={cn('hover:bg-muted/40', !n.isRead && 'bg-emerald-50/40 dark:bg-emerald-950/10')}
+                    className={cn('hover:bg-muted/40', !n.isRead && 'bg-blue-50/40 dark:bg-blue-950/10')}
                   >
                     <TableCell className="ps-4">
                       <div className={cn('size-8 rounded-lg flex items-center justify-center', tm.badge, 'border')}>
@@ -274,7 +274,7 @@ export function NotificationsModule() {
                     </TableCell>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
-                        {!n.isRead && <span className="size-2 rounded-full bg-emerald-500 shrink-0" />}
+                        {!n.isRead && <span className="size-2 rounded-full bg-blue-500 shrink-0" />}
                         <span className={cn(!n.isRead && 'font-bold')}>{n.title}</span>
                       </div>
                     </TableCell>
@@ -293,7 +293,7 @@ export function NotificationsModule() {
                           <MailOpen className="size-3.5" /> مقروء
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+                        <span className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400">
                           <Mail className="size-3.5" /> غير مقروء
                         </span>
                       )}
@@ -307,7 +307,7 @@ export function NotificationsModule() {
                           <Button
                             size="icon"
                             variant="ghost"
-                            className="size-8 text-emerald-600 hover:text-emerald-700"
+                            className="size-8 text-blue-600 hover:text-blue-700"
                             onClick={() => markReadMutation.mutate(n.id)}
                             title="تعليم كمقروء"
                           >

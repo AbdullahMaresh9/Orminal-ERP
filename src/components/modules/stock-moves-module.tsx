@@ -47,8 +47,8 @@ export function StockMovesModule() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {isLoading ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />) : (
           <>
-            <KpiCard title="إجمالي الحركات" value={String(rows.length)} icon={<ArrowLeftRight className="size-5" />} accent="emerald" />
-            <KpiCard title="اليوم" value={String(todayCount)} icon={<Activity className="size-5" />} accent="teal" />
+            <KpiCard title="إجمالي الحركات" value={String(rows.length)} icon={<ArrowLeftRight className="size-5" />} accent="blue" />
+            <KpiCard title="اليوم" value={String(todayCount)} icon={<Activity className="size-5" />} accent="sky" />
             <KpiCard title="مكتملة" value={String(doneCount)} icon={<TrendingUp className="size-5" />} accent="violet" />
             <KpiCard title="أنواع المستندات" value={String(new Set(rows.map((r:any)=>r.documentType)).size)} icon={<Layers className="size-5" />} accent="amber" />
           </>

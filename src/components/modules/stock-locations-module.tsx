@@ -59,8 +59,8 @@ export function StockLocationsModule() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {isLoading ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />) : (
           <>
-            <KpiCard title="إجمالي المواقع" value={String(rows.length)} icon={<MapPin className="size-5" />} accent="emerald" />
-            <KpiCard title="داخلية" value={String(rows.filter((r:any)=>r.type==='internal').length)} icon={<Layers className="size-5" />} accent="teal" />
+            <KpiCard title="إجمالي المواقع" value={String(rows.length)} icon={<MapPin className="size-5" />} accent="blue" />
+            <KpiCard title="داخلية" value={String(rows.filter((r:any)=>r.type==='internal').length)} icon={<Layers className="size-5" />} accent="sky" />
             <KpiCard title="نشطة" value={String(rows.filter((r:any)=>r.active).length)} icon={<CheckCircle className="size-5" />} accent="violet" />
             <KpiCard title="بالمستودعات" value={String(new Set(rows.map((r:any)=>r.warehouseId).filter(Boolean)).size)} icon={<Building2 className="size-5" />} accent="amber" />
           </>

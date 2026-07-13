@@ -49,7 +49,7 @@ const DEFAULT_HTML = `<div class="invoice">
 </div>`
 
 const DEFAULT_CSS = `.invoice { font-family: 'Cairo', sans-serif; padding: 20px; }
-h1 { color: #16a34a; }
+h1 { color: #2563EB; }
 table { width: 100%; border-collapse: collapse; }
 th, td { border: 1px solid #ddd; padding: 8px; }
 .totals { margin-top: 20px; text-align: left; font-weight: bold; }`

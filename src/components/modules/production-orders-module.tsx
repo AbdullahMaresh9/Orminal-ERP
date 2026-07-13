@@ -240,9 +240,9 @@ export function ProductionOrdersModule() {
       }
     >
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <KpiCard title="إجمالي الأوامر" value={formatInt(stats.total)} icon={<Factory className="size-5" />} accent="emerald" />
+        <KpiCard title="إجمالي الأوامر" value={formatInt(stats.total)} icon={<Factory className="size-5" />} accent="blue" />
         <KpiCard title="قيد التنفيذ" value={formatInt(stats.inProgress)} icon={<PlayCircle className="size-5" />} accent="amber" />
-        <KpiCard title="مُنتَجة" value={formatInt(stats.produced)} icon={<CheckCircle2 className="size-5" />} accent="teal" />
+        <KpiCard title="مُنتَجة" value={formatInt(stats.produced)} icon={<CheckCircle2 className="size-5" />} accent="sky" />
         <KpiCard title="إجمالي التكلفة" value={formatCurrency(stats.totalCost)} icon={<Coins className="size-5" />} accent="violet" />
       </div>
 
@@ -277,7 +277,7 @@ export function ProductionOrdersModule() {
                   </TableCell>
                   <TableCell className="text-sm font-mono" dir="ltr">{o.bom?.code ?? '—'}</TableCell>
                   <TableCell className="text-end num-cell"><span className="num tabular-nums" dir="ltr">{formatNumber(o.quantity, 2)}</span></TableCell>
-                  <TableCell className="text-end num-cell"><span className="num tabular-nums font-semibold text-emerald-600" dir="ltr">{formatNumber(o.producedQty, 2)}</span></TableCell>
+                  <TableCell className="text-end num-cell"><span className="num tabular-nums font-semibold text-blue-600" dir="ltr">{formatNumber(o.producedQty, 2)}</span></TableCell>
                   <TableCell className="text-end num-cell"><span className="num tabular-nums" dir="ltr">{formatCurrency(o.totalCost)}</span></TableCell>
                   <TableCell><StatusBadge status={o.status} /></TableCell>
                   <TableCell className="text-end">
@@ -288,7 +288,7 @@ export function ProductionOrdersModule() {
                         </Button>
                       )}
                       {['released', 'in_progress'].includes(o.status) && (
-                        <Button size="icon" variant="ghost" className="size-8 text-emerald-600" title="إكمال" onClick={() => actionMutation.mutate({ id: o.id, action: 'complete' })}>
+                        <Button size="icon" variant="ghost" className="size-8 text-blue-600" title="إكمال" onClick={() => actionMutation.mutate({ id: o.id, action: 'complete' })}>
                           <CheckCircle2 className="size-3.5" />
                         </Button>
                       )}

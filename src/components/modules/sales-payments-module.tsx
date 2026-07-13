@@ -264,8 +264,8 @@ export function SalesPaymentsModule() {
       }
     >
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <KpiCard title="قبوض هذا الشهر" value={formatCurrency(stats.monthTotal)} icon={<Receipt className="size-5" />} accent="emerald" />
-        <KpiCard title="عدد السندات" value={formatInt(stats.count)} icon={<Hash className="size-5" />} accent="teal" />
+        <KpiCard title="قبوض هذا الشهر" value={formatCurrency(stats.monthTotal)} icon={<Receipt className="size-5" />} accent="blue" />
+        <KpiCard title="عدد السندات" value={formatInt(stats.count)} icon={<Hash className="size-5" />} accent="sky" />
         <KpiCard title="متوسط السند" value={formatCurrency(stats.avg)} icon={<TrendingUp className="size-5" />} accent="violet" />
         <KpiCard title="أعلى طريقة" value={stats.topMethod} icon={<CreditCard className="size-5" />} accent="amber" />
       </div>

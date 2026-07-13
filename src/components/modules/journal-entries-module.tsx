@@ -328,8 +328,8 @@ export function JournalEntriesModule() {
       }
     >
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <KpiCard title="إجمالي القيود" value={formatInt(total)} icon={<FileText className="size-5" />} accent="emerald" />
-        <KpiCard title="قيود مرحّلة" value={formatInt(stats.posted)} icon={<CheckCircle2 className="size-5" />} accent="teal" />
+        <KpiCard title="إجمالي القيود" value={formatInt(total)} icon={<FileText className="size-5" />} accent="blue" />
+        <KpiCard title="قيود مرحّلة" value={formatInt(stats.posted)} icon={<CheckCircle2 className="size-5" />} accent="sky" />
         <KpiCard title="قيود مسودة" value={formatInt(stats.drafts)} icon={<BookOpen className="size-5" />} accent="amber" />
         <KpiCard title="إجمالي المدين" value={formatCurrency(stats.totalDebit)} icon={<Coins className="size-5" />} accent="violet" />
       </div>
@@ -367,7 +367,7 @@ export function JournalEntriesModule() {
                     <TableCell className="text-end num-cell"><span className="num tabular-nums" dir="ltr">{formatCurrency(e.totalCredit)}</span></TableCell>
                     <TableCell>
                       {isBalanced ? (
-                        <CheckCircle2 className="size-4 text-emerald-500" />
+                        <CheckCircle2 className="size-4 text-blue-500" />
                       ) : (
                         <XCircle className="size-4 text-rose-500" />
                       )}
@@ -524,16 +524,16 @@ export function JournalEntriesModule() {
             <div className={cn(
               'flex items-center justify-between p-3 rounded-lg border',
               balanced
-                ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-900'
+                ? 'bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-900'
                 : 'bg-rose-50 border-rose-200 dark:bg-rose-950/30 dark:border-rose-900'
             )}>
               <div className="flex items-center gap-2">
                 {balanced ? (
-                  <CheckCircle2 className="size-5 text-emerald-500" />
+                  <CheckCircle2 className="size-5 text-blue-500" />
                 ) : (
                   <XCircle className="size-5 text-rose-500" />
                 )}
-                <span className={cn('font-semibold text-sm', balanced ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400')}>
+                <span className={cn('font-semibold text-sm', balanced ? 'text-blue-700 dark:text-blue-400' : 'text-rose-700 dark:text-rose-400')}>
                   {balanced ? 'القيد متوازن' : `القيد غير متوازن — الفرق: ${formatCurrency(diff)}`}
                 </span>
               </div>

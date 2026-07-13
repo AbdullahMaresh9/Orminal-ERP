@@ -58,8 +58,8 @@ export function SafesModule() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {isLoading ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />) : (
           <>
-            <KpiCard title="إجمالي النقدية" value={formatCurrency(totalBalance)} icon={<Wallet className="size-5" />} accent="emerald" />
-            <KpiCard title="عدد الخزائن" value={String(rows.length)} icon={<PiggyBank className="size-5" />} accent="teal" />
+            <KpiCard title="إجمالي النقدية" value={formatCurrency(totalBalance)} icon={<Wallet className="size-5" />} accent="blue" />
+            <KpiCard title="عدد الخزائن" value={String(rows.length)} icon={<PiggyBank className="size-5" />} accent="sky" />
             <KpiCard title="نشطة" value={String(rows.filter((r:any)=>r.active).length)} icon={<CheckCircle className="size-5" />} accent="violet" />
             <KpiCard title="متوسط الرصيد" value={formatCurrency(rows.length ? totalBalance / rows.length : 0)} icon={<Wallet className="size-5" />} accent="amber" />
           </>

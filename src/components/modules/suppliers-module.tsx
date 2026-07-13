@@ -218,7 +218,7 @@ export function SuppliersModule() {
         <div class="name">${s.name}</div>
         <div class="sub">جهة الاتصال: ${s.contactName ?? '—'} | الهاتف: ${s.phone ?? '—'} | الرقم الضريبي: ${s.taxNumber ?? '—'}</div>
       </div>
-      <h3 style="margin-top:20px;font-size:14px;color:#16a34a">الفواتير</h3>
+      <h3 style="margin-top:20px;font-size:14px;color:#2563EB">الفواتير</h3>
       <table>
         <thead><tr><th>الكود</th><th>التاريخ</th><th>الإجمالي</th><th>المدفوع</th><th>المتبقي</th><th>الحالة</th></tr></thead>
         <tbody>
@@ -234,7 +234,7 @@ export function SuppliersModule() {
           `).join('')}
         </tbody>
       </table>
-      <h3 style="margin-top:20px;font-size:14px;color:#16a34a">المدفوعات (سندات الصرف)</h3>
+      <h3 style="margin-top:20px;font-size:14px;color:#2563EB">المدفوعات (سندات الصرف)</h3>
       <table>
         <thead><tr><th>الكود</th><th>التاريخ</th><th>المبلغ</th><th>الطريقة</th><th>المرجع</th><th>الحالة</th></tr></thead>
         <tbody>
@@ -250,7 +250,7 @@ export function SuppliersModule() {
           `).join('')}
         </tbody>
       </table>
-      <h3 style="margin-top:20px;font-size:14px;color:#16a34a">أوامر الشراء</h3>
+      <h3 style="margin-top:20px;font-size:14px;color:#2563EB">أوامر الشراء</h3>
       <table>
         <thead><tr><th>الكود</th><th>التاريخ</th><th>الإجمالي</th><th>المدفوع</th><th>الحالة</th></tr></thead>
         <tbody>
@@ -265,7 +265,7 @@ export function SuppliersModule() {
           `).join('')}
         </tbody>
       </table>
-      <h3 style="margin-top:20px;font-size:14px;color:#16a34a">إشعارات دائنة</h3>
+      <h3 style="margin-top:20px;font-size:14px;color:#2563EB">إشعارات دائنة</h3>
       <table>
         <thead><tr><th>الكود</th><th>التاريخ</th><th>المبلغ</th><th>السبب</th><th>الحالة</th></tr></thead>
         <tbody>
@@ -310,9 +310,9 @@ export function SuppliersModule() {
           Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />)
         ) : (
           <>
-            <KpiCard title="إجمالي الموردين" value={formatInt(list.length)} icon={<Truck className="size-5" />} accent="emerald" />
+            <KpiCard title="إجمالي الموردين" value={formatInt(list.length)} icon={<Truck className="size-5" />} accent="blue" />
             <KpiCard title="إجمالي الذمم الدائنة" value={formatCurrency(totalPayables)} icon={<Wallet className="size-5" />} accent="rose" />
-            <KpiCard title="الموردون النشطون" value={formatInt(activeCount)} icon={<CheckCircle2 className="size-5" />} accent="teal" />
+            <KpiCard title="الموردون النشطون" value={formatInt(activeCount)} icon={<CheckCircle2 className="size-5" />} accent="sky" />
             <KpiCard title="المضافون هذا الشهر" value={formatInt(thisMonth)} icon={<CalendarDays className="size-5" />} accent="amber" />
           </>
         )}
@@ -487,7 +487,7 @@ export function SuppliersModule() {
                       <p className="text-muted-foreground">{formatDate(p.date)} · {p.method}</p>
                     </div>
                     <div className="text-end">
-                      <p className="font-bold text-emerald-600"><span className="num">{formatCurrency(p.amount)}</span></p>
+                      <p className="font-bold text-blue-600"><span className="num">{formatCurrency(p.amount)}</span></p>
                       <StatusBadge status={p.status} />
                     </div>
                   </div>

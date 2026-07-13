@@ -262,8 +262,8 @@ export function FinanceTransfersModule() {
           Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />)
         ) : (
           <>
-            <KpiCard title="تحويلات الشهر" value={formatCurrency(totalMonth)} icon={<Repeat className="size-5" />} accent="emerald" />
-            <KpiCard title="عدد التحويلات" value={formatInt(monthTransfers.length)} icon={<ArrowLeftRight className="size-5" />} accent="teal" />
+            <KpiCard title="تحويلات الشهر" value={formatCurrency(totalMonth)} icon={<Repeat className="size-5" />} accent="blue" />
+            <KpiCard title="عدد التحويلات" value={formatInt(monthTransfers.length)} icon={<ArrowLeftRight className="size-5" />} accent="sky" />
             <KpiCard title="متوسط التحويل" value={formatCurrency(avgMonth)} icon={<BarChart3 className="size-5" />} accent="violet" />
             <KpiCard title="إجمالي التحويلات" value={formatCurrency(list.reduce((s, e) => s + e.amount, 0))} icon={<ArrowLeftRight className="size-5" />} accent="amber" />
           </>

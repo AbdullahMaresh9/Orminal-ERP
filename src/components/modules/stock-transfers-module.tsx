@@ -52,9 +52,9 @@ export function StockTransfersModule() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {isLoading ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />) : (
           <>
-            <KpiCard title="إجمالي التحويلات" value={String(rows.length)} icon={<ArrowLeftRight className="size-5" />} accent="emerald" />
+            <KpiCard title="إجمالي التحويلات" value={String(rows.length)} icon={<ArrowLeftRight className="size-5" />} accent="blue" />
             <KpiCard title="قيد النقل" value={String(rows.filter((r:any)=>r.status==='in_transit').length)} icon={<Clock className="size-5" />} accent="amber" />
-            <KpiCard title="مستلمة" value={String(rows.filter((r:any)=>r.status==='received'||r.status==='done').length)} icon={<CheckCircle className="size-5" />} accent="teal" />
+            <KpiCard title="مستلمة" value={String(rows.filter((r:any)=>r.status==='received'||r.status==='done').length)} icon={<CheckCircle className="size-5" />} accent="sky" />
             <KpiCard title="مسودات" value={String(rows.filter((r:any)=>r.status==='draft').length)} icon={<Package className="size-5" />} accent="violet" />
           </>
         )}

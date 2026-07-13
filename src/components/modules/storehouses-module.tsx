@@ -164,8 +164,8 @@ export function StorehousesModule() {
           Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />)
         ) : (
           <>
-            <KpiCard title="إجمالي المستودعات" value={String(total)} icon={<Warehouse className="size-5" />} accent="emerald" />
-            <KpiCard title="مستودعات نشطة" value={String(active)} icon={<Warehouse className="size-5" />} accent="teal" />
+            <KpiCard title="إجمالي المستودعات" value={String(total)} icon={<Warehouse className="size-5" />} accent="blue" />
+            <KpiCard title="مستودعات نشطة" value={String(active)} icon={<Warehouse className="size-5" />} accent="sky" />
             <KpiCard title="إجمالي الأصناف" value={String(totalItems)} icon={<Boxes className="size-5" />} accent="violet" />
             <KpiCard title="مرتبطة بفرع" value={String(withBranch)} icon={<Building2 className="size-5" />} accent="amber" />
           </>

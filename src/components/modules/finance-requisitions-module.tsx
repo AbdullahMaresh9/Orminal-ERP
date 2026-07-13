@@ -238,8 +238,8 @@ export function FinanceRequisitionsModule() {
         ) : (
           <>
             <KpiCard title="المعتمدات المعلقة" value={formatCurrency(pendingTotal)} icon={<Clock className="size-5" />} accent="amber" />
-            <KpiCard title="المنفّذة هذا الشهر" value={formatCurrency(fulfilledTotal)} icon={<CheckCircle2 className="size-5" />} accent="emerald" />
-            <KpiCard title="عدد الطلبات" value={formatInt(list.length)} icon={<FileText className="size-5" />} accent="teal" />
+            <KpiCard title="المنفّذة هذا الشهر" value={formatCurrency(fulfilledTotal)} icon={<CheckCircle2 className="size-5" />} accent="blue" />
+            <KpiCard title="عدد الطلبات" value={formatInt(list.length)} icon={<FileText className="size-5" />} accent="sky" />
             <KpiCard title="متوسط قيمة الطلب" value={formatCurrency(avgAmount)} icon={<BarChart3 className="size-5" />} accent="violet" />
           </>
         )}
@@ -295,7 +295,7 @@ export function FinanceRequisitionsModule() {
                       </Button>
                       {r.status === 'draft' && (
                         <>
-                          <Button size="sm" variant="ghost" className="size-8 p-0 text-emerald-600 hover:text-emerald-700" onClick={() => actionMut.mutate({ id: r.id, action: 'approve' })} title="اعتماد">
+                          <Button size="sm" variant="ghost" className="size-8 p-0 text-blue-600 hover:text-blue-700" onClick={() => actionMut.mutate({ id: r.id, action: 'approve' })} title="اعتماد">
                             <CheckCircle2 className="size-4" />
                           </Button>
                           <Button size="sm" variant="ghost" className="size-8 p-0 text-rose-600 hover:text-rose-700" onClick={() => actionMut.mutate({ id: r.id, action: 'reject' })} title="رفض">

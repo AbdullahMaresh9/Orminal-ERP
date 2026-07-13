@@ -184,8 +184,8 @@ export function DepartmentsModule() {
       onExport={handleExport}
     >
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <KpiCard title="إجمالي الأقسام" value={formatInt(stats.total)} icon={<Building2 className="size-5" />} accent="emerald" />
-        <KpiCard title="أقسام رئيسية" value={formatInt(stats.root)} icon={<Network className="size-5" />} accent="teal" />
+        <KpiCard title="إجمالي الأقسام" value={formatInt(stats.total)} icon={<Building2 className="size-5" />} accent="blue" />
+        <KpiCard title="أقسام رئيسية" value={formatInt(stats.root)} icon={<Network className="size-5" />} accent="sky" />
         <KpiCard title="نشطة" value={formatInt(stats.active)} icon={<CheckCircle2 className="size-5" />} accent="amber" />
         <KpiCard title="إجمالي الموظفين" value={formatInt(stats.employees)} icon={<Users className="size-5" />} accent="violet" />
       </div>

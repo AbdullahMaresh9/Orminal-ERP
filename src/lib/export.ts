@@ -54,27 +54,27 @@ export function printHTML(html: string, title = 'مستند') {
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif; color: #1a1a1a; padding: 24px; background: #fff; }
-  .doc-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #16a34a; padding-bottom: 16px; margin-bottom: 20px; }
+  .doc-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #2563EB; padding-bottom: 16px; margin-bottom: 20px; }
   .doc-header .company { display: flex; gap: 12px; align-items: center; }
   .doc-header .company .logo { width: 56px; height: 56px; object-fit: contain; border-radius: 8px; }
-  .doc-header .company .info h2 { font-size: 18px; color: #16a34a; }
+  .doc-header .company .info h2 { font-size: 18px; color: #2563EB; }
   .doc-header .company .info p { font-size: 12px; color: #555; margin-top: 2px; }
   .doc-header .doc-meta { text-align: left; }
-  .doc-header .doc-meta .type { font-size: 20px; font-weight: 700; color: #16a34a; }
+  .doc-header .doc-meta .type { font-size: 20px; font-weight: 700; color: #2563EB; }
   .doc-header .doc-meta .code { font-size: 13px; color: #555; margin-top: 4px; }
   .doc-header .doc-meta .date { font-size: 12px; color: #777; }
-  .party { background: #f0fdf4; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; border-inline-start: 4px solid #16a34a; }
-  .party .label { font-size: 11px; color: #16a34a; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  .party { background: #eff6ff; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; border-inline-start: 4px solid #2563EB; }
+  .party .label { font-size: 11px; color: #2563EB; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
   .party .name { font-size: 15px; font-weight: 600; margin-top: 4px; }
   .party .sub { font-size: 12px; color: #555; margin-top: 2px; }
   table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
-  thead th { background: #16a34a; color: #fff; padding: 10px 8px; text-align: right; font-weight: 600; }
+  thead th { background: #2563EB; color: #fff; padding: 10px 8px; text-align: right; font-weight: 600; }
   tbody td { padding: 8px; border-bottom: 1px solid #e5e7eb; }
   tbody tr:nth-child(even) { background: #f9fafb; }
-  tfoot td { padding: 10px 8px; border-top: 2px solid #16a34a; font-weight: 700; }
+  tfoot td { padding: 10px 8px; border-top: 2px solid #2563EB; font-weight: 700; }
   .totals { margin-top: 16px; margin-inline-start: auto; width: 280px; }
   .totals .row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; }
-  .totals .row.grand { border-top: 2px solid #16a34a; margin-top: 6px; padding-top: 10px; font-size: 16px; font-weight: 800; color: #16a34a; }
+  .totals .row.grand { border-top: 2px solid #2563EB; margin-top: 6px; padding-top: 10px; font-size: 16px; font-weight: 800; color: #2563EB; }
   .notes { margin-top: 20px; font-size: 12px; color: #555; padding: 10px; background: #f9fafb; border-radius: 6px; }
   .signatures { display: flex; justify-content: space-between; margin-top: 60px; }
   .signatures .sig { width: 200px; text-align: center; }
