@@ -1,0 +1,2389 @@
+## Error Type
+Console Error
+
+## Error Message
+A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <HotReload globalError={[...]} webSocket={WebSocket} staticIndicatorState={{pathname:null, ...}}>
+      <AppDevOverlayErrorBoundary globalError={[...]}>
+        <ReplaySsrOnlyErrors>
+        <DevRootHTTPAccessFallbackBoundary>
+          <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+            <HTTPAccessFallbackErrorBoundary pathname="/" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <Head headCacheNode={{rsc:<Fragment>, ...}}>
+                    <__next_viewport_boundary__>
+                    <MetadataWrapper>
+                      <div
+                        hidden={true}
+-                       bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+                      >
+                    ...
+                  ...
+                    <body className="geist_a715..." suppressHydrationWarning={true}>
+                      ...
+                        <SegmentViewNode type="page" pagePath="page.tsx">
+                          <SegmentTrieNode>
+                          <ClientPageRoot Component={function Home} serverProvidedParams={{...}}>
+                            <Home params={Promise} searchParams={Promise}>
+                              <AppShell>
+                                <div
+                                  className="h-screen overflow-hidden flex bg-background"
+                                  dir="rtl"
+-                                 bis_size={"{\"x\":0,\"y\":0,\"w\":994,\"h\":703,\"abs_x\":762,\"abs_y\":109}"}
+                                >
+                                  <aside
+                                    dir="rtl"
+                                    className="hidden lg:flex shrink-0 transition-[width] duration-200 border-e border..."
+-                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+                                  >
+                                    <SidebarNav>
+                                      <div
+                                        className="flex h-full flex-col bg-sidebar text-sidebar-foreground"
+-                                       bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+                                      >
+                                        <div
+                                          className="flex items-center gap-3 px-4 h-16 shrink-0 border-b border-sideba..."
+-                                         bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+                                        >
+                                          <img
+                                            src="/logo.png"
+                                            alt="أورمنال"
+                                            className="size-9 rounded-xl shadow-sm object-contain shrink-0"
+-                                           bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+                                          >
+                                          <div
+                                            className="min-w-0"
+-                                           bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+                                          >
+                                            <p
+                                              className="font-bold text-sm leading-tight truncate"
+-                                             bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+                                            >
++                                             أورمنال
+                                            <p
+                                              className="text-[10px] text-muted-foreground leading-tight truncate"
+-                                             bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+                                            >
++                                             نظام إدارة موارد المؤسسات ERP
+                                        <div
+                                          className="flex-1 min-h-0 px-2 py-3 overflow-y-auto scrollbar-thin"
+                                          dir="rtl"
+-                                         bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+                                        >
+                                          <nav
+                                            className="flex flex-col gap-0.5"
+                                            dir="rtl"
+-                                           bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+                                          >
+                                            <button
+                                              onClick={function onClick}
+                                              className="group flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm ..."
+-                                             bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+                                            >
+                                              <LayoutDashboard className="size-4 shr...">
+                                                <svg
+                                                  ref={null}
+                                                  xmlns="http://www.w3.org/2000/svg"
+                                                  width={24}
+                                                  height={24}
+                                                  viewBox="0 0 24 24"
+                                                  fill="none"
+                                                  stroke="currentColor"
+                                                  strokeWidth={2}
+                                                  strokeLinecap="round"
+                                                  strokeLinejoin="round"
+                                                  className="lucide lucide-layout-dashboard size-4 shrink-0 text-sideb..."
+                                                  aria-hidden="true"
+-                                                 bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\"..."}
+                                                >
+                                                  <rect
+                                                    width="7"
+                                                    height="9"
+                                                    x="3"
+                                                    y="3"
+                                                    rx="1"
+-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+                                                  >
+                                                  <rect
+                                                    width="7"
+                                                    height="5"
+                                                    x="14"
+                                                    y="3"
+                                                    rx="1"
+-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+                                                  >
+                                                  <rect
+                                                    width="7"
+                                                    height="9"
+                                                    x="14"
+                                                    y="12"
+                                                    rx="1"
+-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+                                                  >
+                                                  <rect
+                                                    width="7"
+                                                    height="5"
+                                                    x="3"
+                                                    y="16"
+                                                    rx="1"
+-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+                                                  >
+                                              <span
+                                                className="truncate flex-1"
+-                                               bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+                                              >
++                                               لوحة التحكم
+                                            <div
+                                              className="mb-0.5"
+-                                             bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+                                            >
+                                              <button
+                                                onClick={function onClick}
+                                                className="group flex items-center gap-2.5 rounded-lg px-3 py-2 text-s..."
+-                                               bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+                                              >
+                                                <Handshake className="size-4 shr...">
+                                                  <svg
+                                                    ref={null}
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    width={24}
+                                                    height={24}
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth={2}
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    className="lucide lucide-handshake size-4 shrink-0 text-muted-fore..."
+                                                    aria-hidden="true"
+-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+                                                  >
+                                                    <path
+                                                      d="m11 17 2 2a1 1 0 1 0 3-3"
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                                    <path
+                                                      d="m14 14 2.5 2.5a1 1 0 1 0 3-3l-3.88-3.88a3 3 0 0 0-4.24 0l-.88..."
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                                    <path
+                                                      d="m21 3 1 11h-2"
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                                    <path
+                                                      d="M3 3 2 14l6.5 6.5a1 1 0 1 0 3-3"
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                                    <path
+                                                      d="M3 4h8"
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                                <span
+                                                  className="truncate flex-1"
+-                                                 bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\"..."}
+                                                >
++                                                 البيانات الأساسية
+                                                <ChevronDown className="size-4 shr...">
+                                                  <svg
+                                                    ref={null}
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    width={24}
+                                                    height={24}
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth={2}
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    className="lucide lucide-chevron-down size-4 shrink-0 text-muted-f..."
+                                                    aria-hidden="true"
+-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+                                                  >
+                                                    <path
+                                                      d="m6 9 6 6 6-6"
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                            <div
+                                              className="mb-0.5"
+-                                             bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+                                            >
+                                              <button
+                                                onClick={function onClick}
+                                                className="group flex items-center gap-2.5 rounded-lg px-3 py-2 text-s..."
+-                                               bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+                                              >
+                                                <FileText className="size-4 shr...">
+                                                  <svg
+                                                    ref={null}
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    width={24}
+                                                    height={24}
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth={2}
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    className="lucide lucide-file-text size-4 shrink-0 text-muted-fore..."
+                                                    aria-hidden="true"
+-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+                                                  >
+                                                    <path
+                                                      d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                                    <path
+                                                      d="M14 2v4a2 2 0 0 0 2 2h4"
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                                    <path
+                                                      d="M10 9H8"
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                                    <path
+                                                      d="M16 13H8"
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                                    <path
+                                                      d="M16 17H8"
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                                <span
+                                                  className="truncate flex-1"
+-                                                 bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\"..."}
+                                                >
++                                                 المبيعات
+                                                <ChevronDown className="size-4 shr...">
+                                                  <svg
+                                                    ref={null}
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    width={24}
+                                                    height={24}
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth={2}
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    className="lucide lucide-chevron-down size-4 shrink-0 text-muted-f..."
+                                                    aria-hidden="true"
+-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+                                                  >
+                                                    <path
+                                                      d="m6 9 6 6 6-6"
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                            <div
+                                              className="mb-0.5"
+-                                             bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+                                            >
+                                              <button
+                                                onClick={function onClick}
+                                                className="group flex items-center gap-2.5 rounded-lg px-3 py-2 text-s..."
+-                                               bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+                                              >
+                                                <Truck className="size-4 shr...">
+                                                  <svg
+                                                    ref={null}
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    width={24}
+                                                    height={24}
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth={2}
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    className="lucide lucide-truck size-4 shrink-0 text-muted-foregrou..."
+                                                    aria-hidden="true"
+-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+                                                  >
+                                                    <path
+                                                      d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                                    <path
+                                                      d="M15 18H9"
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                                    <path
+                                                      d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 ..."
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                                    <circle
+                                                      cx="17"
+                                                      cy="18"
+                                                      r="2"
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                                    <circle
+                                                      cx="7"
+                                                      cy="18"
+                                                      r="2"
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                                <span
+                                                  className="truncate flex-1"
+-                                                 bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\"..."}
+                                                >
++                                                 المشتريات
+                                                <ChevronDown className="size-4 shr...">
+                                                  <svg
+                                                    ref={null}
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    width={24}
+                                                    height={24}
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth={2}
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    className="lucide lucide-chevron-down size-4 shrink-0 text-muted-f..."
+                                                    aria-hidden="true"
+-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+                                                  >
+                                                    <path
+                                                      d="m6 9 6 6 6-6"
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                            <div
+                                              className="mb-0.5"
+-                                             bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+                                            >
+                                              <button
+                                                onClick={function onClick}
+                                                className="group flex items-center gap-2.5 rounded-lg px-3 py-2 text-s..."
+-                                               bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+                                              >
+                                                <Boxes className="size-4 shr...">
+                                                  <svg
+                                                    ref={null}
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    width={24}
+                                                    height={24}
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth={2}
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    className="lucide lucide-boxes size-4 shrink-0 text-muted-foregrou..."
+                                                    aria-hidden="true"
+-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+                                                  >
+                                                    <path
+                                                      d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2..."
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                                    <path
+                                                      d="m7 16.5-4.74-2.85"
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                                    <path
+                                                      d="m7 16.5 5-3"
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                                    <path
+                                                      d="M7 16.5v5.17"
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                                    <path
+                                                      d="M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1...."
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                                    <path
+                                                      d="m17 16.5-5-3"
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                                    <path
+                                                      d="m17 16.5 4.74-2.85"
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                                    <path
+                                                      d="M17 16.5v5.17"
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                                    <path
+                                                      d="M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1..."
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                                    <path
+                                                      d="M12 8 7.26 5.15"
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                                    <path
+                                                      d="m12 8 4.74-2.85"
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                                    <path
+                                                      d="M12 13.5V8"
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                                <span
+                                                  className="truncate flex-1"
+-                                                 bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\"..."}
+                                                >
++                                                 المخزون
+                                                <ChevronDown className="size-4 shr...">
+                                                  <svg
+                                                    ref={null}
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    width={24}
+                                                    height={24}
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth={2}
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    className="lucide lucide-chevron-down size-4 shrink-0 text-muted-f..."
+                                                    aria-hidden="true"
+-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+                                                  >
+                                                    <path
+                                                      d="m6 9 6 6 6-6"
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                            <div
+                                              className="mb-0.5"
+-                                             bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+                                            >
+                                              <button
+                                                onClick={function onClick}
+                                                className="group flex items-center gap-2.5 rounded-lg px-3 py-2 text-s..."
+-                                               bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+                                              >
+                                                <BookOpen className="size-4 shr...">
+                                                  <svg
+                                                    ref={null}
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    width={24}
+                                                    height={24}
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth={2}
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    className="lucide lucide-book-open size-4 shrink-0 text-muted-fore..."
+                                                    aria-hidden="true"
+-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+                                                  >
+                                                    <path
+                                                      d="M12 7v14"
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                                    <path
+                                                      d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1..."
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                                <span
+                                                  className="truncate flex-1"
+-                                                 bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\"..."}
+                                                >
++                                                 المحاسبة
+                                                <ChevronDown className="size-4 shr...">
+                                                  <svg
+                                                    ref={null}
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    width={24}
+                                                    height={24}
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth={2}
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    className="lucide lucide-chevron-down size-4 shrink-0 text-muted-f..."
+                                                    aria-hidden="true"
+-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+                                                  >
+                                                    <path
+                                                      d="m6 9 6 6 6-6"
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                            <div
+                                              className="mb-0.5"
+-                                             bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+                                            >
+                                              <button
+                                                onClick={function onClick}
+                                                className="group flex items-center gap-2.5 rounded-lg px-3 py-2 text-s..."
+-                                               bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+                                              >
+                                                <Factory className="size-4 shr...">
+                                                  <svg
+                                                    ref={null}
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    width={24}
+                                                    height={24}
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth={2}
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    className="lucide lucide-factory size-4 shrink-0 text-muted-foregr..."
+                                                    aria-hidden="true"
+-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+                                                  >
+                                                    <path
+                                                      d="M12 16h.01"
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                                    <path
+                                                      d="M16 16h.01"
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                                    <path
+                                                      d="M3 19a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5a.5.5 0 0 0-.769-.422..."
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                                    <path
+                                                      d="M8 16h.01"
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                                <span
+                                                  className="truncate flex-1"
+-                                                 bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\"..."}
+                                                >
++                                                 التصنيع
+                                                <ChevronDown className="size-4 shr...">
+                                                  <svg
+                                                    ref={null}
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    width={24}
+                                                    height={24}
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth={2}
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    className="lucide lucide-chevron-down size-4 shrink-0 text-muted-f..."
+                                                    aria-hidden="true"
+-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+                                                  >
+                                                    <path
+                                                      d="m6 9 6 6 6-6"
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                            <div
+                                              className="mb-0.5"
+-                                             bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+                                            >
+                                              <button
+                                                onClick={function onClick}
+                                                className="group flex items-center gap-2.5 rounded-lg px-3 py-2 text-s..."
+-                                               bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+                                              >
+                                                <Users className="size-4 shr...">
+                                                  <svg
+                                                    ref={null}
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    width={24}
+                                                    height={24}
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth={2}
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    className="lucide lucide-users size-4 shrink-0 text-muted-foregrou..."
+                                                    aria-hidden="true"
+-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+                                                  >
+                                                    <path
+                                                      d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                                    <path
+                                                      d="M16 3.128a4 4 0 0 1 0 7.744"
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                                    <path
+                                                      d="M22 21v-2a4 4 0 0 0-3-3.87"
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                                    <circle
+                                                      cx="9"
+                                                      cy="7"
+                                                      r="4"
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                                <span
+                                                  className="truncate flex-1"
+-                                                 bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\"..."}
+                                                >
++                                                 الموارد البشرية
+                                                <ChevronDown className="size-4 shr...">
+                                                  <svg
+                                                    ref={null}
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    width={24}
+                                                    height={24}
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth={2}
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    className="lucide lucide-chevron-down size-4 shrink-0 text-muted-f..."
+                                                    aria-hidden="true"
+-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+                                                  >
+                                                    <path
+                                                      d="m6 9 6 6 6-6"
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                            <button
+                                              onClick={function onClick}
+                                              className="group flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm ..."
+-                                             bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+                                            >
+                                              <ChartColumn className="size-4 shr...">
+                                                <svg
+                                                  ref={null}
+                                                  xmlns="http://www.w3.org/2000/svg"
+                                                  width={24}
+                                                  height={24}
+                                                  viewBox="0 0 24 24"
+                                                  fill="none"
+                                                  stroke="currentColor"
+                                                  strokeWidth={2}
+                                                  strokeLinecap="round"
+                                                  strokeLinejoin="round"
+                                                  className="lucide lucide-chart-column size-4 shrink-0 text-muted-for..."
+                                                  aria-hidden="true"
+-                                                 bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\"..."}
+                                                >
+                                                  <path
+                                                    d="M3 3v16a2 2 0 0 0 2 2h16"
+-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+                                                  >
+                                                  <path
+                                                    d="M18 17V9"
+-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+                                                  >
+                                                  <path
+                                                    d="M13 17V5"
+-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+                                                  >
+                                                  <path
+                                                    d="M8 17v-3"
+-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+                                                  >
+                                              <span
+                                                className="truncate flex-1"
+-                                               bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+                                              >
++                                               التقارير
+                                            <div
+                                              className="mb-0.5"
+-                                             bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+                                            >
+                                              <button
+                                                onClick={function onClick}
+                                                className="group flex items-center gap-2.5 rounded-lg px-3 py-2 text-s..."
+-                                               bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+                                              >
+                                                <Settings className="size-4 shr...">
+                                                  <svg
+                                                    ref={null}
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    width={24}
+                                                    height={24}
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth={2}
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    className="lucide lucide-settings size-4 shrink-0 text-muted-foreg..."
+                                                    aria-hidden="true"
+-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+                                                  >
+                                                    <path
+                                                      d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 ..."
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                                    <circle
+                                                      cx="12"
+                                                      cy="12"
+                                                      r="3"
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                                <span
+                                                  className="truncate flex-1"
+-                                                 bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\"..."}
+                                                >
++                                                 النظام
+                                                <ChevronDown className="size-4 shr...">
+                                                  <svg
+                                                    ref={null}
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    width={24}
+                                                    height={24}
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth={2}
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    className="lucide lucide-chevron-down size-4 shrink-0 text-muted-f..."
+                                                    aria-hidden="true"
+-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+                                                  >
+                                                    <path
+                                                      d="m6 9 6 6 6-6"
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                        <div
+                                          className="border-t border-sidebar-border p-3 shrink-0"
+-                                         bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+                                        >
+                                          <RoleBadge>
+                                            <div
+                                              className="flex items-center gap-2.5 rounded-lg bg-sidebar-accent/60 p-2..."
+-                                             bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+                                            >
+                                              ...
+                                                <AvatarProvider scope={undefined} imageLoadingStatus="idle" ...>
+                                                  <Primitive.span data-slot="avatar" className="relative f..." ref={null}>
+                                                    <span
+                                                      data-slot="avatar"
+                                                      className="relative flex shrink-0 overflow-hidden rounded-full s..."
+                                                      ref={null}
+-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+                                                    >
+                                                      <AvatarFallback className="bg-primary...">
+                                                        <AvatarFallback data-slot="avatar-fal..." ...>
+                                                          <Primitive.span data-slot="avatar-fal..." ...>
+                                                            <span
+                                                              data-slot="avatar-fallback"
+                                                              className="flex size-full items-center justify-center ro..."
+                                                              ref={null}
+-                                                             bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":7..."}
+                                                            >
++                                                             م ن
+                                              <div
+                                                className="min-w-0 flex-1"
+-                                               bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+                                              >
+                                                <p
+                                                  className="text-xs font-semibold truncate"
+-                                                 bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\"..."}
+                                                >
++                                                 مدير النظام
+                                                <Badge variant="outline" className="mt-0.5 tex...">
+                                                  <span
+                                                    data-slot="badge"
+                                                    className={"inline-flex items-center justify-center rounded-md bo..."}
+-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+                                                  >
+                                                    <ShieldCheck className="size-2.5">
+                                                      <svg
+                                                        ref={null}
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        width={24}
+                                                        height={24}
+                                                        viewBox="0 0 24 24"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        strokeWidth={2}
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        className="lucide lucide-shield-check size-2.5"
+                                                        aria-hidden="true"
+-                                                       bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"a..."}
+                                                      >
+                                                        <path
+                                                          d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4..."
+-                                                         bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\..."}
+                                                        >
+                                                        <path
+                                                          d="m9 12 2 2 4-4"
+-                                                         bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\..."}
+                                                        >
+                                                    ...
+                                  <div
+                                    className="flex-1 min-w-0 flex flex-col"
+-                                   bis_size={"{\"x\":0,\"y\":0,\"w\":994,\"h\":703,\"abs_x\":762,\"abs_y\":109}"}
+                                  >
+                                    <Topbar>
+                                      <header
+                                        className="sticky top-0 z-20 flex h-16 items-center gap-2 border-b bg-backgrou..."
+-                                       bis_size={"{\"x\":0,\"y\":0,\"w\":994,\"h\":63,\"abs_x\":762,\"abs_y\":109}"}
+                                      >
+                                        ...
+                                          <Primitive.button.Slot type="button" aria-haspopup="dialog" ...>
+                                            <Primitive.button.SlotClone type="button" aria-haspopup="dialog" ...>
+                                              <Button variant="ghost" size="icon" className="lg:hidden" ...>
+                                                <button
+                                                  data-slot="sheet-trigger"
+                                                  className={"inline-flex items-center justify-center gap-2 whitespac..."}
+                                                  aria-label="فتح القائمة"
+                                                  type="button"
+                                                  aria-haspopup="dialog"
+                                                  aria-expanded={false}
+                                                  aria-controls="radix-_R_2qatplb_"
+                                                  data-state="closed"
+                                                  onClick={function handleEvent}
+                                                  ref={function}
+-                                                 bis_size={"{\"x\":934,\"y\":13,\"w\":35,\"h\":35,\"abs_x\":1696,\"a..."}
+                                                >
+                                                  <Menu className="size-5">
+                                                    <svg
+                                                      ref={null}
+                                                      xmlns="http://www.w3.org/2000/svg"
+                                                      width={24}
+                                                      height={24}
+                                                      viewBox="0 0 24 24"
+                                                      fill="none"
+                                                      stroke="currentColor"
+                                                      strokeWidth={2}
+                                                      strokeLinecap="round"
+                                                      strokeLinejoin="round"
+                                                      className="lucide lucide-menu size-5"
+                                                      aria-hidden="true"
+-                                                     bis_size={"{\"x\":942,\"y\":21,\"w\":19,\"h\":19,\"abs_x\":1704..."}
+                                                    >
+                                                      <path
+                                                        d="M4 12h16"
+-                                                       bis_size={"{\"x\":945,\"y\":31,\"w\":13,\"h\":0,\"abs_x\":170..."}
+                                                      >
+                                                      <path
+                                                        d="M4 18h16"
+-                                                       bis_size={"{\"x\":945,\"y\":36,\"w\":13,\"h\":0,\"abs_x\":170..."}
+                                                      >
+                                                      <path
+                                                        d="M4 6h16"
+-                                                       bis_size={"{\"x\":945,\"y\":26,\"w\":13,\"h\":0,\"abs_x\":170..."}
+                                                      >
+                                        <Button variant="ghost" size="icon" className="hidden lg:..." ...>
+                                          <button
+                                            data-slot="button"
+                                            className={"items-center justify-center gap-2 whitespace-nowrap rounded-m..."}
+                                            onClick={function toggleSidebar}
+                                            aria-label="طي القائمة"
+-                                           bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+                                          >
+                                            <Menu className="size-5">
+                                              <svg
+                                                ref={null}
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                width={24}
+                                                height={24}
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                strokeWidth={2}
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                className="lucide lucide-menu size-5"
+                                                aria-hidden="true"
+-                                               bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+                                              >
+                                                <path
+                                                  d="M4 12h16"
+-                                                 bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\"..."}
+                                                >
+                                                <path
+                                                  d="M4 18h16"
+-                                                 bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\"..."}
+                                                >
+                                                <path
+                                                  d="M4 6h16"
+-                                                 bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\"..."}
+                                                >
+                                        <div
+                                          className="relative flex-1 max-w-md hidden sm:block"
+-                                         bis_size={"{\"x\":478,\"y\":13,\"w\":447,\"h\":35,\"abs_x\":1240,\"abs_y\":..."}
+                                        >
+                                          <Search className="absolute i...">
+                                            <svg
+                                              ref={null}
+                                              xmlns="http://www.w3.org/2000/svg"
+                                              width={24}
+                                              height={24}
+                                              viewBox="0 0 24 24"
+                                              fill="none"
+                                              stroke="currentColor"
+                                              strokeWidth={2}
+                                              strokeLinecap="round"
+                                              strokeLinejoin="round"
+                                              className="lucide lucide-search absolute inset-y-0 start-3 my-auto size-..."
+                                              aria-hidden="true"
+-                                             bis_size={"{\"x\":898,\"y\":23,\"w\":15,\"h\":15,\"abs_x\":1660,\"abs_y..."}
+                                            >
+                                              <path
+                                                d="m21 21-4.34-4.34"
+-                                               bis_size={"{\"x\":909,\"y\":34,\"w\":2,\"h\":2,\"abs_x\":1671,\"abs_y..."}
+                                              >
+                                              <circle
+                                                cx="11"
+                                                cy="11"
+                                                r="8"
+-                                               bis_size={"{\"x\":900,\"y\":25,\"w\":10,\"h\":10,\"abs_x\":1662,\"abs..."}
+                                              >
+                                          <Input placeholder="ابحث عن وح..." className="ps-9 pe-12...">
+                                            <input
+                                              type={undefined}
+                                              data-slot="input"
+                                              className="flex h-9 w-full min-w-0 rounded-md border px-3 py-2 text-sm t..."
+                                              placeholder="ابحث عن وحدة، عميل، منتج..."
+-                                             bis_size={"{\"x\":478,\"y\":13,\"w\":447,\"h\":35,\"abs_x\":1240,\"abs_..."}
+                                            >
+                                          <kbd
+                                            className="absolute inset-y-0 end-2 my-auto hidden md:flex items-center ga..."
+-                                           bis_size={"{\"x\":486,\"y\":21,\"w\":31,\"h\":19,\"abs_x\":1248,\"abs_y\"..."}
+                                          >
+                                            <Command className="size-2.5">
+                                              <svg
+                                                ref={null}
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                width={24}
+                                                height={24}
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                strokeWidth={2}
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                className="lucide lucide-command size-2.5"
+                                                aria-hidden="true"
+-                                               bis_size={"{\"x\":500,\"y\":26,\"w\":9,\"h\":9,\"abs_x\":1262,\"abs_y..."}
+                                              >
+                                                <path
+                                                  d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1..."
+-                                                 bis_size={"{\"x\":501,\"y\":27,\"w\":7,\"h\":7,\"abs_x\":1263,\"abs..."}
+                                                >
+                                            ...
+                                        <div
+                                          className="flex-1 sm:hidden"
+-                                         bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+                                        >
+                                        ...
+                                          <Primitive.button.Slot type="button" id="radix-_R_a..." aria-haspopup="menu" ...>
+                                            <Primitive.button.SlotClone type="button" id="radix-_R_a..." ...>
+                                              <Button size="sm" className="gap-1.5" type="button" id="radix-_R_a..." ...>
+                                                <button
+                                                  data-slot="dropdown-menu-trigger"
+                                                  className={"inline-flex items-center justify-center whitespace-nowr..."}
+                                                  type="button"
+                                                  id="radix-_R_aqatplb_"
+                                                  aria-haspopup="menu"
+                                                  aria-expanded={false}
+                                                  aria-controls={undefined}
+                                                  data-state="closed"
+                                                  data-disabled={undefined}
+                                                  disabled={false}
+                                                  onPointerDown={function handleEvent}
+                                                  onKeyDown={function handleEvent}
+                                                  ref={function}
+-                                                 bis_size={"{\"x\":362,\"y\":15,\"w\":107,\"h\":31,\"abs_x\":1124,\"..."}
+                                                >
+                                                  <Plus className="size-4">
+                                                    <svg
+                                                      ref={null}
+                                                      xmlns="http://www.w3.org/2000/svg"
+                                                      width={24}
+                                                      height={24}
+                                                      viewBox="0 0 24 24"
+                                                      fill="none"
+                                                      stroke="currentColor"
+                                                      strokeWidth={2}
+                                                      strokeLinecap="round"
+                                                      strokeLinejoin="round"
+                                                      className="lucide lucide-plus size-4"
+                                                      aria-hidden="true"
+-                                                     bis_size={"{\"x\":444,\"y\":23,\"w\":15,\"h\":15,\"abs_x\":1206..."}
+                                                    >
+                                                      <path
+                                                        d="M5 12h14"
+-                                                       bis_size={"{\"x\":447,\"y\":31,\"w\":9,\"h\":0,\"abs_x\":1209..."}
+                                                      >
+                                                      <path
+                                                        d="M12 5v14"
+-                                                       bis_size={"{\"x\":452,\"y\":26,\"w\":0,\"h\":9,\"abs_x\":1214..."}
+                                                      >
+                                                  <span
+                                                    className="hidden sm:inline"
+-                                                   bis_size={"{\"x\":372,\"y\":23,\"w\":65,\"h\":15,\"abs_x\":1134,\..."}
+                                                  >
++                                                   إضافة سريعة
+                                        ...
+                                          <Primitive.button.Slot type="button" id="radix-_R_c..." aria-haspopup="menu" ...>
+                                            <Primitive.button.SlotClone type="button" id="radix-_R_c..." ...>
+                                              <Button variant="ghost" size="icon" aria-label="اللغة" type="button" ...>
+                                                <button
+                                                  data-slot="dropdown-menu-trigger"
+                                                  className={"inline-flex items-center justify-center gap-2 whitespac..."}
+                                                  aria-label="اللغة"
+                                                  type="button"
+                                                  id="radix-_R_cqatplb_"
+                                                  aria-haspopup="menu"
+                                                  aria-expanded={false}
+                                                  aria-controls={undefined}
+                                                  data-state="closed"
+                                                  data-disabled={undefined}
+                                                  disabled={false}
+                                                  onPointerDown={function handleEvent}
+                                                  onKeyDown={function handleEvent}
+                                                  ref={function}
+-                                                 bis_size={"{\"x\":318,\"y\":13,\"w\":35,\"h\":35,\"abs_x\":1080,\"a..."}
+                                                >
+                                                  <Languages className="size-5">
+                                                    <svg
+                                                      ref={null}
+                                                      xmlns="http://www.w3.org/2000/svg"
+                                                      width={24}
+                                                      height={24}
+                                                      viewBox="0 0 24 24"
+                                                      fill="none"
+                                                      stroke="currentColor"
+                                                      strokeWidth={2}
+                                                      strokeLinecap="round"
+                                                      strokeLinejoin="round"
+                                                      className="lucide lucide-languages size-5"
+                                                      aria-hidden="true"
+-                                                     bis_size={"{\"x\":326,\"y\":21,\"w\":19,\"h\":19,\"abs_x\":1088..."}
+                                                    >
+                                                      <path
+                                                        d="m5 8 6 6"
+-                                                       bis_size={"{\"x\":330,\"y\":28,\"w\":4,\"h\":4,\"abs_x\":1092..."}
+                                                      >
+                                                      <path
+                                                        d="m4 14 6-6 2-3"
+-                                                       bis_size={"{\"x\":330,\"y\":25,\"w\":6,\"h\":7,\"abs_x\":1092..."}
+                                                      >
+                                                      <path
+                                                        d="M2 5h12"
+-                                                       bis_size={"{\"x\":328,\"y\":25,\"w\":9,\"h\":0,\"abs_x\":1090..."}
+                                                      >
+                                                      <path
+                                                        d="M7 2h1"
+-                                                       bis_size={"{\"x\":332,\"y\":23,\"w\":0,\"h\":0,\"abs_x\":1094..."}
+                                                      >
+                                                      <path
+                                                        d="m22 22-5-10-5 10"
+-                                                       bis_size={"{\"x\":336,\"y\":31,\"w\":8,\"h\":8,\"abs_x\":1098..."}
+                                                      >
+                                                      <path
+                                                        d="M14 18h6"
+-                                                       bis_size={"{\"x\":338,\"y\":36,\"w\":4,\"h\":0,\"abs_x\":1100..."}
+                                                      >
+                                        ...
+                                          <Primitive.button.Slot type="button" id="radix-_R_e..." aria-haspopup="menu" ...>
+                                            <Primitive.button.SlotClone type="button" id="radix-_R_e..." ...>
+                                              <Button variant="ghost" size="icon" aria-label="السمة" type="button" ...>
+                                                <button
+                                                  data-slot="dropdown-menu-trigger"
+                                                  className={"inline-flex items-center justify-center gap-2 whitespac..."}
+                                                  aria-label="السمة"
+                                                  type="button"
+                                                  id="radix-_R_eqatplb_"
+                                                  aria-haspopup="menu"
+                                                  aria-expanded={false}
+                                                  aria-controls={undefined}
+                                                  data-state="closed"
+                                                  data-disabled={undefined}
+                                                  disabled={false}
+                                                  onPointerDown={function handleEvent}
+                                                  onKeyDown={function handleEvent}
+                                                  ref={function}
+-                                                 bis_size={"{\"x\":274,\"y\":13,\"w\":35,\"h\":35,\"abs_x\":1036,\"a..."}
+                                                >
+                                                  <Sun className="size-5">
+                                                    <svg
+                                                      ref={null}
+                                                      xmlns="http://www.w3.org/2000/svg"
+                                                      width={24}
+                                                      height={24}
+                                                      viewBox="0 0 24 24"
+                                                      fill="none"
+                                                      stroke="currentColor"
+                                                      strokeWidth={2}
+                                                      strokeLinecap="round"
+                                                      strokeLinejoin="round"
+                                                      className="lucide lucide-sun size-5"
+                                                      aria-hidden="true"
+-                                                     bis_size={"{\"x\":282,\"y\":21,\"w\":19,\"h\":19,\"abs_x\":1044..."}
+                                                    >
+                                                      <circle
+                                                        cx="12"
+                                                        cy="12"
+                                                        r="4"
+-                                                       bis_size={"{\"x\":289,\"y\":28,\"w\":6,\"h\":6,\"abs_x\":1051..."}
+                                                      >
+                                                      <path
+                                                        d="M12 2v2"
+-                                                       bis_size={"{\"x\":292,\"y\":23,\"w\":0,\"h\":1,\"abs_x\":1054..."}
+                                                      >
+                                                      <path
+                                                        d="M12 20v2"
+-                                                       bis_size={"{\"x\":292,\"y\":38,\"w\":0,\"h\":1,\"abs_x\":1054..."}
+                                                      >
+                                                      <path
+                                                        d="m4.93 4.93 1.41 1.41"
+-                                                       bis_size={"{\"x\":286,\"y\":25,\"w\":1,\"h\":1,\"abs_x\":1048..."}
+                                                      >
+                                                      <path
+                                                        d="m17.66 17.66 1.41 1.41"
+-                                                       bis_size={"{\"x\":297,\"y\":36,\"w\":1,\"h\":1,\"abs_x\":1059..."}
+                                                      >
+                                                      <path
+                                                        d="M2 12h2"
+-                                                       bis_size={"{\"x\":284,\"y\":31,\"w\":1,\"h\":0,\"abs_x\":1046..."}
+                                                      >
+                                                      <path
+                                                        d="M20 12h2"
+-                                                       bis_size={"{\"x\":299,\"y\":31,\"w\":1,\"h\":0,\"abs_x\":1061..."}
+                                                      >
+                                                      <path
+                                                        d="m6.34 17.66-1.41 1.41"
+-                                                       bis_size={"{\"x\":286,\"y\":36,\"w\":1,\"h\":1,\"abs_x\":1048..."}
+                                                      >
+                                                      <path
+                                                        d="m19.07 4.93-1.41 1.41"
+-                                                       bis_size={"{\"x\":297,\"y\":25,\"w\":1,\"h\":1,\"abs_x\":1059..."}
+                                                      >
+                                        ...
+                                          <Primitive.button.Slot type="button" aria-haspopup="dialog" ...>
+                                            <Primitive.button.SlotClone type="button" aria-haspopup="dialog" ...>
+                                              <Button variant="ghost" size="icon" className="relative" ...>
+                                                <button
+                                                  data-slot="popover-trigger"
+                                                  className={"inline-flex items-center justify-center gap-2 whitespac..."}
+                                                  aria-label="الإشعارات"
+                                                  type="button"
+                                                  aria-haspopup="dialog"
+                                                  aria-expanded={false}
+                                                  aria-controls="radix-_R_gqatplb_"
+                                                  data-state="closed"
+                                                  onClick={function handleEvent}
+                                                  ref={function}
+-                                                 bis_size={"{\"x\":230,\"y\":13,\"w\":35,\"h\":35,\"abs_x\":992,\"ab..."}
+                                                >
+                                                  <Bell className="size-5">
+                                                    <svg
+                                                      ref={null}
+                                                      xmlns="http://www.w3.org/2000/svg"
+                                                      width={24}
+                                                      height={24}
+                                                      viewBox="0 0 24 24"
+                                                      fill="none"
+                                                      stroke="currentColor"
+                                                      strokeWidth={2}
+                                                      strokeLinecap="round"
+                                                      strokeLinejoin="round"
+                                                      className="lucide lucide-bell size-5"
+                                                      aria-hidden="true"
+-                                                     bis_size={"{\"x\":238,\"y\":21,\"w\":19,\"h\":19,\"abs_x\":1000..."}
+                                                    >
+                                                      <path
+                                                        d="M10.268 21a2 2 0 0 0 3.464 0"
+-                                                       bis_size={"{\"x\":247,\"y\":39,\"w\":2,\"h\":0,\"abs_x\":1009..."}
+                                                      >
+                                                      <path
+                                                        d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 1..."
+-                                                       bis_size={"{\"x\":241,\"y\":23,\"w\":14,\"h\":12,\"abs_x\":10..."}
+                                                      >
+                                        ...
+                                          <Primitive.button type="button" id="radix-_R_i..." aria-haspopup="menu" ...>
+                                            <Primitive.button.Slot type="button" id="radix-_R_i..." aria-haspopup="menu" ...>
+                                              <Primitive.button.SlotClone type="button" id="radix-_R_i..." ...>
+                                                <button
+                                                  className="flex items-center gap-2 rounded-full hover:bg-muted/60 p-..."
+                                                  aria-label="حساب المستخدم"
+                                                  type="button"
+                                                  id="radix-_R_iqatplb_"
+                                                  aria-haspopup="menu"
+                                                  aria-expanded={false}
+                                                  aria-controls={undefined}
+                                                  data-state="closed"
+                                                  data-disabled={undefined}
+                                                  disabled={false}
+                                                  data-slot="dropdown-menu-trigger"
+                                                  onPointerDown={function handleEvent}
+                                                  onKeyDown={function handleEvent}
+                                                  ref={function}
+-                                                 bis_size={"{\"x\":156,\"y\":11,\"w\":65,\"h\":39,\"abs_x\":918,\"ab..."}
+                                                >
+                                                  <span
+                                                    className="size-8 rounded-full bg-primary text-primary-foreground ..."
+-                                                   bis_size={"{\"x\":186,\"y\":15,\"w\":31,\"h\":31,\"abs_x\":948,\"..."}
+                                                  >
++                                                   ما
+                                                  <ChevronDown className="size-3.5 t...">
+                                                    <svg
+                                                      ref={null}
+                                                      xmlns="http://www.w3.org/2000/svg"
+                                                      width={24}
+                                                      height={24}
+                                                      viewBox="0 0 24 24"
+                                                      fill="none"
+                                                      stroke="currentColor"
+                                                      strokeWidth={2}
+                                                      strokeLinecap="round"
+                                                      strokeLinejoin="round"
+                                                      className="lucide lucide-chevron-down size-3.5 text-muted-foregr..."
+                                                      aria-hidden="true"
+-                                                     bis_size={"{\"x\":164,\"y\":24,\"w\":13,\"h\":13,\"abs_x\":926,..."}
+                                                    >
+                                                      <path
+                                                        d="m6 9 6 6 6-6"
+-                                                       bis_size={"{\"x\":168,\"y\":29,\"w\":6,\"h\":3,\"abs_x\":930,..."}
+                                                      >
+                                    <main
+                                      className="flex-1 overflow-y-auto overscroll-contain scrollbar-thin min-h-0"
+-                                     bis_size={"{\"x\":0,\"y\":63,\"w\":994,\"h\":639,\"abs_x\":762,\"abs_y\":172}"}
+                                    >
+                                      <DashboardModule>
+                                        <ModuleShell title="لوحة التحكم" description="نظرة شاملة..." ...>
+                                          <div
+                                            className="flex flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8 max-w-[1600px] mx..."
+-                                           bis_size={"{\"x\":6,\"y\":63,\"w\":987,\"h\":1943,\"abs_x\":768,\"abs_y\"..."}
+                                          >
+                                            <div
+                                              className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-be..."
+-                                             bis_size={"{\"x\":30,\"y\":83,\"w\":939,\"h\":53,\"abs_x\":792,\"abs_y\..."}
+                                            >
+                                              <div
+                                                className="flex items-start gap-3 min-w-0"
+-                                               bis_size={"{\"x\":646,\"y\":83,\"w\":323,\"h\":53,\"abs_x\":1408,\"ab..."}
+                                              >
+                                                <div
+                                                  className="shrink-0 size-11 rounded-xl bg-primary/10 text-primary fl..."
+-                                                 bis_size={"{\"x\":926,\"y\":83,\"w\":43,\"h\":43,\"abs_x\":1688,\"a..."}
+                                                >
+                                                  <LayoutDashboard className="size-5">
+                                                    <svg
+                                                      ref={null}
+                                                      xmlns="http://www.w3.org/2000/svg"
+                                                      width={24}
+                                                      height={24}
+                                                      viewBox="0 0 24 24"
+                                                      fill="none"
+                                                      stroke="currentColor"
+                                                      strokeWidth={2}
+                                                      strokeLinecap="round"
+                                                      strokeLinejoin="round"
+                                                      className="lucide lucide-layout-dashboard size-5"
+                                                      aria-hidden="true"
+-                                                     bis_size={"{\"x\":938,\"y\":95,\"w\":19,\"h\":19,\"abs_x\":1700..."}
+                                                    >
+                                                      <rect
+                                                        width="7"
+                                                        height="9"
+                                                        x="3"
+                                                        y="3"
+                                                        rx="1"
+-                                                       bis_size={"{\"x\":940,\"y\":98,\"w\":5,\"h\":7,\"abs_x\":1702..."}
+                                                      >
+                                                      <rect
+                                                        width="7"
+                                                        height="5"
+                                                        x="14"
+                                                        y="3"
+                                                        rx="1"
+-                                                       bis_size={"{\"x\":949,\"y\":98,\"w\":5,\"h\":4,\"abs_x\":1711..."}
+                                                      >
+                                                      <rect
+                                                        width="7"
+                                                        height="9"
+                                                        x="14"
+                                                        y="12"
+                                                        rx="1"
+-                                                       bis_size={"{\"x\":949,\"y\":105,\"w\":5,\"h\":7,\"abs_x\":171..."}
+                                                      >
+                                                      <rect
+                                                        width="7"
+                                                        height="5"
+                                                        x="3"
+                                                        y="16"
+                                                        rx="1"
+-                                                       bis_size={"{\"x\":940,\"y\":109,\"w\":5,\"h\":4,\"abs_x\":170..."}
+                                                      >
+                                                <div
+                                                  className="min-w-0"
+-                                                 bis_size={"{\"x\":646,\"y\":83,\"w\":267,\"h\":53,\"abs_x\":1408,\"..."}
+                                                >
+                                                  <h1
+                                                    className="text-xl sm:text-2xl font-bold tracking-tight truncate"
+-                                                   bis_size={"{\"x\":646,\"y\":83,\"w\":267,\"h\":31,\"abs_x\":1408,..."}
+                                                  >
++                                                   لوحة التحكم
+                                                  <p
+                                                    className="text-sm text-muted-foreground mt-0.5 line-clamp-2"
+-                                                   bis_size={"{\"x\":646,\"y\":117,\"w\":267,\"h\":20,\"abs_x\":1408..."}
+                                                  >
++                                                   نظرة شاملة على أداء الأعمال والمالية والمخزون
+                                              <div
+                                                className="flex items-center gap-2 shrink-0 flex-wrap"
+-                                               bis_size={"{\"x\":30,\"y\":110,\"w\":0,\"h\":0,\"abs_x\":792,\"abs_y\..."}
+                                              >
+                                            <div
+                                              className="flex-1 min-w-0"
+-                                             bis_size={"{\"x\":30,\"y\":157,\"w\":939,\"h\":1829,\"abs_x\":792,\"abs..."}
+                                            >
+                                              <div
+                                                className="flex flex-col gap-5"
+-                                               bis_size={"{\"x\":30,\"y\":157,\"w\":939,\"h\":1829,\"abs_x\":792,\"a..."}
+                                              >
+                                                <div
+                                                  className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+-                                                 bis_size={"{\"x\":30,\"y\":157,\"w\":939,\"h\":279,\"abs_x\":792,\"..."}
+                                                >
+                                                  <KpiCard title="إجمالي الم..." value="0.00 ر.س" icon={<TrendingUp>} ...>
+                                                    <Card className="p-5 gap-4 ...">
+                                                      <div
+                                                        data-slot="card"
+                                                        className="bg-card text-card-foreground flex flex-col rounded-..."
+-                                                       bis_size={"{\"x\":508,\"y\":157,\"w\":461,\"h\":131,\"abs_x\"..."}
+                                                      >
+                                                        <div
+                                                          className="flex items-start justify-between gap-3"
+-                                                         bis_size={"{\"x\":529,\"y\":178,\"w\":420,\"h\":53,\"abs_x\..."}
+                                                        >
+                                                          <div
+                                                            className="space-y-1.5 min-w-0"
+-                                                           bis_size={"{\"x\":850,\"y\":178,\"w\":98,\"h\":53,\"abs_x..."}
+                                                          >
+                                                            <p
+                                                              className="text-xs font-medium text-gray-500 truncate"
+-                                                             bis_size={"{\"x\":850,\"y\":178,\"w\":98,\"h\":15,\"abs..."}
+                                                            >
++                                                             إجمالي المبيعات
+                                                            <p
+                                                              className="text-2xl font-bold tracking-tight tabular-num..."
+-                                                             bis_size={"{\"x\":850,\"y\":200,\"w\":98,\"h\":31,\"abs..."}
+                                                            >
++                                                             0.00 ر.س
+                                                          <div
+                                                            className="shrink-0 size-10 rounded-lg flex items-center j..."
+-                                                           bis_size={"{\"x\":529,\"y\":178,\"w\":39,\"h\":39,\"abs_x..."}
+                                                          >
+                                                            <TrendingUp className="size-5">
+                                                              <svg
+                                                                ref={null}
+                                                                xmlns="http://www.w3.org/2000/svg"
+                                                                width={24}
+                                                                height={24}
+                                                                viewBox="0 0 24 24"
+                                                                fill="none"
+                                                                stroke="currentColor"
+                                                                strokeWidth={2}
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                                className="lucide lucide-trending-up size-5"
+                                                                aria-hidden="true"
+-                                                               bis_size={"{\"x\":539,\"y\":188,\"w\":19,\"h\":19,\"a..."}
+                                                              >
+                                                                <path
+                                                                  d="M16 7h6v6"
+-                                                                 bis_size={"{\"x\":552,\"y\":194,\"w\":4,\"h\":4,\"a..."}
+                                                                >
+                                                                <path
+                                                                  d="m22 7-8.5 8.5-5-5L2 17"
+-                                                                 bis_size={"{\"x\":540,\"y\":194,\"w\":16,\"h\":8,\"..."}
+                                                                >
+                                                        <div
+                                                          className="flex items-center gap-1.5 text-xs"
+-                                                         bis_size={"{\"x\":529,\"y\":248,\"w\":420,\"h\":19,\"abs_x\..."}
+                                                        >
+                                                          <span
+                                                            className="inline-flex items-center gap-0.5 font-semibold ..."
+-                                                           bis_size={"{\"x\":896,\"y\":248,\"w\":52,\"h\":19,\"abs_x..."}
+                                                          >
+                                                            <ArrowUpRight className="size-3">
+                                                              <svg
+                                                                ref={null}
+                                                                xmlns="http://www.w3.org/2000/svg"
+                                                                width={24}
+                                                                height={24}
+                                                                viewBox="0 0 24 24"
+                                                                fill="none"
+                                                                stroke="currentColor"
+                                                                strokeWidth={2}
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                                className="lucide lucide-arrow-up-right size-3"
+                                                                aria-hidden="true"
+-                                                               bis_size={"{\"x\":931,\"y\":252,\"w\":11,\"h\":11,\"a..."}
+                                                              >
+                                                                <path
+                                                                  d="M7 7h10v10"
+-                                                                 bis_size={"{\"x\":934,\"y\":256,\"w\":4,\"h\":5,\"a..."}
+                                                                >
+                                                                <path
+                                                                  d="M7 17 17 7"
+-                                                                 bis_size={"{\"x\":934,\"y\":256,\"w\":4,\"h\":5,\"a..."}
+                                                                >
+                                                            <span
+                                                              className="num"
+-                                                             bis_size={"{\"x\":902,\"y\":250,\"w\":26,\"h\":15,\"abs..."}
+                                                            >
+                                                          <span
+                                                            className="text-gray-400"
+-                                                           bis_size={"{\"x\":842,\"y\":250,\"w\":48,\"h\":15,\"abs_x..."}
+                                                          >
++                                                           هذا الشهر
+                                                  <KpiCard title="إجمالي الم..." value="0.00 ر.س" icon={<TrendingDown>} ...>
+                                                    <Card className="p-5 gap-4 ...">
+                                                      <div
+                                                        data-slot="card"
+                                                        className="bg-card text-card-foreground flex flex-col rounded-..."
+-                                                       bis_size={"{\"x\":30,\"y\":157,\"w\":461,\"h\":131,\"abs_x\":..."}
+                                                      >
+                                                        <div
+                                                          className="flex items-start justify-between gap-3"
+-                                                         bis_size={"{\"x\":51,\"y\":178,\"w\":420,\"h\":53,\"abs_x\"..."}
+                                                        >
+                                                          <div
+                                                            className="space-y-1.5 min-w-0"
+-                                                           bis_size={"{\"x\":372,\"y\":178,\"w\":98,\"h\":53,\"abs_x..."}
+                                                          >
+                                                            <p
+                                                              className="text-xs font-medium text-gray-500 truncate"
+-                                                             bis_size={"{\"x\":372,\"y\":178,\"w\":98,\"h\":15,\"abs..."}
+                                                            >
++                                                             إجمالي المشتريات
+                                                            <p
+                                                              className="text-2xl font-bold tracking-tight tabular-num..."
+-                                                             bis_size={"{\"x\":372,\"y\":200,\"w\":98,\"h\":31,\"abs..."}
+                                                            >
++                                                             0.00 ر.س
+                                                          <div
+                                                            className="shrink-0 size-10 rounded-lg flex items-center j..."
+-                                                           bis_size={"{\"x\":51,\"y\":178,\"w\":39,\"h\":39,\"abs_x\..."}
+                                                          >
+                                                            <TrendingDown className="size-5">
+                                                              <svg
+                                                                ref={null}
+                                                                xmlns="http://www.w3.org/2000/svg"
+                                                                width={24}
+                                                                height={24}
+                                                                viewBox="0 0 24 24"
+                                                                fill="none"
+                                                                stroke="currentColor"
+                                                                strokeWidth={2}
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                                className="lucide lucide-trending-down size-5"
+                                                                aria-hidden="true"
+-                                                               bis_size={"{\"x\":61,\"y\":188,\"w\":19,\"h\":19,\"ab..."}
+                                                              >
+                                                                <path
+                                                                  d="M16 17h6v-6"
+-                                                                 bis_size={"{\"x\":74,\"y\":198,\"w\":4,\"h\":4,\"ab..."}
+                                                                >
+                                                                <path
+                                                                  d="m22 17-8.5-8.5-5 5L2 7"
+-                                                                 bis_size={"{\"x\":63,\"y\":194,\"w\":16,\"h\":8,\"a..."}
+                                                                >
+                                                        <div
+                                                          className="flex items-center gap-1.5 text-xs"
+-                                                         bis_size={"{\"x\":51,\"y\":248,\"w\":420,\"h\":19,\"abs_x\"..."}
+                                                        >
+                                                          <span
+                                                            className="inline-flex items-center gap-0.5 font-semibold ..."
+-                                                           bis_size={"{\"x\":419,\"y\":248,\"w\":52,\"h\":19,\"abs_x..."}
+                                                          >
+                                                            <ArrowDownRight className="size-3">
+                                                              <svg
+                                                                ref={null}
+                                                                xmlns="http://www.w3.org/2000/svg"
+                                                                width={24}
+                                                                height={24}
+                                                                viewBox="0 0 24 24"
+                                                                fill="none"
+                                                                stroke="currentColor"
+                                                                strokeWidth={2}
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                                className="lucide lucide-arrow-down-right size-3"
+                                                                aria-hidden="true"
+-                                                               bis_size={"{\"x\":453,\"y\":252,\"w\":11,\"h\":11,\"a..."}
+                                                              >
+                                                                <path
+                                                                  d="m7 7 10 10"
+-                                                                 bis_size={"{\"x\":456,\"y\":256,\"w\":5,\"h\":5,\"a..."}
+                                                                >
+                                                                <path
+                                                                  d="M17 7v10H7"
+-                                                                 bis_size={"{\"x\":456,\"y\":256,\"w\":5,\"h\":5,\"a..."}
+                                                                >
+                                                            <span
+                                                              className="num"
+-                                                             bis_size={"{\"x\":425,\"y\":250,\"w\":26,\"h\":15,\"abs..."}
+                                                            >
+                                                          <span
+                                                            className="text-gray-400"
+-                                                           bis_size={"{\"x\":364,\"y\":250,\"w\":48,\"h\":15,\"abs_x..."}
+                                                          >
++                                                           هذا الشهر
+                                                  <KpiCard title="صافي الربح" value="0.00 ر.س" icon={<Wallet>} ...>
+                                                    <Card className="p-5 gap-4 ...">
+                                                      <div
+                                                        data-slot="card"
+                                                        className="bg-card text-card-foreground flex flex-col rounded-..."
+-                                                       bis_size={"{\"x\":508,\"y\":305,\"w\":461,\"h\":131,\"abs_x\"..."}
+                                                      >
+                                                        <div
+                                                          className="flex items-start justify-between gap-3"
+-                                                         bis_size={"{\"x\":529,\"y\":326,\"w\":420,\"h\":53,\"abs_x\..."}
+                                                        >
+                                                          <div
+                                                            className="space-y-1.5 min-w-0"
+-                                                           bis_size={"{\"x\":850,\"y\":326,\"w\":98,\"h\":53,\"abs_x..."}
+                                                          >
+                                                            <p
+                                                              className="text-xs font-medium text-gray-500 truncate"
+-                                                             bis_size={"{\"x\":850,\"y\":326,\"w\":98,\"h\":15,\"abs..."}
+                                                            >
++                                                             صافي الربح
+                                                            <p
+                                                              className="text-2xl font-bold tracking-tight tabular-num..."
+-                                                             bis_size={"{\"x\":850,\"y\":348,\"w\":98,\"h\":31,\"abs..."}
+                                                            >
++                                                             0.00 ر.س
+                                                          <div
+                                                            className="shrink-0 size-10 rounded-lg flex items-center j..."
+-                                                           bis_size={"{\"x\":529,\"y\":326,\"w\":39,\"h\":39,\"abs_x..."}
+                                                          >
+                                                            <Wallet className="size-5">
+                                                              <svg
+                                                                ref={null}
+                                                                xmlns="http://www.w3.org/2000/svg"
+                                                                width={24}
+                                                                height={24}
+                                                                viewBox="0 0 24 24"
+                                                                fill="none"
+                                                                stroke="currentColor"
+                                                                strokeWidth={2}
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                                className="lucide lucide-wallet size-5"
+                                                                aria-hidden="true"
+-                                                               bis_size={"{\"x\":539,\"y\":336,\"w\":19,\"h\":19,\"a..."}
+                                                              >
+                                                                <path
+                                                                  d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 ..."
+-                                                                 bis_size={"{\"x\":541,\"y\":339,\"w\":15,\"h\":10,\..."}
+                                                                >
+                                                                <path
+                                                                  d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"
+-                                                                 bis_size={"{\"x\":541,\"y\":340,\"w\":14,\"h\":13,\..."}
+                                                                >
+                                                        <div
+                                                          className="flex items-center gap-1.5 text-xs"
+-                                                         bis_size={"{\"x\":529,\"y\":396,\"w\":420,\"h\":19,\"abs_x\..."}
+                                                        >
+                                                          <span
+                                                            className="inline-flex items-center gap-0.5 font-semibold ..."
+-                                                           bis_size={"{\"x\":890,\"y\":396,\"w\":58,\"h\":19,\"abs_x..."}
+                                                          >
+                                                            <ArrowUpRight className="size-3">
+                                                              <svg
+                                                                ref={null}
+                                                                xmlns="http://www.w3.org/2000/svg"
+                                                                width={24}
+                                                                height={24}
+                                                                viewBox="0 0 24 24"
+                                                                fill="none"
+                                                                stroke="currentColor"
+                                                                strokeWidth={2}
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                                className="lucide lucide-arrow-up-right size-3"
+                                                                aria-hidden="true"
+-                                                               bis_size={"{\"x\":931,\"y\":400,\"w\":11,\"h\":11,\"a..."}
+                                                              >
+                                                                <path
+                                                                  d="M7 7h10v10"
+-                                                                 bis_size={"{\"x\":934,\"y\":404,\"w\":4,\"h\":5,\"a..."}
+                                                                >
+                                                                <path
+                                                                  d="M7 17 17 7"
+-                                                                 bis_size={"{\"x\":934,\"y\":404,\"w\":4,\"h\":5,\"a..."}
+                                                                >
+                                                            <span
+                                                              className="num"
+-                                                             bis_size={"{\"x\":896,\"y\":398,\"w\":32,\"h\":15,\"abs..."}
+                                                            >
+                                                          <span
+                                                            className="text-gray-400"
+-                                                           bis_size={"{\"x\":835,\"y\":398,\"w\":48,\"h\":15,\"abs_x..."}
+                                                          >
++                                                           هذا الشهر
+                                                  <KpiCard title="قيمة المخزون" value="0.00 ر.س" icon={<Boxes>} ...>
+                                                    <Card className="p-5 gap-4 ...">
+                                                      <div
+                                                        data-slot="card"
+                                                        className="bg-card text-card-foreground flex flex-col rounded-..."
+-                                                       bis_size={"{\"x\":30,\"y\":305,\"w\":461,\"h\":131,\"abs_x\":..."}
+                                                      >
+                                                        <div
+                                                          className="flex items-start justify-between gap-3"
+-                                                         bis_size={"{\"x\":51,\"y\":326,\"w\":420,\"h\":53,\"abs_x\"..."}
+                                                        >
+                                                          <div
+                                                            className="space-y-1.5 min-w-0"
+-                                                           bis_size={"{\"x\":372,\"y\":326,\"w\":98,\"h\":53,\"abs_x..."}
+                                                          >
+                                                            <p
+                                                              className="text-xs font-medium text-gray-500 truncate"
+-                                                             bis_size={"{\"x\":372,\"y\":326,\"w\":98,\"h\":15,\"abs..."}
+                                                            >
++                                                             قيمة المخزون
+                                                            <p
+                                                              className="text-2xl font-bold tracking-tight tabular-num..."
+-                                                             bis_size={"{\"x\":372,\"y\":348,\"w\":98,\"h\":31,\"abs..."}
+                                                            >
++                                                             0.00 ر.س
+                                                          <div
+                                                            className="shrink-0 size-10 rounded-lg flex items-center j..."
+-                                                           bis_size={"{\"x\":51,\"y\":326,\"w\":39,\"h\":39,\"abs_x\..."}
+                                                          >
+                                                            <Boxes className="size-5">
+                                                              <svg
+                                                                ref={null}
+                                                                xmlns="http://www.w3.org/2000/svg"
+                                                                width={24}
+                                                                height={24}
+                                                                viewBox="0 0 24 24"
+                                                                fill="none"
+                                                                stroke="currentColor"
+                                                                strokeWidth={2}
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                                className="lucide lucide-boxes size-5"
+                                                                aria-hidden="true"
+-                                                               bis_size={"{\"x\":61,\"y\":336,\"w\":19,\"h\":19,\"ab..."}
+                                                              >
+                                                                <path
+                                                                  d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 ..."
+-                                                                 bis_size={"{\"x\":63,\"y\":345,\"w\":8,\"h\":9,\"ab..."}
+                                                                >
+                                                                <path
+                                                                  d="m7 16.5-4.74-2.85"
+-                                                                 bis_size={"{\"x\":63,\"y\":348,\"w\":3,\"h\":2,\"ab..."}
+                                                                >
+                                                                <path
+                                                                  d="m7 16.5 5-3"
+-                                                                 bis_size={"{\"x\":67,\"y\":347,\"w\":4,\"h\":2,\"ab..."}
+                                                                >
+                                                                <path
+                                                                  d="M7 16.5v5.17"
+-                                                                 bis_size={"{\"x\":67,\"y\":350,\"w\":0,\"h\":4,\"ab..."}
+                                                                >
+                                                                <path
+                                                                  d="M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 ..."
+-                                                                 bis_size={"{\"x\":71,\"y\":345,\"w\":8,\"h\":9,\"ab..."}
+                                                                >
+                                                                <path
+                                                                  d="m17 16.5-5-3"
+-                                                                 bis_size={"{\"x\":71,\"y\":347,\"w\":4,\"h\":2,\"ab..."}
+                                                                >
+                                                                <path
+                                                                  d="m17 16.5 4.74-2.85"
+-                                                                 bis_size={"{\"x\":75,\"y\":348,\"w\":3,\"h\":2,\"ab..."}
+                                                                >
+                                                                <path
+                                                                  d="M17 16.5v5.17"
+-                                                                 bis_size={"{\"x\":75,\"y\":350,\"w\":0,\"h\":4,\"ab..."}
+                                                                >
+                                                                <path
+                                                                  d="M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2..."
+-                                                                 bis_size={"{\"x\":67,\"y\":338,\"w\":8,\"h\":9,\"ab..."}
+                                                                >
+                                                                <path
+                                                                  d="M12 8 7.26 5.15"
+-                                                                 bis_size={"{\"x\":67,\"y\":340,\"w\":3,\"h\":2,\"ab..."}
+                                                                >
+                                                                <path
+                                                                  d="m12 8 4.74-2.85"
+-                                                                 bis_size={"{\"x\":71,\"y\":340,\"w\":3,\"h\":2,\"ab..."}
+                                                                >
+                                                                <path
+                                                                  d="M12 13.5V8"
+-                                                                 bis_size={"{\"x\":71,\"y\":343,\"w\":0,\"h\":4,\"ab..."}
+                                                                >
+                                                        <div
+                                                          className="flex items-center gap-1.5 text-xs"
+-                                                         bis_size={"{\"x\":51,\"y\":396,\"w\":420,\"h\":19,\"abs_x\"..."}
+                                                        >
+                                                          <span
+                                                            className="inline-flex items-center gap-0.5 font-semibold ..."
+-                                                           bis_size={"{\"x\":419,\"y\":396,\"w\":52,\"h\":19,\"abs_x..."}
+                                                          >
+                                                            <ArrowUpRight className="size-3">
+                                                              <svg
+                                                                ref={null}
+                                                                xmlns="http://www.w3.org/2000/svg"
+                                                                width={24}
+                                                                height={24}
+                                                                viewBox="0 0 24 24"
+                                                                fill="none"
+                                                                stroke="currentColor"
+                                                                strokeWidth={2}
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                                className="lucide lucide-arrow-up-right size-3"
+                                                                aria-hidden="true"
+-                                                               bis_size={"{\"x\":453,\"y\":400,\"w\":11,\"h\":11,\"a..."}
+                                                              >
+                                                                <path
+                                                                  d="M7 7h10v10"
+-                                                                 bis_size={"{\"x\":456,\"y\":404,\"w\":5,\"h\":5,\"a..."}
+                                                                >
+                                                                <path
+                                                                  d="M7 17 17 7"
+-                                                                 bis_size={"{\"x\":456,\"y\":404,\"w\":5,\"h\":5,\"a..."}
+                                                                >
+                                                            <span
+                                                              className="num"
+-                                                             bis_size={"{\"x\":425,\"y\":398,\"w\":26,\"h\":15,\"abs..."}
+                                                            >
+                                                          <span
+                                                            className="text-gray-400"
+-                                                           bis_size={"{\"x\":364,\"y\":398,\"w\":48,\"h\":15,\"abs_x..."}
+                                                          >
++                                                           هذا الشهر
+                                                <div
+                                                  className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3"
+-                                                 bis_size={"{\"x\":30,\"y\":457,\"w\":939,\"h\":240,\"abs_x\":792,\"..."}
+                                                >
+                                                  <MiniStat label="العملاء" value="0" icon={<Users>} accent="blue">
+                                                    <Card className="p-3.5 flex...">
+                                                      <div
+                                                        data-slot="card"
+                                                        className="bg-card text-card-foreground flex-col rounded-xl bo..."
+-                                                       bis_size={"{\"x\":664,\"y\":457,\"w\":305,\"h\":114,\"abs_x\"..."}
+                                                      >
+                                                        <div
+                                                          className="size-9 rounded-lg flex items-center justify-cente..."
+-                                                         bis_size={"{\"x\":799,\"y\":472,\"w\":35,\"h\":35,\"abs_x\"..."}
+                                                        >
+                                                          <Users className="size-4">
+                                                            <svg
+                                                              ref={null}
+                                                              xmlns="http://www.w3.org/2000/svg"
+                                                              width={24}
+                                                              height={24}
+                                                              viewBox="0 0 24 24"
+                                                              fill="none"
+                                                              stroke="currentColor"
+                                                              strokeWidth={2}
+                                                              strokeLinecap="round"
+                                                              strokeLinejoin="round"
+                                                              className="lucide lucide-users size-4"
+                                                              aria-hidden="true"
+-                                                             bis_size={"{\"x\":809,\"y\":482,\"w\":15,\"h\":15,\"abs..."}
+                                                            >
+                                                              <path
+                                                                d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
+-                                                               bis_size={"{\"x\":810,\"y\":492,\"w\":9,\"h\":3,\"abs..."}
+                                                              >
+                                                              <path
+                                                                d="M16 3.128a4 4 0 0 1 0 7.744"
+-                                                               bis_size={"{\"x\":820,\"y\":484,\"w\":1,\"h\":5,\"abs..."}
+                                                              >
+                                                              <path
+                                                                d="M22 21v-2a4 4 0 0 0-3-3.87"
+-                                                               bis_size={"{\"x\":822,\"y\":492,\"w\":1,\"h\":3,\"abs..."}
+                                                              >
+                                                              <circle
+                                                                cx="9"
+                                                                cy="7"
+                                                                r="4"
+-                                                               bis_size={"{\"x\":812,\"y\":484,\"w\":5,\"h\":5,\"abs..."}
+                                                              >
+                                                        <div
+                                                          className="min-w-0"
+-                                                         bis_size={"{\"x\":802,\"y\":520,\"w\":30,\"h\":36,\"abs_x\"..."}
+                                                        >
+                                                          <p
+                                                            className="text-[11px] text-muted-foreground truncate"
+-                                                           bis_size={"{\"x\":802,\"y\":520,\"w\":30,\"h\":16,\"abs_x..."}
+                                                          >
++                                                           العملاء
+                                                          <p
+                                                            className="text-sm font-bold tabular-nums truncate"
+                                                            dir="ltr"
+-                                                           bis_size={"{\"x\":802,\"y\":536,\"w\":30,\"h\":20,\"abs_x..."}
+                                                          >
++                                                           0
+                                                  <MiniStat label="الموردون" value="0" icon={<Users>} accent="amber">
+                                                    <Card className="p-3.5 flex...">
+                                                      <div
+                                                        data-slot="card"
+                                                        className="bg-card text-card-foreground flex-col rounded-xl bo..."
+-                                                       bis_size={"{\"x\":347,\"y\":457,\"w\":305,\"h\":114,\"abs_x\"..."}
+                                                      >
+                                                        <div
+                                                          className="size-9 rounded-lg flex items-center justify-cente..."
+-                                                         bis_size={"{\"x\":482,\"y\":472,\"w\":35,\"h\":35,\"abs_x\"..."}
+                                                        >
+                                                          <Users className="size-4">
+                                                            <svg
+                                                              ref={null}
+                                                              xmlns="http://www.w3.org/2000/svg"
+                                                              width={24}
+                                                              height={24}
+                                                              viewBox="0 0 24 24"
+                                                              fill="none"
+                                                              stroke="currentColor"
+                                                              strokeWidth={2}
+                                                              strokeLinecap="round"
+                                                              strokeLinejoin="round"
+                                                              className="lucide lucide-users size-4"
+                                                              aria-hidden="true"
+-                                                             bis_size={"{\"x\":492,\"y\":482,\"w\":15,\"h\":15,\"abs..."}
+                                                            >
+                                                              <path
+                                                                d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
+-                                                               bis_size={"{\"x\":493,\"y\":492,\"w\":9,\"h\":3,\"abs..."}
+                                                              >
+                                                              <path
+                                                                d="M16 3.128a4 4 0 0 1 0 7.744"
+-                                                               bis_size={"{\"x\":502,\"y\":484,\"w\":1,\"h\":5,\"abs..."}
+                                                              >
+                                                              <path
+                                                                d="M22 21v-2a4 4 0 0 0-3-3.87"
+-                                                               bis_size={"{\"x\":504,\"y\":492,\"w\":1,\"h\":3,\"abs..."}
+                                                              >
+                                                              <circle
+                                                                cx="9"
+                                                                cy="7"
+                                                                r="4"
+-                                                               bis_size={"{\"x\":495,\"y\":484,\"w\":5,\"h\":5,\"abs..."}
+                                                              >
+                                                        <div
+                                                          className="min-w-0"
+-                                                         bis_size={"{\"x\":480,\"y\":520,\"w\":40,\"h\":36,\"abs_x\"..."}
+                                                        >
+                                                          <p
+                                                            className="text-[11px] text-muted-foreground truncate"
+-                                                           bis_size={"{\"x\":480,\"y\":520,\"w\":40,\"h\":16,\"abs_x..."}
+                                                          >
++                                                           الموردون
+                                                          <p
+                                                            className="text-sm font-bold tabular-nums truncate"
+                                                            dir="ltr"
+-                                                           bis_size={"{\"x\":480,\"y\":536,\"w\":40,\"h\":20,\"abs_x..."}
+                                                          >
++                                                           0
+                                                  <MiniStat label="المنتجات" value="0" icon={<Package>} accent="violet">
+                                                    <Card className="p-3.5 flex...">
+                                                      <div
+                                                        data-slot="card"
+                                                        className="bg-card text-card-foreground flex-col rounded-xl bo..."
+-                                                       bis_size={"{\"x\":30,\"y\":457,\"w\":305,\"h\":114,\"abs_x\":..."}
+                                                      >
+                                                        <div
+                                                          className="size-9 rounded-lg flex items-center justify-cente..."
+-                                                         bis_size={"{\"x\":165,\"y\":472,\"w\":35,\"h\":35,\"abs_x\"..."}
+                                                        >
+                                                          <Package className="size-4">
+                                                            <svg
+                                                              ref={null}
+                                                              xmlns="http://www.w3.org/2000/svg"
+                                                              width={24}
+                                                              height={24}
+                                                              viewBox="0 0 24 24"
+                                                              fill="none"
+                                                              stroke="currentColor"
+                                                              strokeWidth={2}
+                                                              strokeLinecap="round"
+                                                              strokeLinejoin="round"
+                                                              className="lucide lucide-package size-4"
+                                                              aria-hidden="true"
+-                                                             bis_size={"{\"x\":175,\"y\":482,\"w\":15,\"h\":15,\"abs..."}
+                                                            >
+                                                              <path
+                                                                d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0..."
+-                                                               bis_size={"{\"x\":177,\"y\":483,\"w\":11,\"h\":13,\"a..."}
+                                                              >
+                                                              <path
+                                                                d="M12 22V12"
+-                                                               bis_size={"{\"x\":183,\"y\":490,\"w\":0,\"h\":6,\"abs..."}
+                                                              >
+                                                              <polyline
+                                                                points="3.29 7 12 12 20.71 7"
+-                                                               bis_size={"{\"x\":177,\"y\":487,\"w\":11,\"h\":3,\"ab..."}
+                                                              >
+                                                              <path
+                                                                d="m7.5 4.27 9 5.15"
+-                                                               bis_size={"{\"x\":180,\"y\":485,\"w\":5,\"h\":3,\"abs..."}
+                                                              >
+                                                        <div
+                                                          className="min-w-0"
+-                                                         bis_size={"{\"x\":163,\"y\":520,\"w\":39,\"h\":36,\"abs_x\"..."}
+                                                        >
+                                                          <p
+                                                            className="text-[11px] text-muted-foreground truncate"
+-                                                           bis_size={"{\"x\":163,\"y\":520,\"w\":39,\"h\":16,\"abs_x..."}
+                                                          >
++                                                           المنتجات
+                                                          <p
+                                                            className="text-sm font-bold tabular-nums truncate"
+                                                            dir="ltr"
+-                                                           bis_size={"{\"x\":163,\"y\":536,\"w\":39,\"h\":20,\"abs_x..."}
+                                                          >
++                                                           0
+                                                  <MiniStat label="الذمم المدينة" value="0.00 ر.س" icon={<ArrowUpRight>} ...>
+                                                    <Card className="p-3.5 flex...">
+                                                      <div
+                                                        data-slot="card"
+                                                        className="bg-card text-card-foreground flex-col rounded-xl bo..."
+-                                                       bis_size={"{\"x\":664,\"y\":583,\"w\":305,\"h\":114,\"abs_x\"..."}
+                                                      >
+                                                        <div
+                                                          className="size-9 rounded-lg flex items-center justify-cente..."
+-                                                         bis_size={"{\"x\":799,\"y\":598,\"w\":35,\"h\":35,\"abs_x\"..."}
+                                                        >
+                                                          <ArrowUpRight className="size-4">
+                                                            <svg
+                                                              ref={null}
+                                                              xmlns="http://www.w3.org/2000/svg"
+                                                              width={24}
+                                                              height={24}
+                                                              viewBox="0 0 24 24"
+                                                              fill="none"
+                                                              stroke="currentColor"
+                                                              strokeWidth={2}
+                                                              strokeLinecap="round"
+                                                              strokeLinejoin="round"
+                                                              className="lucide lucide-arrow-up-right size-4"
+                                                              aria-hidden="true"
+-                                                             bis_size={"{\"x\":809,\"y\":608,\"w\":15,\"h\":15,\"abs..."}
+                                                            >
+                                                              <path
+                                                                d="M7 7h10v10"
+-                                                               bis_size={"{\"x\":814,\"y\":613,\"w\":6,\"h\":6,\"abs..."}
+                                                              >
+                                                              <path
+                                                                d="M7 17 17 7"
+-                                                               bis_size={"{\"x\":814,\"y\":613,\"w\":6,\"h\":6,\"abs..."}
+                                                              >
+                                                        <div
+                                                          className="min-w-0"
+-                                                         bis_size={"{\"x\":788,\"y\":646,\"w\":59,\"h\":36,\"abs_x\"..."}
+                                                        >
+                                                          <p
+                                                            className="text-[11px] text-muted-foreground truncate"
+-                                                           bis_size={"{\"x\":788,\"y\":646,\"w\":59,\"h\":16,\"abs_x..."}
+                                                          >
++                                                           الذمم المدينة
+                                                          <p
+                                                            className="text-sm font-bold tabular-nums truncate"
+                                                            dir="ltr"
+-                                                           bis_size={"{\"x\":788,\"y\":663,\"w\":59,\"h\":20,\"abs_x..."}
+                                                          >
++                                                           0.00 ر.س
+                                                  <MiniStat label="الذمم الدائنة" value="0.00 ر.س" ...>
+                                                    <Card className="p-3.5 flex...">
+                                                      <div
+                                                        data-slot="card"
+                                                        className="bg-card text-card-foreground flex-col rounded-xl bo..."
+-                                                       bis_size={"{\"x\":347,\"y\":583,\"w\":305,\"h\":114,\"abs_x\"..."}
+                                                      >
+                                                        <div
+                                                          className="size-9 rounded-lg flex items-center justify-cente..."
+-                                                         bis_size={"{\"x\":482,\"y\":598,\"w\":35,\"h\":35,\"abs_x\"..."}
+                                                        >
+                                                          <ArrowDownRight className="size-4">
+                                                            <svg
+                                                              ref={null}
+                                                              xmlns="http://www.w3.org/2000/svg"
+                                                              width={24}
+                                                              height={24}
+                                                              viewBox="0 0 24 24"
+                                                              fill="none"
+                                                              stroke="currentColor"
+                                                              strokeWidth={2}
+                                                              strokeLinecap="round"
+                                                              strokeLinejoin="round"
+                                                              className="lucide lucide-arrow-down-right size-4"
+                                                              aria-hidden="true"
+-                                                             bis_size={"{\"x\":492,\"y\":608,\"w\":15,\"h\":15,\"abs..."}
+                                                            >
+                                                              <path
+                                                                d="m7 7 10 10"
+-                                                               bis_size={"{\"x\":496,\"y\":613,\"w\":6,\"h\":6,\"abs..."}
+                                                              >
+                                                              <path
+                                                                d="M17 7v10H7"
+-                                                               bis_size={"{\"x\":496,\"y\":613,\"w\":6,\"h\":6,\"abs..."}
+                                                              >
+                                                        <div
+                                                          className="min-w-0"
+-                                                         bis_size={"{\"x\":471,\"y\":646,\"w\":57,\"h\":36,\"abs_x\"..."}
+                                                        >
+                                                          <p
+                                                            className="text-[11px] text-muted-foreground truncate"
+-                                                           bis_size={"{\"x\":471,\"y\":646,\"w\":57,\"h\":16,\"abs_x..."}
+                                                          >
++                                                           الذمم الدائنة
+                                                          <p
+                                                            className="text-sm font-bold tabular-nums truncate"
+                                                            dir="ltr"
+-                                                           bis_size={"{\"x\":471,\"y\":663,\"w\":57,\"h\":20,\"abs_x..."}
+                                                          >
++                                                           0.00 ر.س
+                                                  <MiniStat label="الرصيد النقدي" value="0.00 ر.س" icon={<Banknote>} ...>
+                                                    <Card className="p-3.5 flex...">
+                                                      <div
+                                                        data-slot="card"
+                                                        className="bg-card text-card-foreground flex-col rounded-xl bo..."
+-                                                       bis_size={"{\"x\":30,\"y\":583,\"w\":305,\"h\":114,\"abs_x\":..."}
+                                                      >
+                                                        <div
+                                                          className="size-9 rounded-lg flex items-center justify-cente..."
+-                                                         bis_size={"{\"x\":165,\"y\":598,\"w\":35,\"h\":35,\"abs_x\"..."}
+                                                        >
+                                                          <Banknote className="size-4">
+                                                            <svg
+                                                              ref={null}
+                                                              xmlns="http://www.w3.org/2000/svg"
+                                                              width={24}
+                                                              height={24}
+                                                              viewBox="0 0 24 24"
+                                                              fill="none"
+                                                              stroke="currentColor"
+                                                              strokeWidth={2}
+                                                              strokeLinecap="round"
+                                                              strokeLinejoin="round"
+                                                              className="lucide lucide-banknote size-4"
+                                                              aria-hidden="true"
+-                                                             bis_size={"{\"x\":175,\"y\":608,\"w\":15,\"h\":15,\"abs..."}
+                                                            >
+                                                              <rect
+                                                                width="20"
+                                                                height="12"
+                                                                x="2"
+                                                                y="6"
+                                                                rx="2"
+-                                                               bis_size={"{\"x\":176,\"y\":612,\"w\":13,\"h\":7,\"ab..."}
+                                                              >
+                                                              <circle
+                                                                cx="12"
+                                                                cy="12"
+                                                                r="2"
+-                                                               bis_size={"{\"x\":181,\"y\":615,\"w\":2,\"h\":2,\"abs..."}
+                                                              >
+                                                              <path
+                                                                d="M6 12h.01M18 12h.01"
+-                                                               bis_size={"{\"x\":179,\"y\":616,\"w\":8,\"h\":0,\"abs..."}
+                                                              >
+                                                        <div
+                                                          className="min-w-0"
+-                                                         bis_size={"{\"x\":151,\"y\":646,\"w\":62,\"h\":36,\"abs_x\"..."}
+                                                        >
+                                                          <p
+                                                            className="text-[11px] text-muted-foreground truncate"
+-                                                           bis_size={"{\"x\":151,\"y\":646,\"w\":62,\"h\":16,\"abs_x..."}
+                                                          >
++                                                           الرصيد النقدي
+                                                          <p
+                                                            className="text-sm font-bold tabular-nums truncate"
+                                                            dir="ltr"
+-                                                           bis_size={"{\"x\":151,\"y\":663,\"w\":62,\"h\":20,\"abs_x..."}
+                                                          >
++                                                           0.00 ر.س
+                                                <div
+                                                  className="grid grid-cols-1 lg:grid-cols-3 gap-4"
+-                                                 bis_size={"{\"x\":30,\"y\":718,\"w\":939,\"h\":731,\"abs_x\":792,\"..."}
+                                                >
+                                                  <Card className="p-5 lg:col...">
+                                                    <div
+                                                      data-slot="card"
+                                                      className="bg-card text-card-foreground flex flex-col gap-3 roun..."
+-                                                     bis_size={"{\"x\":30,\"y\":718,\"w\":939,\"h\":365,\"abs_x\":79..."}
+                                                    >
+                                                      <div
+                                                        className="flex items-center justify-between mb-4"
+-                                                       bis_size={"{\"x\":51,\"y\":739,\"w\":897,\"h\":39,\"abs_x\":8..."}
+                                                      >
+                                                        <div
+-                                                         bis_size={"{\"x\":776,\"y\":739,\"w\":173,\"h\":39,\"abs_x\..."}
+                                                        >
+                                                          <h3
+                                                            className="font-semibold text-base"
+-                                                           bis_size={"{\"x\":776,\"y\":739,\"w\":173,\"h\":23,\"abs_..."}
+                                                          >
++                                                           المبيعات مقابل المشتريات
+                                                          <p
+                                                            className="text-xs text-muted-foreground"
+-                                                           bis_size={"{\"x\":776,\"y\":763,\"w\":173,\"h\":15,\"abs_..."}
+                                                          >
++                                                           آخر 6 أشهر
+                                                        <div
+                                                          className="flex items-center gap-3 text-xs"
+-                                                         bis_size={"{\"x\":51,\"y\":751,\"w\":139,\"h\":15,\"abs_x\"..."}
+                                                        >
+                                                          <span
+                                                            className="flex items-center gap-1.5"
+-                                                           bis_size={"{\"x\":131,\"y\":751,\"w\":59,\"h\":15,\"abs_x..."}
+                                                          >
+                                                            <span
+                                                              className="size-2.5 rounded-full bg-blue-500"
+-                                                             bis_size={"{\"x\":180,\"y\":754,\"w\":9,\"h\":9,\"abs_x..."}
+                                                            >
+                                                            ...
+                                                          <span
+                                                            className="flex items-center gap-1.5"
+-                                                           bis_size={"{\"x\":51,\"y\":751,\"w\":68,\"h\":15,\"abs_x\..."}
+                                                          >
+                                                            <span
+                                                              className="size-2.5 rounded-full bg-amber-500"
+-                                                             bis_size={"{\"x\":109,\"y\":754,\"w\":9,\"h\":9,\"abs_x..."}
+                                                            >
+                                                            ...
+                                                      <div
+                                                        className="h-64"
+                                                        dir="ltr"
+-                                                       bis_size={"{\"x\":51,\"y\":807,\"w\":897,\"h\":255,\"abs_x\":..."}
+                                                      >
+                                                        <div
+                                                          className="h-full animate-pulse bg-muted/40 rounded"
+-                                                         bis_size={"{\"x\":51,\"y\":807,\"w\":897,\"h\":255,\"abs_x\..."}
+                                                        >
+                                                  <Card className="p-5">
+                                                    <div
+                                                      data-slot="card"
+                                                      className="bg-card text-card-foreground flex flex-col gap-3 roun..."
+-                                                     bis_size={"{\"x\":30,\"y\":1099,\"w\":939,\"h\":349,\"abs_x\":7..."}
+                                                    >
+                                                      <h3
+                                                        className="font-semibold text-base mb-4"
+-                                                       bis_size={"{\"x\":51,\"y\":1120,\"w\":897,\"h\":23,\"abs_x\":..."}
+                                                      >
++                                                       المبيعات حسب الفئة
+                                                      <div
+                                                        className="h-64"
+                                                        dir="ltr"
+-                                                       bis_size={"{\"x\":51,\"y\":1172,\"w\":897,\"h\":255,\"abs_x\"..."}
+                                                      >
+                                                        <div
+                                                          className="h-full animate-pulse bg-muted/40 rounded"
+-                                                         bis_size={"{\"x\":51,\"y\":1172,\"w\":897,\"h\":255,\"abs_x..."}
+                                                        >
+                                                <div
+                                                  className="grid grid-cols-1 lg:grid-cols-3 gap-4"
+-                                                 bis_size={"{\"x\":30,\"y\":1469,\"w\":939,\"h\":517,\"abs_x\":792,\..."}
+                                                >
+                                                  <Card className="p-5">
+                                                    <div
+                                                      data-slot="card"
+                                                      className="bg-card text-card-foreground flex flex-col gap-3 roun..."
+-                                                     bis_size={"{\"x\":30,\"y\":1469,\"w\":939,\"h\":161,\"abs_x\":7..."}
+                                                    >
+                                                      <div
+                                                        className="flex items-center justify-between mb-4"
+-                                                       bis_size={"{\"x\":51,\"y\":1490,\"w\":897,\"h\":23,\"abs_x\":..."}
+                                                      >
+                                                        <h3
+                                                          className="font-semibold text-base"
+-                                                         bis_size={"{\"x\":817,\"y\":1490,\"w\":131,\"h\":23,\"abs_x..."}
+                                                        >
++                                                         أعلى المنتجات مبيعاً
+                                                      <div
+                                                        className="space-y-3"
+-                                                       bis_size={"{\"x\":51,\"y\":1542,\"w\":897,\"h\":68,\"abs_x\":..."}
+                                                      >
+                                                        <p
+                                                          className="text-sm text-muted-foreground py-6 text-center"
+-                                                         bis_size={"{\"x\":51,\"y\":1542,\"w\":897,\"h\":68,\"abs_x\..."}
+                                                        >
++                                                         لا توجد بيانات
+                                                  <Card className="p-5">
+                                                    <div
+                                                      data-slot="card"
+                                                      className="bg-card text-card-foreground flex flex-col gap-3 roun..."
+-                                                     bis_size={"{\"x\":30,\"y\":1647,\"w\":939,\"h\":161,\"abs_x\":7..."}
+                                                    >
+                                                      <div
+                                                        className="flex items-center justify-between mb-4"
+-                                                       bis_size={"{\"x\":51,\"y\":1668,\"w\":897,\"h\":23,\"abs_x\":..."}
+                                                      >
+                                                        <h3
+                                                          className="font-semibold text-base flex items-center gap-2"
+-                                                         bis_size={"{\"x\":820,\"y\":1668,\"w\":128,\"h\":23,\"abs_x..."}
+                                                        >
+                                                          <TriangleAlert className="size-4 tex...">
+                                                            <svg
+                                                              ref={null}
+                                                              xmlns="http://www.w3.org/2000/svg"
+                                                              width={24}
+                                                              height={24}
+                                                              viewBox="0 0 24 24"
+                                                              fill="none"
+                                                              stroke="currentColor"
+                                                              strokeWidth={2}
+                                                              strokeLinecap="round"
+                                                              strokeLinejoin="round"
+                                                              className="lucide lucide-triangle-alert size-4 text-ambe..."
+                                                              aria-hidden="true"
+-                                                             bis_size={"{\"x\":933,\"y\":1672,\"w\":15,\"h\":15,\"ab..."}
+                                                            >
+                                                              <path
+                                                                d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 2..."
+-                                                               bis_size={"{\"x\":934,\"y\":1674,\"w\":13,\"h\":12,\"..."}
+                                                              >
+                                                              <path
+                                                                d="M12 9v4"
+-                                                               bis_size={"{\"x\":941,\"y\":1678,\"w\":0,\"h\":2,\"ab..."}
+                                                              >
+                                                              <path
+                                                                d="M12 17h.01"
+-                                                               bis_size={"{\"x\":941,\"y\":1683,\"w\":0,\"h\":0,\"ab..."}
+                                                              >
+                                                          ...
+                                                      ...
+                                                        <ScrollAreaProvider scope={undefined} type="hover" dir="ltr" ...>
+                                                          <Primitive.div dir="ltr" data-slot="scroll-area" ...>
+                                                            <div
+                                                              dir="ltr"
+                                                              data-slot="scroll-area"
+                                                              className="relative max-h-64"
+                                                              style={{position:"relative", ...}}
+                                                              ref={function}
+-                                                             bis_size={"{\"x\":51,\"y\":1720,\"w\":897,\"h\":68,\"ab..."}
+                                                            >
+                                                              <ScrollAreaViewport data-slot="scroll-are..." ...>
+                                                                <style>
+                                                                <Primitive.div data-radix-scroll-area-viewport="" ...>
+                                                                  <div
+                                                                    data-radix-scroll-area-viewport=""
+                                                                    data-slot="scroll-area-viewport"
+                                                                    className="focus-visible:ring-ring/50 size-full ro..."
+                                                                    style={{overflowX:"hidden",overflowY:"hidden"}}
+                                                                    ref={function}
+-                                                                   bis_size={"{\"x\":51,\"y\":1720,\"w\":897,\"h\":6..."}
+                                                                  >
+                                                                    <div
+                                                                      ref={function bound dispatchSetState}
+                                                                      style={{minWidth:"100%",display:"table"}}
+-                                                                     bis_size={"{\"x\":51,\"y\":1720,\"w\":897,\"h\"..."}
+                                                                    >
+                                                                      <div
+                                                                        className="space-y-2"
+-                                                                       bis_size={"{\"x\":51,\"y\":1720,\"w\":897,\"h..."}
+                                                                      >
+                                                                        <p
+                                                                          className="text-sm text-muted-foreground py-..."
+-                                                                         bis_size={"{\"x\":51,\"y\":1720,\"w\":897,\..."}
+                                                                        >
++                                                                         لا توجد تنبيهات
+                                                              ...
+                                                  <Card className="p-5">
+                                                    <div
+                                                      data-slot="card"
+                                                      className="bg-card text-card-foreground flex flex-col gap-3 roun..."
+-                                                     bis_size={"{\"x\":30,\"y\":1825,\"w\":939,\"h\":161,\"abs_x\":7..."}
+                                                    >
+                                                      <div
+                                                        className="flex items-center justify-between mb-4"
+-                                                       bis_size={"{\"x\":51,\"y\":1846,\"w\":897,\"h\":23,\"abs_x\":..."}
+                                                      >
+                                                        <h3
+                                                          className="font-semibold text-base"
+-                                                         bis_size={"{\"x\":856,\"y\":1846,\"w\":92,\"h\":23,\"abs_x\..."}
+                                                        >
++                                                         أحدث الطلبات
+                                                      ...
+                                                        <ScrollAreaProvider scope={undefined} type="hover" dir="ltr" ...>
+                                                          <Primitive.div dir="ltr" data-slot="scroll-area" ...>
+                                                            <div
+                                                              dir="ltr"
+                                                              data-slot="scroll-area"
+                                                              className="relative max-h-64"
+                                                              style={{position:"relative", ...}}
+                                                              ref={function}
+-                                                             bis_size={"{\"x\":51,\"y\":1898,\"w\":897,\"h\":68,\"ab..."}
+                                                            >
+                                                              <ScrollAreaViewport data-slot="scroll-are..." ...>
+                                                                <style>
+                                                                <Primitive.div data-radix-scroll-area-viewport="" ...>
+                                                                  <div
+                                                                    data-radix-scroll-area-viewport=""
+                                                                    data-slot="scroll-area-viewport"
+                                                                    className="focus-visible:ring-ring/50 size-full ro..."
+                                                                    style={{overflowX:"hidden",overflowY:"hidden"}}
+                                                                    ref={function}
+-                                                                   bis_size={"{\"x\":51,\"y\":1898,\"w\":897,\"h\":6..."}
+                                                                  >
+                                                                    <div
+                                                                      ref={function bound dispatchSetState}
+                                                                      style={{minWidth:"100%",display:"table"}}
+-                                                                     bis_size={"{\"x\":51,\"y\":1898,\"w\":897,\"h\"..."}
+                                                                    >
+                                                                      <div
+                                                                        className="space-y-2"
+-                                                                       bis_size={"{\"x\":51,\"y\":1898,\"w\":897,\"h..."}
+                                                                      >
+                                                                        <p
+                                                                          className="text-sm text-muted-foreground py-..."
+-                                                                         bis_size={"{\"x\":51,\"y\":1898,\"w\":897,\..."}
+                                                                        >
++                                                                         لا توجد بيانات
+                                                              ...
+                                      <footer
+                                        className="mt-auto border-t bg-muted/30 py-4 px-6 text-center text-xs text-mut..."
+-                                       bis_size={"{\"x\":6,\"y\":2007,\"w\":987,\"h\":48,\"abs_x\":768,\"abs_y\":2116}"}
+                                      >
+                                        <span
+                                          className="font-semibold text-foreground"
+-                                         bis_size={"{\"x\":652,\"y\":2024,\"w\":35,\"h\":15,\"abs_x\":1414,\"abs_y\"..."}
+                                        >
++                                         أورمنال
+                                        ...
+                        ...
+                      ...
+                        <_c>
+                          <ToastViewport ref={null} className="fixed top-...">
+                            <DismissableLayerBranch ref={{current:null}} role="region" aria-label="Notificati..." ...>
+                              <Primitive.div role="region" aria-label="Notificati..." tabIndex={-1} style={{...}} ...>
+                                <div
+                                  role="region"
+                                  aria-label="Notifications (F8)"
+                                  tabIndex={-1}
+                                  style={{pointerEvents:"none"}}
+                                  ref={function}
+-                                 bis_size={"{\"x\":0,\"y\":703,\"w\":994,\"h\":0,\"abs_x\":762,\"abs_y\":812}"}
+                                >
+                                  <ToastCollectionSlot scope={undefined}>
+                                    <ToastCollectionSlot.Slot ref={function}>
+                                      <ToastCollectionSlot.SlotClone ref={function}>
+                                        <Primitive.ol tabIndex={-1} className="fixed top-..." ref={function}>
+                                          <ol
+                                            tabIndex={-1}
+                                            className="fixed top-0 z-[100] flex max-h-screen w-full flex-col-reverse p..."
+                                            ref={function}
+-                                           bis_size={"{\"x\":574,\"y\":671,\"w\":419,\"h\":31,\"abs_x\":1336,\"abs_y..."}
+                                          >
+                      ...
+                  ...
+
+
+
+    at div (<anonymous>:null:null)
+
+Next.js version: 16.1.3 (Turbopack)

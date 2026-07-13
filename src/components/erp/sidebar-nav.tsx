@@ -178,7 +178,7 @@ export function SidebarNav() {
       </div>
 
       {/* Nav */}
-      <div className="flex-1 min-h-0 px-2 py-3 overflow-y-auto scrollbar-thin" dir={typeof window !== 'undefined' ? (document.documentElement.getAttribute('dir') || 'rtl') : 'rtl'}>
+      <div className="flex-1 min-h-0 px-2 py-3 overflow-y-auto scrollbar-thin" dir="rtl">
         <nav className="flex flex-col gap-0.5" dir="rtl">
           {NAV.map((group) => {
             const GroupIcon = group.icon

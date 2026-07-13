@@ -1,0 +1,2002 @@
+     1→## Error Type
+     2→Console Error
+     3→
+     4→## Error Message
+     5→A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+     6→
+     7→- A server/client branch `if (typeof window !== 'undefined')`.
+     8→- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+     9→- Date formatting in a user's locale which doesn't match the server.
+    10→- External changing data without sending a snapshot of it along with the HTML.
+    11→- Invalid HTML tag nesting.
+    12→
+    13→It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+    14→
+    15→https://react.dev/link/hydration-mismatch
+    16→
+    17→  ...
+    18→    <HotReload globalError={[...]} webSocket={WebSocket} staticIndicatorState={{pathname:null, ...}}>
+    19→      <AppDevOverlayErrorBoundary globalError={[...]}>
+    20→        <ReplaySsrOnlyErrors>
+    21→        <DevRootHTTPAccessFallbackBoundary>
+    22→          <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+    23→            <HTTPAccessFallbackErrorBoundary pathname="/" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+    24→              <RedirectBoundary>
+    25→                <RedirectErrorBoundary router={{...}}>
+    26→                  <Head headCacheNode={{rsc:<Fragment>, ...}}>
+    27→                    <__next_viewport_boundary__>
+    28→                    <MetadataWrapper>
+    29→                      <div
+    30→                        hidden={true}
+    31→-                       bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+    32→                      >
+    33→                    ...
+    34→                  ...
+    35→                    <body className="geist_a715..." suppressHydrationWarning={true}>
+    36→                      ...
+    37→                        <SegmentViewNode type="page" pagePath="page.tsx">
+    38→                          <SegmentTrieNode>
+    39→                          <ClientPageRoot Component={function Home} serverProvidedParams={{...}}>
+    40→                            <Home params={Promise} searchParams={Promise}>
+    41→                              <AppShell>
+    42→                                <div
+    43→                                  className="h-screen overflow-hidden flex bg-background"
+    44→                                  dir="rtl"
+    45→-                                 bis_size={"{\"x\":0,\"y\":0,\"w\":994,\"h\":703,\"abs_x\":762,\"abs_y\":109}"}
+    46→                                >
+    47→                                  <aside
+    48→                                    dir="rtl"
+    49→                                    className="hidden lg:flex shrink-0 transition-[width] duration-200 border-e border..."
+    50→-                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+    51→                                  >
+    52→                                    <SidebarNav>
+    53→                                      <div
+    54→                                        className="flex h-full flex-col bg-sidebar text-sidebar-foreground"
+    55→-                                       bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+    56→                                      >
+    57→                                        <div
+    58→                                          className="flex items-center gap-3 px-4 h-16 shrink-0 border-b border-sideba..."
+    59→-                                         bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+    60→                                        >
+    61→                                          <img
+    62→                                            src="/logo.png"
+    63→                                            alt="أورمنال"
+    64→                                            className="size-9 rounded-xl shadow-sm object-contain shrink-0"
+    65→-                                           bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+    66→                                          >
+    67→                                          <div
+    68→                                            className="min-w-0"
+    69→-                                           bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+    70→                                          >
+    71→                                            <p
+    72→                                              className="font-bold text-sm leading-tight truncate"
+    73→-                                             bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+    74→                                            >
+    75→+                                             أورمنال
+    76→                                            <p
+    77→                                              className="text-[10px] text-muted-foreground leading-tight truncate"
+    78→-                                             bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+    79→                                            >
+    80→+                                             نظام إدارة موارد المؤسسات ERP
+    81→                                        <div
+    82→                                          className="flex-1 min-h-0 px-2 py-3 overflow-y-auto scrollbar-thin"
+    83→                                          dir="rtl"
+    84→-                                         bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+    85→                                        >
+    86→                                          <nav
+    87→                                            className="flex flex-col gap-0.5"
+    88→                                            dir="rtl"
+    89→-                                           bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+    90→                                          >
+    91→                                            <button
+    92→                                              onClick={function onClick}
+    93→                                              className="group flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm ..."
+    94→-                                             bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+    95→                                            >
+    96→                                              <LayoutDashboard className="size-4 shr...">
+    97→                                                <svg
+    98→                                                  ref={null}
+    99→                                                  xmlns="http://www.w3.org/2000/svg"
+   100→                                                  width={24}
+   101→                                                  height={24}
+   102→                                                  viewBox="0 0 24 24"
+   103→                                                  fill="none"
+   104→                                                  stroke="currentColor"
+   105→                                                  strokeWidth={2}
+   106→                                                  strokeLinecap="round"
+   107→                                                  strokeLinejoin="round"
+   108→                                                  className="lucide lucide-layout-dashboard size-4 shrink-0 text-sideb..."
+   109→                                                  aria-hidden="true"
+   110→-                                                 bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\"..."}
+   111→                                                >
+   112→                                                  <rect
+   113→                                                    width="7"
+   114→                                                    height="9"
+   115→                                                    x="3"
+   116→                                                    y="3"
+   117→                                                    rx="1"
+   118→-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+   119→                                                  >
+   120→                                                  <rect
+   121→                                                    width="7"
+   122→                                                    height="5"
+   123→                                                    x="14"
+   124→                                                    y="3"
+   125→                                                    rx="1"
+   126→-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+   127→                                                  >
+   128→                                                  <rect
+   129→                                                    width="7"
+   130→                                                    height="9"
+   131→                                                    x="14"
+   132→                                                    y="12"
+   133→                                                    rx="1"
+   134→-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+   135→                                                  >
+   136→                                                  <rect
+   137→                                                    width="7"
+   138→                                                    height="5"
+   139→                                                    x="3"
+   140→                                                    y="16"
+   141→                                                    rx="1"
+   142→-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+   143→                                                  >
+   144→                                              <span
+   145→                                                className="truncate flex-1"
+   146→-                                               bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+   147→                                              >
+   148→+                                               لوحة التحكم
+   149→                                            <div
+   150→                                              className="mb-0.5"
+   151→-                                             bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+   152→                                            >
+   153→                                              <button
+   154→                                                onClick={function onClick}
+   155→                                                className="group flex items-center gap-2.5 rounded-lg px-3 py-2 text-s..."
+   156→-                                               bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+   157→                                              >
+   158→                                                <Handshake className="size-4 shr...">
+   159→                                                  <svg
+   160→                                                    ref={null}
+   161→                                                    xmlns="http://www.w3.org/2000/svg"
+   162→                                                    width={24}
+   163→                                                    height={24}
+   164→                                                    viewBox="0 0 24 24"
+   165→                                                    fill="none"
+   166→                                                    stroke="currentColor"
+   167→                                                    strokeWidth={2}
+   168→                                                    strokeLinecap="round"
+   169→                                                    strokeLinejoin="round"
+   170→                                                    className="lucide lucide-handshake size-4 shrink-0 text-muted-fore..."
+   171→                                                    aria-hidden="true"
+   172→-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+   173→                                                  >
+   174→                                                    <path
+   175→                                                      d="m11 17 2 2a1 1 0 1 0 3-3"
+   176→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   177→                                                    >
+   178→                                                    <path
+   179→                                                      d="m14 14 2.5 2.5a1 1 0 1 0 3-3l-3.88-3.88a3 3 0 0 0-4.24 0l-.88..."
+   180→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   181→                                                    >
+   182→                                                    <path
+   183→                                                      d="m21 3 1 11h-2"
+   184→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   185→                                                    >
+   186→                                                    <path
+   187→                                                      d="M3 3 2 14l6.5 6.5a1 1 0 1 0 3-3"
+   188→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   189→                                                    >
+   190→                                                    <path
+   191→                                                      d="M3 4h8"
+   192→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   193→                                                    >
+   194→                                                <span
+   195→                                                  className="truncate flex-1"
+   196→-                                                 bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\"..."}
+   197→                                                >
+   198→+                                                 البيانات الأساسية
+   199→                                                <ChevronDown className="size-4 shr...">
+   200→                                                  <svg
+   201→                                                    ref={null}
+   202→                                                    xmlns="http://www.w3.org/2000/svg"
+   203→                                                    width={24}
+   204→                                                    height={24}
+   205→                                                    viewBox="0 0 24 24"
+   206→                                                    fill="none"
+   207→                                                    stroke="currentColor"
+   208→                                                    strokeWidth={2}
+   209→                                                    strokeLinecap="round"
+   210→                                                    strokeLinejoin="round"
+   211→                                                    className="lucide lucide-chevron-down size-4 shrink-0 text-muted-f..."
+   212→                                                    aria-hidden="true"
+   213→-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+   214→                                                  >
+   215→                                                    <path
+   216→                                                      d="m6 9 6 6 6-6"
+   217→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   218→                                                    >
+   219→                                            <div
+   220→                                              className="mb-0.5"
+   221→-                                             bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+   222→                                            >
+   223→                                              <button
+   224→                                                onClick={function onClick}
+   225→                                                className="group flex items-center gap-2.5 rounded-lg px-3 py-2 text-s..."
+   226→-                                               bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+   227→                                              >
+   228→                                                <FileText className="size-4 shr...">
+   229→                                                  <svg
+   230→                                                    ref={null}
+   231→                                                    xmlns="http://www.w3.org/2000/svg"
+   232→                                                    width={24}
+   233→                                                    height={24}
+   234→                                                    viewBox="0 0 24 24"
+   235→                                                    fill="none"
+   236→                                                    stroke="currentColor"
+   237→                                                    strokeWidth={2}
+   238→                                                    strokeLinecap="round"
+   239→                                                    strokeLinejoin="round"
+   240→                                                    className="lucide lucide-file-text size-4 shrink-0 text-muted-fore..."
+   241→                                                    aria-hidden="true"
+   242→-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+   243→                                                  >
+   244→                                                    <path
+   245→                                                      d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"
+   246→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   247→                                                    >
+   248→                                                    <path
+   249→                                                      d="M14 2v4a2 2 0 0 0 2 2h4"
+   250→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   251→                                                    >
+   252→                                                    <path
+   253→                                                      d="M10 9H8"
+   254→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   255→                                                    >
+   256→                                                    <path
+   257→                                                      d="M16 13H8"
+   258→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   259→                                                    >
+   260→                                                    <path
+   261→                                                      d="M16 17H8"
+   262→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   263→                                                    >
+   264→                                                <span
+   265→                                                  className="truncate flex-1"
+   266→-                                                 bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\"..."}
+   267→                                                >
+   268→+                                                 المبيعات
+   269→                                                <ChevronDown className="size-4 shr...">
+   270→                                                  <svg
+   271→                                                    ref={null}
+   272→                                                    xmlns="http://www.w3.org/2000/svg"
+   273→                                                    width={24}
+   274→                                                    height={24}
+   275→                                                    viewBox="0 0 24 24"
+   276→                                                    fill="none"
+   277→                                                    stroke="currentColor"
+   278→                                                    strokeWidth={2}
+   279→                                                    strokeLinecap="round"
+   280→                                                    strokeLinejoin="round"
+   281→                                                    className="lucide lucide-chevron-down size-4 shrink-0 text-muted-f..."
+   282→                                                    aria-hidden="true"
+   283→-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+   284→                                                  >
+   285→                                                    <path
+   286→                                                      d="m6 9 6 6 6-6"
+   287→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   288→                                                    >
+   289→                                            <div
+   290→                                              className="mb-0.5"
+   291→-                                             bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+   292→                                            >
+   293→                                              <button
+   294→                                                onClick={function onClick}
+   295→                                                className="group flex items-center gap-2.5 rounded-lg px-3 py-2 text-s..."
+   296→-                                               bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+   297→                                              >
+   298→                                                <Truck className="size-4 shr...">
+   299→                                                  <svg
+   300→                                                    ref={null}
+   301→                                                    xmlns="http://www.w3.org/2000/svg"
+   302→                                                    width={24}
+   303→                                                    height={24}
+   304→                                                    viewBox="0 0 24 24"
+   305→                                                    fill="none"
+   306→                                                    stroke="currentColor"
+   307→                                                    strokeWidth={2}
+   308→                                                    strokeLinecap="round"
+   309→                                                    strokeLinejoin="round"
+   310→                                                    className="lucide lucide-truck size-4 shrink-0 text-muted-foregrou..."
+   311→                                                    aria-hidden="true"
+   312→-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+   313→                                                  >
+   314→                                                    <path
+   315→                                                      d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"
+   316→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   317→                                                    >
+   318→                                                    <path
+   319→                                                      d="M15 18H9"
+   320→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   321→                                                    >
+   322→                                                    <path
+   323→                                                      d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 ..."
+   324→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   325→                                                    >
+   326→                                                    <circle
+   327→                                                      cx="17"
+   328→                                                      cy="18"
+   329→                                                      r="2"
+   330→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   331→                                                    >
+   332→                                                    <circle
+   333→                                                      cx="7"
+   334→                                                      cy="18"
+   335→                                                      r="2"
+   336→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   337→                                                    >
+   338→                                                <span
+   339→                                                  className="truncate flex-1"
+   340→-                                                 bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\"..."}
+   341→                                                >
+   342→+                                                 المشتريات
+   343→                                                <ChevronDown className="size-4 shr...">
+   344→                                                  <svg
+   345→                                                    ref={null}
+   346→                                                    xmlns="http://www.w3.org/2000/svg"
+   347→                                                    width={24}
+   348→                                                    height={24}
+   349→                                                    viewBox="0 0 24 24"
+   350→                                                    fill="none"
+   351→                                                    stroke="currentColor"
+   352→                                                    strokeWidth={2}
+   353→                                                    strokeLinecap="round"
+   354→                                                    strokeLinejoin="round"
+   355→                                                    className="lucide lucide-chevron-down size-4 shrink-0 text-muted-f..."
+   356→                                                    aria-hidden="true"
+   357→-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+   358→                                                  >
+   359→                                                    <path
+   360→                                                      d="m6 9 6 6 6-6"
+   361→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   362→                                                    >
+   363→                                            <div
+   364→                                              className="mb-0.5"
+   365→-                                             bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+   366→                                            >
+   367→                                              <button
+   368→                                                onClick={function onClick}
+   369→                                                className="group flex items-center gap-2.5 rounded-lg px-3 py-2 text-s..."
+   370→-                                               bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+   371→                                              >
+   372→                                                <Boxes className="size-4 shr...">
+   373→                                                  <svg
+   374→                                                    ref={null}
+   375→                                                    xmlns="http://www.w3.org/2000/svg"
+   376→                                                    width={24}
+   377→                                                    height={24}
+   378→                                                    viewBox="0 0 24 24"
+   379→                                                    fill="none"
+   380→                                                    stroke="currentColor"
+   381→                                                    strokeWidth={2}
+   382→                                                    strokeLinecap="round"
+   383→                                                    strokeLinejoin="round"
+   384→                                                    className="lucide lucide-boxes size-4 shrink-0 text-muted-foregrou..."
+   385→                                                    aria-hidden="true"
+   386→-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+   387→                                                  >
+   388→                                                    <path
+   389→                                                      d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2..."
+   390→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   391→                                                    >
+   392→                                                    <path
+   393→                                                      d="m7 16.5-4.74-2.85"
+   394→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   395→                                                    >
+   396→                                                    <path
+   397→                                                      d="m7 16.5 5-3"
+   398→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   399→                                                    >
+   400→                                                    <path
+   401→                                                      d="M7 16.5v5.17"
+   402→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   403→                                                    >
+   404→                                                    <path
+   405→                                                      d="M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1...."
+   406→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   407→                                                    >
+   408→                                                    <path
+   409→                                                      d="m17 16.5-5-3"
+   410→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   411→                                                    >
+   412→                                                    <path
+   413→                                                      d="m17 16.5 4.74-2.85"
+   414→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   415→                                                    >
+   416→                                                    <path
+   417→                                                      d="M17 16.5v5.17"
+   418→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   419→                                                    >
+   420→                                                    <path
+   421→                                                      d="M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1..."
+   422→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   423→                                                    >
+   424→                                                    <path
+   425→                                                      d="M12 8 7.26 5.15"
+   426→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   427→                                                    >
+   428→                                                    <path
+   429→                                                      d="m12 8 4.74-2.85"
+   430→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   431→                                                    >
+   432→                                                    <path
+   433→                                                      d="M12 13.5V8"
+   434→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   435→                                                    >
+   436→                                                <span
+   437→                                                  className="truncate flex-1"
+   438→-                                                 bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\"..."}
+   439→                                                >
+   440→+                                                 المخزون
+   441→                                                <ChevronDown className="size-4 shr...">
+   442→                                                  <svg
+   443→                                                    ref={null}
+   444→                                                    xmlns="http://www.w3.org/2000/svg"
+   445→                                                    width={24}
+   446→                                                    height={24}
+   447→                                                    viewBox="0 0 24 24"
+   448→                                                    fill="none"
+   449→                                                    stroke="currentColor"
+   450→                                                    strokeWidth={2}
+   451→                                                    strokeLinecap="round"
+   452→                                                    strokeLinejoin="round"
+   453→                                                    className="lucide lucide-chevron-down size-4 shrink-0 text-muted-f..."
+   454→                                                    aria-hidden="true"
+   455→-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+   456→                                                  >
+   457→                                                    <path
+   458→                                                      d="m6 9 6 6 6-6"
+   459→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   460→                                                    >
+   461→                                            <div
+   462→                                              className="mb-0.5"
+   463→-                                             bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+   464→                                            >
+   465→                                              <button
+   466→                                                onClick={function onClick}
+   467→                                                className="group flex items-center gap-2.5 rounded-lg px-3 py-2 text-s..."
+   468→-                                               bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+   469→                                              >
+   470→                                                <BookOpen className="size-4 shr...">
+   471→                                                  <svg
+   472→                                                    ref={null}
+   473→                                                    xmlns="http://www.w3.org/2000/svg"
+   474→                                                    width={24}
+   475→                                                    height={24}
+   476→                                                    viewBox="0 0 24 24"
+   477→                                                    fill="none"
+   478→                                                    stroke="currentColor"
+   479→                                                    strokeWidth={2}
+   480→                                                    strokeLinecap="round"
+   481→                                                    strokeLinejoin="round"
+   482→                                                    className="lucide lucide-book-open size-4 shrink-0 text-muted-fore..."
+   483→                                                    aria-hidden="true"
+   484→-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+   485→                                                  >
+   486→                                                    <path
+   487→                                                      d="M12 7v14"
+   488→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   489→                                                    >
+   490→                                                    <path
+   491→                                                      d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1..."
+   492→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   493→                                                    >
+   494→                                                <span
+   495→                                                  className="truncate flex-1"
+   496→-                                                 bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\"..."}
+   497→                                                >
+   498→+                                                 المحاسبة
+   499→                                                <ChevronDown className="size-4 shr...">
+   500→                                                  <svg
+   501→                                                    ref={null}
+   502→                                                    xmlns="http://www.w3.org/2000/svg"
+   503→                                                    width={24}
+   504→                                                    height={24}
+   505→                                                    viewBox="0 0 24 24"
+   506→                                                    fill="none"
+   507→                                                    stroke="currentColor"
+   508→                                                    strokeWidth={2}
+   509→                                                    strokeLinecap="round"
+   510→                                                    strokeLinejoin="round"
+   511→                                                    className="lucide lucide-chevron-down size-4 shrink-0 text-muted-f..."
+   512→                                                    aria-hidden="true"
+   513→-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+   514→                                                  >
+   515→                                                    <path
+   516→                                                      d="m6 9 6 6 6-6"
+   517→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   518→                                                    >
+   519→                                            <div
+   520→                                              className="mb-0.5"
+   521→-                                             bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+   522→                                            >
+   523→                                              <button
+   524→                                                onClick={function onClick}
+   525→                                                className="group flex items-center gap-2.5 rounded-lg px-3 py-2 text-s..."
+   526→-                                               bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+   527→                                              >
+   528→                                                <Factory className="size-4 shr...">
+   529→                                                  <svg
+   530→                                                    ref={null}
+   531→                                                    xmlns="http://www.w3.org/2000/svg"
+   532→                                                    width={24}
+   533→                                                    height={24}
+   534→                                                    viewBox="0 0 24 24"
+   535→                                                    fill="none"
+   536→                                                    stroke="currentColor"
+   537→                                                    strokeWidth={2}
+   538→                                                    strokeLinecap="round"
+   539→                                                    strokeLinejoin="round"
+   540→                                                    className="lucide lucide-factory size-4 shrink-0 text-muted-foregr..."
+   541→                                                    aria-hidden="true"
+   542→-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+   543→                                                  >
+   544→                                                    <path
+   545→                                                      d="M12 16h.01"
+   546→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   547→                                                    >
+   548→                                                    <path
+   549→                                                      d="M16 16h.01"
+   550→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   551→                                                    >
+   552→                                                    <path
+   553→                                                      d="M3 19a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5a.5.5 0 0 0-.769-.422..."
+   554→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   555→                                                    >
+   556→                                                    <path
+   557→                                                      d="M8 16h.01"
+   558→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   559→                                                    >
+   560→                                                <span
+   561→                                                  className="truncate flex-1"
+   562→-                                                 bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\"..."}
+   563→                                                >
+   564→+                                                 التصنيع
+   565→                                                <ChevronDown className="size-4 shr...">
+   566→                                                  <svg
+   567→                                                    ref={null}
+   568→                                                    xmlns="http://www.w3.org/2000/svg"
+   569→                                                    width={24}
+   570→                                                    height={24}
+   571→                                                    viewBox="0 0 24 24"
+   572→                                                    fill="none"
+   573→                                                    stroke="currentColor"
+   574→                                                    strokeWidth={2}
+   575→                                                    strokeLinecap="round"
+   576→                                                    strokeLinejoin="round"
+   577→                                                    className="lucide lucide-chevron-down size-4 shrink-0 text-muted-f..."
+   578→                                                    aria-hidden="true"
+   579→-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+   580→                                                  >
+   581→                                                    <path
+   582→                                                      d="m6 9 6 6 6-6"
+   583→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   584→                                                    >
+   585→                                            <div
+   586→                                              className="mb-0.5"
+   587→-                                             bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+   588→                                            >
+   589→                                              <button
+   590→                                                onClick={function onClick}
+   591→                                                className="group flex items-center gap-2.5 rounded-lg px-3 py-2 text-s..."
+   592→-                                               bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+   593→                                              >
+   594→                                                <Users className="size-4 shr...">
+   595→                                                  <svg
+   596→                                                    ref={null}
+   597→                                                    xmlns="http://www.w3.org/2000/svg"
+   598→                                                    width={24}
+   599→                                                    height={24}
+   600→                                                    viewBox="0 0 24 24"
+   601→                                                    fill="none"
+   602→                                                    stroke="currentColor"
+   603→                                                    strokeWidth={2}
+   604→                                                    strokeLinecap="round"
+   605→                                                    strokeLinejoin="round"
+   606→                                                    className="lucide lucide-users size-4 shrink-0 text-muted-foregrou..."
+   607→                                                    aria-hidden="true"
+   608→-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+   609→                                                  >
+   610→                                                    <path
+   611→                                                      d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
+   612→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   613→                                                    >
+   614→                                                    <path
+   615→                                                      d="M16 3.128a4 4 0 0 1 0 7.744"
+   616→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   617→                                                    >
+   618→                                                    <path
+   619→                                                      d="M22 21v-2a4 4 0 0 0-3-3.87"
+   620→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   621→                                                    >
+   622→                                                    <circle
+   623→                                                      cx="9"
+   624→                                                      cy="7"
+   625→                                                      r="4"
+   626→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   627→                                                    >
+   628→                                                <span
+   629→                                                  className="truncate flex-1"
+   630→-                                                 bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\"..."}
+   631→                                                >
+   632→+                                                 الموارد البشرية
+   633→                                                <ChevronDown className="size-4 shr...">
+   634→                                                  <svg
+   635→                                                    ref={null}
+   636→                                                    xmlns="http://www.w3.org/2000/svg"
+   637→                                                    width={24}
+   638→                                                    height={24}
+   639→                                                    viewBox="0 0 24 24"
+   640→                                                    fill="none"
+   641→                                                    stroke="currentColor"
+   642→                                                    strokeWidth={2}
+   643→                                                    strokeLinecap="round"
+   644→                                                    strokeLinejoin="round"
+   645→                                                    className="lucide lucide-chevron-down size-4 shrink-0 text-muted-f..."
+   646→                                                    aria-hidden="true"
+   647→-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+   648→                                                  >
+   649→                                                    <path
+   650→                                                      d="m6 9 6 6 6-6"
+   651→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   652→                                                    >
+   653→                                            <button
+   654→                                              onClick={function onClick}
+   655→                                              className="group flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm ..."
+   656→-                                             bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+   657→                                            >
+   658→                                              <ChartColumn className="size-4 shr...">
+   659→                                                <svg
+   660→                                                  ref={null}
+   661→                                                  xmlns="http://www.w3.org/2000/svg"
+   662→                                                  width={24}
+   663→                                                  height={24}
+   664→                                                  viewBox="0 0 24 24"
+   665→                                                  fill="none"
+   666→                                                  stroke="currentColor"
+   667→                                                  strokeWidth={2}
+   668→                                                  strokeLinecap="round"
+   669→                                                  strokeLinejoin="round"
+   670→                                                  className="lucide lucide-chart-column size-4 shrink-0 text-muted-for..."
+   671→                                                  aria-hidden="true"
+   672→-                                                 bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\"..."}
+   673→                                                >
+   674→                                                  <path
+   675→                                                    d="M3 3v16a2 2 0 0 0 2 2h16"
+   676→-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+   677→                                                  >
+   678→                                                  <path
+   679→                                                    d="M18 17V9"
+   680→-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+   681→                                                  >
+   682→                                                  <path
+   683→                                                    d="M13 17V5"
+   684→-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+   685→                                                  >
+   686→                                                  <path
+   687→                                                    d="M8 17v-3"
+   688→-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+   689→                                                  >
+   690→                                              <span
+   691→                                                className="truncate flex-1"
+   692→-                                               bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+   693→                                              >
+   694→+                                               التقارير
+   695→                                            <div
+   696→                                              className="mb-0.5"
+   697→-                                             bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+   698→                                            >
+   699→                                              <button
+   700→                                                onClick={function onClick}
+   701→                                                className="group flex items-center gap-2.5 rounded-lg px-3 py-2 text-s..."
+   702→-                                               bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+   703→                                              >
+   704→                                                <Settings className="size-4 shr...">
+   705→                                                  <svg
+   706→                                                    ref={null}
+   707→                                                    xmlns="http://www.w3.org/2000/svg"
+   708→                                                    width={24}
+   709→                                                    height={24}
+   710→                                                    viewBox="0 0 24 24"
+   711→                                                    fill="none"
+   712→                                                    stroke="currentColor"
+   713→                                                    strokeWidth={2}
+   714→                                                    strokeLinecap="round"
+   715→                                                    strokeLinejoin="round"
+   716→                                                    className="lucide lucide-settings size-4 shrink-0 text-muted-foreg..."
+   717→                                                    aria-hidden="true"
+   718→-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+   719→                                                  >
+   720→                                                    <path
+   721→                                                      d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 ..."
+   722→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   723→                                                    >
+   724→                                                    <circle
+   725→                                                      cx="12"
+   726→                                                      cy="12"
+   727→                                                      r="3"
+   728→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   729→                                                    >
+   730→                                                <span
+   731→                                                  className="truncate flex-1"
+   732→-                                                 bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\"..."}
+   733→                                                >
+   734→+                                                 النظام
+   735→                                                <ChevronDown className="size-4 shr...">
+   736→                                                  <svg
+   737→                                                    ref={null}
+   738→                                                    xmlns="http://www.w3.org/2000/svg"
+   739→                                                    width={24}
+   740→                                                    height={24}
+   741→                                                    viewBox="0 0 24 24"
+   742→                                                    fill="none"
+   743→                                                    stroke="currentColor"
+   744→                                                    strokeWidth={2}
+   745→                                                    strokeLinecap="round"
+   746→                                                    strokeLinejoin="round"
+   747→                                                    className="lucide lucide-chevron-down size-4 shrink-0 text-muted-f..."
+   748→                                                    aria-hidden="true"
+   749→-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+   750→                                                  >
+   751→                                                    <path
+   752→                                                      d="m6 9 6 6 6-6"
+   753→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   754→                                                    >
+   755→                                        <div
+   756→                                          className="border-t border-sidebar-border p-3 shrink-0"
+   757→-                                         bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+   758→                                        >
+   759→                                          <RoleBadge>
+   760→                                            <div
+   761→                                              className="flex items-center gap-2.5 rounded-lg bg-sidebar-accent/60 p-2..."
+   762→-                                             bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+   763→                                            >
+   764→                                              ...
+   765→                                                <AvatarProvider scope={undefined} imageLoadingStatus="idle" ...>
+   766→                                                  <Primitive.span data-slot="avatar" className="relative f..." ref={null}>
+   767→                                                    <span
+   768→                                                      data-slot="avatar"
+   769→                                                      className="relative flex shrink-0 overflow-hidden rounded-full s..."
+   770→                                                      ref={null}
+   771→-                                                     bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs..."}
+   772→                                                    >
+   773→                                                      <AvatarFallback className="bg-primary...">
+   774→                                                        <AvatarFallback data-slot="avatar-fal..." ...>
+   775→                                                          <Primitive.span data-slot="avatar-fal..." ...>
+   776→                                                            <span
+   777→                                                              data-slot="avatar-fallback"
+   778→                                                              className="flex size-full items-center justify-center ro..."
+   779→                                                              ref={null}
+   780→-                                                             bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":7..."}
+   781→                                                            >
+   782→+                                                             م ن
+   783→                                              <div
+   784→                                                className="min-w-0 flex-1"
+   785→-                                               bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+   786→                                              >
+   787→                                                <p
+   788→                                                  className="text-xs font-semibold truncate"
+   789→-                                                 bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\"..."}
+   790→                                                >
+   791→+                                                 مدير النظام
+   792→                                                <Badge variant="outline" className="mt-0.5 tex...">
+   793→                                                  <span
+   794→                                                    data-slot="badge"
+   795→                                                    className={"inline-flex items-center justify-center rounded-md bo..."}
+   796→-                                                   bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y..."}
+   797→                                                  >
+   798→                                                    <ShieldCheck className="size-2.5">
+   799→                                                      <svg
+   800→                                                        ref={null}
+   801→                                                        xmlns="http://www.w3.org/2000/svg"
+   802→                                                        width={24}
+   803→                                                        height={24}
+   804→                                                        viewBox="0 0 24 24"
+   805→                                                        fill="none"
+   806→                                                        stroke="currentColor"
+   807→                                                        strokeWidth={2}
+   808→                                                        strokeLinecap="round"
+   809→                                                        strokeLinejoin="round"
+   810→                                                        className="lucide lucide-shield-check size-2.5"
+   811→                                                        aria-hidden="true"
+   812→-                                                       bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"a..."}
+   813→                                                      >
+   814→                                                        <path
+   815→                                                          d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4..."
+   816→-                                                         bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\..."}
+   817→                                                        >
+   818→                                                        <path
+   819→                                                          d="m9 12 2 2 4-4"
+   820→-                                                         bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\..."}
+   821→                                                        >
+   822→                                                    ...
+   823→                                  <div
+   824→                                    className="flex-1 min-w-0 flex flex-col"
+   825→-                                   bis_size={"{\"x\":0,\"y\":0,\"w\":994,\"h\":703,\"abs_x\":762,\"abs_y\":109}"}
+   826→                                  >
+   827→                                    <Topbar>
+   828→                                      <header
+   829→                                        className="sticky top-0 z-20 flex h-16 items-center gap-2 border-b bg-backgrou..."
+   830→-                                       bis_size={"{\"x\":0,\"y\":0,\"w\":994,\"h\":63,\"abs_x\":762,\"abs_y\":109}"}
+   831→                                      >
+   832→                                        ...
+   833→                                          <Primitive.button.Slot type="button" aria-haspopup="dialog" ...>
+   834→                                            <Primitive.button.SlotClone type="button" aria-haspopup="dialog" ...>
+   835→                                              <Button variant="ghost" size="icon" className="lg:hidden" ...>
+   836→                                                <button
+   837→                                                  data-slot="sheet-trigger"
+   838→                                                  className={"inline-flex items-center justify-center gap-2 whitespac..."}
+   839→                                                  aria-label="فتح القائمة"
+   840→                                                  type="button"
+   841→                                                  aria-haspopup="dialog"
+   842→                                                  aria-expanded={false}
+   843→                                                  aria-controls="radix-_R_2qatplb_"
+   844→                                                  data-state="closed"
+   845→                                                  onClick={function handleEvent}
+   846→                                                  ref={function}
+   847→-                                                 bis_size={"{\"x\":934,\"y\":13,\"w\":35,\"h\":35,\"abs_x\":1696,\"a..."}
+   848→                                                >
+   849→                                                  <Menu className="size-5">
+   850→                                                    <svg
+   851→                                                      ref={null}
+   852→                                                      xmlns="http://www.w3.org/2000/svg"
+   853→                                                      width={24}
+   854→                                                      height={24}
+   855→                                                      viewBox="0 0 24 24"
+   856→                                                      fill="none"
+   857→                                                      stroke="currentColor"
+   858→                                                      strokeWidth={2}
+   859→                                                      strokeLinecap="round"
+   860→                                                      strokeLinejoin="round"
+   861→                                                      className="lucide lucide-menu size-5"
+   862→                                                      aria-hidden="true"
+   863→-                                                     bis_size={"{\"x\":942,\"y\":21,\"w\":19,\"h\":19,\"abs_x\":1704..."}
+   864→                                                    >
+   865→                                                      <path
+   866→                                                        d="M4 12h16"
+   867→-                                                       bis_size={"{\"x\":945,\"y\":31,\"w\":13,\"h\":0,\"abs_x\":170..."}
+   868→                                                      >
+   869→                                                      <path
+   870→                                                        d="M4 18h16"
+   871→-                                                       bis_size={"{\"x\":945,\"y\":36,\"w\":13,\"h\":0,\"abs_x\":170..."}
+   872→                                                      >
+   873→                                                      <path
+   874→                                                        d="M4 6h16"
+   875→-                                                       bis_size={"{\"x\":945,\"y\":26,\"w\":13,\"h\":0,\"abs_x\":170..."}
+   876→                                                      >
+   877→                                        <Button variant="ghost" size="icon" className="hidden lg:..." ...>
+   878→                                          <button
+   879→                                            data-slot="button"
+   880→                                            className={"items-center justify-center gap-2 whitespace-nowrap rounded-m..."}
+   881→                                            onClick={function toggleSidebar}
+   882→                                            aria-label="طي القائمة"
+   883→-                                           bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+   884→                                          >
+   885→                                            <Menu className="size-5">
+   886→                                              <svg
+   887→                                                ref={null}
+   888→                                                xmlns="http://www.w3.org/2000/svg"
+   889→                                                width={24}
+   890→                                                height={24}
+   891→                                                viewBox="0 0 24 24"
+   892→                                                fill="none"
+   893→                                                stroke="currentColor"
+   894→                                                strokeWidth={2}
+   895→                                                strokeLinecap="round"
+   896→                                                strokeLinejoin="round"
+   897→                                                className="lucide lucide-menu size-5"
+   898→                                                aria-hidden="true"
+   899→-                                               bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+   900→                                              >
+   901→                                                <path
+   902→                                                  d="M4 12h16"
+   903→-                                                 bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\"..."}
+   904→                                                >
+   905→                                                <path
+   906→                                                  d="M4 18h16"
+   907→-                                                 bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\"..."}
+   908→                                                >
+   909→                                                <path
+   910→                                                  d="M4 6h16"
+   911→-                                                 bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\"..."}
+   912→                                                >
+   913→                                        <div
+   914→                                          className="relative flex-1 max-w-md hidden sm:block"
+   915→-                                         bis_size={"{\"x\":478,\"y\":13,\"w\":447,\"h\":35,\"abs_x\":1240,\"abs_y\":..."}
+   916→                                        >
+   917→                                          <Search className="absolute i...">
+   918→                                            <svg
+   919→                                              ref={null}
+   920→                                              xmlns="http://www.w3.org/2000/svg"
+   921→                                              width={24}
+   922→                                              height={24}
+   923→                                              viewBox="0 0 24 24"
+   924→                                              fill="none"
+   925→                                              stroke="currentColor"
+   926→                                              strokeWidth={2}
+   927→                                              strokeLinecap="round"
+   928→                                              strokeLinejoin="round"
+   929→                                              className="lucide lucide-search absolute inset-y-0 start-3 my-auto size-..."
+   930→                                              aria-hidden="true"
+   931→-                                             bis_size={"{\"x\":898,\"y\":23,\"w\":15,\"h\":15,\"abs_x\":1660,\"abs_y..."}
+   932→                                            >
+   933→                                              <path
+   934→                                                d="m21 21-4.34-4.34"
+   935→-                                               bis_size={"{\"x\":909,\"y\":34,\"w\":2,\"h\":2,\"abs_x\":1671,\"abs_y..."}
+   936→                                              >
+   937→                                              <circle
+   938→                                                cx="11"
+   939→                                                cy="11"
+   940→                                                r="8"
+   941→-                                               bis_size={"{\"x\":900,\"y\":25,\"w\":10,\"h\":10,\"abs_x\":1662,\"abs..."}
+   942→                                              >
+   943→                                          <Input placeholder="ابحث عن وح..." className="ps-9 pe-12...">
+   944→                                            <input
+   945→                                              type={undefined}
+   946→                                              data-slot="input"
+   947→                                              className="flex h-9 w-full min-w-0 rounded-md border px-3 py-2 text-sm t..."
+   948→                                              placeholder="ابحث عن وحدة، عميل، منتج..."
+   949→-                                             bis_size={"{\"x\":478,\"y\":13,\"w\":447,\"h\":35,\"abs_x\":1240,\"abs_..."}
+   950→                                            >
+   951→                                          <kbd
+   952→                                            className="absolute inset-y-0 end-2 my-auto hidden md:flex items-center ga..."
+   953→-                                           bis_size={"{\"x\":486,\"y\":21,\"w\":31,\"h\":19,\"abs_x\":1248,\"abs_y\"..."}
+   954→                                          >
+   955→                                            <Command className="size-2.5">
+   956→                                              <svg
+   957→                                                ref={null}
+   958→                                                xmlns="http://www.w3.org/2000/svg"
+   959→                                                width={24}
+   960→                                                height={24}
+   961→                                                viewBox="0 0 24 24"
+   962→                                                fill="none"
+   963→                                                stroke="currentColor"
+   964→                                                strokeWidth={2}
+   965→                                                strokeLinecap="round"
+   966→                                                strokeLinejoin="round"
+   967→                                                className="lucide lucide-command size-2.5"
+   968→                                                aria-hidden="true"
+   969→-                                               bis_size={"{\"x\":500,\"y\":26,\"w\":9,\"h\":9,\"abs_x\":1262,\"abs_y..."}
+   970→                                              >
+   971→                                                <path
+   972→                                                  d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1..."
+   973→-                                                 bis_size={"{\"x\":501,\"y\":27,\"w\":7,\"h\":7,\"abs_x\":1263,\"abs..."}
+   974→                                                >
+   975→                                            ...
+   976→                                        <div
+   977→                                          className="flex-1 sm:hidden"
+   978→-                                         bis_size={"{\"x\":0,\"y\":0,\"w\":0,\"h\":0,\"abs_x\":762,\"abs_y\":109}"}
+   979→                                        >
+   980→                                        ...
+   981→                                          <Primitive.button.Slot type="button" id="radix-_R_a..." aria-haspopup="menu" ...>
+   982→                                            <Primitive.button.SlotClone type="button" id="radix-_R_a..." ...>
+   983→                                              <Button size="sm" className="gap-1.5" type="button" id="radix-_R_a..." ...>
+   984→                                                <button
+   985→                                                  data-slot="dropdown-menu-trigger"
+   986→                                                  className={"inline-flex items-center justify-center whitespace-nowr..."}
+   987→                                                  type="button"
+   988→                                                  id="radix-_R_aqatplb_"
+   989→                                                  aria-haspopup="menu"
+   990→                                                  aria-expanded={false}
+   991→                                                  aria-controls={undefined}
+   992→                                                  data-state="closed"
+   993→                                                  data-disabled={undefined}
+   994→                                                  disabled={false}
+   995→                                                  onPointerDown={function handleEvent}
+   996→                                                  onKeyDown={function handleEvent}
+   997→                                                  ref={function}
+   998→-                                                 bis_size={"{\"x\":362,\"y\":15,\"w\":107,\"h\":31,\"abs_x\":1124,\"..."}
+   999→                                                >
+  1000→                                                  <Plus className="size-4">
+  1001→                                                    <svg
+  1002→                                                      ref={null}
+  1003→                                                      xmlns="http://www.w3.org/2000/svg"
+  1004→                                                      width={24}
+  1005→                                                      height={24}
+  1006→                                                      viewBox="0 0 24 24"
+  1007→                                                      fill="none"
+  1008→                                                      stroke="currentColor"
+  1009→                                                      strokeWidth={2}
+  1010→                                                      strokeLinecap="round"
+  1011→                                                      strokeLinejoin="round"
+  1012→                                                      className="lucide lucide-plus size-4"
+  1013→                                                      aria-hidden="true"
+  1014→-                                                     bis_size={"{\"x\":444,\"y\":23,\"w\":15,\"h\":15,\"abs_x\":1206..."}
+  1015→                                                    >
+  1016→                                                      <path
+  1017→                                                        d="M5 12h14"
+  1018→-                                                       bis_size={"{\"x\":447,\"y\":31,\"w\":9,\"h\":0,\"abs_x\":1209..."}
+  1019→                                                      >
+  1020→                                                      <path
+  1021→                                                        d="M12 5v14"
+  1022→-                                                       bis_size={"{\"x\":452,\"y\":26,\"w\":0,\"h\":9,\"abs_x\":1214..."}
+  1023→                                                      >
+  1024→                                                  <span
+  1025→                                                    className="hidden sm:inline"
+  1026→-                                                   bis_size={"{\"x\":372,\"y\":23,\"w\":65,\"h\":15,\"abs_x\":1134,\..."}
+  1027→                                                  >
+  1028→+                                                   إضافة سريعة
+  1029→                                        ...
+  1030→                                          <Primitive.button.Slot type="button" id="radix-_R_c..." aria-haspopup="menu" ...>
+  1031→                                            <Primitive.button.SlotClone type="button" id="radix-_R_c..." ...>
+  1032→                                              <Button variant="ghost" size="icon" aria-label="اللغة" type="button" ...>
+  1033→                                                <button
+  1034→                                                  data-slot="dropdown-menu-trigger"
+  1035→                                                  className={"inline-flex items-center justify-center gap-2 whitespac..."}
+  1036→                                                  aria-label="اللغة"
+  1037→                                                  type="button"
+  1038→                                                  id="radix-_R_cqatplb_"
+  1039→                                                  aria-haspopup="menu"
+  1040→                                                  aria-expanded={false}
+  1041→                                                  aria-controls={undefined}
+  1042→                                                  data-state="closed"
+  1043→                                                  data-disabled={undefined}
+  1044→                                                  disabled={false}
+  1045→                                                  onPointerDown={function handleEvent}
+  1046→                                                  onKeyDown={function handleEvent}
+  1047→                                                  ref={function}
+  1048→-                                                 bis_size={"{\"x\":318,\"y\":13,\"w\":35,\"h\":35,\"abs_x\":1080,\"a..."}
+  1049→                                                >
+  1050→                                                  <Languages className="size-5">
+  1051→                                                    <svg
+  1052→                                                      ref={null}
+  1053→                                                      xmlns="http://www.w3.org/2000/svg"
+  1054→                                                      width={24}
+  1055→                                                      height={24}
+  1056→                                                      viewBox="0 0 24 24"
+  1057→                                                      fill="none"
+  1058→                                                      stroke="currentColor"
+  1059→                                                      strokeWidth={2}
+  1060→                                                      strokeLinecap="round"
+  1061→                                                      strokeLinejoin="round"
+  1062→                                                      className="lucide lucide-languages size-5"
+  1063→                                                      aria-hidden="true"
+  1064→-                                                     bis_size={"{\"x\":326,\"y\":21,\"w\":19,\"h\":19,\"abs_x\":1088..."}
+  1065→                                                    >
+  1066→                                                      <path
+  1067→                                                        d="m5 8 6 6"
+  1068→-                                                       bis_size={"{\"x\":330,\"y\":28,\"w\":4,\"h\":4,\"abs_x\":1092..."}
+  1069→                                                      >
+  1070→                                                      <path
+  1071→                                                        d="m4 14 6-6 2-3"
+  1072→-                                                       bis_size={"{\"x\":330,\"y\":25,\"w\":6,\"h\":7,\"abs_x\":1092..."}
+  1073→                                                      >
+  1074→                                                      <path
+  1075→                                                        d="M2 5h12"
+  1076→-                                                       bis_size={"{\"x\":328,\"y\":25,\"w\":9,\"h\":0,\"abs_x\":1090..."}
+  1077→                                                      >
+  1078→                                                      <path
+  1079→                                                        d="M7 2h1"
+  1080→-                                                       bis_size={"{\"x\":332,\"y\":23,\"w\":0,\"h\":0,\"abs_x\":1094..."}
+  1081→                                                      >
+  1082→                                                      <path
+  1083→                                                        d="m22 22-5-10-5 10"
+  1084→-                                                       bis_size={"{\"x\":336,\"y\":31,\"w\":8,\"h\":8,\"abs_x\":1098..."}
+  1085→                                                      >
+  1086→                                                      <path
+  1087→                                                        d="M14 18h6"
+  1088→-                                                       bis_size={"{\"x\":338,\"y\":36,\"w\":4,\"h\":0,\"abs_x\":1100..."}
+  1089→                                                      >
+  1090→                                        ...
+  1091→                                          <Primitive.button.Slot type="button" id="radix-_R_e..." aria-haspopup="menu" ...>
+  1092→                                            <Primitive.button.SlotClone type="button" id="radix-_R_e..." ...>
+  1093→                                              <Button variant="ghost" size="icon" aria-label="السمة" type="button" ...>
+  1094→                                                <button
+  1095→                                                  data-slot="dropdown-menu-trigger"
+  1096→                                                  className={"inline-flex items-center justify-center gap-2 whitespac..."}
+  1097→                                                  aria-label="السمة"
+  1098→                                                  type="button"
+  1099→                                                  id="radix-_R_eqatplb_"
+  1100→                                                  aria-haspopup="menu"
+  1101→                                                  aria-expanded={false}
+  1102→                                                  aria-controls={undefined}
+  1103→                                                  data-state="closed"
+  1104→                                                  data-disabled={undefined}
+  1105→                                                  disabled={false}
+  1106→                                                  onPointerDown={function handleEvent}
+  1107→                                                  onKeyDown={function handleEvent}
+  1108→                                                  ref={function}
+  1109→-                                                 bis_size={"{\"x\":274,\"y\":13,\"w\":35,\"h\":35,\"abs_x\":1036,\"a..."}
+  1110→                                                >
+  1111→                                                  <Sun className="size-5">
+  1112→                                                    <svg
+  1113→                                                      ref={null}
+  1114→                                                      xmlns="http://www.w3.org/2000/svg"
+  1115→                                                      width={24}
+  1116→                                                      height={24}
+  1117→                                                      viewBox="0 0 24 24"
+  1118→                                                      fill="none"
+  1119→                                                      stroke="currentColor"
+  1120→                                                      strokeWidth={2}
+  1121→                                                      strokeLinecap="round"
+  1122→                                                      strokeLinejoin="round"
+  1123→                                                      className="lucide lucide-sun size-5"
+  1124→                                                      aria-hidden="true"
+  1125→-                                                     bis_size={"{\"x\":282,\"y\":21,\"w\":19,\"h\":19,\"abs_x\":1044..."}
+  1126→                                                    >
+  1127→                                                      <circle
+  1128→                                                        cx="12"
+  1129→                                                        cy="12"
+  1130→                                                        r="4"
+  1131→-                                                       bis_size={"{\"x\":289,\"y\":28,\"w\":6,\"h\":6,\"abs_x\":1051..."}
+  1132→                                                      >
+  1133→                                                      <path
+  1134→                                                        d="M12 2v2"
+  1135→-                                                       bis_size={"{\"x\":292,\"y\":23,\"w\":0,\"h\":1,\"abs_x\":1054..."}
+  1136→                                                      >
+  1137→                                                      <path
+  1138→                                                        d="M12 20v2"
+  1139→-                                                       bis_size={"{\"x\":292,\"y\":38,\"w\":0,\"h\":1,\"abs_x\":1054..."}
+  1140→                                                      >
+  1141→                                                      <path
+  1142→                                                        d="m4.93 4.93 1.41 1.41"
+  1143→-                                                       bis_size={"{\"x\":286,\"y\":25,\"w\":1,\"h\":1,\"abs_x\":1048..."}
+  1144→                                                      >
+  1145→                                                      <path
+  1146→                                                        d="m17.66 17.66 1.41 1.41"
+  1147→-                                                       bis_size={"{\"x\":297,\"y\":36,\"w\":1,\"h\":1,\"abs_x\":1059..."}
+  1148→                                                      >
+  1149→                                                      <path
+  1150→                                                        d="M2 12h2"
+  1151→-                                                       bis_size={"{\"x\":284,\"y\":31,\"w\":1,\"h\":0,\"abs_x\":1046..."}
+  1152→                                                      >
+  1153→                                                      <path
+  1154→                                                        d="M20 12h2"
+  1155→-                                                       bis_size={"{\"x\":299,\"y\":31,\"w\":1,\"h\":0,\"abs_x\":1061..."}
+  1156→                                                      >
+  1157→                                                      <path
+  1158→                                                        d="m6.34 17.66-1.41 1.41"
+  1159→-                                                       bis_size={"{\"x\":286,\"y\":36,\"w\":1,\"h\":1,\"abs_x\":1048..."}
+  1160→                                                      >
+  1161→                                                      <path
+  1162→                                                        d="m19.07 4.93-1.41 1.41"
+  1163→-                                                       bis_size={"{\"x\":297,\"y\":25,\"w\":1,\"h\":1,\"abs_x\":1059..."}
+  1164→                                                      >
+  1165→                                        ...
+  1166→                                          <Primitive.button.Slot type="button" aria-haspopup="dialog" ...>
+  1167→                                            <Primitive.button.SlotClone type="button" aria-haspopup="dialog" ...>
+  1168→                                              <Button variant="ghost" size="icon" className="relative" ...>
+  1169→                                                <button
+  1170→                                                  data-slot="popover-trigger"
+  1171→                                                  className={"inline-flex items-center justify-center gap-2 whitespac..."}
+  1172→                                                  aria-label="الإشعارات"
+  1173→                                                  type="button"
+  1174→                                                  aria-haspopup="dialog"
+  1175→                                                  aria-expanded={false}
+  1176→                                                  aria-controls="radix-_R_gqatplb_"
+  1177→                                                  data-state="closed"
+  1178→                                                  onClick={function handleEvent}
+  1179→                                                  ref={function}
+  1180→-                                                 bis_size={"{\"x\":230,\"y\":13,\"w\":35,\"h\":35,\"abs_x\":992,\"ab..."}
+  1181→                                                >
+  1182→                                                  <Bell className="size-5">
+  1183→                                                    <svg
+  1184→                                                      ref={null}
+  1185→                                                      xmlns="http://www.w3.org/2000/svg"
+  1186→                                                      width={24}
+  1187→                                                      height={24}
+  1188→                                                      viewBox="0 0 24 24"
+  1189→                                                      fill="none"
+  1190→                                                      stroke="currentColor"
+  1191→                                                      strokeWidth={2}
+  1192→                                                      strokeLinecap="round"
+  1193→                                                      strokeLinejoin="round"
+  1194→                                                      className="lucide lucide-bell size-5"
+  1195→                                                      aria-hidden="true"
+  1196→-                                                     bis_size={"{\"x\":238,\"y\":21,\"w\":19,\"h\":19,\"abs_x\":1000..."}
+  1197→                                                    >
+  1198→                                                      <path
+  1199→                                                        d="M10.268 21a2 2 0 0 0 3.464 0"
+  1200→-                                                       bis_size={"{\"x\":247,\"y\":39,\"w\":2,\"h\":0,\"abs_x\":1009..."}
+  1201→                                                      >
+  1202→                                                      <path
+  1203→                                                        d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 1..."
+  1204→-                                                       bis_size={"{\"x\":241,\"y\":23,\"w\":14,\"h\":12,\"abs_x\":10..."}
+  1205→                                                      >
+  1206→                                        ...
+  1207→                                          <Primitive.button type="button" id="radix-_R_i..." aria-haspopup="menu" ...>
+  1208→                                            <Primitive.button.Slot type="button" id="radix-_R_i..." aria-haspopup="menu" ...>
+  1209→                                              <Primitive.button.SlotClone type="button" id="radix-_R_i..." ...>
+  1210→                                                <button
+  1211→                                                  className="flex items-center gap-2 rounded-full hover:bg-muted/60 p-..."
+  1212→                                                  aria-label="حساب المستخدم"
+  1213→                                                  type="button"
+  1214→                                                  id="radix-_R_iqatplb_"
+  1215→                                                  aria-haspopup="menu"
+  1216→                                                  aria-expanded={false}
+  1217→                                                  aria-controls={undefined}
+  1218→                                                  data-state="closed"
+  1219→                                                  data-disabled={undefined}
+  1220→                                                  disabled={false}
+  1221→                                                  data-slot="dropdown-menu-trigger"
+  1222→                                                  onPointerDown={function handleEvent}
+  1223→                                                  onKeyDown={function handleEvent}
+  1224→                                                  ref={function}
+  1225→-                                                 bis_size={"{\"x\":156,\"y\":11,\"w\":65,\"h\":39,\"abs_x\":918,\"ab..."}
+  1226→                                                >
+  1227→                                                  <span
+  1228→                                                    className="size-8 rounded-full bg-primary text-primary-foreground ..."
+  1229→-                                                   bis_size={"{\"x\":186,\"y\":15,\"w\":31,\"h\":31,\"abs_x\":948,\"..."}
+  1230→                                                  >
+  1231→+                                                   ما
+  1232→                                                  <ChevronDown className="size-3.5 t...">
+  1233→                                                    <svg
+  1234→                                                      ref={null}
+  1235→                                                      xmlns="http://www.w3.org/2000/svg"
+  1236→                                                      width={24}
+  1237→                                                      height={24}
+  1238→                                                      viewBox="0 0 24 24"
+  1239→                                                      fill="none"
+  1240→                                                      stroke="currentColor"
+  1241→                                                      strokeWidth={2}
+  1242→                                                      strokeLinecap="round"
+  1243→                                                      strokeLinejoin="round"
+  1244→                                                      className="lucide lucide-chevron-down size-3.5 text-muted-foregr..."
+  1245→                                                      aria-hidden="true"
+  1246→-                                                     bis_size={"{\"x\":164,\"y\":24,\"w\":13,\"h\":13,\"abs_x\":926,..."}
+  1247→                                                    >
+  1248→                                                      <path
+  1249→                                                        d="m6 9 6 6 6-6"
+  1250→-                                                       bis_size={"{\"x\":168,\"y\":29,\"w\":6,\"h\":3,\"abs_x\":930,..."}
+  1251→                                                      >
+  1252→                                    <main
+  1253→                                      className="flex-1 overflow-y-auto overscroll-contain scrollbar-thin min-h-0"
+  1254→-                                     bis_size={"{\"x\":0,\"y\":63,\"w\":994,\"h\":639,\"abs_x\":762,\"abs_y\":172}"}
+  1255→                                    >
+  1256→                                      <DashboardModule>
+  1257→                                        <ModuleShell title="لوحة التحكم" description="نظرة شاملة..." ...>
+  1258→                                          <div
+  1259→                                            className="flex flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8 max-w-[1600px] mx..."
+  1260→-                                           bis_size={"{\"x\":6,\"y\":63,\"w\":987,\"h\":1943,\"abs_x\":768,\"abs_y\"..."}
+  1261→                                          >
+  1262→                                            <div
+  1263→                                              className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-be..."
+  1264→-                                             bis_size={"{\"x\":30,\"y\":83,\"w\":939,\"h\":53,\"abs_x\":792,\"abs_y\..."}
+  1265→                                            >
+  1266→                                              <div
+  1267→                                                className="flex items-start gap-3 min-w-0"
+  1268→-                                               bis_size={"{\"x\":646,\"y\":83,\"w\":323,\"h\":53,\"abs_x\":1408,\"ab..."}
+  1269→                                              >
+  1270→                                                <div
+  1271→                                                  className="shrink-0 size-11 rounded-xl bg-primary/10 text-primary fl..."
+  1272→-                                                 bis_size={"{\"x\":926,\"y\":83,\"w\":43,\"h\":43,\"abs_x\":1688,\"a..."}
+  1273→                                                >
+  1274→                                                  <LayoutDashboard className="size-5">
+  1275→                                                    <svg
+  1276→                                                      ref={null}
+  1277→                                                      xmlns="http://www.w3.org/2000/svg"
+  1278→                                                      width={24}
+  1279→                                                      height={24}
+  1280→                                                      viewBox="0 0 24 24"
+  1281→                                                      fill="none"
+  1282→                                                      stroke="currentColor"
+  1283→                                                      strokeWidth={2}
+  1284→                                                      strokeLinecap="round"
+  1285→                                                      strokeLinejoin="round"
+  1286→                                                      className="lucide lucide-layout-dashboard size-5"
+  1287→                                                      aria-hidden="true"
+  1288→-                                                     bis_size={"{\"x\":938,\"y\":95,\"w\":19,\"h\":19,\"abs_x\":1700..."}
+  1289→                                                    >
+  1290→                                                      <rect
+  1291→                                                        width="7"
+  1292→                                                        height="9"
+  1293→                                                        x="3"
+  1294→                                                        y="3"
+  1295→                                                        rx="1"
+  1296→-                                                       bis_size={"{\"x\":940,\"y\":98,\"w\":5,\"h\":7,\"abs_x\":1702..."}
+  1297→                                                      >
+  1298→                                                      <rect
+  1299→                                                        width="7"
+  1300→                                                        height="5"
+  1301→                                                        x="14"
+  1302→                                                        y="3"
+  1303→                                                        rx="1"
+  1304→-                                                       bis_size={"{\"x\":949,\"y\":98,\"w\":5,\"h\":4,\"abs_x\":1711..."}
+  1305→                                                      >
+  1306→                                                      <rect
+  1307→                                                        width="7"
+  1308→                                                        height="9"
+  1309→                                                        x="14"
+  1310→                                                        y="12"
+  1311→                                                        rx="1"
+  1312→-                                                       bis_size={"{\"x\":949,\"y\":105,\"w\":5,\"h\":7,\"abs_x\":171..."}
+  1313→                                                      >
+  1314→                                                      <rect
+  1315→                                                        width="7"
+  1316→                                                        height="5"
+  1317→                                                        x="3"
+  1318→                                                        y="16"
+  1319→                                                        rx="1"
+  1320→-                                                       bis_size={"{\"x\":940,\"y\":109,\"w\":5,\"h\":4,\"abs_x\":170..."}
+  1321→                                                      >
+  1322→                                                <div
+  1323→                                                  className="min-w-0"
+  1324→-                                                 bis_size={"{\"x\":646,\"y\":83,\"w\":267,\"h\":53,\"abs_x\":1408,\"..."}
+  1325→                                                >
+  1326→                                                  <h1
+  1327→                                                    className="text-xl sm:text-2xl font-bold tracking-tight truncate"
+  1328→-                                                   bis_size={"{\"x\":646,\"y\":83,\"w\":267,\"h\":31,\"abs_x\":1408,..."}
+  1329→                                                  >
+  1330→+                                                   لوحة التحكم
+  1331→                                                  <p
+  1332→                                                    className="text-sm text-muted-foreground mt-0.5 line-clamp-2"
+  1333→-                                                   bis_size={"{\"x\":646,\"y\":117,\"w\":267,\"h\":20,\"abs_x\":1408..."}
+  1334→                                                  >
+  1335→+                                                   نظرة شاملة على أداء الأعمال والمالية والمخزون
+  1336→                                              <div
+  1337→                                                className="flex items-center gap-2 shrink-0 flex-wrap"
+  1338→-                                               bis_size={"{\"x\":30,\"y\":110,\"w\":0,\"h\":0,\"abs_x\":792,\"abs_y\..."}
+  1339→                                              >
+  1340→                                            <div
+  1341→                                              className="flex-1 min-w-0"
+  1342→-                                             bis_size={"{\"x\":30,\"y\":157,\"w\":939,\"h\":1829,\"abs_x\":792,\"abs..."}
+  1343→                                            >
+  1344→                                              <div
+  1345→                                                className="flex flex-col gap-5"
+  1346→-                                               bis_size={"{\"x\":30,\"y\":157,\"w\":939,\"h\":1829,\"abs_x\":792,\"a..."}
+  1347→                                              >
+  1348→                                                <div
+  1349→                                                  className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+  1350→-                                                 bis_size={"{\"x\":30,\"y\":157,\"w\":939,\"h\":279,\"abs_x\":792,\"..."}
+  1351→                                                >
+  1352→                                                  <KpiCard title="إجمالي الم..." value="0.00 ر.س" icon={<TrendingUp>} ...>
+  1353→                                                    <Card className="p-5 gap-4 ...">
+  1354→                                                      <div
+  1355→                                                        data-slot="card"
+  1356→                                                        className="bg-card text-card-foreground flex flex-col rounded-..."
+  1357→-                                                       bis_size={"{\"x\":508,\"y\":157,\"w\":461,\"h\":131,\"abs_x\"..."}
+  1358→                                                      >
+  1359→                                                        <div
+  1360→                                                          className="flex items-start justify-between gap-3"
+  1361→-                                                         bis_size={"{\"x\":529,\"y\":178,\"w\":420,\"h\":53,\"abs_x\..."}
+  1362→                                                        >
+  1363→                                                          <div
+  1364→                                                            className="space-y-1.5 min-w-0"
+  1365→-                                                           bis_size={"{\"x\":850,\"y\":178,\"w\":98,\"h\":53,\"abs_x..."}
+  1366→                                                          >
+  1367→                                                            <p
+  1368→                                                              className="text-xs font-medium text-gray-500 truncate"
+  1369→-                                                             bis_size={"{\"x\":850,\"y\":178,\"w\":98,\"h\":15,\"abs..."}
+  1370→                                                            >
+  1371→+                                                             إجمالي المبيعات
+  1372→                                                            <p
+  1373→                                                              className="text-2xl font-bold tracking-tight tabular-num..."
+  1374→-                                                             bis_size={"{\"x\":850,\"y\":200,\"w\":98,\"h\":31,\"abs..."}
+  1375→                                                            >
+  1376→+                                                             0.00 ر.س
+  1377→                                                          <div
+  1378→                                                            className="shrink-0 size-10 rounded-lg flex items-center j..."
+  1379→-                                                           bis_size={"{\"x\":529,\"y\":178,\"w\":39,\"h\":39,\"abs_x..."}
+  1380→                                                          >
+  1381→                                                            <TrendingUp className="size-5">
+  1382→                                                              <svg
+  1383→                                                                ref={null}
+  1384→                                                                xmlns="http://www.w3.org/2000/svg"
+  1385→                                                                width={24}
+  1386→                                                                height={24}
+  1387→                                                                viewBox="0 0 24 24"
+  1388→                                                                fill="none"
+  1389→                                                                stroke="currentColor"
+  1390→                                                                strokeWidth={2}
+  1391→                                                                strokeLinecap="round"
+  1392→                                                                strokeLinejoin="round"
+  1393→                                                                className="lucide lucide-trending-up size-5"
+  1394→                                                                aria-hidden="true"
+  1395→-                                                               bis_size={"{\"x\":539,\"y\":188,\"w\":19,\"h\":19,\"a..."}
+  1396→                                                              >
+  1397→                                                                <path
+  1398→                                                                  d="M16 7h6v6"
+  1399→-                                                                 bis_size={"{\"x\":552,\"y\":194,\"w\":4,\"h\":4,\"a..."}
+  1400→                                                                >
+  1401→                                                                <path
+  1402→                                                                  d="m22 7-8.5 8.5-5-5L2 17"
+  1403→-                                                                 bis_size={"{\"x\":540,\"y\":194,\"w\":16,\"h\":8,\"..."}
+  1404→                                                                >
+  1405→                                                        <div
+  1406→                                                          className="flex items-center gap-1.5 text-xs"
+  1407→-                                                         bis_size={"{\"x\":529,\"y\":248,\"w\":420,\"h\":19,\"abs_x\..."}
+  1408→                                                        >
+  1409→                                                          <span
+  1410→                                                            className="inline-flex items-center gap-0.5 font-semibold ..."
+  1411→-                                                           bis_size={"{\"x\":896,\"y\":248,\"w\":52,\"h\":19,\"abs_x..."}
+  1412→                                                          >
+  1413→                                                            <ArrowUpRight className="size-3">
+  1414→                                                              <svg
+  1415→                                                                ref={null}
+  1416→                                                                xmlns="http://www.w3.org/2000/svg"
+  1417→                                                                width={24}
+  1418→                                                                height={24}
+  1419→                                                                viewBox="0 0 24 24"
+  1420→                                                                fill="none"
+  1421→                                                                stroke="currentColor"
+  1422→                                                                strokeWidth={2}
+  1423→                                                                strokeLinecap="round"
+  1424→                                                                strokeLinejoin="round"
+  1425→                                                                className="lucide lucide-arrow-up-right size-3"
+  1426→                                                                aria-hidden="true"
+  1427→-                                                               bis_size={"{\"x\":931,\"y\":252,\"w\":11,\"h\":11,\"a..."}
+  1428→                                                              >
+  1429→                                                                <path
+  1430→                                                                  d="M7 7h10v10"
+  1431→-                                                                 bis_size={"{\"x\":934,\"y\":256,\"w\":4,\"h\":5,\"a..."}
+  1432→                                                                >
+  1433→                                                                <path
+  1434→                                                                  d="M7 17 17 7"
+  1435→-                                                                 bis_size={"{\"x\":934,\"y\":256,\"w\":4,\"h\":5,\"a..."}
+  1436→                                                                >
+  1437→                                                            <span
+  1438→                                                              className="num"
+  1439→-                                                             bis_size={"{\"x\":902,\"y\":250,\"w\":26,\"h\":15,\"abs..."}
+  1440→                                                            >
+  1441→                                                          <span
+  1442→                                                            className="text-gray-400"
+  1443→-                                                           bis_size={"{\"x\":842,\"y\":250,\"w\":48,\"h\":15,\"abs_x..."}
+  1444→                                                          >
+  1445→+                                                           هذا الشهر
+  1446→                                                  <KpiCard title="إجمالي الم..." value="0.00 ر.س" icon={<TrendingDown>} ...>
+  1447→                                                    <Card className="p-5 gap-4 ...">
+  1448→                                                      <div
+  1449→                                                        data-slot="card"
+  1450→                                                        className="bg-card text-card-foreground flex flex-col rounded-..."
+  1451→-                                                       bis_size={"{\"x\":30,\"y\":157,\"w\":461,\"h\":131,\"abs_x\":..."}
+  1452→                                                      >
+  1453→                                                        <div
+  1454→                                                          className="flex items-start justify-between gap-3"
+  1455→-                                                         bis_size={"{\"x\":51,\"y\":178,\"w\":420,\"h\":53,\"abs_x\"..."}
+  1456→                                                        >
+  1457→                                                          <div
+  1458→                                                            className="space-y-1.5 min-w-0"
+  1459→-                                                           bis_size={"{\"x\":372,\"y\":178,\"w\":98,\"h\":53,\"abs_x..."}
+  1460→                                                          >
+  1461→                                                            <p
+  1462→                                                              className="text-xs font-medium text-gray-500 truncate"
+  1463→-                                                             bis_size={"{\"x\":372,\"y\":178,\"w\":98,\"h\":15,\"abs..."}
+  1464→                                                            >
+  1465→+                                                             إجمالي المشتريات
+  1466→                                                            <p
+  1467→                                                              className="text-2xl font-bold tracking-tight tabular-num..."
+  1468→-                                                             bis_size={"{\"x\":372,\"y\":200,\"w\":98,\"h\":31,\"abs..."}
+  1469→                                                            >
+  1470→+                                                             0.00 ر.س
+  1471→                                                          <div
+  1472→                                                            className="shrink-0 size-10 rounded-lg flex items-center j..."
+  1473→-                                                           bis_size={"{\"x\":51,\"y\":178,\"w\":39,\"h\":39,\"abs_x\..."}
+  1474→                                                          >
+  1475→                                                            <TrendingDown className="size-5">
+  1476→                                                              <svg
+  1477→                                                                ref={null}
+  1478→                                                                xmlns="http://www.w3.org/2000/svg"
+  1479→                                                                width={24}
+  1480→                                                                height={24}
+  1481→                                                                viewBox="0 0 24 24"
+  1482→                                                                fill="none"
+  1483→                                                                stroke="currentColor"
+  1484→                                                                strokeWidth={2}
+  1485→                                                                strokeLinecap="round"
+  1486→                                                                strokeLinejoin="round"
+  1487→                                                                className="lucide lucide-trending-down size-5"
+  1488→                                                                aria-hidden="true"
+  1489→-                                                               bis_size={"{\"x\":61,\"y\":188,\"w\":19,\"h\":19,\"ab..."}
+  1490→                                                              >
+  1491→                                                                <path
+  1492→                                                                  d="M16 17h6v-6"
+  1493→-                                                                 bis_size={"{\"x\":74,\"y\":198,\"w\":4,\"h\":4,\"ab..."}
+  1494→                                                                >
+  1495→                                                                <path
+  1496→                                                                  d="m22 17-8.5-8.5-5 5L2 7"
+  1497→-                                                                 bis_size={"{\"x\":63,\"y\":194,\"w\":16,\"h\":8,\"a..."}
+  1498→                                                                >
+  1499→                                                        <div
+  1500→                                                          className="flex items-center gap-1.5 text-xs"
+  1501→-                                                         bis_size={"{\"x\":51,\"y\":248,\"w\":420,\"h\":19,\"abs_x\"..."}
+  1502→                                                        >
+  1503→                                                          <span
+  1504→                                                            className="inline-flex items-center gap-0.5 font-semibold ..."
+  1505→-                                                           bis_size={"{\"x\":419,\"y\":248,\"w\":52,\"h\":19,\"abs_x..."}
+  1506→                                                          >
+  1507→                                                            <ArrowDownRight className="size-3">
+  1508→                                                              <svg
+  1509→                                                                ref={null}
+  1510→                                                                xmlns="http://www.w3.org/2000/svg"
+  1511→                                                                width={24}
+  1512→                                                                height={24}
+  1513→                                                                viewBox="0 0 24 24"
+  1514→                                                                fill="none"
+  1515→                                                                stroke="currentColor"
+  1516→                                                                strokeWidth={2}
+  1517→                                                                strokeLinecap="round"
+  1518→                                                                strokeLinejoin="round"
+  1519→                                                                className="lucide lucide-arrow-down-right size-3"
+  1520→                                                                aria-hidden="true"
+  1521→-                                                               bis_size={"{\"x\":453,\"y\":252,\"w\":11,\"h\":11,\"a..."}
+  1522→                                                              >
+  1523→                                                                <path
+  1524→                                                                  d="m7 7 10 10"
+  1525→-                                                                 bis_size={"{\"x\":456,\"y\":256,\"w\":5,\"h\":5,\"a..."}
+  1526→                                                                >
+  1527→                                                                <path
+  1528→                                                                  d="M17 7v10H7"
+  1529→-                                                                 bis_size={"{\"x\":456,\"y\":256,\"w\":5,\"h\":5,\"a..."}
+  1530→                                                                >
+  1531→                                                            <span
+  1532→                                                              className="num"
+  1533→-                                                             bis_size={"{\"x\":425,\"y\":250,\"w\":26,\"h\":15,\"abs..."}
+  1534→                                                            >
+  1535→                                                          <span
+  1536→                                                            className="text-gray-400"
+  1537→-                                                           bis_size={"{\"x\":364,\"y\":250,\"w\":48,\"h\":15,\"abs_x..."}
+  1538→                                                          >
+  1539→+                                                           هذا الشهر
+  1540→                                                  <KpiCard title="صافي الربح" value="0.00 ر.س" icon={<Wallet>} ...>
+  1541→                                                    <Card className="p-5 gap-4 ...">
+  1542→                                                      <div
+  1543→                                                        data-slot="card"
+  1544→                                                        className="bg-card text-card-foreground flex flex-col rounded-..."
+  1545→-                                                       bis_size={"{\"x\":508,\"y\":305,\"w\":461,\"h\":131,\"abs_x\"..."}
+  1546→                                                      >
+  1547→                                                        <div
+  1548→                                                          className="flex items-start justify-between gap-3"
+  1549→-                                                         bis_size={"{\"x\":529,\"y\":326,\"w\":420,\"h\":53,\"abs_x\..."}
+  1550→                                                        >
+  1551→                                                          <div
+  1552→                                                            className="space-y-1.5 min-w-0"
+  1553→-                                                           bis_size={"{\"x\":850,\"y\":326,\"w\":98,\"h\":53,\"abs_x..."}
+  1554→                                                          >
+  1555→                                                            <p
+  1556→                                                              className="text-xs font-medium text-gray-500 truncate"
+  1557→-                                                             bis_size={"{\"x\":850,\"y\":326,\"w\":98,\"h\":15,\"abs..."}
+  1558→                                                            >
+  1559→+                                                             صافي الربح
+  1560→                                                            <p
+  1561→                                                              className="text-2xl font-bold tracking-tight tabular-num..."
+  1562→-                                                             bis_size={"{\"x\":850,\"y\":348,\"w\":98,\"h\":31,\"abs..."}
+  1563→                                                            >
+  1564→+                                                             0.00 ر.س
+  1565→                                                          <div
+  1566→                                                            className="shrink-0 size-10 rounded-lg flex items-center j..."
+  1567→-                                                           bis_size={"{\"x\":529,\"y\":326,\"w\":39,\"h\":39,\"abs_x..."}
+  1568→                                                          >
+  1569→                                                            <Wallet className="size-5">
+  1570→                                                              <svg
+  1571→                                                                ref={null}
+  1572→                                                                xmlns="http://www.w3.org/2000/svg"
+  1573→                                                                width={24}
+  1574→                                                                height={24}
+  1575→                                                                viewBox="0 0 24 24"
+  1576→                                                                fill="none"
+  1577→                                                                stroke="currentColor"
+  1578→                                                                strokeWidth={2}
+  1579→                                                                strokeLinecap="round"
+  1580→                                                                strokeLinejoin="round"
+  1581→                                                                className="lucide lucide-wallet size-5"
+  1582→                                                                aria-hidden="true"
+  1583→-                                                               bis_size={"{\"x\":539,\"y\":336,\"w\":19,\"h\":19,\"a..."}
+  1584→                                                              >
+  1585→                                                                <path
+  1586→                                                                  d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 ..."
+  1587→-                                                                 bis_size={"{\"x\":541,\"y\":339,\"w\":15,\"h\":10,\..."}
+  1588→                                                                >
+  1589→                                                                <path
+  1590→                                                                  d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"
+  1591→-                                                                 bis_size={"{\"x\":541,\"y\":340,\"w\":14,\"h\":13,\..."}
+  1592→                                                                >
+  1593→                                                        <div
+  1594→                                                          className="flex items-center gap-1.5 text-xs"
+  1595→-                                                         bis_size={"{\"x\":529,\"y\":396,\"w\":420,\"h\":19,\"abs_x\..."}
+  1596→                                                        >
+  1597→                                                          <span
+  1598→                                                            className="inline-flex items-center gap-0.5 font-semibold ..."
+  1599→-                                                           bis_size={"{\"x\":890,\"y\":396,\"w\":58,\"h\":19,\"abs_x..."}
+  1600→                                                          >
+  1601→                                                            <ArrowUpRight className="size-3">
+  1602→                                                              <svg
+  1603→                                                                ref={null}
+  1604→                                                                xmlns="http://www.w3.org/2000/svg"
+  1605→                                                                width={24}
+  1606→                                                                height={24}
+  1607→                                                                viewBox="0 0 24 24"
+  1608→                                                                fill="none"
+  1609→                                                                stroke="currentColor"
+  1610→                                                                strokeWidth={2}
+  1611→                                                                strokeLinecap="round"
+  1612→                                                                strokeLinejoin="round"
+  1613→                                                                className="lucide lucide-arrow-up-right size-3"
+  1614→                                                                aria-hidden="true"
+  1615→-                                                               bis_size={"{\"x\":931,\"y\":400,\"w\":11,\"h\":11,\"a..."}
+  1616→                                                              >
+  1617→                                                                <path
+  1618→                                                                  d="M7 7h10v10"
+  1619→-                                                                 bis_size={"{\"x\":934,\"y\":404,\"w\":4,\"h\":5,\"a..."}
+  1620→                                                                >
+  1621→                                                                <path
+  1622→                                                                  d="M7 17 17 7"
+  1623→-                                                                 bis_size={"{\"x\":934,\"y\":404,\"w\":4,\"h\":5,\"a..."}
+  1624→                                                                >
+  1625→                                                            <span
+  1626→                                                              className="num"
+  1627→-                                                             bis_size={"{\"x\":896,\"y\":398,\"w\":32,\"h\":15,\"abs..."}
+  1628→                                                            >
+  1629→                                                          <span
+  1630→                                                            className="text-gray-400"
+  1631→-                                                           bis_size={"{\"x\":835,\"y\":398,\"w\":48,\"h\":15,\"abs_x..."}
+  1632→                                                          >
+  1633→+                                                           هذا الشهر
+  1634→                                                  <KpiCard title="قيمة المخزون" value="0.00 ر.س" icon={<Boxes>} ...>
+  1635→                                                    <Card className="p-5 gap-4 ...">
+  1636→                                                      <div
+  1637→                                                        data-slot="card"
+  1638→                                                        className="bg-card text-card-foreground flex flex-col rounded-..."
+  1639→-                                                       bis_size={"{\"x\":30,\"y\":305,\"w\":461,\"h\":131,\"abs_x\":..."}
+  1640→                                                      >
+  1641→                                                        <div
+  1642→                                                          className="flex items-start justify-between gap-3"
+  1643→-                                                         bis_size={"{\"x\":51,\"y\":326,\"w\":420,\"h\":53,\"abs_x\"..."}
+  1644→                                                        >
+  1645→                                                          <div
+  1646→                                                            className="space-y-1.5 min-w-0"
+  1647→-                                                           bis_size={"{\"x\":372,\"y\":326,\"w\":98,\"h\":53,\"abs_x..."}
+  1648→                                                          >
+  1649→                                                            <p
+  1650→                                                              className="text-xs font-medium text-gray-500 truncate"
+  1651→-                                                             bis_size={"{\"x\":372,\"y\":326,\"w\":98,\"h\":15,\"abs..."}
+  1652→                                                            >
+  1653→+                                                             قيمة المخزون
+  1654→                                                            <p
+  1655→                                                              className="text-2xl font-bold tracking-tight tabular-num..."
+  1656→-                                                             bis_size={"{\"x\":372,\"y\":348,\"w\":98,\"h\":31,\"abs..."}
+  1657→                                                            >
+  1658→+                                                             0.00 ر.س
+  1659→                                                          <div
+  1660→                                                            className="shrink-0 size-10 rounded-lg flex items-center j..."
+  1661→-                                                           bis_size={"{\"x\":51,\"y\":326,\"w\":39,\"h\":39,\"abs_x\..."}
+  1662→                                                          >
+  1663→                                                            <Boxes className="size-5">
+  1664→                                                              <svg
+  1665→                                                                ref={null}
+  1666→                                                                xmlns="http://www.w3.org/2000/svg"
+  1667→                                                                width={24}
+  1668→                                                                height={24}
+  1669→                                                                viewBox="0 0 24 24"
+  1670→                                                                fill="none"
+  1671→                                                                stroke="currentColor"
+  1672→                                                                strokeWidth={2}
+  1673→                                                                strokeLinecap="round"
+  1674→                                                                strokeLinejoin="round"
+  1675→                                                                className="lucide lucide-boxes size-5"
+  1676→                                                                aria-hidden="true"
+  1677→-                                                               bis_size={"{\"x\":61,\"y\":336,\"w\":19,\"h\":19,\"ab..."}
+  1678→                                                              >
+  1679→                                                                <path
+  1680→                                                                  d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 ..."
+  1681→-                                                                 bis_size={"{\"x\":63,\"y\":345,\"w\":8,\"h\":9,\"ab..."}
+  1682→                                                                >
+  1683→                                                                <path
+  1684→                                                                  d="m7 16.5-4.74-2.85"
+  1685→-                                                                 bis_size={"{\"x\":63,\"y\":348,\"w\":3,\"h\":2,\"ab..."}
+  1686→                                                                >
+  1687→                                                                <path
+  1688→                                                                  d="m7 16.5 5-3"
+  1689→-                                                                 bis_size={"{\"x\":67,\"y\":347,\"w\":4,\"h\":2,\"ab..."}
+  1690→                                                                >
+  1691→                                                                <path
+  1692→                                                                  d="M7 16.5v5.17"
+  1693→-                                                                 bis_size={"{\"x\":67,\"y\":350,\"w\":0,\"h\":4,\"ab..."}
+  1694→                                                                >
+  1695→                                                                <path
+  1696→                                                                  d="M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 ..."
+  1697→-                                                                 bis_size={"{\"x\":71,\"y\":345,\"w\":8,\"h\":9,\"ab..."}
+  1698→                                                                >
+  1699→                                                                <path
+  1700→                                                                  d="m17 16.5-5-3"
+  1701→-                                                                 bis_size={"{\"x\":71,\"y\":347,\"w\":4,\"h\":2,\"ab..."}
+  1702→                                                                >
+  1703→                                                                <path
+  1704→                                                                  d="m17 16.5 4.74-2.85"
+  1705→-                                                                 bis_size={"{\"x\":75,\"y\":348,\"w\":3,\"h\":2,\"ab..."}
+  1706→                                                                >
+  1707→                                                                <path
+  1708→                                                                  d="M17 16.5v5.17"
+  1709→-                                                                 bis_size={"{\"x\":75,\"y\":350,\"w\":0,\"h\":4,\"ab..."}
+  1710→                                                                >
+  1711→                                                                <path
+  1712→                                                                  d="M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2..."
+  1713→-                                                                 bis_size={"{\"x\":67,\"y\":338,\"w\":8,\"h\":9,\"ab..."}
+  1714→                                                                >
+  1715→                                                                <path
+  1716→                                                                  d="M12 8 7.26 5.15"
+  1717→-                                                                 bis_size={"{\"x\":67,\"y\":340,\"w\":3,\"h\":2,\"ab..."}
+  1718→                                                                >
+  1719→                                                                <path
+  1720→                                                                  d="m12 8 4.74-2.85"
+  1721→-                                                                 bis_size={"{\"x\":71,\"y\":340,\"w\":3,\"h\":2,\"ab..."}
+  1722→                                                                >
+  1723→                                                                <path
+  1724→                                                                  d="M12 13.5V8"
+  1725→-                                                                 bis_size={"{\"x\":71,\"y\":343,\"w\":0,\"h\":4,\"ab..."}
+  1726→                                                                >
+  1727→                                                        <div
+  1728→                                                          className="flex items-center gap-1.5 text-xs"
+  1729→-                                                         bis_size={"{\"x\":51,\"y\":396,\"w\":420,\"h\":19,\"abs_x\"..."}
+  1730→                                                        >
+  1731→                                                          <span
+  1732→                                                            className="inline-flex items-center gap-0.5 font-semibold ..."
+  1733→-                                                           bis_size={"{\"x\":419,\"y\":396,\"w\":52,\"h\":19,\"abs_x..."}
+  1734→                                                          >
+  1735→                                                            <ArrowUpRight className="size-3">
+  1736→                                                              <svg
+  1737→                                                                ref={null}
+  1738→                                                                xmlns="http://www.w3.org/2000/svg"
+  1739→                                                                width={24}
+  1740→                                                                height={24}
+  1741→                                                                viewBox="0 0 24 24"
+  1742→                                                                fill="none"
+  1743→                                                                stroke="currentColor"
+  1744→                                                                strokeWidth={2}
+  1745→                                                                strokeLinecap="round"
+  1746→                                                                strokeLinejoin="round"
+  1747→                                                                className="lucide lucide-arrow-up-right size-3"
+  1748→                                                                aria-hidden="true"
+  1749→-                                                               bis_size={"{\"x\":453,\"y\":400,\"w\":11,\"h\":11,\"a..."}
+  1750→                                                              >
+  1751→                                                                <path
+  1752→                                                                  d="M7 7h10v10"
+  1753→-                                                                 bis_size={"{\"x\":456,\"y\":404,\"w\":5,\"h\":5,\"a..."}
+  1754→                                                                >
+  1755→                                                                <path
+  1756→                                                                  d="M7 17 17 7"
+  1757→-                                                                 bis_size={"{\"x\":456,\"y\":404,\"w\":5,\"h\":5,\"a..."}
+  1758→                                                                >
+  1759→                                                            <span
+  1760→                                                              className="num"
+  1761→-                                                             bis_size={"{\"x\":425,\"y\":398,\"w\":26,\"h\":15,\"abs..."}
+  1762→                                                            >
+  1763→                                                          <span
+  1764→                                                            className="text-gray-400"
+  1765→-                                                           bis_size={"{\"x\":364,\"y\":398,\"w\":48,\"h\":15,\"abs_x..."}
+  1766→                                                          >
+  1767→+                                                           هذا الشهر
+  1768→                                                <div
+  1769→                                                  className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3"
+  1770→-                                                 bis_size={"{\"x\":30,\"y\":457,\"w\":939,\"h\":240,\"abs_x\":792,\"..."}
+  1771→                                                >
+  1772→                                                  <MiniStat label="العملاء" value="0" icon={<Users>} accent="blue">
+  1773→                                                    <Card className="p-3.5 flex...">
+  1774→                                                      <div
+  1775→                                                        data-slot="card"
+  1776→                                                        className="bg-card text-card-foreground flex-col rounded-xl bo..."
+  1777→-                                                       bis_size={"{\"x\":664,\"y\":457,\"w\":305,\"h\":114,\"abs_x\"..."}
+  1778→                                                      >
+  1779→                                                        <div
+  1780→                                                          className="size-9 rounded-lg flex items-center justify-cente..."
+  1781→-                                                         bis_size={"{\"x\":799,\"y\":472,\"w\":35,\"h\":35,\"abs_x\"..."}
+  1782→                                                        >
+  1783→                                                          <Users className="size-4">
+  1784→                                                            <svg
+  1785→                                                              ref={null}
+  1786→                                                              xmlns="http://www.w3.org/2000/svg"
+  1787→                                                              width={24}
+  1788→                                                              height={24}
+  1789→                                                              viewBox="0 0 24 24"
+  1790→                                                              fill="none"
+  1791→                                                              stroke="currentColor"
+  1792→                                                              strokeWidth={2}
+  1793→                                                              strokeLinecap="round"
+  1794→                                                              strokeLinejoin="round"
+  1795→                                                              className="lucide lucide-users size-4"
+  1796→                                                              aria-hidden="true"
+  1797→-                                                             bis_size={"{\"x\":809,\"y\":482,\"w\":15,\"h\":15,\"abs..."}
+  1798→                                                            >
+  1799→                                                              <path
+  1800→                                                                d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
+  1801→-                                                               bis_size={"{\"x\":810,\"y\":492,\"w\":9,\"h\":3,\"abs..."}
+  1802→                                                              >
+  1803→                                                              <path
+  1804→                                                                d="M16 3.128a4 4 0 0 1 0 7.744"
+  1805→-                                                               bis_size={"{\"x\":820,\"y\":484,\"w\":1,\"h\":5,\"abs..."}
+  1806→                                                              >
+  1807→                                                              <path
+  1808→                                                                d="M22 21v-2a4 4 0 0 0-3-3.87"
+  1809→-                                                               bis_size={"{\"x\":822,\"y\":492,\"w\":1,\"h\":3,\"abs..."}
+  1810→                                                              >
+  1811→                                                              <circle
+  1812→                                                                cx="9"
+  1813→                                                                cy="7"
+  1814→                                                                r="4"
+  1815→-                                                               bis_size={"{\"x\":812,\"y\":484,\"w\":5,\"h\":5,\"abs..."}
+  1816→                                                              >
+  1817→                                                        <div
+  1818→                                                          className="min-w-0"
+  1819→-                                                         bis_size={"{\"x\":802,\"y\":520,\"w\":30,\"h\":36,\"abs_x\"..."}
+  1820→                                                        >
+  1821→                                                          <p
+  1822→                                                            className="text-[11px] text-muted-foreground truncate"
+  1823→-                                                           bis_size={"{\"x\":802,\"y\":520,\"w\":30,\"h\":16,\"abs_x..."}
+  1824→                                                          >
+  1825→+                                                           العملاء
+  1826→                                                          <p
+  1827→                                                            className="text-sm font-bold tabular-nums truncate"
+  1828→                                                            dir="ltr"
+  1829→-                                                           bis_size={"{\"x\":802,\"y\":536,\"w\":30,\"h\":20,\"abs_x..."}
+  1830→                                                          >
+  1831→+                                                           0
+  1832→                                                  <MiniStat label="الموردون" value="0" icon={<Users>} accent="amber">
+  1833→                                                    <Card className="p-3.5 flex...">
+  1834→                                                      <div
+  1835→                                                        data-slot="card"
+  1836→                                                        className="bg-card text-card-foreground flex-col rounded-xl bo..."
+  1837→-                                                       bis_size={"{\"x\":347,\"y\":457,\"w\":305,\"h\":114,\"abs_x\"..."}
+  1838→                                                      >
+  1839→                                                        <div
+  1840→                                                          className="size-9 rounded-lg flex items-center justify-cente..."
+  1841→-                                                         bis_size={"{\"x\":482,\"y\":472,\"w\":35,\"h\":35,\"abs_x\"..."}
+  1842→                                                        >
+  1843→                                                          <Users className="size-4">
+  1844→                                                            <svg
+  1845→                                                              ref={null}
+  1846→                                                              xmlns="http://www.w3.org/2000/svg"
+  1847→                                                              width={24}
+  1848→                                                              height={24}
+  1849→                                                              viewBox="0 0 24 24"
+  1850→                                                              fill="none"
+  1851→                                                              stroke="currentColor"
+  1852→                                                              strokeWidth={2}
+  1853→                                                              strokeLinecap="round"
+  1854→                                                              strokeLinejoin="round"
+  1855→                                                              className="lucide lucide-users size-4"
+  1856→                                                              aria-hidden="true"
+  1857→-                                                             bis_size={"{\"x\":492,\"y\":482,\"w\":15,\"h\":15,\"abs..."}
+  1858→                                                            >
+  1859→                                                              <path
+  1860→                                                                d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
+  1861→-                                                               bis_size={"{\"x\":493,\"y\":492,\"w\":9,\"h\":3,\"abs..."}
+  1862→                                                              >
+  1863→                                                              <path
+  1864→                                                                d="M16 3.128a4 4 0 0 1 0 7.744"
+  1865→-                                                               bis_size={"{\"x\":502,\"y\":484,\"w\":1,\"h\":5,\"abs..."}
+  1866→                                                              >
+  1867→                                                              <path
+  1868→                                                                d="M22 21v-2a4 4 0 0 0-3-3.87"
+  1869→-                                                               bis_size={"{\"x\":504,\"y\":492,\"w\":1,\"h\":3,\"abs..."}
+  1870→                                                              >
+  1871→                                                              <circle
+  1872→                                                                cx="9"
+  1873→                                                                cy="7"
+  1874→                                                                r="4"
+  1875→-                                                               bis_size={"{\"x\":495,\"y\":484,\"w\":5,\"h\":5,\"abs..."}
+  1876→                                                              >
+  1877→                                                        <div
+  1878→                                                          className="min-w-0"
+  1879→-                                                         bis_size={"{\"x\":480,\"y\":520,\"w\":40,\"h\":36,\"abs_x\"..."}
+  1880→                                                        >
+  1881→                                                          <p
+  1882→                                                            className="text-[11px] text-muted-foreground truncate"
+  1883→-                                                           bis_size={"{\"x\":480,\"y\":520,\"w\":40,\"h\":16,\"abs_x..."}
+  1884→                                                          >
+  1885→+                                                           الموردون
+  1886→                                                          <p
+  1887→                                                            className="text-sm font-bold tabular-nums truncate"
+  1888→                                                            dir="ltr"
+  1889→-                                                           bis_size={"{\"x\":480,\"y\":536,\"w\":40,\"h\":20,\"abs_x..."}
+  1890→                                                          >
+  1891→+                                                           0
+  1892→                                                  <MiniStat label="المنتجات" value="0" icon={<Package>} accent="violet">
+  1893→                                                    <Card className="p-3.5 flex...">
+  1894→                                                      <div
+  1895→                                                        data-slot="card"
+  1896→                                                        className="bg-card text-card-foreground flex-col rounded-xl bo..."
+  1897→-                                                       bis_size={"{\"x\":30,\"y\":457,\"w\":305,\"h\":114,\"abs_x\":..."}
+  1898→                                                      >
+  1899→                                                        <div
+  1900→                                                          className="size-9 rounded-lg flex items-center justify-cente..."
+  1901→-                                                         bis_size={"{\"x\":165,\"y\":472,\"w\":35,\"h\":35,\"abs_x\"..."}
+  1902→                                                        >
+  1903→                                                          <Package className="size-4">
+  1904→                                                            <svg
+  1905→                                                              ref={null}
+  1906→                                                              xmlns="http://www.w3.org/2000/svg"
+  1907→                                                              width={24}
+  1908→                                                              height={24}
+  1909→                                                              viewBox="0 0 24 24"
+  1910→                                                              fill="none"
+  1911→                                                              stroke="currentColor"
+  1912→                                                              strokeWidth={2}
+  1913→                                                              strokeLinecap="round"
+  1914→                                                              strokeLinejoin="round"
+  1915→                                                              className="lucide lucide-package size-4"
+  1916→                                                              aria-hidden="true"
+  1917→-                                                             bis_size={"{\"x\":175,\"y\":482,\"w\":15,\"h\":15,\"abs..."}
+  1918→                                                            >
+  1919→                                                              <path
+  1920→                                                                d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0..."
+  1921→-                                                               bis_size={"{\"x\":177,\"y\":483,\"w\":11,\"h\":13,\"a..."}
+  1922→                                                              >
+  1923→                                                              <path
+  1924→                                                                d="M12 22V12"
+  1925→-                                                               bis_size={"{\"x\":183,\"y\":490,\"w\":0,\"h\":6,\"abs..."}
+  1926→                                                              >
+  1927→                                                              <polyline
+  1928→                                                                points="3.29 7 12 12 20.71 7"
+  1929→-                                                               bis_size={"{\"x\":177,\"y\":487,\"w\":11,\"h\":3,\"ab..."}
+  1930→                                                              >
+  1931→                                                              <path
+  1932→                                                                d="m7.5 4.27 9 5.15"
+  1933→-                                                               bis_size={"{\"x\":180,\"y\":485,\"w\":5,\"h\":3,\"abs..."}
+  1934→                                                              >
+  1935→                                                        <div
+  1936→                                                          className="min-w-0"
+  1937→-                                                         bis_size={"{\"x\":163,\"y\":520,\"w\":39,\"h\":36,\"abs_x\"..."}
+  1938→                                                        >
+  1939→                                                          <p
+  1940→                                                            className="text-[11px] text-muted-foreground truncate"
+  1941→-                                                           bis_size={"{\"x\":163,\"y\":520,\"w\":39,\"h\":16,\"abs_x..."}
+  1942→                                                          >
+  1943→+                                                           المنتجات
+  1944→                                                          <p
+  1945→                                                            className="text-sm font-bold tabular-nums truncate"
+  1946→                                                            dir="ltr"
+  1947→-                                                           bis_size={"{\"x\":163,\"y\":536,\"w\":39,\"h\":20,\"abs_x..."}
+  1948→                                                          >
+  1949→+                                                           0
+  1950→                                                  <MiniStat label="الذمم المدينة" value="0.00 ر.س" icon={<ArrowUpRight>} ...>
+  1951→                                                    <Card className="p-3.5 flex...">
+  1952→                                                      <div
+  1953→                                                        data-slot="card"
+  1954→                                                        className="bg-card text-card-foreground flex-col rounded-xl bo..."
+  1955→-                                                       bis_size={"{\"x\":664,\"y\":583,\"w\":305,\"h\":114,\"abs_x\"..."}
+  1956→                                                      >
+  1957→                                                        <div
+  1958→                                                          className="size-9 rounded-lg flex items-center justify-cente..."
+  1959→-                                                         bis_size={"{\"x\":799,\"y\":598,\"w\":35,\"h\":35,\"abs_x\"..."}
+  1960→                                                        >
+  1961→                                                          <ArrowUpRight className="size-4">
+  1962→                                                            <svg
+  1963→                                                              ref={null}
+  1964→                                                              xmlns="http://www.w3.org/2000/svg"
+  1965→                                                              width={24}
+  1966→                                                              height={24}
+  1967→                                                              viewBox="0 0 24 24"
+  1968→                                                              fill="none"
+  1969→                                                              stroke="currentColor"
+  1970→                                                              strokeWidth={2}
+  1971→                                                              strokeLinecap="round"
+  1972→                                                              strokeLinejoin="round"
+  1973→                                                              className="lucide lucide-arrow-up-right size-4"
+  1974→                                                              aria-hidden="true"
+  1975→-                                                             bis_size={"{\"x\":809,\"y\":608,\"w\":15,\"h\":15,\"abs..."}
+  1976→                                                            >
+  1977→                                                              <path
+  1978→                                                                d="M7 7h10v10"
+  1979→-                                                               bis_size={"{\"x\":814,\"y\":613,\"w\":6,\"h\":6,\"abs..."}
+  1980→                                                              >
+  1981→                                                              <path
+  1982→                                                                d="M7 17 17 7"
+  1983→-                                                               bis_size={"{\"x\":814,\"y\":613,\"w\":6,\"h\":6,\"abs..."}
+  1984→                                                              >
+  1985→                                                        <div
+  1986→                                                          className="min-w-0"
+  1987→-                                                         bis_size={"{\"x\":788,\"y\":646,\"w\":59,\"h\":36,\"abs_x\"..."}
+  1988→                                                        >
+  1989→                                                          <p
+  1990→                                                            className="text-[11px] text-muted-foreground truncate"
+  1991→-                                                           bis_size={"{\"x\":788,\"y\":646,\"w\":59,\"h\":16,\"abs_x..."}
+  1992→                                                          >
+  1993→+                                                           الذمم المدينة
+  1994→                                                          <p
+  1995→                                                            className="text-sm font-bold tabular-nums truncate"
+  1996→                                                            dir="ltr"
+  1997→-                                                           bis_size={"{\"x\":788,\"y\":663,\"w\":59,\"h\":20,\"abs_x..."}
+  1998→                                                          >
+  1999→+                                                           0.00 ر.س
+  2000→                                                  <MiniStat label="الذمم الدائنة" value="0.00 ر.س" ...>
+
+[showing lines 1-2000 of 2390; use offset=2001 with limit to continue reading]
