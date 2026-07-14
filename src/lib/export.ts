@@ -39,7 +39,71 @@ function downloadBlob(blob: Blob, filename: string) {
   setTimeout(() => URL.revokeObjectURL(url), 200)
 }
 
-export function printHTML(html: string, title = 'مستند') {
+// Print settings cache (client-side, loaded from API)
+let printSettings: Record<string, string> | null = null
+
+async function loadPrintSettings(): Promise<Record<string, string>> {
+  if (printSettings) return printSettings
+  try {
+    const r = await fetch('/api/erp/settings?category=printing')
+    if (r.ok) {
+      const data = await r.json()
+      const result: Record<string, string> = {}
+      for (const [key, meta] of Object.entries(data)) {
+        result[key] = (meta as any).value
+      }
+      printSettings = result
+      return result
+    }
+  } catch {}
+  // Fallback defaults
+  printSettings = {
+    'print.paperSize': 'A4',
+    'print.marginTop': '15',
+    'print.marginBottom': '15',
+    'print.marginLeft': '18',
+    'print.marginRight': '18',
+    'print.showLogo': 'true',
+    'print.showSignatures': 'true',
+    'print.showFooter': 'true',
+    'print.fontFamily': 'Cairo',
+    'print.fontSize': '13',
+    'print.watermark': '',
+    'doc.headerTitle': 'أورمنال — نظام إدارة موارد المؤسسات ERP',
+    'doc.footerNote': 'شكراً لتعاملكم معنا',
+  }
+  return printSettings
+}
+
+// Clear print settings cache (call when settings are saved)
+export function clearPrintSettingsCache() {
+  printSettings = null
+}
+
+export async function printHTML(html: string, title = 'مستند') {
+  const ps = await loadPrintSettings()
+  const paperSize = ps['print.paperSize'] || 'A4'
+  const marginTop = ps['print.marginTop'] || '15'
+  const marginBottom = ps['print.marginBottom'] || '15'
+  const marginLeft = ps['print.marginLeft'] || '18'
+  const marginRight = ps['print.marginRight'] || '18'
+  const fontFamily = ps['print.fontFamily'] || 'Cairo'
+  const fontSize = ps['print.fontSize'] || '13'
+  const watermark = ps['print.watermark'] || ''
+  const showFooter = ps['print.showFooter'] !== 'false'
+
+  const watermarkCss = watermark ? `
+  .doc-page::after {
+    content: "${watermark}";
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%) rotate(-45deg);
+    font-size: 80px;
+    color: rgba(0,0,0,0.05);
+    z-index: 0;
+    pointer-events: none;
+  }` : ''
+
   const win = window.open('', '_blank', 'width=900,height=700')
   if (!win) {
     alert('الرجاء السماح بالنوافذ المنبثقة للطباعة')
@@ -54,8 +118,9 @@ export function printHTML(html: string, title = 'مستند') {
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html { margin: 0; padding: 0; }
-  body { font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif; color: #1a1a1a; background: #fff; line-height: 1.7; }
-  .doc-page { max-width: 210mm; margin: 0 auto; padding: 25mm 22mm; background: #fff; }
+  body { font-family: '${fontFamily}', 'Segoe UI', Tahoma, sans-serif; color: #1a1a1a; background: #fff; line-height: 1.7; font-size: ${fontSize}px; }
+  .doc-page { max-width: 210mm; margin: 0 auto; padding: ${marginTop}mm ${marginRight}mm ${marginBottom}mm ${marginLeft}mm; background: #fff; position: relative; }
+  ${watermarkCss}
   .doc-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #2563EB; padding-bottom: 20px; margin-bottom: 24px; }
   .doc-header .company { display: flex; gap: 14px; align-items: center; }
   .doc-header .company .logo { width: 56px; height: 56px; object-fit: contain; border-radius: 8px; }
@@ -69,7 +134,7 @@ export function printHTML(html: string, title = 'مستند') {
   .party .label { font-size: 11px; color: #2563EB; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
   .party .name { font-size: 15px; font-weight: 600; margin-top: 4px; }
   .party .sub { font-size: 12px; color: #555; margin-top: 2px; }
-  table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: ${fontSize}px; }
   thead th { background: #2563EB; color: #fff; padding: 12px 10px; text-align: right; font-weight: 600; }
   tbody td { padding: 10px; border-bottom: 1px solid #e5e7eb; }
   tbody tr:nth-child(even) { background: #f9fafb; }
@@ -88,10 +153,10 @@ export function printHTML(html: string, title = 'مستند') {
   .info-item { padding: 10px 14px; background: #f9fafb; border-radius: 6px; }
   .info-item .label { font-size: 10px; color: #6b7280; text-transform: uppercase; font-weight: 600; }
   .info-item .value { font-size: 14px; font-weight: 500; margin-top: 2px; }
-  @page { margin: 0; size: A4; }
+  @page { margin: 0; size: ${paperSize}; }
   @media print {
     body { background: #fff; }
-    .doc-page { padding: 15mm 18mm; max-width: 100%; }
+    .doc-page { padding: ${marginTop}mm ${marginRight}mm ${marginBottom}mm ${marginLeft}mm; max-width: 100%; }
     .no-print { display: none !important; }
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
@@ -105,9 +170,9 @@ export function printHTML(html: string, title = 'مستند') {
 <body>
 <div class="doc-page">
 ${html}
-<div class="footer">
+${showFooter !== 'false' ? `<div class="footer">
   ${title} · تم إنشاؤه بواسطة نظام أورمنال ERP · ${new Date().toLocaleString('ar-SA')}
-</div>
+</div>` : ''}
 </div>
 <script>
   window.onload = function() { setTimeout(function() { window.print(); }, 300); }

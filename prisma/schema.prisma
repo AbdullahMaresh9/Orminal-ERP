@@ -282,9 +282,38 @@ model NumberSequence {
 }
 
 model Setting {
-  id    String @id @default(cuid())
-  key   String @unique
-  value String
+  id           String   @id @default(cuid())
+  key          String   @unique
+  value        String
+  category     String   @default("general") // general|company|accounting|inventory|sales|purchases|taxes|numbering|printing|notifications|zatca|email|import_export|backup|security|appearance|system
+  label        String?  // display label (Arabic)
+  labelEn      String?  // display label (English)
+  type         String   @default("string") // string|number|boolean|select|color
+  defaultValue String?
+  options      String?  // JSON array for select type
+  description  String?
+  isSystem     Boolean  @default(false) // system settings cannot be deleted
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([category])
+}
+
+model SettingAuditLog {
+  id         String   @id @default(cuid())
+  settingKey String
+  oldValue   String?
+  newValue   String?
+  userId     String?
+  category   String
+  reason     String?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  @@index([settingKey])
+  @@index([category])
+  @@index([createdAt])
 }
 
 // =============================================================================
