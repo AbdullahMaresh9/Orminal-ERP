@@ -197,6 +197,7 @@ orminal-system-v0/
 
 ## 📄 الترخيص والمساهمة (License & Contribution)
 
-هذا المشروع مملوك حصرياً لـ **Orminal System** و مخصص للاستخدام المؤسسي Enterprise Use.
+هذا المشروع مملوك حصرياً لـ **Orminal Tech** و مخصص للاستخدام المؤسسي Enterprise Use.
 
-تصميم وتطوير بواسطة **عبدالله مريش (Abdullah Maresh)** 🚀
+تصميم وتطوير بواسطة **عبدالله مارش (Abdullah Maresh)** 🚀
+
