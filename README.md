@@ -201,3 +201,9 @@ orminal-system-v0/
 
 تصميم وتطوير بواسطة **عبدالله مارش (Abdullah Maresh)** 🚀
 
+| التواصل | الرابط |
+|---------|--------|
+| 📧 البريد الإلكتروني | [abdullah55maresh@gmail.com](mailto:abdullah55maresh@gmail.com) |
+| 💼 GitHub | [github.com/AbdullahMaresh9](https://github.com/AbdullahMaresh9) |
+
+---
