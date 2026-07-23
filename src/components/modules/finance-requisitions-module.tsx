@@ -55,7 +55,7 @@ const STATUS_FILTERS = [
 ]
 
 export function FinanceRequisitionsModule() {
-  const { t } = useT()
+  const { t, isRTL, dir } = useT()
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -232,7 +232,7 @@ export function FinanceRequisitionsModule() {
       }
     >
       {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
         {isLoading ? (
           Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />)
         ) : (
@@ -319,43 +319,55 @@ export function FinanceRequisitionsModule() {
 
       {/* Add dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
-            <DialogTitle>طلب صرف مالي جديد</DialogTitle>
-            <DialogDescription>سيتم إنشاء الطلب بحالة "مسودة" ويمكن اعتماده أو رفضه أو تنفيذه لاحقاً.</DialogDescription>
+        <DialogContent className="max-w-xl p-0 overflow-hidden bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800" dir={dir}>
+          <DialogHeader className="bg-gradient-to-r from-blue-50 to-[#E6F0FF] dark:bg-none dark:bg-blue-700/80 border-b border-blue-100 dark:border-blue-600/40 p-6 shrink-0 relative">
+            <div className="flex items-start gap-4 text-start">
+              <div className="size-12 rounded-xl bg-white dark:bg-blue-950/60 border border-blue-100 dark:border-blue-500/20 text-blue-600 dark:text-blue-300 flex items-center justify-center shadow-sm shadow-blue-100/40 dark:shadow-none shrink-0">
+                <FileText className="size-6" />
+              </div>
+              <div className="space-y-1 flex-1">
+                <DialogTitle className="text-xl font-bold tracking-tight text-blue-955 dark:text-white">
+                  {isRTL ? 'طلب صرف مالي جديد' : 'New Payment Request'}
+                </DialogTitle>
+              </div>
+            </div>
           </DialogHeader>
-          <DialogBody>          <DialogBody>          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label>المبلغ *</Label>
-              <Input type="number" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })} />
+
+          <DialogBody className="p-6 space-y-6 bg-slate-50/30 dark:bg-slate-900/10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5 text-start">
+                <Label htmlFor="req-amount" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'المبلغ *' : 'Amount *'}</Label>
+                <Input id="req-amount" type="number" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })} className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500" />
+              </div>
+              <div className="space-y-1.5 text-start">
+                <Label className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'النوع' : 'Type'}</Label>
+                <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
+                  <SelectTrigger className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="expense">{isRTL ? 'مصروف' : 'Expense'}</SelectItem>
+                    <SelectItem value="transfer">{isRTL ? 'تحويل' : 'Transfer'}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5 text-start sm:col-span-2">
+                <Label htmlFor="req-payee" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'المستفيد' : 'Payee'}</Label>
+                <Input id="req-payee" value={form.payee} onChange={(e) => setForm({ ...form, payee: e.target.value })} placeholder={isRTL ? 'اسم الجهة المستفيدة' : 'Beneficiary name'} className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500" />
+              </div>
+              <div className="space-y-1.5 text-start sm:col-span-2">
+                <Label htmlFor="req-note" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'ملاحظات' : 'Notes'}</Label>
+                <Textarea id="req-note" rows={3} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} placeholder={isRTL ? ' البيان التفصيلي...' : 'Reason or detailed statement...'} className="border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500" />
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <Label>النوع</Label>
-              <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
-                <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="expense">مصروف</SelectItem>
-                  <SelectItem value="transfer">تحويل</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label>المستفيد</Label>
-              <Input value={form.payee} onChange={(e) => setForm({ ...form, payee: e.target.value })} placeholder="اسم الجهة المستفيدة" />
-            </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label>ملاحظات</Label>
-              <Textarea rows={3} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} placeholder="السبب أو البيان التفصيلي..." />
-            </div>
-          </div>
           </DialogBody>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>إلغاء</Button>
-            <Button onClick={submit} disabled={createMut.isPending}>
-              {createMut.isPending ? 'جاري الحفظ...' : 'إنشاء الطلب'}
+
+          <DialogFooter className="px-6 py-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-end gap-2 shrink-0">
+            <Button variant="outline" onClick={() => setOpen(false)} className="h-10 px-5 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-900 text-xs font-semibold text-slate-700 dark:text-slate-300">
+              {isRTL ? 'إلغاء' : 'Cancel'}
+            </Button>
+            <Button onClick={submit} disabled={createMut.isPending} className="h-10 px-5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-xs font-semibold shadow-sm shadow-blue-100 dark:shadow-none">
+              {createMut.isPending ? (isRTL ? 'جاري الحفظ...' : 'Saving...') : (isRTL ? 'إنشاء الطلب' : 'Create Request')}
             </Button>
           </DialogFooter>
-        </DialogBody>
         </DialogContent>
       </Dialog>
     </ModuleShell>

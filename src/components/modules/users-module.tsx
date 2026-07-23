@@ -99,17 +99,15 @@ export function UsersModule() {
   })
   const roles = rolesData?.data ?? []
 
-  // Fetch branches via warehouses proxy if available — branches have no list route,
-  // but the seeded MAIN branch is exposed via users' defaultBranch. We provide a
-  // static fallback by reusing the first user's defaultBranch.
-  const branches: Branch[] = []
-  const seenBranchIds = new Set<string>()
-  for (const u of data?.data ?? []) {
-    if (u.defaultBranch && !seenBranchIds.has(u.defaultBranch.id)) {
-      seenBranchIds.add(u.defaultBranch.id)
-      branches.push(u.defaultBranch)
-    }
-  }
+  const { data: branchesData } = useQuery<{ data: Branch[] }>({
+    queryKey: ['branches-for-users'],
+    queryFn: async () => {
+      const r = await fetch('/api/erp/branches?pageSize=200')
+      if (!r.ok) return { data: [] }
+      return r.json()
+    },
+  })
+  const branches = branchesData?.data ?? []
 
   const users = data?.data ?? []
   const stats = {
@@ -249,7 +247,7 @@ export function UsersModule() {
         </>
       }
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
         <KpiCard title="إجمالي المستخدمين" value={formatInt(stats.total)} icon={<UsersIcon className="size-5" />} accent="blue" />
         <KpiCard title="المستخدمون النشطون" value={formatInt(stats.active)} icon={<UserCheck className="size-5" />} accent="sky" />
         <KpiCard title="الأكثر دوراً" value={topRoleLabel} icon={<KeyRound className="size-5" />} accent="amber" />
@@ -480,7 +478,7 @@ export function UsersModule() {
               </Button>
             </DialogFooter>
           </form>
-        </DialogBody>
+          </DialogBody>
         </DialogContent>
       </Dialog>
     </ModuleShell>

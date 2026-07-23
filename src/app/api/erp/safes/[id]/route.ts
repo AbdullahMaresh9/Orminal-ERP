@@ -8,7 +8,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       where: { id },
       include: {
         account: { select: { id: true, code: true, nameAr: true } },
-        branch: { select: { id: true, nameAr: true, code: true } },
       },
     })
     if (!item) return notFound('Safe not found')
@@ -21,7 +20,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         include: {
           entry: {
             select: {
-              id: true, code: true, postingDate: true, description: true, posted: true,
+              id: true, code: true, postingDate: true, description: true, state: true,
             },
           },
         },
@@ -29,12 +28,12 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         take: 50,
       })
       transactions = lines.map((l) => ({
-        code: l.entry.code,
-        date: l.entry.postingDate,
-        description: l.entry.description,
+        code: l.entry?.code,
+        date: l.entry?.postingDate,
+        description: l.entry?.description,
         debit: l.debit,
         credit: l.credit,
-        posted: l.entry.posted,
+        posted: l.entry?.state === 'posted',
       }))
     }
     return ok({ ...item, transactions })
@@ -56,7 +55,6 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       data: rest,
       include: {
         account: { select: { id: true, code: true, nameAr: true } },
-        branch: { select: { id: true, nameAr: true, code: true } },
       },
     })
     return ok(updated)

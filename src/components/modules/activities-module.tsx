@@ -15,8 +15,8 @@ import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody} from '@/components/ui/dialog'
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, DialogBody, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogBody } from '@/components/ui/dialog'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 
 interface ActivityRow {
   id: string; name: string; code?: string | null; branchId: string; createdAt: string
@@ -24,7 +24,7 @@ interface ActivityRow {
 }
 
 export function ActivitiesModule() {
-  const { t } = useT()
+  const { t, locale, isRTL, dir } = useT()
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -123,7 +123,7 @@ export function ActivitiesModule() {
       addLabel="نشاط جديد"
       onExport={handleExport}
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
         <KpiCard title="إجمالي الأنشطة" value={String(total)} icon={<Activity className="size-5" />} accent="blue" />
         <KpiCard title="عدد الفروع" value={String(branchesCount)} icon={<Building2 className="size-5" />} accent="amber" />
         <KpiCard title="متوسط لكل فرع" value={branchesCount ? (total / branchesCount).toFixed(1) : '0'} icon={<Layers className="size-5" />} accent="sky" />
@@ -169,37 +169,59 @@ export function ActivitiesModule() {
       </Card>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{editing ? 'تعديل نشاط' : 'نشاط جديد'}</DialogTitle>
+        <DialogContent className="max-w-md p-0 overflow-hidden bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-700 shadow-2xl" dir={dir}>
+          <DialogHeader className="bg-gradient-to-r rtl:bg-gradient-to-l from-blue-50 to-[#E6F0FF] dark:from-blue-700/80 dark:to-blue-800/90 border-b border-blue-100 dark:border-blue-700/40 p-6 shrink-0 relative">
+            <div className="flex items-start gap-4 text-start">
+              <div className="size-12 rounded-xl bg-white dark:bg-slate-900/80 border border-blue-100 dark:border-blue-500/30 text-blue-600 dark:text-blue-300 flex items-center justify-center shadow-sm shadow-blue-100/40 dark:shadow-none shrink-0">
+                <Activity className="size-6 animate-pulse" />
+              </div>
+              <div className="space-y-1 flex-1">
+                <DialogTitle className="text-xl font-bold tracking-tight text-blue-950 dark:text-white">
+                  {editing ? (isRTL ? 'تعديل نشاط' : 'Edit Activity') : (isRTL ? 'نشاط جديد' : 'New Activity')}
+                </DialogTitle>
+
+              </div>
+            </div>
           </DialogHeader>
-          <DialogBody>          <DialogBody>          <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="name">اسم النشاط *</Label>
-              <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="تجارة التجزئة" />
+
+          <DialogBody className="p-6 bg-white dark:bg-slate-950">
+            <div className="space-y-4">
+              <div className="space-y-1.5 text-start">
+                <Label htmlFor="name" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  {isRTL ? 'اسم النشاط *' : 'Activity Name *'}
+                </Label>
+                <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={isRTL ? 'تجارة التجزئة' : 'Retail Trade'} className="h-10 bg-slate-50/50 dark:bg-slate-900/50 border-slate-300 dark:border-slate-700 focus-visible:ring-blue-500 focus-visible:border-blue-500" />
+              </div>
+              <div className="space-y-1.5 text-start">
+                <Label htmlFor="code" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  {isRTL ? 'الرمز (اختياري)' : 'Code (Optional)'}
+                </Label>
+                <Input id="code" value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="ACT-0001" className="h-10 bg-slate-50/50 dark:bg-slate-900/50 border-slate-300 dark:border-slate-700 focus-visible:ring-blue-500 focus-visible:border-blue-500" />
+              </div>
+              <div className="space-y-1.5 text-start">
+                <Label htmlFor="branch" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  {isRTL ? 'الفرع *' : 'Branch *'}
+                </Label>
+                <Select value={form.branchId} onValueChange={(v) => setForm({ ...form, branchId: v })}>
+                  <SelectTrigger id="branch" className="h-10 bg-slate-50/50 dark:bg-slate-900/50 border-slate-300 dark:border-slate-700 focus:ring-blue-500 focus:border-blue-500">
+                    <SelectValue placeholder={isRTL ? 'اختر الفرع' : 'Select Branch'} />
+                  </SelectTrigger>
+                  <SelectContent className="dark:bg-slate-900 dark:border-slate-800 dark:text-white">
+                    {branches.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="code">الرمز (اختياري)</Label>
-              <Input id="code" value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="ACT-0001" />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="branch">الفرع *</Label>
-              <Select value={form.branchId} onValueChange={(v) => setForm({ ...form, branchId: v })}>
-                <SelectTrigger id="branch"><SelectValue placeholder="اختر الفرع" /></SelectTrigger>
-                <SelectContent>
-                  {branches.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
           </DialogBody>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>{t('action.cancel')}</Button>
-            <Button onClick={handleSave} disabled={saveMutation.isPending}>
+
+          <DialogFooter className="p-6 bg-transparent border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-end gap-2 shrink-0">
+            <Button variant="outline" onClick={() => setDialogOpen(false)} className="h-10 px-5 border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-900 text-xs font-semibold text-slate-700 dark:text-slate-300">
+              {t('action.cancel')}
+            </Button>
+            <Button onClick={handleSave} disabled={saveMutation.isPending} className="h-10 px-5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-xs font-semibold shadow-md shadow-blue-500/20 dark:shadow-none">
               {saveMutation.isPending ? t('loading') : t('action.save')}
             </Button>
           </DialogFooter>
-        </DialogBody>
         </DialogContent>
       </Dialog>
 

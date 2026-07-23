@@ -334,7 +334,7 @@ export function SalesReturnsModule() {
         </Select>
       }
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
         <KpiCard title="إجمالي المرتجعات" value={formatInt(stats.total)} icon={<Undo2 className="size-5" />} accent="blue" />
         <KpiCard title="قيد المعالجة" value={formatInt(stats.pending)} icon={<Clock className="size-5" />} accent="amber" />
         <KpiCard title="مُرحّلة" value={formatInt(stats.approved)} icon={<CheckCircle2 className="size-5" />} accent="sky" />
@@ -419,122 +419,122 @@ export function SalesReturnsModule() {
             <DialogTitle>مرتجع مبيعات جديد</DialogTitle>
             <DialogDescription>حدد العميل والفاتورة الأصلية والبنود المرتجعة</DialogDescription>
           </DialogHeader>
-          <DialogBody>          <DialogBody>          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className="space-y-1.5">
-                <Label>العميل *</Label>
-                <Select value={partnerId} onValueChange={setPartnerId}>
-                  <SelectTrigger><SelectValue placeholder="اختر العميل" /></SelectTrigger>
-                  <SelectContent>
-                    {partners.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        <span dir="ltr" className="font-mono text-xs">{p.code}</span> — {p.nameAr}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>الفاتورة الأصلية</Label>
-                <Select value={originalInvoiceId} onValueChange={setOriginalInvoiceId}>
-                  <SelectTrigger><SelectValue placeholder="اختياري" /></SelectTrigger>
-                  <SelectContent>
-                    {invoices
-                      .filter((i) => !partnerId || i.partnerId === partnerId)
-                      .map((i) => (
-                        <SelectItem key={i.id} value={i.id}>
-                          <span dir="ltr" className="font-mono text-xs">{i.code}</span> — {formatCurrency(i.total)}
+          <DialogBody>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="space-y-1.5">
+                  <Label>العميل *</Label>
+                  <Select value={partnerId} onValueChange={setPartnerId}>
+                    <SelectTrigger><SelectValue placeholder="اختر العميل" /></SelectTrigger>
+                    <SelectContent>
+                      {partners.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          <span dir="ltr" className="font-mono text-xs">{p.code}</span> — {p.nameAr}
                         </SelectItem>
                       ))}
-                  </SelectContent>
-                </Select>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>الفاتورة الأصلية</Label>
+                  <Select value={originalInvoiceId} onValueChange={setOriginalInvoiceId}>
+                    <SelectTrigger><SelectValue placeholder="اختياري" /></SelectTrigger>
+                    <SelectContent>
+                      {invoices
+                        .filter((i) => !partnerId || i.partnerId === partnerId)
+                        .map((i) => (
+                          <SelectItem key={i.id} value={i.id}>
+                            <span dir="ltr" className="font-mono text-xs">{i.code}</span> — {formatCurrency(i.total)}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="date">التاريخ</Label>
+                  <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+                </div>
               </div>
+
               <div className="space-y-1.5">
-                <Label htmlFor="date">التاريخ</Label>
-                <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+                <Label htmlFor="reason">سبب الإرجاع</Label>
+                <Input id="reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="مثال: تالف، خطأ في الشحن..." />
+              </div>
+
+              <Card className="rounded-lg overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50">
+                      <TableHead className="ps-3">المنتج</TableHead>
+                      <TableHead className="text-end num-cell w-20">الكمية</TableHead>
+                      <TableHead className="text-end num-cell w-28">السعر</TableHead>
+                      <TableHead className="text-end num-cell w-20">الضريبة %</TableHead>
+                      <TableHead className="text-end num-cell w-28">الإجمالي</TableHead>
+                      <TableHead className="w-12"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {lines.map((l) => {
+                      const qty = Number(l.quantity) || 0
+                      const price = Number(l.unitPrice) || 0
+                      const taxRate = Number(l.taxRate) || 0
+                      const lineTotal = qty * price * (1 + taxRate / 100)
+                      return (
+                        <TableRow key={l.key}>
+                          <TableCell className="ps-3">
+                            <Select value={l.productId} onValueChange={(v) => updateLine(l.key, 'productId', v)}>
+                              <SelectTrigger className="h-9 min-w-[220px]"><SelectValue placeholder="اختر المنتج" /></SelectTrigger>
+                              <SelectContent>
+                                {products.map((p) => (
+                                  <SelectItem key={p.id} value={p.id}>
+                                    <span dir="ltr" className="font-mono text-xs">{p.sku}</span> — {p.nameAr}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell className="text-end num-cell">
+                            <Input className="h-9 text-end tabular-nums" type="number" step="0.01" dir="ltr" value={l.quantity} onChange={(e) => updateLine(l.key, 'quantity', e.target.value)} />
+                          </TableCell>
+                          <TableCell className="text-end num-cell">
+                            <Input className="h-9 text-end tabular-nums" type="number" step="0.01" dir="ltr" value={l.unitPrice} onChange={(e) => updateLine(l.key, 'unitPrice', e.target.value)} />
+                          </TableCell>
+                          <TableCell className="text-end num-cell">
+                            <Input className="h-9 text-end tabular-nums" type="number" step="0.01" dir="ltr" value={l.taxRate} onChange={(e) => updateLine(l.key, 'taxRate', e.target.value)} />
+                          </TableCell>
+                          <TableCell className="text-end num-cell">
+                            <span className="num font-semibold tabular-nums" dir="ltr">{formatCurrency(lineTotal)}</span>
+                          </TableCell>
+                          <TableCell>
+                            <Button type="button" size="icon" variant="ghost" className="size-8 text-rose-500" onClick={() => removeLine(l.key)}>
+                              <Trash2 className="size-3.5" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                  <TableFooter>
+                    <TableRow>
+                      <TableCell colSpan={4}>
+                        <Button type="button" size="sm" variant="outline" onClick={addLine} className="gap-1.5">
+                          <Plus className="size-3.5" /> إضافة بند
+                        </Button>
+                      </TableCell>
+                      <TableCell className="text-end num-cell">
+                        <span className="num font-bold tabular-nums" dir="ltr">{formatCurrency(computed.total)}</span>
+                      </TableCell>
+                      <TableCell></TableCell>
+                    </TableRow>
+                  </TableFooter>
+                </Table>
+              </Card>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="notes">ملاحظات</Label>
+                <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="ملاحظات إضافية..." />
               </div>
             </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="reason">سبب الإرجاع</Label>
-              <Input id="reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="مثال: تالف، خطأ في الشحن..." />
-            </div>
-
-            <Card className="rounded-lg overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50">
-                    <TableHead className="ps-3">المنتج</TableHead>
-                    <TableHead className="text-end num-cell w-20">الكمية</TableHead>
-                    <TableHead className="text-end num-cell w-28">السعر</TableHead>
-                    <TableHead className="text-end num-cell w-20">الضريبة %</TableHead>
-                    <TableHead className="text-end num-cell w-28">الإجمالي</TableHead>
-                    <TableHead className="w-12"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {lines.map((l) => {
-                    const qty = Number(l.quantity) || 0
-                    const price = Number(l.unitPrice) || 0
-                    const taxRate = Number(l.taxRate) || 0
-                    const lineTotal = qty * price * (1 + taxRate / 100)
-                    return (
-                      <TableRow key={l.key}>
-                        <TableCell className="ps-3">
-                          <Select value={l.productId} onValueChange={(v) => updateLine(l.key, 'productId', v)}>
-                            <SelectTrigger className="h-9 min-w-[220px]"><SelectValue placeholder="اختر المنتج" /></SelectTrigger>
-                            <SelectContent>
-                              {products.map((p) => (
-                                <SelectItem key={p.id} value={p.id}>
-                                  <span dir="ltr" className="font-mono text-xs">{p.sku}</span> — {p.nameAr}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell className="text-end num-cell">
-                          <Input className="h-9 text-end tabular-nums" type="number" step="0.01" dir="ltr" value={l.quantity} onChange={(e) => updateLine(l.key, 'quantity', e.target.value)} />
-                        </TableCell>
-                        <TableCell className="text-end num-cell">
-                          <Input className="h-9 text-end tabular-nums" type="number" step="0.01" dir="ltr" value={l.unitPrice} onChange={(e) => updateLine(l.key, 'unitPrice', e.target.value)} />
-                        </TableCell>
-                        <TableCell className="text-end num-cell">
-                          <Input className="h-9 text-end tabular-nums" type="number" step="0.01" dir="ltr" value={l.taxRate} onChange={(e) => updateLine(l.key, 'taxRate', e.target.value)} />
-                        </TableCell>
-                        <TableCell className="text-end num-cell">
-                          <span className="num font-semibold tabular-nums" dir="ltr">{formatCurrency(lineTotal)}</span>
-                        </TableCell>
-                        <TableCell>
-                          <Button type="button" size="icon" variant="ghost" className="size-8 text-rose-500" onClick={() => removeLine(l.key)}>
-                            <Trash2 className="size-3.5" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-                <TableFooter>
-                  <TableRow>
-                    <TableCell colSpan={4}>
-                      <Button type="button" size="sm" variant="outline" onClick={addLine} className="gap-1.5">
-                        <Plus className="size-3.5" /> إضافة بند
-                      </Button>
-                    </TableCell>
-                    <TableCell className="text-end num-cell">
-                      <span className="num font-bold tabular-nums" dir="ltr">{formatCurrency(computed.total)}</span>
-                    </TableCell>
-                    <TableCell></TableCell>
-                  </TableRow>
-                </TableFooter>
-              </Table>
-            </Card>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="notes">ملاحظات</Label>
-              <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="ملاحظات إضافية..." />
-            </div>
-          </div>
-
           </DialogBody>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>إلغاء</Button>
@@ -542,7 +542,6 @@ export function SalesReturnsModule() {
               {saveMutation.isPending ? 'جاري الحفظ...' : 'إنشاء'}
             </Button>
           </DialogFooter>
-        </DialogBody>
         </DialogContent>
       </Dialog>
     </ModuleShell>

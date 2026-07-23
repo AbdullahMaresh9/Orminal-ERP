@@ -12,6 +12,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     const updated = await db.fiscalPeriod.update({
       where: { id },
       data: {
+        name: body.name !== undefined ? body.name : exists.name,
+        startDate: body.startDate !== undefined ? new Date(body.startDate) : exists.startDate,
+        endDate: body.endDate !== undefined ? new Date(body.endDate) : exists.endDate,
+        quarter: body.quarter !== undefined ? body.quarter : exists.quarter,
         state: body.state ?? exists.state,
         closedAt: body.state === 'closed' ? new Date() : exists.closedAt,
         closedBy: body.closedBy ?? exists.closedBy,

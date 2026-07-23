@@ -170,7 +170,7 @@ export async function printHTML(html: string, title = 'مستند') {
 <body>
 <div class="doc-page">
 ${html}
-${showFooter !== 'false' ? `<div class="footer">
+${showFooter ? `<div class="footer">
   ${title} · تم إنشاؤه بواسطة نظام أورمنال ERP · ${new Date().toLocaleString('ar-SA')}
 </div>` : ''}
 </div>

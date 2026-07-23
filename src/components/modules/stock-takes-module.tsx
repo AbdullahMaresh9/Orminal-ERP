@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useT } from '@/lib/i18n/use-t'
+import { cn } from '@/lib/utils'
 import { formatNumber, formatDate } from '@/lib/format'
 import { exportToCSV } from '@/lib/export'
 import { ModuleShell } from '@/components/erp/module-shell'
@@ -18,7 +19,7 @@ import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from '@/components/ui/table'
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogBody
 } from '@/components/ui/dialog'
 import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
@@ -50,7 +51,7 @@ interface CountItem {
 }
 
 export function StockTakesModule() {
-  const { t } = useT()
+  const { t, isRTL, dir } = useT()
   const qc = useQueryClient()
   const [statusFilter, setStatusFilter] = useState('all')
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -211,7 +212,7 @@ export function StockTakesModule() {
         </Select>
       }
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4  mb-2">
         {isLoading ? (
           Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />)
         ) : (
@@ -248,7 +249,7 @@ export function StockTakesModule() {
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-16 text-muted-foreground">
                     <ClipboardList className="size-10 mx-auto mb-2 opacity-50" />
-                    لا توجد جلسات جرد. ابدأ بإنشاء جلسة جديدة.
+                    لا يوجد جرد مخزون. ابدأ بإنشاء جرد جديد.
                   </TableCell>
                 </TableRow>
               ) : takes.map(take => {
@@ -294,111 +295,175 @@ export function StockTakesModule() {
 
       {/* Create Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>جرد مخزون جديد</DialogTitle>
-            <DialogDescription>سيتم تحميل الأصناف الحالية تلقائياً عند الإنشاء</DialogDescription>
+        <DialogContent className="max-w-lg p-0 overflow-hidden bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800" dir={dir}>
+          <DialogHeader className="bg-gradient-to-r from-blue-50 to-[#E6F0FF] dark:bg-none dark:bg-blue-700/80 border-b border-blue-100 dark:border-blue-600/40 p-6 shrink-0 relative">
+            <div className="flex items-start gap-4">
+              <div className="size-12 rounded-xl bg-white dark:bg-blue-950/60 border border-blue-100 dark:border-blue-500/20 text-blue-600 dark:text-blue-300 flex items-center justify-center shadow-sm shadow-blue-100/40 dark:shadow-none shrink-0">
+                <ClipboardList className="size-6" />
+              </div>
+              <div className="space-y-1">
+                <DialogTitle className="text-xl font-bold tracking-tight text-blue-955 dark:text-white">
+                  {isRTL ? 'جرد مخزني جديد' : 'New Stocktake'}
+                </DialogTitle>
+              </div>
+            </div>
           </DialogHeader>
-                              <form onSubmit={handleSubmit} className="grid gap-4">
-            <div className="space-y-1.5">
-              <Label>المستودع *</Label>
-              <Select value={form.storehouseId} onValueChange={v => setForm({ ...form, storehouseId: v })}>
-                <SelectTrigger className="w-full"><SelectValue placeholder="اختر المستودع" /></SelectTrigger>
-                <SelectContent>
-                  {storehouses.map(s => <SelectItem key={s.id} value={s.id}>{s.name} ({s.code})</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>ملاحظات</Label>
-              <Textarea value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} rows={2} />
-            </div>
-            
-          <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>إلغاء</Button>
-              <Button type="submit" disabled={createMutation.isPending}>
-                {createMutation.isPending ? 'جاري الإنشاء...' : 'إنشاء الجرد'}
+
+          <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
+            <DialogBody className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/50 dark:bg-slate-900/50 scrollbar-thin">
+              <div className="space-y-4">
+                <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                  <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    {isRTL ? 'المستودع المراد جرده *' : 'Storehouse to Count *'}
+                  </Label>
+                  <Select value={form.storehouseId} onValueChange={v => setForm({ ...form, storehouseId: v })}>
+                    <SelectTrigger dir={dir} className={cn("h-10 border-slate-200 dark:border-slate-800 focus:ring-blue-500 text-sm bg-white dark:bg-slate-950", isRTL ? "text-right" : "text-left")}>
+                      <SelectValue placeholder={isRTL ? 'اختر المستودع المستهدف' : 'Select target warehouse'} />
+                    </SelectTrigger>
+                    <SelectContent dir={dir}>
+                      {storehouses.map(s => <SelectItem key={s.id} value={s.id}>{s.name} ({s.code})</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                  <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{isRTL ? 'ملاحظات الجلسة' : 'Session Notes'}</Label>
+                  <Textarea
+                    value={form.note}
+                    onChange={e => setForm({ ...form, note: e.target.value })}
+                    rows={3}
+                    dir={dir}
+                    className={cn("border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-sm", isRTL ? "text-right" : "text-left")}
+                    placeholder={isRTL ? 'مثال: جرد نهاية العام، جرد ربع سنوي لقسم الإلكترونيات...' : 'e.g. End of year count, quarterly electronics audit...'}
+                  />
+                </div>
+              </div>
+            </DialogBody>
+
+            <DialogFooter className="px-6 py-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-end gap-2 shrink-0">
+              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} className="h-10 px-5 border-slate-200 dark:border-slate-855 hover:bg-slate-100/80 dark:hover:bg-slate-900 text-xs font-semibold">
+                {isRTL ? 'إلغاء' : 'Cancel'}
+              </Button>
+              <Button type="submit" disabled={createMutation.isPending || !form.storehouseId} className="h-10 px-5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-xs font-semibold shadow-sm">
+                {createMutation.isPending ? (isRTL ? 'جاري البدء...' : 'Starting...') : (isRTL ? 'بدء جلسة الجرد' : 'Start Stocktake')}
               </Button>
             </DialogFooter>
           </form>
-        
         </DialogContent>
       </Dialog>
 
       {/* Detail / Counting Dialog */}
       <Dialog open={!!detailTake} onOpenChange={(o) => !o && setDetailTake(null)}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>جرد {detailTake?.code}</DialogTitle>
-            <DialogDescription>
-              {detailTake?.storehouse.name} · {detailTake?.status === 'draft' ? 'أدخل الكميات الفعلية' : 'عرض الجرد'}
-            </DialogDescription>
+        <DialogContent className="max-w-3xl p-0 overflow-hidden bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800" dir={dir}>
+          <DialogHeader className="bg-gradient-to-r from-blue-50 to-[#E6F0FF] dark:bg-none dark:bg-blue-700/80 border-b border-blue-100 dark:border-blue-600/40 p-6 shrink-0 relative">
+            <div className="flex items-start gap-4">
+              <div className="size-12 rounded-xl bg-white dark:bg-blue-950/60 border border-blue-100 dark:border-blue-500/20 text-blue-600 dark:text-blue-300 flex items-center justify-center shadow-sm shadow-blue-100/40 dark:shadow-none shrink-0">
+                <ClipboardCheck className="size-6" />
+              </div>
+              <div className="space-y-1 flex-1">
+                <div className="flex items-center justify-between">
+                  <DialogTitle className="text-xl font-bold tracking-tight text-blue-955 dark:text-white">
+                    {isRTL ? `جلسة جرد ${detailTake?.code}` : `Stocktake Session ${detailTake?.code}`}
+                  </DialogTitle>
+                  {detailTake && <StatusBadge status={detailTake.status} />}
+                </div>
+                <DialogDescription className="text-sm text-blue-800/80 dark:text-blue-100/90 font-normal leading-normal">
+                  {detailTake?.storehouse.name} &middot; {detailTake?.status === 'draft' ? (isRTL ? 'يرجى إدخال وتعديل الكميات الفعلية المطابقة للواقع' : 'Please input counted quantities') : (isRTL ? 'عرض الكميات والفروقات للجلسة المكتملة' : 'View session details')}
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
-                              {detailTake && (
-            <div className="space-y-4 max-h-[70vh] overflow-y-auto p-1">
-              <div className="grid grid-cols-3 gap-3">
-                <div className="rounded-lg border p-3 text-center">
-                  <p className="text-xs text-muted-foreground">عدد الأصناف</p>
-                  <p className="text-xl font-bold"><span className="num">{totalItems}</span></p>
+
+          {detailTake && (
+            <div className="flex-1 flex flex-col min-h-0">
+              <DialogBody className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50 dark:bg-slate-900/50 scrollbar-thin">
+                {/* Stats indicators */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="rounded-xl bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-850 p-4 text-center shadow-sm">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold mb-1">{isRTL ? 'إجمالي الأصناف' : 'Total Items'}</p>
+                    <p className="text-xl font-bold text-slate-800 dark:text-white"><span className="num">{totalItems}</span></p>
+                  </div>
+                  <div className="rounded-xl bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-850 p-4 text-center shadow-sm">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold mb-1">{isRTL ? 'أصناف غير مطابقة' : 'Discrepancies'}</p>
+                    <p className={`text-xl font-bold ${mismatched > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400'}`}><span className="num">{mismatched}</span></p>
+                  </div>
+                  <div className="rounded-xl bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-850 p-4 text-center shadow-sm">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold mb-1">{isRTL ? 'صافي فرق الكميات' : 'Net Difference'}</p>
+                    <p className={`text-xl font-bold ${totalDiff !== 0 ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400'}`}>
+                      <span className="num">{totalDiff > 0 ? '+' : ''}{formatNumber(totalDiff, 0)}</span>
+                    </p>
+                  </div>
                 </div>
-                <div className="rounded-lg border p-3 text-center">
-                  <p className="text-xs text-muted-foreground">اختلافات</p>
-                  <p className={`text-xl font-bold ${mismatched > 0 ? 'text-amber-600' : 'text-blue-600'}`}><span className="num">{mismatched}</span></p>
+
+                {/* Items Table */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 border-b pb-2 border-slate-200/60 dark:border-slate-800/60">
+                    <Package className="size-4 text-blue-600 dark:text-blue-400" />
+                    <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200">
+                      {isRTL ? 'كميات الأصناف والمطابقة' : 'Items & Quantities'}
+                    </h3>
+                  </div>
+
+                  <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-950 shadow-sm">
+                    <Table className="table-sticky">
+                      <TableHeader className="bg-slate-50 dark:bg-slate-900/50">
+                        <TableRow>
+                          <TableHead className={cn("text-xs font-semibold text-slate-700 dark:text-slate-300", isRTL ? "text-right" : "text-left")}>{isRTL ? 'المنتج' : 'Product'}</TableHead>
+                          <TableHead className={cn("num-cell w-28 text-xs font-semibold text-slate-700 dark:text-slate-300", isRTL ? "text-right" : "text-left")}>{isRTL ? 'كمية النظام' : 'System Qty'}</TableHead>
+                          <TableHead className={cn("num-cell w-36 text-xs font-semibold text-slate-700 dark:text-slate-300", isRTL ? "text-right" : "text-left")}>{isRTL ? 'الكمية الفعلية' : 'Counted Qty'}</TableHead>
+                          <TableHead className={cn("num-cell w-24 text-xs font-semibold text-slate-700 dark:text-slate-300", isRTL ? "text-right" : "text-left")}>{isRTL ? 'الفرق' : 'Difference'}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {countItems.map((it, idx) => (
+                          <TableRow key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/40">
+                            <TableCell className="text-sm font-semibold text-slate-900 dark:text-slate-100">{it.productName}</TableCell>
+                            <TableCell className="num-cell text-xs font-medium text-slate-500"><span className="num">{formatNumber(it.systemQty, 0)}</span></TableCell>
+                            <TableCell className="num-cell p-2">
+                              <Input
+                                type="number"
+                                step="1"
+                                value={it.countedQty}
+                                onChange={e => updateCountItem(idx, Number(e.target.value))}
+                                disabled={detailTake?.status !== 'draft'}
+                                dir={dir}
+                                className={cn("h-9 w-28 ms-auto border-slate-200 dark:border-slate-800 text-xs font-semibold bg-white dark:bg-slate-950", isRTL ? "text-right" : "text-left")}
+                              />
+                            </TableCell>
+                            <TableCell className="num-cell text-sm">
+                              <span className={`num font-semibold ${it.diff > 0 ? 'text-blue-600 dark:text-blue-400' : it.diff < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400'}`}>
+                                {it.diff > 0 ? '+' : ''}{formatNumber(it.diff, 0)}
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </div>
-                <div className="rounded-lg border p-3 text-center">
-                  <p className="text-xs text-muted-foreground">صافي الفرق</p>
-                  <p className={`text-xl font-bold ${totalDiff !== 0 ? 'text-rose-600' : 'text-blue-600'}`}>
-                    <span className="num">{totalDiff > 0 ? '+' : ''}{formatNumber(totalDiff, 0)}</span>
-                  </p>
-                </div>
-              </div>
-              <div className="rounded-lg border overflow-hidden">
-                <Table className="table-sticky">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>المنتج</TableHead>
-                      <TableHead className="num-cell">كمية النظام</TableHead>
-                      <TableHead className="num-cell">الكمية الفعلية</TableHead>
-                      <TableHead className="num-cell">الفرق</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {countItems.map((it, idx) => (
-                      <TableRow key={idx}>
-                        <TableCell className="text-sm font-medium">{it.productName}</TableCell>
-                        <TableCell className="num-cell text-xs text-muted-foreground"><span className="num">{formatNumber(it.systemQty, 0)}</span></TableCell>
-                        <TableCell className="num-cell">
-                          <Input
-                            type="number"
-                            step="1"
-                            value={it.countedQty}
-                            onChange={e => updateCountItem(idx, Number(e.target.value))}
-                            disabled={detailTake.status !== 'draft'}
-                            className="w-24 ms-auto text-end"
-                          />
-                        </TableCell>
-                        <TableCell className="num-cell text-sm">
-                          <span className={`num ${it.diff > 0 ? 'text-blue-600 font-bold' : it.diff < 0 ? 'text-rose-600 font-bold' : 'text-muted-foreground'}`}>
-                            {it.diff > 0 ? '+' : ''}{formatNumber(it.diff, 0)}
-                          </span>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-              
-          <DialogFooter>
-                <Button variant="outline" onClick={() => setDetailTake(null)}>إغلاق</Button>
-                {detailTake.status === 'draft' && (
-                  <Button onClick={completeTake} disabled={updateMutation.isPending}>
-                    {updateMutation.isPending ? 'جاري الإكمال...' : 'إكمال الجرد وتسوية المخزون'}
+
+                {/* Note displays */}
+                {detailTake?.note && (
+                  <div className="p-4 bg-amber-50/40 dark:bg-amber-950/20 border border-amber-100/50 dark:border-amber-900/30 rounded-xl">
+                    <span className="text-xs text-amber-800 text-amber-350 font-bold block mb-1">{isRTL ? 'ملاحظات الجلسة' : 'Session Notes'}</span>
+                    <p className="text-sm text-slate-700 dark:text-slate-300 leading-normal">{detailTake.note}</p>
+                  </div>
+                )}
+              </DialogBody>
+
+              <DialogFooter className="px-6 py-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-end gap-2 shrink-0">
+                <Button type="button" variant="outline" onClick={() => setDetailTake(null)} className="h-10 px-5 border-slate-200 dark:border-slate-855 hover:bg-slate-100/80 dark:hover:bg-slate-900 text-xs font-semibold">
+                  {isRTL ? 'إغلاق' : 'Close'}
+                </Button>
+                {detailTake?.status === 'draft' && (
+                  <Button type="button" onClick={completeTake} disabled={updateMutation.isPending} className="h-10 px-4 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white text-xs font-semibold shadow-sm">
+                    {updateMutation.isPending ? (isRTL ? 'جاري الإكمال...' : 'Completing...') : (isRTL ? 'إكمال الجرد وتسوية الكميات' : 'Complete & Reconcile')}
                   </Button>
                 )}
               </DialogFooter>
             </div>
           )}
-        
+
         </DialogContent>
       </Dialog>
     </ModuleShell>

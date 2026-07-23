@@ -57,6 +57,8 @@ model Company {
   products     Product[]
   fiscalYears  FiscalYear[]
   // transactions scoped by company
+  expenses     Expense[]
+  revenues     Revenue[]
 }
 
 model Branch {
@@ -80,6 +82,9 @@ model Branch {
   users      User[]      @relation("BranchUsers")
   defaultUsers User[]    @relation("UserDefaultBranch")
   // transactions scoped by branch
+  activities   Activity[]
+  expenses     Expense[]
+  revenues     Revenue[]
 }
 
 model User {
@@ -896,6 +901,8 @@ model BankAccount {
   updatedAt  DateTime @updatedAt
 
   account Account? @relation(fields: [accountId], references: [id])
+  expenses Expense[]
+  revenues Revenue[]
 }
 
 model Safe {
@@ -913,6 +920,8 @@ model Safe {
   updatedAt  DateTime @updatedAt
 
   account Account? @relation(fields: [accountId], references: [id])
+  expenses Expense[]
+  revenues Revenue[]
 }
 
 // =============================================================================
@@ -1727,3 +1736,61 @@ model PurchaseReturnLine {
   return  PurchaseReturn @relation(fields: [returnId], references: [id], onDelete: Cascade)
   product Product        @relation(fields: [productId], references: [id])
 }
+
+model Activity {
+  id        String   @id @default(cuid())
+  name      String
+  code      String?
+  branchId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  branch    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+}
+
+model Expense {
+  id            String   @id @default(cuid())
+  companyId     String
+  branchId      String?
+  code          String   @unique
+  date          DateTime @default(now())
+  amount        Float
+  payee         String?
+  category      String
+  reference     String?
+  note          String?
+  status        String   @default("posted")
+  bankAccountId String?
+  safeId        String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  company      Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  branch       Branch?      @relation(fields: [branchId], references: [id])
+  bankAccount  BankAccount? @relation(fields: [bankAccountId], references: [id])
+  safe         Safe?        @relation(fields: [safeId], references: [id])
+}
+
+model Revenue {
+  id            String   @id @default(cuid())
+  companyId     String
+  branchId      String?
+  code          String   @unique
+  date          DateTime @default(now())
+  amount        Float
+  payee         String?
+  category      String
+  reference     String?
+  note          String?
+  status        String   @default("posted")
+  bankAccountId String?
+  safeId        String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  company      Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  branch       Branch?      @relation(fields: [branchId], references: [id])
+  bankAccount  BankAccount? @relation(fields: [bankAccountId], references: [id])
+  safe         Safe?        @relation(fields: [safeId], references: [id])
+}
+

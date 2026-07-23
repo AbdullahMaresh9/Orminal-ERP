@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ModuleShell } from '@/components/erp/module-shell'
 import { KpiCard } from '@/components/erp/kpi-card'
@@ -71,6 +71,25 @@ export function AttendanceModule() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<Attendance | null>(null)
   const [draft, setDraft] = useState<Draft>(emptyDraft)
+  const [dir, setDir] = useState<'rtl' | 'ltr'>('rtl')
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const updateDir = () => {
+        const docDir = document.documentElement.dir || 'rtl'
+        setDir(docDir as 'rtl' | 'ltr')
+      }
+      updateDir()
+      const observer = new MutationObserver(updateDir)
+      observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['dir'],
+      })
+      return () => observer.disconnect()
+    }
+  }, [])
+
+  const isRTL = dir === 'rtl'
 
   const { data, isLoading } = useQuery<{ data: Attendance[]; meta: any }>({
     queryKey: ['attendance', search, filterStatus, filterDate],
@@ -219,7 +238,7 @@ export function AttendanceModule() {
         </>
       }
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
         <KpiCard title="حاضرون اليوم" value={formatInt(stats.present)} icon={<UserCheck className="size-5" />} accent="blue" />
         <KpiCard title="غائبون اليوم" value={formatInt(stats.absent)} icon={<UserX className="size-5" />} accent="rose" />
         <KpiCard title="متأخرون" value={formatInt(stats.late)} icon={<Clock className="size-5" />} accent="amber" />
@@ -276,17 +295,29 @@ export function AttendanceModule() {
       </Card>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{editing ? 'تعديل سجل حضور' : 'إضافة سجل حضور'}</DialogTitle>
-            <DialogDescription>أدخل بيانات الحضور والانصراف</DialogDescription>
+        <DialogContent className="max-w-2xl p-0 overflow-hidden bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800" dir={dir}>
+          <DialogHeader className="bg-gradient-to-r rtl:bg-gradient-to-l from-blue-50 to-[#E6F0FF] dark:bg-none dark:bg-blue-700/80 border-b border-blue-100 dark:border-blue-600/40 p-6 shrink-0 relative">
+            <div className="flex items-start gap-4 text-start">
+              <div className="size-12 rounded-xl bg-white dark:bg-blue-950/60 border border-blue-100 dark:border-blue-500/20 text-blue-600 dark:text-blue-300 flex items-center justify-center shadow-sm shadow-blue-100/40 dark:shadow-none shrink-0">
+                <CalendarClock className="size-6" />
+              </div>
+              <div className="space-y-1 flex-1">
+                <DialogTitle className="text-xl font-bold tracking-tight text-blue-955 dark:text-white">
+                  {editing ? (isRTL ? 'تعديل سجل حضور الموظف' : 'Edit Employee Attendance') : (isRTL ? 'إضافة سجل حضور جديد' : 'Add New Attendance Record')}
+                </DialogTitle>
+
+              </div>
+            </div>
           </DialogHeader>
-          <DialogBody>          <DialogBody>          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="space-y-1.5 md:col-span-2">
-                <Label>الموظف *</Label>
+
+          <DialogBody className="p-6 space-y-6 bg-slate-50/30 dark:bg-slate-900/10">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-1">
+              <div className="space-y-1.5 md:col-span-2 text-start">
+                <Label htmlFor="employee" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'الموظف *' : 'Employee *'}</Label>
                 <Select value={draft.employeeId} onValueChange={(v) => setDraft({ ...draft, employeeId: v })}>
-                  <SelectTrigger><SelectValue placeholder="اختر الموظف" /></SelectTrigger>
+                  <SelectTrigger id="employee" className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500">
+                    <SelectValue placeholder={isRTL ? 'اختر الموظف' : 'Select Employee'} />
+                  </SelectTrigger>
                   <SelectContent>
                     {employees.map((e) => (
                       <SelectItem key={e.id} value={e.id}>
@@ -296,45 +327,53 @@ export function AttendanceModule() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1.5">
-                <Label>التاريخ *</Label>
-                <Input type="date" value={draft.date} onChange={(e) => setDraft({ ...draft, date: e.target.value })} dir="ltr" />
+
+              <div className="space-y-1.5 text-start">
+                <Label htmlFor="date" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'التاريخ *' : 'Date *'}</Label>
+                <Input id="date" type="date" value={draft.date} onChange={(e) => setDraft({ ...draft, date: e.target.value })} className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-end font-mono" dir="ltr" required />
               </div>
-              <div className="space-y-1.5">
-                <Label>الحالة</Label>
+
+              <div className="space-y-1.5 text-start">
+                <Label htmlFor="status" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'الحالة' : 'Status'}</Label>
                 <Select value={draft.status} onValueChange={(v) => setDraft({ ...draft, status: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger id="status" className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500">
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="present">حاضر</SelectItem>
-                    <SelectItem value="absent">غائب</SelectItem>
-                    <SelectItem value="late">متأخر</SelectItem>
-                    <SelectItem value="leave">إجازة</SelectItem>
-                    <SelectItem value="holiday">عطلة</SelectItem>
+                    <SelectItem value="present">{isRTL ? 'حاضر' : 'Present'}</SelectItem>
+                    <SelectItem value="absent">{isRTL ? 'غائب' : 'Absent'}</SelectItem>
+                    <SelectItem value="late">{isRTL ? 'متأخر' : 'Late'}</SelectItem>
+                    <SelectItem value="leave">{isRTL ? 'إجازة' : 'Leave'}</SelectItem>
+                    <SelectItem value="holiday">{isRTL ? 'عطلة' : 'Holiday'}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1.5">
-                <Label>وقت الحضور</Label>
-                <Input type="time" value={draft.checkIn} onChange={(e) => setDraft({ ...draft, checkIn: e.target.value })} dir="ltr" />
+
+              <div className="space-y-1.5 text-start">
+                <Label htmlFor="checkIn" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'وقت الحضور' : 'Check In Time'}</Label>
+                <Input id="checkIn" type="time" value={draft.checkIn} onChange={(e) => setDraft({ ...draft, checkIn: e.target.value })} className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 font-mono text-end" dir="ltr" />
               </div>
-              <div className="space-y-1.5">
-                <Label>وقت الانصراف</Label>
-                <Input type="time" value={draft.checkOut} onChange={(e) => setDraft({ ...draft, checkOut: e.target.value })} dir="ltr" />
+
+              <div className="space-y-1.5 text-start">
+                <Label htmlFor="checkOut" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'وقت الانصراف' : 'Check Out Time'}</Label>
+                <Input id="checkOut" type="time" value={draft.checkOut} onChange={(e) => setDraft({ ...draft, checkOut: e.target.value })} className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 font-mono text-end" dir="ltr" />
               </div>
-              <div className="space-y-1.5 md:col-span-2">
-                <Label>ملاحظات</Label>
-                <Textarea rows={2} value={draft.notes} onChange={(e) => setDraft({ ...draft, notes: e.target.value })} />
+
+              <div className="space-y-1.5 md:col-span-2 text-start">
+                <Label htmlFor="notes" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'ملاحظات' : 'Notes'}</Label>
+                <Textarea id="notes" rows={2} value={draft.notes} onChange={(e) => setDraft({ ...draft, notes: e.target.value })} placeholder={isRTL ? 'تفاصيل إضافية...' : 'Additional details...'} className="border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500" />
               </div>
             </div>
-          </div>
+
+            <DialogFooter className="px-0 pt-4 bg-transparent border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-end gap-2 shrink-0">
+              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} className="h-10 px-5 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-900 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                {isRTL ? 'إلغاء' : 'Cancel'}
+              </Button>
+              <Button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()} className="h-10 px-5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-xs font-semibold shadow-sm shadow-blue-100 dark:shadow-none">
+                {saveMutation.isPending ? (isRTL ? 'جاري الحفظ...' : 'Saving...') : (isRTL ? 'حفظ' : 'Save')}
+              </Button>
+            </DialogFooter>
           </DialogBody>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>إلغاء</Button>
-            <Button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
-              {saveMutation.isPending ? 'جاري الحفظ...' : 'حفظ'}
-            </Button>
-          </DialogFooter>
-        </DialogBody>
         </DialogContent>
       </Dialog>
     </ModuleShell>

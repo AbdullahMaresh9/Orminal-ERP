@@ -133,44 +133,45 @@ export function DocumentTemplatesModule() {
               {editing ? `تعديل: ${editing.name}` : 'قالب جديد'}
             </DialogTitle>
           </DialogHeader>
-          <DialogBody>          <DialogBody>          <div className="space-y-4 py-2 max-h-[70vh] overflow-y-auto scrollbar-thin">
-            <div className="space-y-1.5">
-              <Label htmlFor="tpl-name">اسم القالب</Label>
-              <Input id="tpl-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="فاتورة ضريبية مخصصة" />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <DialogBody>
+            <div className="space-y-4 py-2 max-h-[70vh] overflow-y-auto scrollbar-thin">
               <div className="space-y-1.5">
-                <Label className="flex items-center gap-1"><Code className="size-3.5" /> HTML</Label>
-                <Textarea
-                  value={form.html}
-                  onChange={(e) => setForm({ ...form, html: e.target.value })}
-                  rows={12}
-                  className="font-mono text-xs"
-                  dir="ltr"
-                />
+                <Label htmlFor="tpl-name">اسم القالب</Label>
+                <Input id="tpl-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="فاتورة ضريبية مخصصة" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="flex items-center gap-1"><Code className="size-3.5" /> HTML</Label>
+                  <Textarea
+                    value={form.html}
+                    onChange={(e) => setForm({ ...form, html: e.target.value })}
+                    rows={12}
+                    className="font-mono text-xs"
+                    dir="ltr"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="flex items-center gap-1"><Code className="size-3.5" /> CSS</Label>
+                  <Textarea
+                    value={form.css}
+                    onChange={(e) => setForm({ ...form, css: e.target.value })}
+                    rows={12}
+                    className="font-mono text-xs"
+                    dir="ltr"
+                  />
+                </div>
               </div>
               <div className="space-y-1.5">
-                <Label className="flex items-center gap-1"><Code className="size-3.5" /> CSS</Label>
-                <Textarea
-                  value={form.css}
-                  onChange={(e) => setForm({ ...form, css: e.target.value })}
-                  rows={12}
-                  className="font-mono text-xs"
-                  dir="ltr"
-                />
+                <Label>معاينة</Label>
+                <div className="rounded-lg border bg-white text-black overflow-hidden">
+                  <iframe
+                    title="preview"
+                    srcDoc={`<html dir="rtl"><head><style>${form.css}</style></head><body>${form.html}</body></html>`}
+                    className="w-full h-64 bg-white"
+                  />
+                </div>
               </div>
             </div>
-            <div className="space-y-1.5">
-              <Label>معاينة</Label>
-              <div className="rounded-lg border bg-white text-black overflow-hidden">
-                <iframe
-                  title="preview"
-                  srcDoc={`<html dir="rtl"><head><style>${form.css}</style></head><body>${form.html}</body></html>`}
-                  className="w-full h-64 bg-white"
-                />
-              </div>
-            </div>
-          </div>
           </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>{t('action.cancel')}</Button>
@@ -178,7 +179,6 @@ export function DocumentTemplatesModule() {
               <FileText className="size-4" /> {t('action.save')}
             </Button>
           </DialogFooter>
-        </DialogBody>
         </DialogContent>
       </Dialog>
     </ModuleShell>

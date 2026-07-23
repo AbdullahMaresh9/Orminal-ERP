@@ -489,7 +489,7 @@ export function ProfileModule() {
 
             {/* Activity */}
             <TabsContent value="activity">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-2">
                 <KpiCard title="عضو منذ" value={formatDate(profile.createdAt)} icon={<Calendar className="size-5" />} accent="blue" />
                 <KpiCard title="آخر دخول" value={profile.lastLoginAt ? formatDateTime(profile.lastLoginAt) : '—'} icon={<Clock className="size-5" />} accent="sky" />
                 <KpiCard title="إجمالي النشاطات" value={String(activity.length)} icon={<Activity className="size-5" />} accent="violet" />

@@ -292,7 +292,7 @@ export const DEFAULT_SETTINGS: SettingDef[] = [
   { key: 'appearance.dateCalendar', value: 'gregorian', category: 'appearance', label: 'نظام التاريخ', labelEn: 'Date Calendar', type: 'select', defaultValue: 'gregorian', options: ['gregorian', 'hijri'], sortOrder: 3 },
 ]
 
-// Seed default settings
+// Seed default settings and synchronize metadata
 export async function seedDefaultSettings() {
   for (const def of DEFAULT_SETTINGS) {
     const existing = await db.setting.findUnique({ where: { key: def.key } })
@@ -312,6 +312,30 @@ export async function seedDefaultSettings() {
           sortOrder: def.sortOrder ?? 0,
         },
       })
+    } else {
+      // Synchronize metadata if different or null
+      if (
+        existing.label !== def.label ||
+        existing.labelEn !== def.labelEn ||
+        existing.category !== def.category ||
+        existing.type !== def.type ||
+        existing.isSystem !== (def.isSystem ?? false) ||
+        existing.options !== (def.options ? JSON.stringify(def.options) : null)
+      ) {
+        await db.setting.update({
+          where: { key: def.key },
+          data: {
+            category: def.category,
+            label: def.label,
+            labelEn: def.labelEn,
+            type: def.type,
+            defaultValue: def.defaultValue,
+            options: def.options ? JSON.stringify(def.options) : null,
+            isSystem: def.isSystem ?? false,
+            sortOrder: def.sortOrder ?? 0,
+          },
+        })
+      }
     }
   }
 }

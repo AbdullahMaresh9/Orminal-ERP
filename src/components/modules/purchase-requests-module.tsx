@@ -336,7 +336,7 @@ export function PurchaseRequestsModule() {
         </Select>
       }
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
         <KpiCard title="إجمالي الطلبات" value={formatInt(stats.total)} icon={<ClipboardList className="size-5" />} accent="blue" />
         <KpiCard title="قيد المعالجة" value={formatInt(stats.pending)} icon={<Clock className="size-5" />} accent="amber" />
         <KpiCard title="معتمدة" value={formatInt(stats.approved)} icon={<CheckCircle2 className="size-5" />} accent="sky" />
@@ -509,13 +509,13 @@ export function PurchaseRequestsModule() {
           </div>
 
           </DialogBody>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>إلغاء</Button>
-            <Button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
-              {saveMutation.isPending ? 'جاري الحفظ...' : 'إنشاء وتقديم'}
-            </Button>
-          </DialogFooter>
-        </DialogBody>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>إلغاء</Button>
+              <Button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
+                {saveMutation.isPending ? 'جاري الحفظ...' : 'إنشاء وتقديم'}
+              </Button>
+            </DialogFooter>
+          </DialogBody>
         </DialogContent>
       </Dialog>
 
@@ -553,13 +553,13 @@ export function PurchaseRequestsModule() {
             )}
           </div>
           </DialogBody>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => { setConvertTarget(null); setConvertPartnerId('') }}>إلغاء</Button>
-            <Button type="button" disabled={actionMutation.isPending || !convertPartnerId} onClick={() => convertTarget && actionMutation.mutate({ req: convertTarget, action: 'convert', partnerId: convertPartnerId })}>
-              {actionMutation.isPending ? 'جاري التحويل...' : 'تحويل'}
-            </Button>
-          </DialogFooter>
-        </DialogBody>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => { setConvertTarget(null); setConvertPartnerId('') }}>إلغاء</Button>
+              <Button type="button" disabled={actionMutation.isPending || !convertPartnerId} onClick={() => convertTarget && actionMutation.mutate({ req: convertTarget, action: 'convert', partnerId: convertPartnerId })}>
+                {actionMutation.isPending ? 'جاري التحويل...' : 'تحويل'}
+              </Button>
+            </DialogFooter>
+          </DialogBody>
         </DialogContent>
       </Dialog>
     </ModuleShell>

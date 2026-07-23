@@ -4,6 +4,7 @@ import { useNav } from '@/stores/nav-store'
 import { useI18n } from '@/stores/i18n-store'
 import { useT } from '@/lib/i18n/use-t'
 import { useTheme } from 'next-themes'
+import { useSession, signOut } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -41,7 +42,11 @@ export function Topbar() {
   const { locale, setLocale } = useI18n()
   const { t } = useT()
   const { theme, setTheme } = useTheme()
+  const { data: session } = useSession()
   const mounted = useMounted()
+
+  const userName = session?.user?.nameAr ?? 'مدير النظام'
+  const userEmail = session?.user?.email ?? 'admin@ormenal.io'
 
   // Notifications
   const { data: notifData } = useQuery<{ data: any[] }>({
@@ -108,7 +113,7 @@ export function Topbar() {
           <DropdownMenuItem onClick={() => setActiveModule('sales-payments')}>سند قبض</DropdownMenuItem>
           <DropdownMenuItem onClick={() => setActiveModule('purchase-payments')}>سند صرف</DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => setActiveModule('clients')}>عميل جديد</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setActiveModule('customers')}>عميل جديد</DropdownMenuItem>
           <DropdownMenuItem onClick={() => setActiveModule('suppliers')}>مورد جديد</DropdownMenuItem>
           <DropdownMenuItem onClick={() => setActiveModule('products')}>منتج جديد</DropdownMenuItem>
         </DropdownMenuContent>
@@ -122,7 +127,7 @@ export function Topbar() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-40">
-          <DropdownMenuLabel>{t('appearance.language')}</DropdownMenuLabel>
+          <DropdownMenuLabel>{t('appearance.language.label')}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => setLocale('ar')} className="justify-between">
             العربية
@@ -146,8 +151,8 @@ export function Topbar() {
             )}
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-40">
-          <DropdownMenuLabel>{t('appearance.theme')}</DropdownMenuLabel>
+        <DropdownMenuContent align="center" className="w-40">
+          <DropdownMenuLabel>{t('appearance.theme.label')}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => setTheme('light')} className="justify-between">
             <span className="flex items-center gap-2"><Sun className="size-4" /> {t('appearance.theme.light')}</span>
@@ -216,16 +221,16 @@ export function Topbar() {
         <DropdownMenuTrigger asChild>
           <button className="flex items-center gap-2 rounded-full hover:bg-muted/60 p-1 pe-2 transition-colors" aria-label="حساب المستخدم">
             <span className="size-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold ring-2 ring-background">
-              {initials('مدير النظام')}
+              {initials(userName)}
             </span>
             <ChevronDown className="size-3.5 text-muted-foreground hidden sm:block" />
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuContent align="center" className="w-56">
           <DropdownMenuLabel>
             <div className="flex flex-col">
-              <span className="text-sm font-semibold">مدير النظام</span>
-              <span className="text-xs text-muted-foreground font-normal">admin@ormenal.io</span>
+              <span className="text-sm font-semibold">{userName}</span>
+              <span className="text-xs text-muted-foreground font-normal">{userEmail}</span>
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
@@ -238,7 +243,10 @@ export function Topbar() {
             {t('topbar.settings')}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem className="text-rose-600 focus:text-rose-600">
+          <DropdownMenuItem
+            className="text-rose-600 focus:text-rose-600"
+            onClick={() => signOut({ callbackUrl: '/login' })}
+          >
             <LogOut className="size-4 ms-2" />
             {t('topbar.logout')}
           </DropdownMenuItem>

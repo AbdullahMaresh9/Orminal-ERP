@@ -7,6 +7,7 @@ import { ModuleShell } from '@/components/erp/module-shell'
 import { KpiCard } from '@/components/erp/kpi-card'
 import { StatusBadge } from '@/components/erp/status-badge'
 import { useT } from '@/lib/i18n/use-t'
+import { cn } from '@/lib/utils'
 import { formatCurrency, formatDate, formatInt } from '@/lib/format'
 import { exportToCSV, printHTML } from '@/lib/export'
 import { Card } from '@/components/ui/card'
@@ -33,8 +34,8 @@ const CATEGORIES = [
   'دعاية وإعلان', 'مستلزمات مكتبية', 'رسوم بنكية', 'ضيافة', 'متفرقات',
 ]
 
-interface BankAccount { id: string; name: string; bankName: string }
-interface SafeItem { id: string; name: string; code: string }
+interface BankAccount { id: string; name: string; bankName: string; active?: boolean }
+interface SafeItem { id: string; name: string; code: string; active?: boolean }
 interface Expense {
   id: string
   code: string
@@ -66,7 +67,7 @@ const emptyForm = {
 }
 
 export function ExpensesModule() {
-  const { t } = useT()
+  const { t, locale, isRTL, dir } = useT()
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
   const [from, setFrom] = useState('')
@@ -264,7 +265,7 @@ export function ExpensesModule() {
   return (
     <ModuleShell
       title={t('module.expenses')}
-      description="تسجيل المصروفات التشغيلية وإصدار سندات الصرف تلقائياً"
+      description="تسجيل المصروفات وإصدار سندات الصرف "
       icon={<ReceiptText className="size-5" />}
       searchValue={search}
       onSearch={setSearch}
@@ -284,7 +285,7 @@ export function ExpensesModule() {
       }
     >
       {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
         {isLoading ? (
           Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />)
         ) : (
@@ -380,81 +381,232 @@ export function ExpensesModule() {
 
       {/* Add dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
-            <DialogTitle>تسجيل مصروف جديد</DialogTitle>
-            <DialogDescription>سيتم إنشاء قيد محاسبي تلقائي (مدين: مصروفات تشغيلية، دائن: نقدية/بنك) وتحديث رصيد الحساب.</DialogDescription>
+        <DialogContent className="max-w-2xl p-0 overflow-hidden bg-white dark:bg-slate-950 border-slate-250 dark:border-blue-400/30" dir={dir}>
+          <DialogHeader className="bg-gradient-to-r from-blue-50 to-[#E6F0FF] dark:bg-none dark:bg-blue-700/80 border-b border-blue-100 dark:border-blue-400/40 p-6 shrink-0 relative">
+            <div className="flex items-start gap-4">
+              <div className="size-12 rounded-xl bg-white dark:bg-blue-950/60 border border-blue-100 dark:border-blue-500/20 text-blue-600 dark:text-blue-300 flex items-center justify-center shadow-sm shadow-blue-100/40 dark:shadow-none shrink-0">
+                <ReceiptText className="size-6" />
+              </div>
+              <div className="space-y-1">
+                <DialogTitle className="text-xl font-bold tracking-tight text-blue-955 dark:text-white">
+                  {isRTL ? 'تسجيل مصروف جديد' : 'Record New Expense'}
+                </DialogTitle>
+
+              </div>
+            </div>
           </DialogHeader>
-          <DialogBody>          <DialogBody>          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label>التاريخ</Label>
-              <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>المبلغ *</Label>
-              <Input type="number" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })} />
-            </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label>المستفيد</Label>
-              <Input value={form.payee} onChange={(e) => setForm({ ...form, payee: e.target.value })} placeholder="اسم المستفيد أو الجهة" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>الفئة</Label>
-              <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
-                <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>المرجع</Label>
-              <Input value={form.reference} onChange={(e) => setForm({ ...form, reference: e.target.value })} placeholder="رقم الشيك أو المرجع" />
-            </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label>طريقة الصرف</Label>
-              <Select value={form.destination} onValueChange={(v) => setForm({ ...form, destination: v })}>
-                <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="safe">من خزينة (نقدية)</SelectItem>
-                  <SelectItem value="bank">من حساب بنكي</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {form.destination === 'bank' ? (
-              <div className="space-y-1.5 sm:col-span-2">
-                <Label>الحساب البنكي</Label>
-                <Select value={form.bankAccountId} onValueChange={(v) => setForm({ ...form, bankAccountId: v })}>
-                  <SelectTrigger className="w-full"><SelectValue placeholder="اختر البنك" /></SelectTrigger>
-                  <SelectContent>
-                    {banks.map((b) => <SelectItem key={b.id} value={b.id}>{b.bankName} — {b.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+
+          <DialogBody className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50 dark:bg-slate-900/50 scrollbar-thin">
+            <div className="space-y-6">
+              {/* General details group */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 border-b pb-2 border-slate-250/60 dark:border-blue-400/30/60">
+                  <ReceiptText className="size-4 text-blue-600 dark:text-blue-400" />
+                  <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200">
+                    {isRTL ? 'تفاصيل سند الصرف' : 'Expense Details'}
+                  </h3>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Date */}
+                  <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                    <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {isRTL ? 'التاريخ *' : 'Date *'}
+                    </Label>
+                    <div className="relative">
+                      <CalendarDays className="absolute inset-y-0 start-3 my-auto size-4 text-slate-400 pointer-events-none" />
+                      <Input
+                        type="date"
+                        value={form.date}
+                        onChange={(e) => setForm({ ...form, date: e.target.value })}
+                        dir={dir}
+                        className={cn("h-10 ps-9 border-slate-250 dark:border-blue-400/30 focus-visible:ring-blue-500 text-sm", isRTL ? "text-right" : "text-left")}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Amount */}
+                  <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                    <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {isRTL ? 'المبلغ المطلوب *' : 'Required Amount *'}
+                    </Label>
+                    <div className="relative">
+                      <Coins className="absolute inset-y-0 start-3 my-auto size-4 text-slate-400 pointer-events-none" />
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        value={form.amount || ''}
+                        onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })}
+                        dir={dir}
+                        className={cn("h-10 ps-9 border-slate-250 dark:border-blue-400/30 focus-visible:ring-blue-500 text-sm font-semibold", isRTL ? "text-right" : "text-left")}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Payee */}
+                  <div className={cn("space-y-1.5 sm:col-span-2", isRTL ? "text-right" : "text-left")}>
+                    <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {isRTL ? 'المستفيد / الجهة' : 'Payee / Recipient'}
+                    </Label>
+                    <Input
+                      value={form.payee}
+                      onChange={(e) => setForm({ ...form, payee: e.target.value })}
+                      placeholder={isRTL ? 'اسم المستفيد أو الجهة المستلمة للمبلغ' : 'Name of payee or recipient entity'}
+                      dir={dir}
+                      className={cn("h-10 border-slate-250 dark:border-blue-400/30 focus-visible:ring-blue-500 text-sm", isRTL ? "text-right" : "text-left")}
+                    />
+                  </div>
+
+                  {/* Category */}
+                  <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                    <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {isRTL ? 'فئة المصروف *' : 'Expense Category *'}
+                    </Label>
+                    <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
+                      <SelectTrigger dir={dir} className={cn("h-10 border-slate-250 dark:border-blue-400/30 focus:ring-blue-500 text-sm bg-white dark:bg-slate-950", isRTL ? "text-right" : "text-left")}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent dir={dir}>
+                        {CATEGORIES.map((c) => (
+                          <SelectItem key={c} value={c}>{c}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Reference */}
+                  <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                    <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {isRTL ? 'رقم المرجع / الشيك' : 'Reference / Check No.'}
+                    </Label>
+                    <Input
+                      value={form.reference}
+                      onChange={(e) => setForm({ ...form, reference: e.target.value })}
+                      placeholder={isRTL ? 'رقم الشيك أو المرجع السندي' : 'Check number or journal reference'}
+                      dir={dir}
+                      className={cn("h-10 border-slate-250 dark:border-blue-400/30 focus-visible:ring-blue-500 text-sm font-mono", isRTL ? "text-right" : "text-left")}
+                    />
+                  </div>
+                </div>
               </div>
-            ) : (
-              <div className="space-y-1.5 sm:col-span-2">
-                <Label>الخزينة</Label>
-                <Select value={form.safeId} onValueChange={(v) => setForm({ ...form, safeId: v })}>
-                  <SelectTrigger className="w-full"><SelectValue placeholder="اختر الخزينة" /></SelectTrigger>
-                  <SelectContent>
-                    {safes.map((s) => <SelectItem key={s.id} value={s.id}>{s.name} ({s.code})</SelectItem>)}
-                  </SelectContent>
-                </Select>
+
+              {/* Payment details group */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 border-b pb-2 border-slate-250/60 dark:border-blue-400/30/60">
+                  <Banknote className="size-4 text-blue-600 dark:text-blue-400" />
+                  <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200">
+                    {isRTL ? 'طريقة وحساب الدفع' : 'Payment Method & Account'}
+                  </h3>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Destination (Safe/Bank) */}
+                  <div className={cn("sm:col-span-2 space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                    <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {isRTL ? 'طريقة الصرف *' : 'Payment Method *'}
+                    </Label>
+                    <Select value={form.destination} onValueChange={(v) => setForm({ ...form, destination: v })}>
+                      <SelectTrigger dir={dir} className={cn("h-10 border-slate-250 dark:border-blue-400/30 focus:ring-blue-500 text-sm bg-white dark:bg-slate-950", isRTL ? "text-right" : "text-left")}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent dir={dir}>
+                        <SelectItem value="safe">
+                          <span className="flex items-center gap-2">
+                            <Wallet className="size-3.5 text-slate-500" />
+                            {isRTL ? 'صرف من خزينة (نقدية)' : 'Pay from Safe (Cash)'}
+                          </span>
+                        </SelectItem>
+                        <SelectItem value="bank">
+                          <span className="flex items-center gap-2">
+                            <Banknote className="size-3.5 text-slate-500" />
+                            {isRTL ? 'صرف من حساب بنكي' : 'Pay from Bank Account'}
+                          </span>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Dynamic payment target field */}
+                  {form.destination === 'bank' ? (
+                    <div className={cn("sm:col-span-2 space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                      <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        {isRTL ? 'الحساب البنكي *' : 'Bank Account *'}
+                      </Label>
+                      <Select value={form.bankAccountId} onValueChange={(v) => setForm({ ...form, bankAccountId: v })}>
+                        <SelectTrigger dir={dir} className={cn("h-10 border-slate-250 dark:border-blue-400/30 focus:ring-blue-500 text-sm bg-white dark:bg-slate-950", isRTL ? "text-right" : "text-left")}>
+                          <SelectValue placeholder={isRTL ? 'اختر البنك' : 'Select bank account'} />
+                        </SelectTrigger>
+                        <SelectContent dir={dir}>
+                          {banks.map((b) => (
+                            <SelectItem key={b.id} value={b.id}>
+                              {b.bankName} — {b.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ) : (
+                    <div className={cn("sm:col-span-2 space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                      <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        {isRTL ? 'الخزينة المستهدفة *' : 'Safe / Cashbox *'}
+                      </Label>
+                      <Select value={form.safeId} onValueChange={(v) => setForm({ ...form, safeId: v })}>
+                        <SelectTrigger dir={dir} className={cn("h-10 border-slate-250 dark:border-blue-400/30 focus:ring-blue-500 text-sm bg-white dark:bg-slate-950", isRTL ? "text-right" : "text-left")}>
+                          <SelectValue placeholder={isRTL ? 'اختر الخزينة' : 'Select safe'} />
+                        </SelectTrigger>
+                        <SelectContent dir={dir}>
+                          {safes.map((s) => (
+                            <SelectItem key={s.id} value={s.id}>
+                              {s.name} ({s.code})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
               </div>
-            )}
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label>ملاحظات</Label>
-              <Textarea rows={2} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} placeholder="وصف المصروف..." />
+
+              {/* Notes */}
+              <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  {isRTL ? 'تفاصيل وملاحظات إضافية' : 'Additional Notes / Description'}
+                </Label>
+                <Textarea
+                  rows={3}
+                  value={form.note}
+                  onChange={(e) => setForm({ ...form, note: e.target.value })}
+                  placeholder={isRTL ? 'أدخل وصفاً تفصيلياً للمصروف والغرض منه...' : 'Enter a detailed description of the expense purpose...'}
+                  dir={dir}
+                  className={cn("border-slate-250 dark:border-blue-400/30 focus-visible:ring-blue-500 text-sm resize-none", isRTL ? "text-right" : "text-left")}
+                />
+              </div>
             </div>
-          </div>
           </DialogBody>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>إلغاء</Button>
-            <Button onClick={submit} disabled={createMut.isPending}>
-              {createMut.isPending ? 'جاري الحفظ...' : 'تسجيل المصروف'}
-            </Button>
+
+          <DialogFooter className="bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-blue-400/30 p-4 shrink-0">
+            <div className="flex items-center justify-end gap-3 w-full">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setOpen(false)}
+                className="px-5 py-2.5 h-11 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
+              >
+                {isRTL ? 'إلغاء' : 'Cancel'}
+              </Button>
+              <Button
+                type="button"
+                onClick={submit}
+                disabled={createMut.isPending}
+                className="px-6 py-2.5 h-11 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transition-all"
+              >
+                {createMut.isPending
+                  ? (isRTL ? 'جاري الحفظ...' : 'Saving...')
+                  : (isRTL ? 'حفـظ واضافة' : 'Save & Add')}
+              </Button>
+            </div>
           </DialogFooter>
-        </DialogBody>
         </DialogContent>
       </Dialog>
     </ModuleShell>

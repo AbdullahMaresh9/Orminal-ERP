@@ -22,7 +22,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogBody,
 } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
@@ -71,7 +71,7 @@ const JOURNAL_TYPES = [
 ]
 
 export function JournalEntriesModule() {
-  const { t } = useT()
+  const { t, isRTL, dir } = useT()
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
   const [filterState, setFilterState] = useState('all')
@@ -327,7 +327,7 @@ export function JournalEntriesModule() {
         </Select>
       }
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
         <KpiCard title="إجمالي القيود" value={formatInt(total)} icon={<FileText className="size-5" />} accent="blue" />
         <KpiCard title="قيود مرحّلة" value={formatInt(stats.posted)} icon={<CheckCircle2 className="size-5" />} accent="sky" />
         <KpiCard title="قيود مسودة" value={formatInt(stats.drafts)} icon={<BookOpen className="size-5" />} accent="amber" />
@@ -404,50 +404,61 @@ export function JournalEntriesModule() {
 
       {/* Add Dialog with line editor */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>قيد محاسبي جديد</DialogTitle>
-            <DialogDescription>أضف بنود القيد وتأكد من توازن المدين والدائن</DialogDescription>
-          </DialogHeader>
-                              <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-              <div className="space-y-1.5 md:col-span-2">
-                <Label htmlFor="description">البيان</Label>
-                <Input id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="قيد محاسبي..." />
+        <DialogContent className="max-w-4xl p-0 overflow-hidden bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800" dir={dir}>
+          <DialogHeader className="bg-gradient-to-r from-blue-50 to-[#E6F0FF] dark:bg-none dark:bg-blue-700/80 border-b border-blue-100 dark:border-blue-600/40 p-6 shrink-0 relative">
+            <div className="flex items-start gap-4 text-start">
+              <div className="size-12 rounded-xl bg-white dark:bg-blue-950/60 border border-blue-100 dark:border-blue-500/20 text-blue-600 dark:text-blue-300 flex items-center justify-center shadow-sm shadow-blue-100/40 dark:shadow-none shrink-0">
+                <BookOpen className="size-6" />
               </div>
-              <div className="space-y-1.5">
-                <Label>نوع اليومية</Label>
+              <div className="space-y-1 flex-1">
+                <DialogTitle className="text-xl font-bold tracking-tight text-blue-950 dark:text-white">
+                  {isRTL ? 'قيد محاسبي جديد' : 'New Journal Entry'}
+                </DialogTitle>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <DialogBody className="p-6 space-y-6 overflow-y-auto max-h-[65vh] bg-slate-50/30 dark:bg-slate-900/10">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="space-y-1.5 md:col-span-2 text-start">
+                <Label htmlFor="description" className="text-xs font-semibold text-slate-600 dark:text-slate-400">{isRTL ? 'البيان' : 'Description'}</Label>
+                <Input id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder={isRTL ? 'قيد محاسبي...' : 'Journal entry...'} className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500" />
+              </div>
+              <div className="space-y-1.5 text-start">
+                <Label className="text-xs font-semibold text-slate-600 dark:text-slate-400">{isRTL ? 'نوع اليومية' : 'Journal Type'}</Label>
                 <Select value={journalType} onValueChange={setJournalType}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-10 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {JOURNAL_TYPES.map((j) => <SelectItem key={j.value} value={j.value}>{j.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="postingDate">تاريخ الترحيل</Label>
-                <Input id="postingDate" type="date" value={postingDate} onChange={(e) => setPostingDate(e.target.value)} />
+              <div className="space-y-1.5 text-start">
+                <Label htmlFor="postingDate" className="text-xs font-semibold text-slate-600 dark:text-slate-400">{isRTL ? 'تاريخ الترحيل' : 'Posting Date'}</Label>
+                <Input id="postingDate" type="date" value={postingDate} onChange={(e) => setPostingDate(e.target.value)} className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500" />
               </div>
             </div>
 
             {/* Lines table */}
-            <Card className="rounded-lg overflow-hidden">
+            <Card className="rounded-xl border border-slate-200 dark:border-slate-800/80 overflow-hidden shadow-sm">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-muted/50">
-                    <TableHead className="ps-3">الحساب</TableHead>
-                    <TableHead>البيان</TableHead>
-                    <TableHead className="text-end num-cell w-32">مدين</TableHead>
-                    <TableHead className="text-end num-cell w-32">دائن</TableHead>
+                  <TableRow className="bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-50 dark:hover:bg-slate-900/50">
+                    <TableHead className="ps-4 text-xs font-semibold text-slate-700 dark:text-slate-300 text-start">{isRTL ? 'الحساب' : 'Account'}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-700 dark:text-slate-300 text-start">{isRTL ? 'البيان' : 'Description'}</TableHead>
+                    <TableHead className="text-end num-cell w-36 text-xs font-semibold text-slate-700 dark:text-slate-300">{isRTL ? 'مدين' : 'Debit'}</TableHead>
+                    <TableHead className="text-end num-cell w-36 text-xs font-semibold text-slate-700 dark:text-slate-300">{isRTL ? 'دائن' : 'Credit'}</TableHead>
                     <TableHead className="w-12"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {lines.map((l) => (
-                    <TableRow key={l.key}>
-                      <TableCell className="ps-3">
+                    <TableRow key={l.key} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/30">
+                      <TableCell className="ps-4 py-2">
                         <Select value={l.accountCode} onValueChange={(v) => updateLine(l.key, 'accountCode', v)}>
-                          <SelectTrigger className="h-9 min-w-[200px]"><SelectValue placeholder="اختر الحساب" /></SelectTrigger>
+                          <SelectTrigger className="h-9 min-w-[200px] border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-xs">
+                            <SelectValue placeholder={isRTL ? 'اختر الحساب' : 'Select Account'} />
+                          </SelectTrigger>
                           <SelectContent>
                             {accounts.map((a) => (
                               <SelectItem key={a.id} value={a.code}>
@@ -457,17 +468,17 @@ export function JournalEntriesModule() {
                           </SelectContent>
                         </Select>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="py-2">
                         <Input
-                          className="h-9"
+                          className="h-9 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-xs"
                           value={l.description}
                           onChange={(e) => updateLine(l.key, 'description', e.target.value)}
-                          placeholder="وصف البند..."
+                          placeholder={isRTL ? 'وصف البند...' : 'Line description...'}
                         />
                       </TableCell>
-                      <TableCell className="text-end num-cell">
+                      <TableCell className="text-end num-cell py-2">
                         <Input
-                          className="h-9 text-end tabular-nums"
+                          className="h-9 text-end tabular-nums border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-xs"
                           type="number"
                           step="0.01"
                           dir="ltr"
@@ -476,9 +487,9 @@ export function JournalEntriesModule() {
                           placeholder="0.00"
                         />
                       </TableCell>
-                      <TableCell className="text-end num-cell">
+                      <TableCell className="text-end num-cell py-2">
                         <Input
-                          className="h-9 text-end tabular-nums"
+                          className="h-9 text-end tabular-nums border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-xs"
                           type="number"
                           step="0.01"
                           dir="ltr"
@@ -487,32 +498,32 @@ export function JournalEntriesModule() {
                           placeholder="0.00"
                         />
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="py-2 pe-3">
                         <Button
                           type="button"
                           size="icon"
                           variant="ghost"
-                          className="size-8 text-rose-500"
+                          className="size-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg"
                           onClick={() => removeLine(l.key)}
                         >
-                          <Trash2 className="size-3.5" />
+                          <Trash2 className="size-4" />
                         </Button>
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
-                <TableFooter>
+                <TableFooter className="bg-slate-50/50 dark:bg-slate-900/30 border-t border-slate-200 dark:border-slate-850">
                   <TableRow>
-                    <TableCell colSpan={2}>
-                      <Button type="button" size="sm" variant="outline" onClick={addLine} className="gap-1.5">
-                        <Plus className="size-3.5" /> إضافة بند
+                    <TableCell colSpan={2} className="ps-4 py-3">
+                      <Button type="button" size="sm" variant="outline" onClick={addLine} className="gap-1.5 h-8 border-slate-250 hover:bg-slate-100 dark:hover:bg-slate-800">
+                        <Plus className="size-3.5" /> {isRTL ? 'إضافة بند' : 'Add Item'}
                       </Button>
                     </TableCell>
-                    <TableCell className="text-end num-cell">
-                      <span className="num font-bold tabular-nums" dir="ltr">{formatCurrency(totalDebit)}</span>
+                    <TableCell className="text-end num-cell py-3">
+                      <span className="num font-bold text-sm text-slate-900 dark:text-white tabular-nums" dir="ltr">{formatCurrency(totalDebit)}</span>
                     </TableCell>
-                    <TableCell className="text-end num-cell">
-                      <span className="num font-bold tabular-nums" dir="ltr">{formatCurrency(totalCredit)}</span>
+                    <TableCell className="text-end num-cell py-3">
+                      <span className="num font-bold text-sm text-slate-900 dark:text-white tabular-nums" dir="ltr">{formatCurrency(totalCredit)}</span>
                     </TableCell>
                     <TableCell></TableCell>
                   </TableRow>
@@ -522,121 +533,137 @@ export function JournalEntriesModule() {
 
             {/* Balance indicator */}
             <div className={cn(
-              'flex items-center justify-between p-3 rounded-lg border',
+              'flex items-center justify-between p-4 rounded-xl border transition-colors',
               balanced
-                ? 'bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-900'
-                : 'bg-rose-50 border-rose-200 dark:bg-rose-950/30 dark:border-rose-900'
+                ? 'bg-blue-50/60 border-blue-200 dark:bg-blue-950/20 dark:border-blue-900/60'
+                : 'bg-rose-50/60 border-rose-200 dark:bg-rose-950/20 dark:border-rose-900/60'
             )}>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2.5">
                 {balanced ? (
-                  <CheckCircle2 className="size-5 text-blue-500" />
+                  <CheckCircle2 className="size-5 text-blue-600 dark:text-blue-400" />
                 ) : (
-                  <XCircle className="size-5 text-rose-500" />
+                  <XCircle className="size-5 text-rose-600 dark:text-rose-400" />
                 )}
-                <span className={cn('font-semibold text-sm', balanced ? 'text-blue-700 dark:text-blue-400' : 'text-rose-700 dark:text-rose-400')}>
-                  {balanced ? 'القيد متوازن' : `القيد غير متوازن — الفرق: ${formatCurrency(diff)}`}
+                <span className={cn('font-bold text-sm', balanced ? 'text-blue-900 dark:text-blue-300' : 'text-rose-900 dark:text-rose-300')}>
+                  {balanced ? (isRTL ? 'القيد متوازن' : 'Journal entry is balanced') : (isRTL ? `القيد غير متوازن — الفرق: ${formatCurrency(diff)}` : `Journal entry is not balanced — Diff: ${formatCurrency(diff)}`)}
                 </span>
               </div>
-              <div className="text-sm text-muted-foreground tabular-nums" dir="ltr">
-                الفرق: {formatCurrency(diff)}
+              <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 tabular-nums" dir="ltr">
+                {isRTL ? 'الفرق:' : 'Difference:'} {formatCurrency(diff)}
               </div>
             </div>
-          </div>
+          </DialogBody>
 
-          
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>إلغاء</Button>
+          <DialogFooter className="px-6 py-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-end gap-2 shrink-0">
+            <Button type="button" variant="outline" onClick={() => setAddOpen(false)} className="h-10 px-5 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-900 text-xs font-semibold">
+              {isRTL ? 'إلغاء' : 'Cancel'}
+            </Button>
             <Button
               type="button"
               variant="outline"
               disabled={!balanced || saveMutation.isPending}
               onClick={() => saveMutation.mutate('draft')}
+              className="h-10 px-5 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-900 text-xs font-semibold text-slate-750 dark:text-slate-300"
             >
-              حفظ كمسودة
+              {isRTL ? 'حفظ كمسودة' : 'Save as Draft'}
             </Button>
             <Button
               type="button"
               disabled={!balanced || saveMutation.isPending}
               onClick={() => saveMutation.mutate('posted')}
-              className="gap-1.5"
+              className="h-10 px-5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-xs font-semibold shadow-sm shadow-blue-100 dark:shadow-none gap-1.5"
             >
               <Send className="size-4" />
-              {saveMutation.isPending ? 'جاري الحفظ...' : 'حفظ وترحيل'}
+              {saveMutation.isPending ? (isRTL ? 'جاري الحفظ...' : 'Saving...') : (isRTL ? 'حفظ وترحيل' : 'Save & Post')}
             </Button>
           </DialogFooter>
-        
         </DialogContent>
       </Dialog>
 
       {/* View Dialog */}
       <Dialog open={viewOpen} onOpenChange={setViewOpen}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>تفاصيل القيد {viewing?.code}</DialogTitle>
-            <DialogDescription>{viewing?.description}</DialogDescription>
-          </DialogHeader>
-                              {viewing && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-3 gap-3 text-sm">
-                <div className="p-3 rounded-lg bg-muted/40">
-                  <p className="text-xs text-muted-foreground">التاريخ</p>
-                  <p className="font-semibold">{formatDate(viewing.postingDate)}</p>
-                </div>
-                <div className="p-3 rounded-lg bg-muted/40">
-                  <p className="text-xs text-muted-foreground">الحالة</p>
-                  <StatusBadge status={viewing.state} />
-                </div>
-                <div className="p-3 rounded-lg bg-muted/40">
-                  <p className="text-xs text-muted-foreground">نوع المرجع</p>
-                  <p className="font-semibold">{viewing.refType ?? 'يدوي'}</p>
-                </div>
+        <DialogContent className="max-w-3xl p-0 overflow-hidden bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800" dir={dir}>
+          <DialogHeader className="bg-gradient-to-r from-blue-50 to-[#E6F0FF] dark:bg-none dark:bg-blue-700/80 border-b border-blue-100 dark:border-blue-600/40 p-6 shrink-0 relative">
+            <div className="flex items-start gap-4 text-start">
+              <div className="size-12 rounded-xl bg-white dark:bg-blue-950/60 border border-blue-100 dark:border-blue-500/20 text-blue-600 dark:text-blue-300 flex items-center justify-center shadow-sm shadow-blue-100/40 dark:shadow-none shrink-0">
+                <FileText className="size-6" />
               </div>
-              <Card className="rounded-lg overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/50">
-                      <TableHead className="ps-3">الرمز</TableHead>
-                      <TableHead>الحساب</TableHead>
-                      <TableHead>البيان</TableHead>
-                      <TableHead className="text-end num-cell">مدين</TableHead>
-                      <TableHead className="text-end num-cell">دائن</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {viewing.lines.map((l, i) => (
-                      <TableRow key={l.id ?? i}>
-                        <TableCell className="ps-3 font-mono text-xs" dir="ltr">{l.account?.code ?? '—'}</TableCell>
-                        <TableCell className="font-medium">{l.account?.nameAr ?? '—'}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{l.description ?? '—'}</TableCell>
-                        <TableCell className="text-end num-cell"><span className="num tabular-nums" dir="ltr">{l.debit ? formatCurrency(l.debit) : '—'}</span></TableCell>
-                        <TableCell className="text-end num-cell"><span className="num tabular-nums" dir="ltr">{l.credit ? formatCurrency(l.credit) : '—'}</span></TableCell>
+              <div className="space-y-1 flex-1">
+                <DialogTitle className="text-xl font-bold tracking-tight text-blue-950 dark:text-white">
+                  {isRTL ? `تفاصيل القيد ${viewing?.code}` : `Journal Entry ${viewing?.code}`}
+                </DialogTitle>
+
+              </div>
+            </div>
+          </DialogHeader>
+
+          {viewing && (
+            <>
+              <DialogBody className="p-6 space-y-6 overflow-y-auto max-h-[65vh] bg-slate-50/30 dark:bg-slate-900/10">
+                <div className="grid grid-cols-3 gap-3 text-sm">
+                  <div className="p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 text-start">
+                    <p className="text-xs font-semibold text-slate-450 dark:text-slate-500 mb-0.5">{isRTL ? 'التاريخ' : 'Date'}</p>
+                    <p className="font-bold text-slate-800 dark:text-slate-200">{formatDate(viewing.postingDate)}</p>
+                  </div>
+                  <div className="p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 text-start">
+                    <p className="text-xs font-semibold text-slate-450 dark:text-slate-500 mb-1">{isRTL ? 'الحالة' : 'Status'}</p>
+                    <StatusBadge status={viewing.state} />
+                  </div>
+                  <div className="p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 text-start">
+                    <p className="text-xs font-semibold text-slate-450 dark:text-slate-500 mb-0.5">{isRTL ? 'نوع المرجع' : 'Reference Type'}</p>
+                    <p className="font-bold text-slate-800 dark:text-slate-200">{viewing.refType ?? (isRTL ? 'يدوي' : 'Manual')}</p>
+                  </div>
+                </div>
+
+                <Card className="rounded-xl border border-slate-200 dark:border-slate-800/80 overflow-hidden shadow-sm">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-50 dark:hover:bg-slate-900/50">
+                        <TableHead className="ps-4 text-xs font-semibold text-slate-700 dark:text-slate-300 text-start">{isRTL ? 'الرمز' : 'Code'}</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-700 dark:text-slate-300 text-start">{isRTL ? 'الحساب' : 'Account'}</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-700 dark:text-slate-300 text-start">{isRTL ? 'البيان' : 'Description'}</TableHead>
+                        <TableHead className="text-end num-cell text-xs font-semibold text-slate-700 dark:text-slate-300">{isRTL ? 'مدين' : 'Debit'}</TableHead>
+                        <TableHead className="text-end num-cell text-xs font-semibold text-slate-700 dark:text-slate-300">{isRTL ? 'دائن' : 'Credit'}</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                  <TableFooter>
-                    <TableRow>
-                      <TableCell colSpan={3} className="font-semibold">الإجمالي</TableCell>
-                      <TableCell className="text-end num-cell"><span className="num font-bold tabular-nums" dir="ltr">{formatCurrency(viewing.totalDebit)}</span></TableCell>
-                      <TableCell className="text-end num-cell"><span className="num font-bold tabular-nums" dir="ltr">{formatCurrency(viewing.totalCredit)}</span></TableCell>
-                    </TableRow>
-                  </TableFooter>
-                </Table>
-              </Card>
-              
-          <DialogFooter>
-                <Button variant="outline" onClick={() => handlePrint(viewing)} className="gap-1.5">
-                  <Printer className="size-4" /> طباعة
+                    </TableHeader>
+                    <TableBody>
+                      {viewing.lines.map((l, i) => (
+                        <TableRow key={l.id ?? i} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/30">
+                          <TableCell className="ps-4 font-mono text-xs py-3 text-start" dir="ltr">{l.account?.code ?? '—'}</TableCell>
+                          <TableCell className="font-semibold py-3 text-start">{l.account?.nameAr ?? '—'}</TableCell>
+                          <TableCell className="text-xs text-slate-500 dark:text-slate-400 py-3 text-start">{l.description ?? '—'}</TableCell>
+                          <TableCell className="text-end num-cell py-3"><span className="num tabular-nums" dir="ltr">{l.debit ? formatCurrency(l.debit) : '—'}</span></TableCell>
+                          <TableCell className="text-end num-cell py-3"><span className="num tabular-nums" dir="ltr">{l.credit ? formatCurrency(l.credit) : '—'}</span></TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                    <TableFooter className="bg-slate-50/50 dark:bg-slate-900/30 border-t border-slate-200 dark:border-slate-800">
+                      <TableRow>
+                        <TableCell colSpan={3} className="ps-4 font-bold text-slate-900 dark:text-white py-3 text-start">{isRTL ? 'الإجمالي' : 'Total'}</TableCell>
+                        <TableCell className="text-end num-cell py-3"><span className="num font-bold text-slate-900 dark:text-white tabular-nums" dir="ltr">{formatCurrency(viewing.totalDebit)}</span></TableCell>
+                        <TableCell className="text-end num-cell py-3"><span className="num font-bold text-slate-900 dark:text-white tabular-nums" dir="ltr">{formatCurrency(viewing.totalCredit)}</span></TableCell>
+                      </TableRow>
+                    </TableFooter>
+                  </Table>
+                </Card>
+              </DialogBody>
+
+              <DialogFooter className="px-6 py-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-end gap-2 shrink-0">
+                <Button variant="outline" onClick={() => handlePrint(viewing)} className="h-10 px-5 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-900 text-xs font-semibold text-slate-700 dark:text-slate-300 gap-1.5">
+                  <Printer className="size-4" /> {isRTL ? 'طباعة' : 'Print'}
                 </Button>
                 {viewing.state === 'draft' && (
-                  <Button onClick={() => postMutation.mutate(viewing.id)} disabled={postMutation.isPending} className="gap-1.5">
+                  <Button onClick={() => postMutation.mutate(viewing.id)} disabled={postMutation.isPending} className="h-10 px-5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-xs font-semibold shadow-sm shadow-blue-100 dark:shadow-none gap-1.5">
                     <Send className="size-4" />
-                    {postMutation.isPending ? 'جاري الترحيل...' : 'ترحيل القيد'}
+                    {postMutation.isPending ? (isRTL ? 'جاري الترحيل...' : 'Posting...') : (isRTL ? 'ترحيل القيد' : 'Post Entry')}
                   </Button>
                 )}
+                <Button variant="outline" onClick={() => setViewOpen(false)} className="h-10 px-5 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-900 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  {isRTL ? 'إغلاق' : 'Close'}
+                </Button>
               </DialogFooter>
-            </div>
+            </>
           )}
-        
         </DialogContent>
       </Dialog>
     </ModuleShell>

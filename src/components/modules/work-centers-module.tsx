@@ -34,7 +34,7 @@ interface WorkCenter {
 }
 
 export function WorkCentersModule() {
-  const { t } = useT()
+  const { t, isRTL, dir } = useT()
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -134,7 +134,7 @@ export function WorkCentersModule() {
       addLabel={t('action.add')}
       onExport={handleExport}
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
         <KpiCard title="إجمالي المراكز" value={formatInt(stats.total)} icon={<Factory className="size-5" />} accent="blue" />
         <KpiCard title="المراكز النشطة" value={formatInt(stats.active)} icon={<Cog className="size-5" />} accent="sky" />
         <KpiCard title="إجمالي السعة/ساعة" value={formatNumber(stats.totalCapacity, 0)} icon={<Gauge className="size-5" />} accent="amber" />
@@ -186,44 +186,63 @@ export function WorkCentersModule() {
       </Card>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
-            <DialogTitle>{editing ? 'تعديل مركز عمل' : 'إضافة مركز عمل جديد'}</DialogTitle>
-            <DialogDescription>أدخل بيانات مركز العمل</DialogDescription>
-          </DialogHeader>
-          <DialogBody>          <form onSubmit={(e) => { e.preventDefault(); handleSave(new FormData(e.currentTarget)) }}>
-            <div className="grid grid-cols-2 gap-4 p-1">
-              <div className="space-y-1.5">
-                <Label htmlFor="code">الرمز *</Label>
-                <Input id="code" name="code" defaultValue={editing?.code} placeholder="WC-001" required dir="ltr" />
+        <DialogContent className="max-w-xl p-0 overflow-hidden bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800" dir={dir}>
+          <DialogHeader className="bg-gradient-to-r rtl:bg-gradient-to-l from-blue-50 to-[#E6F0FF] dark:bg-none dark:bg-blue-700/80 border-b border-blue-100 dark:border-blue-600/40 p-6 shrink-0 relative">
+            <div className="flex items-start gap-4 text-start">
+              <div className="size-12 rounded-xl bg-white dark:bg-blue-950/60 border border-blue-100 dark:border-blue-500/20 text-blue-600 dark:text-blue-300 flex items-center justify-center shadow-sm shadow-blue-100/40 dark:shadow-none shrink-0">
+                <Factory className="size-6" />
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="nameAr">الاسم (عربي) *</Label>
-                <Input id="nameAr" name="nameAr" defaultValue={editing?.nameAr} required />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="nameEn">الاسم (إنجليزي)</Label>
-                <Input id="nameEn" name="nameEn" defaultValue={editing?.nameEn} dir="ltr" />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="capacityPerHour">السعة لكل ساعة</Label>
-                <Input id="capacityPerHour" name="capacityPerHour" type="number" step="0.01" defaultValue={editing?.capacityPerHour ?? 0} dir="ltr" />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="costPerHour">التكلفة لكل ساعة</Label>
-                <Input id="costPerHour" name="costPerHour" type="number" step="0.01" defaultValue={editing?.costPerHour ?? 0} dir="ltr" />
-              </div>
-              <div className="flex items-center gap-2 pt-6">
-                <Switch id="active" name="active" defaultChecked={editing?.active ?? true} />
-                <Label htmlFor="active">نشط</Label>
+              <div className="space-y-1 flex-1">
+                <DialogTitle className="text-xl font-bold tracking-tight text-blue-955 dark:text-white">
+                  {editing ? (isRTL ? 'تعديل مركز عمل' : 'Edit Work Center') : (isRTL ? 'إضافة مركز عمل جديد' : 'Add New Work Center')}
+                </DialogTitle>
+
               </div>
             </div>
-            <DialogFooter className="mt-4">
-              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>إلغاء</Button>
-              <Button type="submit" disabled={saveMutation.isPending}>{saveMutation.isPending ? 'جاري الحفظ...' : 'حفظ'}</Button>
-            </DialogFooter>
-          </form>
-        </DialogBody>
+          </DialogHeader>
+
+          <DialogBody className="p-6 space-y-6 bg-slate-50/30 dark:bg-slate-900/10">
+            <form onSubmit={(e) => { e.preventDefault(); handleSave(new FormData(e.currentTarget)) }} className="space-y-6">
+              <div className="grid grid-cols-2 gap-4 p-1">
+                <div className="space-y-1.5 text-start">
+                  <Label htmlFor="code" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'الرمز *' : 'Code *'}</Label>
+                  <Input id="code" name="code" defaultValue={editing?.code} placeholder="WC-001" required className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 font-mono" dir="ltr" />
+                </div>
+                <div className="space-y-1.5 text-start">
+                  <Label htmlFor="nameAr" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'الاسم (عربي) *' : 'Name (Arabic) *'}</Label>
+                  <Input id="nameAr" name="nameAr" defaultValue={editing?.nameAr} required placeholder={isRTL ? 'مركز عمل...' : 'e.g. Work Center...'} className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500" />
+                </div>
+                <div className="space-y-1.5 text-start col-span-2">
+                  <Label htmlFor="nameEn" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'الاسم (إنجليزي)' : 'Name (English)'}</Label>
+                  <Input id="nameEn" name="nameEn" defaultValue={editing?.nameEn} placeholder="e.g. Work Center..." className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500" dir="ltr" />
+                </div>
+                <div className="space-y-1.5 text-start">
+                  <Label htmlFor="capacityPerHour" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'السعة لكل ساعة' : 'Capacity Per Hour'}</Label>
+                  <Input id="capacityPerHour" name="capacityPerHour" type="number" step="0.01" defaultValue={editing?.capacityPerHour ?? 0} className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-end font-mono" dir="ltr" />
+                </div>
+                <div className="space-y-1.5 text-start">
+                  <Label htmlFor="costPerHour" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'التكلفة لكل ساعة' : 'Cost Per Hour'}</Label>
+                  <Input id="costPerHour" name="costPerHour" type="number" step="0.01" defaultValue={editing?.costPerHour ?? 0} className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-end font-mono" dir="ltr" />
+                </div>
+                <div className="col-span-2 flex items-center gap-3 p-3.5 bg-blue-50/40 dark:bg-blue-950/20 border border-blue-100/50 dark:border-blue-900/30 rounded-xl mt-2">
+                  <Switch id="active" name="active" defaultChecked={editing?.active ?? true} className="data-[state=checked]:bg-blue-600 shrink-0" />
+                  <div className="space-y-0.5 flex-1 text-start">
+                    <Label htmlFor="active" className="text-sm font-bold text-blue-955 dark:text-blue-200 cursor-pointer">{isRTL ? 'نشط' : 'Active'}</Label>
+                    <p className="text-xs text-blue-750/70 dark:text-blue-300/60 leading-normal">{isRTL ? 'تفعيل أو تعطيل مركز العمل للتصنيع والتشغيل' : 'Enable or disable this work center for manufacturing routing steps.'}</p>
+                  </div>
+                </div>
+              </div>
+
+              <DialogFooter className="px-0 pt-4 bg-transparent border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-end gap-2 shrink-0">
+                <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} className="h-10 px-5 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-900 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  {isRTL ? 'إلغاء' : 'Cancel'}
+                </Button>
+                <Button type="submit" disabled={saveMutation.isPending} className="h-10 px-5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-xs font-semibold shadow-sm shadow-blue-100 dark:shadow-none">
+                  {saveMutation.isPending ? (isRTL ? 'جاري الحفظ...' : 'Saving...') : (isRTL ? 'حفظ' : 'Save')}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogBody>
         </DialogContent>
       </Dialog>
     </ModuleShell>

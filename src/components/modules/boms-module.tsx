@@ -58,7 +58,7 @@ interface ComponentDraft {
 }
 
 export function BomsModule() {
-  const { t } = useT()
+  const { t, isRTL, dir } = useT()
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -120,11 +120,11 @@ export function BomsModule() {
     setComponents(
       (b.components ?? []).length > 0
         ? (b.components ?? []).map((c, i) => ({
-            key: String(i + 1),
-            productId: c.productId,
-            quantity: String(c.quantity),
-            scrapPercent: String(c.scrapPercent),
-          }))
+          key: String(i + 1),
+          productId: c.productId,
+          quantity: String(c.quantity),
+          scrapPercent: String(c.scrapPercent),
+        }))
         : [{ key: '1', productId: '', quantity: '1', scrapPercent: '0' }]
     )
     setDialogOpen(true)
@@ -148,7 +148,10 @@ export function BomsModule() {
       }
       const url = editing ? `/api/erp/boms/${editing.id}` : '/api/erp/boms'
       const method = editing ? 'PUT' : 'POST'
-      const r = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+      const r = await fetch(url, {
+        method, headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
       if (!r.ok) {
         const err = await r.json().catch(() => ({}))
         throw new Error(err?.error?.message ?? 'فشل الحفظ')
@@ -160,7 +163,6 @@ export function BomsModule() {
       qc.invalidateQueries({ queryKey: ['boms'] })
       setDialogOpen(false)
       resetForm()
-      setEditing(null)
     },
     onError: (e: any) => toast.error(e.message || 'حدث خطأ'),
   })
@@ -178,7 +180,7 @@ export function BomsModule() {
       toast.success('تم اعتماد قائمة التركيب')
       qc.invalidateQueries({ queryKey: ['boms'] })
     },
-    onError: () => toast.error('حدث خطأ'),
+    onError: (e: any) => toast.error(e.message || 'حدث خطأ'),
   })
 
   const deleteMutation = useMutation({
@@ -191,31 +193,8 @@ export function BomsModule() {
       toast.success('تم الحذف بنجاح')
       qc.invalidateQueries({ queryKey: ['boms'] })
     },
-    onError: () => toast.error('حدث خطأ'),
+    onError: (e: any) => toast.error(e.message || 'حدث خطأ'),
   })
-
-  const updateComponent = (key: string, field: keyof ComponentDraft, value: string) => {
-    setComponents((prev) => prev.map((c) => c.key === key ? { ...c, [field]: value } : c))
-  }
-  const addComponent = () => setComponents((p) => [...p, { key: String(Date.now()), productId: '', quantity: '1', scrapPercent: '0' }])
-  const removeComponent = (key: string) => {
-    if (components.length <= 1) { toast.error('يجب وجود بند واحد على الأقل'); return }
-    setComponents((p) => p.filter((c) => c.key !== key))
-  }
-
-  const handleExport = () => {
-    const rows = items.map((b) => ({
-      'الرمز': b.code,
-      'الاسم': b.nameAr,
-      'المنتج': b.product?.nameAr ?? '',
-      'الكمية': b.quantity,
-      'الإصدار': b.version,
-      'الحالة': b.status,
-      'البنود': b.components?.length ?? 0,
-    }))
-    exportToCSV('boms', rows)
-    toast.success('تم تصدير الملف')
-  }
 
   const handlePrint = (b: Bom) => {
     const html = `
@@ -225,9 +204,9 @@ export function BomsModule() {
           <div class="info"><h2>أورمنال</h2><p>نظام إدارة موارد المؤسسات ERP</p></div>
         </div>
         <div class="doc-meta">
-          <div class="type">قائمة التركيب</div>
+          <div class="type">قائمة تركيب BOM</div>
           <div class="code">${b.code}</div>
-          <div class="date">إصدار ${b.version}</div>
+          <div class="date">النسخة: ${b.version}</div>
         </div>
       </div>
       <div class="party">
@@ -236,32 +215,60 @@ export function BomsModule() {
         <div class="sub">SKU: ${b.product?.sku ?? ''} · الكمية الأساسية: ${b.quantity}</div>
       </div>
       <table>
-        <thead><tr><th>SKU</th><th>المكوّن</th><th>الكمية</th><th>الهدر %</th></tr></thead>
+        <thead><tr><th>المكوّن</th><th>SKU</th><th>الكمية المطلوبة</th><th>الهدر %</th></tr></thead>
         <tbody>
           ${(b.components ?? []).map((c) => `
             <tr>
-              <td>${c.product?.sku ?? ''}</td>
-              <td>${c.product?.nameAr ?? ''}</td>
+              <td>${c.product?.nameAr ?? '—'}</td>
+              <td>${c.product?.sku ?? '—'}</td>
               <td>${c.quantity}</td>
               <td>${c.scrapPercent}%</td>
             </tr>
           `).join('')}
         </tbody>
       </table>
-      <div class="notes">الحالة: ${b.status === 'approved' ? 'معتمدة' : 'مسودة'} · ${b.active ? 'نشطة' : 'غير نشطة'}</div>
       <div class="signatures">
-        <div class="sig"><div class="line"></div><div class="label">المُعدّ</div></div>
-        <div class="sig"><div class="line"></div><div class="label">المُراجِع</div></div>
-        <div class="sig"><div class="line"></div><div class="label">المُعتمِد</div></div>
+        <div class="sig"><div class="line"></div><div class="label">المعدّ</div></div>
+        <div class="sig"><div class="line"></div><div class="label">الاعتماد</div></div>
       </div>
     `
     printHTML(html, `قائمة تركيب ${b.code}`)
   }
 
+  const addComponent = () => {
+    setComponents([...components, { key: String(Date.now()), productId: '', quantity: '1', scrapPercent: '0' }])
+  }
+
+  const updateComponent = (key: string, field: keyof ComponentDraft, value: string) => {
+    setComponents(components.map((c) => (c.key === key ? { ...c, [field]: value } : c)))
+  }
+
+  const removeComponent = (key: string) => {
+    if (components.length <= 1) {
+      toast.error('يجب أن تحتوي قائمة التركيب على مكوّن واحد على الأقل')
+      return
+    }
+    setComponents(components.filter((c) => c.key !== key))
+  }
+
+  const handleExport = () => {
+    const rows = items.map((b) => ({
+      'الرمز': b.code,
+      'الاسم': b.nameAr,
+      'المنتج': b.product?.nameAr ?? '',
+      'الكمية الأساسية': b.quantity,
+      'الإصدار': b.version,
+      'المكونات': b.components?.length ?? 0,
+      'الحالة': b.status,
+    }))
+    exportToCSV('boms', rows)
+    toast.success('تم تصدير الملف')
+  }
+
   return (
     <ModuleShell
       title={t('module.boms')}
-      description="إدارة قوائم التركيب (BOM) للمواد المكوّنة والمنتج النهائي"
+      description="إدارة قوائم تركيب المواد وهياكل المنتجات (BOM)"
       icon={<ClipboardList className="size-5" />}
       searchValue={search}
       onSearch={setSearch}
@@ -270,11 +277,11 @@ export function BomsModule() {
       addLabel={t('action.add')}
       onExport={handleExport}
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
         <KpiCard title="إجمالي القوائم" value={formatInt(stats.total)} icon={<ClipboardList className="size-5" />} accent="blue" />
-        <KpiCard title="معتمدة" value={formatInt(stats.approved)} icon={<FileCheck className="size-5" />} accent="sky" />
-        <KpiCard title="نشطة" value={formatInt(stats.active)} icon={<CheckCircle2 className="size-5" />} accent="amber" />
-        <KpiCard title="منتجات مغطّاة" value={formatInt(stats.byProduct)} icon={<Package className="size-5" />} accent="violet" />
+        <KpiCard title="قوائم معتمدة" value={formatInt(stats.approved)} icon={<FileCheck className="size-5" />} accent="sky" />
+        <KpiCard title="منتجات نشطة" value={formatInt(stats.active)} icon={<Package className="size-5" />} accent="amber" />
+        <KpiCard title="تغطية المنتجات" value={formatInt(stats.byProduct)} icon={<Layers className="size-5" />} accent="violet" />
       </div>
 
       <Card className="rounded-xl overflow-hidden">
@@ -284,10 +291,10 @@ export function BomsModule() {
               <TableRow className="bg-muted/50">
                 <TableHead className="ps-4">الرمز</TableHead>
                 <TableHead>الاسم</TableHead>
-                <TableHead>المنتج</TableHead>
-                <TableHead className="text-end num-cell">الكمية</TableHead>
+                <TableHead>المنتج النهائي</TableHead>
+                <TableHead className="text-end num-cell">الكمية الأساسية</TableHead>
                 <TableHead className="text-end num-cell">الإصدار</TableHead>
-                <TableHead className="text-end num-cell">البنود</TableHead>
+                <TableHead className="text-end num-cell">عدد المكونات</TableHead>
                 <TableHead>الحالة</TableHead>
                 <TableHead className="text-end">إجراءات</TableHead>
               </TableRow>
@@ -337,99 +344,119 @@ export function BomsModule() {
       </Card>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>{editing ? 'تعديل قائمة تركيب' : 'إضافة قائمة تركيب جديدة'}</DialogTitle>
-            <DialogDescription>أدخل المنتج النهائي والمكوّنات</DialogDescription>
-          </DialogHeader>
-          <DialogBody>          <DialogBody>          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className="space-y-1.5 md:col-span-1">
-                <Label>المنتج النهائي *</Label>
-                <Select value={productId} onValueChange={setProductId}>
-                  <SelectTrigger><SelectValue placeholder="اختر المنتج" /></SelectTrigger>
-                  <SelectContent>
-                    {products.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        <span dir="ltr" className="font-mono text-xs">{p.sku}</span> — {p.nameAr}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800" dir={dir}>
+          <DialogHeader className="bg-gradient-to-r rtl:bg-gradient-to-l from-blue-50 to-[#E6F0FF] dark:bg-none dark:bg-blue-700/80 border-b border-blue-100 dark:border-blue-600/40 p-6 shrink-0 relative">
+            <div className="flex items-start gap-4 text-start">
+              <div className="size-12 rounded-xl bg-white dark:bg-blue-950/60 border border-blue-100 dark:border-blue-500/20 text-blue-600 dark:text-blue-300 flex items-center justify-center shadow-sm shadow-blue-100/40 dark:shadow-none shrink-0">
+                <ClipboardList className="size-6" />
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="nameAr">الاسم (عربي) *</Label>
-                <Input id="nameAr" value={nameAr} onChange={(e) => setNameAr(e.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="nameEn">الاسم (إنجليزي)</Label>
-                <Input id="nameEn" value={nameEn} onChange={(e) => setNameEn(e.target.value)} dir="ltr" />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="quantity">الكمية الأساسية</Label>
-                <Input id="quantity" type="number" step="0.01" value={quantity} onChange={(e) => setQuantity(e.target.value)} dir="ltr" />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="version">الإصدار</Label>
-                <Input id="version" type="number" value={version} onChange={(e) => setVersion(e.target.value)} dir="ltr" />
+              <div className="space-y-1 flex-1">
+                <DialogTitle className="text-xl font-bold tracking-tight text-blue-955 dark:text-white">
+                  {editing ? (isRTL ? 'تعديل قائمة تركيب' : 'Edit Bill of Materials') : (isRTL ? 'إضافة قائمة تركيب جديد ' : 'Add New Bill of Materials')}
+                </DialogTitle>
+
               </div>
             </div>
+          </DialogHeader>
 
-            <Card className="rounded-lg overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50">
-                    <TableHead className="ps-3">المكوّن</TableHead>
-                    <TableHead className="text-end num-cell w-28">الكمية</TableHead>
-                    <TableHead className="text-end num-cell w-24">الهدر %</TableHead>
-                    <TableHead className="w-12"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {components.map((c) => (
-                    <TableRow key={c.key}>
-                      <TableCell className="ps-3">
-                        <Select value={c.productId} onValueChange={(v) => updateComponent(c.key, 'productId', v)}>
-                          <SelectTrigger className="h-9 min-w-[260px]"><SelectValue placeholder="اختر المكوّن" /></SelectTrigger>
-                          <SelectContent>
-                            {products.map((p) => (
-                              <SelectItem key={p.id} value={p.id}>
-                                <span dir="ltr" className="font-mono text-xs">{p.sku}</span> — {p.nameAr}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                      <TableCell className="text-end num-cell">
-                        <Input className="h-9 text-end tabular-nums" type="number" step="0.01" dir="ltr" value={c.quantity} onChange={(e) => updateComponent(c.key, 'quantity', e.target.value)} />
-                      </TableCell>
-                      <TableCell className="text-end num-cell">
-                        <Input className="h-9 text-end tabular-nums" type="number" step="0.01" dir="ltr" value={c.scrapPercent} onChange={(e) => updateComponent(c.key, 'scrapPercent', e.target.value)} />
-                      </TableCell>
-                      <TableCell>
-                        <Button type="button" size="icon" variant="ghost" className="size-8 text-rose-500" onClick={() => removeComponent(c.key)}>
-                          <Trash2 className="size-3.5" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Card>
+          <DialogBody className="p-6 space-y-6 bg-slate-50/30 dark:bg-slate-900/10 max-h-[60vh] overflow-y-auto">
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-1.5 md:col-span-1 text-start">
+                  <Label className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'المنتج النهائي *' : 'Final Product *'}</Label>
+                  <Select value={productId} onValueChange={setProductId}>
+                    <SelectTrigger className="h-10 border-slate-200 dark:border-slate-800 focus:ring-blue-500"><SelectValue placeholder={isRTL ? 'اختر المنتج النهائي' : 'Select final product'} /></SelectTrigger>
+                    <SelectContent>
+                      {products.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          <span dir="ltr" className="font-mono text-xs">{p.sku}</span> — {p.nameAr}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5 text-start">
+                  <Label htmlFor="nameAr" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'الاسم (عربي) *' : 'Name (Arabic) *'}</Label>
+                  <Input id="nameAr" value={nameAr} onChange={(e) => setNameAr(e.target.value)} placeholder={isRTL ? 'قائمة تركيب منتج...' : 'e.g. Product BOM...'} className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500" />
+                </div>
+                <div className="space-y-1.5 text-start">
+                  <Label htmlFor="nameEn" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'الاسم (إنجليزي)' : 'Name (English)'}</Label>
+                  <Input id="nameEn" value={nameEn} onChange={(e) => setNameEn(e.target.value)} placeholder="e.g. Product BOM..." className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500" dir="ltr" />
+                </div>
+                <div className="space-y-1.5 text-start">
+                  <Label htmlFor="quantity" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'الكمية الأساسية' : 'Base Quantity'}</Label>
+                  <Input id="quantity" type="number" step="0.01" value={quantity} onChange={(e) => setQuantity(e.target.value)} className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-end font-mono" dir="ltr" />
+                </div>
+                <div className="space-y-1.5 text-start">
+                  <Label htmlFor="version" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'الإصدار' : 'Version'}</Label>
+                  <Input id="version" type="number" value={version} onChange={(e) => setVersion(e.target.value)} className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-end font-mono" dir="ltr" />
+                </div>
+              </div>
 
-            <Button type="button" size="sm" variant="outline" onClick={addComponent} className="gap-1.5">
-              <Plus className="size-3.5" /> إضافة مكوّن
-            </Button>
-          </div>
+              <div className="space-y-2 mt-4">
+                <Label className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'المكوّنات والمواد الخام' : 'Components & Raw Materials'}</Label>
+                <Card className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm">
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800/80">
+                          <TableHead className="text-start font-semibold text-xs text-slate-500 dark:text-slate-400 py-3 ps-4">{isRTL ? 'المكوّن' : 'Component'}</TableHead>
+                          <TableHead className="text-end font-semibold text-xs text-slate-500 dark:text-slate-400 py-3 w-32">{isRTL ? 'الكمية' : 'Quantity'}</TableHead>
+                          <TableHead className="text-end font-semibold text-xs text-slate-500 dark:text-slate-400 py-3 w-28">{isRTL ? 'الهدر %' : 'Scrap %'}</TableHead>
+                          <TableHead className="py-3 w-12"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {components.map((c) => (
+                          <TableRow key={c.key} className="border-b border-slate-100 dark:border-slate-850 hover:bg-slate-50/50 dark:hover:bg-slate-900/20">
+                            <TableCell className="py-2.5 ps-4 text-start">
+                              <Select value={c.productId} onValueChange={(v) => updateComponent(c.key, 'productId', v)}>
+                                <SelectTrigger className="h-10 border-slate-200 dark:border-slate-800 focus:ring-blue-500 w-full min-w-[240px]">
+                                  <SelectValue placeholder={isRTL ? 'اختر المكوّن' : 'Select component'} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {products.map((p) => (
+                                    <SelectItem key={p.id} value={p.id}>
+                                      <span dir="ltr" className="font-mono text-xs">{p.sku}</span> — {p.nameAr}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
+                            <TableCell className="py-2.5">
+                              <Input className="h-10 border-slate-200 dark:border-slate-800 focus:ring-blue-500 text-end font-mono tabular-nums" type="number" step="0.01" dir="ltr" value={c.quantity} onChange={(e) => updateComponent(c.key, 'quantity', e.target.value)} />
+                            </TableCell>
+                            <TableCell className="py-2.5">
+                              <Input className="h-10 border-slate-200 dark:border-slate-800 focus:ring-blue-500 text-end font-mono tabular-nums" type="number" step="0.01" dir="ltr" value={c.scrapPercent} onChange={(e) => updateComponent(c.key, 'scrapPercent', e.target.value)} />
+                            </TableCell>
+                            <TableCell className="py-2.5 text-center">
+                              <Button type="button" size="icon" variant="ghost" className="size-9 text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg" onClick={() => removeComponent(c.key)}>
+                                <Trash2 className="size-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </Card>
+              </div>
 
+              <Button type="button" size="sm" variant="outline" onClick={addComponent} className="h-9 px-4 border-slate-200 dark:border-slate-850 hover:bg-slate-100 dark:hover:bg-slate-900 text-xs font-semibold gap-1.5 mt-1">
+                <Plus className="size-4 text-blue-600" />
+                {isRTL ? 'إضافة مكوّن' : 'Add Component'}
+              </Button>
+            </div>
           </DialogBody>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>إلغاء</Button>
-            <Button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
-              {saveMutation.isPending ? 'جاري الحفظ...' : 'حفظ'}
+
+          <DialogFooter className="px-6 py-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-end gap-2 shrink-0">
+            <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} className="h-10 px-5 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-900 text-xs font-semibold text-slate-700 dark:text-slate-300">
+              {isRTL ? 'إلغاء' : 'Cancel'}
+            </Button>
+            <Button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()} className="h-10 px-5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-xs font-semibold shadow-sm shadow-blue-100 dark:shadow-none">
+              {saveMutation.isPending ? (isRTL ? 'جاري الحفظ...' : 'Saving...') : (isRTL ? 'حفظ' : 'Save')}
             </Button>
           </DialogFooter>
-        </DialogBody>
         </DialogContent>
       </Dialog>
     </ModuleShell>

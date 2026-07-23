@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ModuleShell } from '@/components/erp/module-shell'
 import { KpiCard } from '@/components/erp/kpi-card'
@@ -52,6 +52,25 @@ export function DepartmentsModule() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<Department | null>(null)
   const [draft, setDraft] = useState<Draft>({ code: '', nameAr: '', nameEn: '', parentId: '', active: true })
+  const [dir, setDir] = useState<'rtl' | 'ltr'>('rtl')
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const updateDir = () => {
+        const docDir = document.documentElement.dir || 'rtl'
+        setDir(docDir as 'rtl' | 'ltr')
+      }
+      updateDir()
+      const observer = new MutationObserver(updateDir)
+      observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['dir'],
+      })
+      return () => observer.disconnect()
+    }
+  }, [])
+
+  const isRTL = dir === 'rtl'
 
   const { data, isLoading } = useQuery<{ data: Department[]; meta: any }>({
     queryKey: ['departments', search],
@@ -183,7 +202,7 @@ export function DepartmentsModule() {
       addLabel={t('action.add')}
       onExport={handleExport}
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
         <KpiCard title="إجمالي الأقسام" value={formatInt(stats.total)} icon={<Building2 className="size-5" />} accent="blue" />
         <KpiCard title="أقسام رئيسية" value={formatInt(stats.root)} icon={<Network className="size-5" />} accent="sky" />
         <KpiCard title="نشطة" value={formatInt(stats.active)} icon={<CheckCircle2 className="size-5" />} accent="amber" />
@@ -244,31 +263,43 @@ export function DepartmentsModule() {
       </Card>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
-            <DialogTitle>{editing ? 'تعديل قسم' : 'إضافة قسم جديد'}</DialogTitle>
-            <DialogDescription>أدخل بيانات القسم</DialogDescription>
+        <DialogContent className="max-w-xl p-0 overflow-hidden bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800" dir={dir}>
+          <DialogHeader className="bg-gradient-to-r rtl:bg-gradient-to-l from-blue-50 to-[#E6F0FF] dark:bg-none dark:bg-blue-700/80 border-b border-blue-100 dark:border-blue-600/40 p-6 shrink-0 relative">
+            <div className="flex items-start gap-4 text-start">
+              <div className="size-12 rounded-xl bg-white dark:bg-blue-950/60 border border-blue-100 dark:border-blue-500/20 text-blue-600 dark:text-blue-300 flex items-center justify-center shadow-sm shadow-blue-100/40 dark:shadow-none shrink-0">
+                <Building2 className="size-6" />
+              </div>
+              <div className="space-y-1 flex-1">
+                <DialogTitle className="text-xl font-bold tracking-tight text-blue-955 dark:text-white">
+                  {editing ? (isRTL ? 'تعديل بيانات القسم' : 'Edit Department Details') : (isRTL ? 'إضافة قسم جديد' : 'Add New Department')}
+                </DialogTitle>
+
+              </div>
+            </div>
           </DialogHeader>
-          <DialogBody>          <DialogBody>          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="code">الرمز *</Label>
-                <Input id="code" value={draft.code} onChange={(e) => setDraft({ ...draft, code: e.target.value })} dir="ltr" required />
+
+          <DialogBody className="p-6 space-y-6 bg-slate-50/30 dark:bg-slate-900/10">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-1">
+              <div className="space-y-1.5 text-start">
+                <Label htmlFor="code" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'الرمز *' : 'Code *'}</Label>
+                <Input id="code" value={draft.code} onChange={(e) => setDraft({ ...draft, code: e.target.value })} required placeholder={isRTL ? 'مثال: HR...' : 'e.g. HR...'} className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 font-mono text-start" dir="ltr" />
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="nameAr">الاسم (عربي) *</Label>
-                <Input id="nameAr" value={draft.nameAr} onChange={(e) => setDraft({ ...draft, nameAr: e.target.value })} required />
+              <div className="space-y-1.5 text-start">
+                <Label htmlFor="nameAr" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'الاسم (عربي) *' : 'Name (Arabic) *'}</Label>
+                <Input id="nameAr" value={draft.nameAr} onChange={(e) => setDraft({ ...draft, nameAr: e.target.value })} required placeholder={isRTL ? 'مثال: الموارد البشرية...' : 'e.g. Human Resources...'} className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500" />
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="nameEn">الاسم (إنجليزي)</Label>
-                <Input id="nameEn" value={draft.nameEn} onChange={(e) => setDraft({ ...draft, nameEn: e.target.value })} dir="ltr" />
+              <div className="space-y-1.5 text-start">
+                <Label htmlFor="nameEn" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'الاسم (إنجليزي)' : 'Name (English)'}</Label>
+                <Input id="nameEn" value={draft.nameEn} onChange={(e) => setDraft({ ...draft, nameEn: e.target.value })} placeholder="e.g. Human Resources..." className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-start" dir="ltr" />
               </div>
-              <div className="space-y-1.5">
-                <Label>القسم الأب</Label>
+              <div className="space-y-1.5 text-start">
+                <Label htmlFor="parent" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'القسم الأب' : 'Parent Department'}</Label>
                 <Select value={draft.parentId} onValueChange={(v) => setDraft({ ...draft, parentId: v === '__none__' ? '' : v })}>
-                  <SelectTrigger><SelectValue placeholder="— قسم رئيسي —" /></SelectTrigger>
+                  <SelectTrigger id="parent" className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500">
+                    <SelectValue placeholder={isRTL ? '— قسم رئيسي —' : '— Root Department —'} />
+                  </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="__none__">— قسم رئيسي —</SelectItem>
+                    <SelectItem value="__none__">{isRTL ? '— قسم رئيسي —' : '— Root Department —'}</SelectItem>
                     {items
                       .filter((d) => d.id !== editing?.id)
                       .map((d) => (
@@ -279,20 +310,21 @@ export function DepartmentsModule() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex items-center gap-2 pt-4 col-span-2">
+              <div className="flex items-center gap-2 pt-4 col-span-2 text-start">
                 <Switch id="active" checked={draft.active} onCheckedChange={(v) => setDraft({ ...draft, active: v })} />
-                <Label htmlFor="active">نشط</Label>
+                <Label htmlFor="active" className="text-xs font-semibold text-slate-650 dark:text-slate-400 cursor-pointer">{isRTL ? 'نشط' : 'Active'}</Label>
               </div>
             </div>
-          </div>
+
+            <DialogFooter className="px-0 pt-4 bg-transparent border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-end gap-2 shrink-0">
+              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} className="h-10 px-5 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-900 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                {isRTL ? 'إلغاء' : 'Cancel'}
+              </Button>
+              <Button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()} className="h-10 px-5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-xs font-semibold shadow-sm shadow-blue-100 dark:shadow-none">
+                {saveMutation.isPending ? (isRTL ? 'جاري الحفظ...' : 'Saving...') : (isRTL ? 'حفظ' : 'Save')}
+              </Button>
+            </DialogFooter>
           </DialogBody>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>إلغاء</Button>
-            <Button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
-              {saveMutation.isPending ? 'جاري الحفظ...' : 'حفظ'}
-            </Button>
-          </DialogFooter>
-        </DialogBody>
         </DialogContent>
       </Dialog>
     </ModuleShell>

@@ -49,7 +49,7 @@ interface ProductionOrder {
 }
 
 export function ProductionOrdersModule() {
-  const { t } = useT()
+  const { t, isRTL, dir } = useT()
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
@@ -166,7 +166,7 @@ export function ProductionOrdersModule() {
       'المنتج': o.product?.nameAr ?? '',
       'قائمة التركيب': o.bom?.code ?? '',
       'الكمية': o.quantity,
-      'المنتج': o.producedQty,
+      'الكمية المنتجة': o.producedQty,
       'الحالة': o.status,
       'التكلفة': o.totalCost,
     }))
@@ -239,7 +239,7 @@ export function ProductionOrdersModule() {
         </Select>
       }
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
         <KpiCard title="إجمالي الأوامر" value={formatInt(stats.total)} icon={<Factory className="size-5" />} accent="blue" />
         <KpiCard title="قيد التنفيذ" value={formatInt(stats.inProgress)} icon={<PlayCircle className="size-5" />} accent="amber" />
         <KpiCard title="مُنتَجة" value={formatInt(stats.produced)} icon={<CheckCircle2 className="size-5" />} accent="sky" />
@@ -315,52 +315,65 @@ export function ProductionOrdersModule() {
       </Card>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>أمر إنتاج جديد</DialogTitle>
-            <DialogDescription>اختر قائمة التركيب والكمية المطلوب إنتاجها</DialogDescription>
+        <DialogContent className="max-w-2xl p-0 overflow-hidden bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800" dir={dir}>
+          <DialogHeader className="bg-gradient-to-r rtl:bg-gradient-to-l from-blue-50 to-[#E6F0FF] dark:bg-none dark:bg-blue-700/80 border-b border-blue-100 dark:border-blue-600/40 p-6 shrink-0 relative">
+            <div className="flex items-start gap-4 text-start">
+              <div className="size-12 rounded-xl bg-white dark:bg-blue-950/60 border border-blue-100 dark:border-blue-500/20 text-blue-600 dark:text-blue-300 flex items-center justify-center shadow-sm shadow-blue-100/40 dark:shadow-none shrink-0">
+                <Factory className="size-6" />
+              </div>
+              <div className="space-y-1 flex-1">
+                <DialogTitle className="text-xl font-bold tracking-tight text-blue-955 dark:text-white">
+                  {isRTL ? 'أمر إنتاج جديد' : 'New Production Order'}
+                </DialogTitle>
+
+              </div>
+            </div>
           </DialogHeader>
-          <DialogBody>          <DialogBody>          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>قائمة التركيب *</Label>
-                <Select value={bomId} onValueChange={setBomId}>
-                  <SelectTrigger><SelectValue placeholder="اختر القائمة" /></SelectTrigger>
-                  <SelectContent>
-                    {boms.map((b) => (
-                      <SelectItem key={b.id} value={b.id}>
-                        <span dir="ltr" className="font-mono text-xs">{b.code}</span> — {b.nameAr}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+
+          <DialogBody className="p-6 space-y-6 bg-slate-50/30 dark:bg-slate-900/10">
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5 text-start">
+                  <Label className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'قائمة التركيب *' : 'Bill of Materials *'}</Label>
+                  <Select value={bomId} onValueChange={setBomId}>
+                    <SelectTrigger className="h-10 border-slate-200 dark:border-slate-800 focus:ring-blue-500"><SelectValue placeholder={isRTL ? 'اختر القائمة' : 'Select BOM'} /></SelectTrigger>
+                    <SelectContent>
+                      {boms.map((b) => (
+                        <SelectItem key={b.id} value={b.id}>
+                          <span dir="ltr" className="font-mono text-xs">{b.code}</span> — {b.nameAr}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5 text-start">
+                  <Label htmlFor="quantity" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'الكمية المطلوبة *' : 'Planned Quantity *'}</Label>
+                  <Input id="quantity" type="number" step="0.01" value={quantity} onChange={(e) => setQuantity(e.target.value)} className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-end font-mono" dir="ltr" />
+                </div>
+                <div className="space-y-1.5 text-start">
+                  <Label htmlFor="plannedStart" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'تاريخ البدء المخطط' : 'Planned Start Date'}</Label>
+                  <Input id="plannedStart" type="date" value={plannedStart} onChange={(e) => setPlannedStart(e.target.value)} className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-end font-mono" dir="ltr" />
+                </div>
+                <div className="space-y-1.5 text-start">
+                  <Label htmlFor="plannedEnd" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'تاريخ الانتهاء المخطط' : 'Planned End Date'}</Label>
+                  <Input id="plannedEnd" type="date" value={plannedEnd} onChange={(e) => setPlannedEnd(e.target.value)} className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-end font-mono" dir="ltr" />
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="quantity">الكمية *</Label>
-                <Input id="quantity" type="number" step="0.01" value={quantity} onChange={(e) => setQuantity(e.target.value)} dir="ltr" />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="plannedStart">تاريخ البدء المخطط</Label>
-                <Input id="plannedStart" type="date" value={plannedStart} onChange={(e) => setPlannedStart(e.target.value)} dir="ltr" />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="plannedEnd">تاريخ الانتهاء المخطط</Label>
-                <Input id="plannedEnd" type="date" value={plannedEnd} onChange={(e) => setPlannedEnd(e.target.value)} dir="ltr" />
+              <div className="space-y-1.5 text-start">
+                <Label htmlFor="notes" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'ملاحظات' : 'Notes'}</Label>
+                <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={isRTL ? 'أي تفاصيل أو ملاحظات إضافية...' : 'Any additional details...'} rows={3} className="border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500" />
               </div>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="notes">ملاحظات</Label>
-              <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
-            </div>
-          </div>
           </DialogBody>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>إلغاء</Button>
-            <Button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
-              {saveMutation.isPending ? 'جاري الحفظ...' : 'إنشاء'}
+
+          <DialogFooter className="px-6 py-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-end gap-2 shrink-0">
+            <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} className="h-10 px-5 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-900 text-xs font-semibold text-slate-700 dark:text-slate-300">
+              {isRTL ? 'إلغاء' : 'Cancel'}
+            </Button>
+            <Button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()} className="h-10 px-5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-xs font-semibold shadow-sm shadow-blue-100 dark:shadow-none">
+              {saveMutation.isPending ? (isRTL ? 'جاري الحفظ...' : 'Saving...') : (isRTL ? 'إنشاء وحفظ' : 'Create & Save')}
             </Button>
           </DialogFooter>
-        </DialogBody>
         </DialogContent>
       </Dialog>
     </ModuleShell>

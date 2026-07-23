@@ -32,8 +32,8 @@ const CATEGORIES = [
   'إيرادات إيجار', 'عمولات', 'مبيعات خدمات', 'إيرادات متنوعة',
 ]
 
-interface BankAccount { id: string; name: string; bankName: string }
-interface SafeItem { id: string; name: string; code: string }
+interface BankAccount { id: string; name: string; bankName: string; active?: boolean }
+interface SafeItem { id: string; name: string; code: string; active?: boolean }
 interface Revenue {
   id: string
   code: string
@@ -64,7 +64,7 @@ const emptyForm = {
 }
 
 export function RevenuesModule() {
-  const { t } = useT()
+  const { t, isRTL, dir } = useT()
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
   const [from, setFrom] = useState('')
@@ -280,7 +280,7 @@ export function RevenuesModule() {
       }
     >
       {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
         {isLoading ? (
           Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />)
         ) : (
@@ -376,81 +376,94 @@ export function RevenuesModule() {
 
       {/* Add dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
-            <DialogTitle>تسجيل إيراد جديد</DialogTitle>
-            <DialogDescription>سيتم إنشاء قيد محاسبي تلقائي (مدين: نقدية/بنك، دائن: إيرادات أخرى) وتحديث رصيد الحساب.</DialogDescription>
+        <DialogContent className="max-w-xl p-0 overflow-hidden bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800" dir={dir}>
+          <DialogHeader className="bg-gradient-to-r from-blue-50 to-[#E6F0FF] dark:bg-none dark:bg-blue-700/80 border-b border-blue-100 dark:border-blue-600/40 p-6 shrink-0 relative">
+            <div className="flex items-start gap-4 text-start">
+              <div className="size-12 rounded-xl bg-white dark:bg-blue-950/60 border border-blue-100 dark:border-blue-500/20 text-blue-600 dark:text-blue-300 flex items-center justify-center shadow-sm shadow-blue-100/40 dark:shadow-none shrink-0">
+                <Coins className="size-6" />
+              </div>
+              <div className="space-y-1 flex-1">
+                <DialogTitle className="text-xl font-bold tracking-tight text-blue-955 dark:text-white">
+                  {isRTL ? 'تسجيل إيراد جديد' : 'Record New Revenue'}
+                </DialogTitle>
+
+              </div>
+            </div>
           </DialogHeader>
-          <DialogBody>          <DialogBody>          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label>التاريخ</Label>
-              <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>المبلغ *</Label>
-              <Input type="number" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })} />
-            </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label>المصدر / الجهة الدافعة</Label>
-              <Input value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value })} placeholder="اسم الجهة أو الشخص" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>الفئة</Label>
-              <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
-                <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>المرجع</Label>
-              <Input value={form.reference} onChange={(e) => setForm({ ...form, reference: e.target.value })} placeholder="رقم الإيصال أو المرجع" />
-            </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label>وجهة الإيداع</Label>
-              <Select value={form.destination} onValueChange={(v) => setForm({ ...form, destination: v })}>
-                <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="safe">إيداع في خزينة (نقدية)</SelectItem>
-                  <SelectItem value="bank">إيداع في حساب بنكي</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {form.destination === 'bank' ? (
-              <div className="space-y-1.5 sm:col-span-2">
-                <Label>الحساب البنكي</Label>
-                <Select value={form.bankAccountId} onValueChange={(v) => setForm({ ...form, bankAccountId: v })}>
-                  <SelectTrigger className="w-full"><SelectValue placeholder="اختر البنك" /></SelectTrigger>
+
+          <DialogBody className="p-6 space-y-6 bg-slate-50/30 dark:bg-slate-900/10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5 text-start">
+                <Label htmlFor="rev-date" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'التاريخ' : 'Date'}</Label>
+                <Input id="rev-date" type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500" />
+              </div>
+              <div className="space-y-1.5 text-start">
+                <Label htmlFor="rev-amount" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'المبلغ *' : 'Amount *'}</Label>
+                <Input id="rev-amount" type="number" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })} className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500" />
+              </div>
+              <div className="space-y-1.5 text-start sm:col-span-2">
+                <Label htmlFor="rev-source" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'المصدر / الجهة الدافعة' : 'Source / Payor'}</Label>
+                <Input id="rev-source" value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value })} placeholder={isRTL ? 'اسم الجهة أو الشخص' : 'Entity or person name'} className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500" />
+              </div>
+              <div className="space-y-1.5 text-start">
+                <Label className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'الفئة' : 'Category'}</Label>
+                <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
+                  <SelectTrigger className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 w-full"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {banks.map((b) => <SelectItem key={b.id} value={b.id}>{b.bankName} — {b.name}</SelectItem>)}
+                    {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
-            ) : (
-              <div className="space-y-1.5 sm:col-span-2">
-                <Label>الخزينة</Label>
-                <Select value={form.safeId} onValueChange={(v) => setForm({ ...form, safeId: v })}>
-                  <SelectTrigger className="w-full"><SelectValue placeholder="اختر الخزينة" /></SelectTrigger>
+              <div className="space-y-1.5 text-start">
+                <Label htmlFor="rev-ref" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'المرجع' : 'Reference'}</Label>
+                <Input id="rev-ref" value={form.reference} onChange={(e) => setForm({ ...form, reference: e.target.value })} placeholder={isRTL ? 'رقم الإيصال أو المرجع' : 'Receipt or reference number'} className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500" />
+              </div>
+              <div className="space-y-1.5 text-start sm:col-span-2">
+                <Label className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'وجهة الإيداع' : 'Deposit Destination'}</Label>
+                <Select value={form.destination} onValueChange={(v) => setForm({ ...form, destination: v })}>
+                  <SelectTrigger className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 w-full"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {safes.map((s) => <SelectItem key={s.id} value={s.id}>{s.name} ({s.code})</SelectItem>)}
+                    <SelectItem value="safe">{isRTL ? 'إيداع في خزينة (نقدية)' : 'Deposit into Safe (Cash)'}</SelectItem>
+                    <SelectItem value="bank">{isRTL ? 'إيداع في حساب بنكي' : 'Deposit into Bank Account'}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-            )}
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label>ملاحظات</Label>
-              <Textarea rows={2} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} placeholder="وصف الإيراد..." />
+              {form.destination === 'bank' ? (
+                <div className="space-y-1.5 text-start sm:col-span-2">
+                  <Label className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'الحساب البنكي' : 'Bank Account'}</Label>
+                  <Select value={form.bankAccountId} onValueChange={(v) => setForm({ ...form, bankAccountId: v })}>
+                    <SelectTrigger className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 w-full"><SelectValue placeholder={isRTL ? 'اختر البنك' : 'Select Bank'} /></SelectTrigger>
+                    <SelectContent>
+                      {banks.map((b) => <SelectItem key={b.id} value={b.id}>{b.bankName} — {b.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : (
+                <div className="space-y-1.5 text-start sm:col-span-2">
+                  <Label className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'الخزينة' : 'Safe/Cashbox'}</Label>
+                  <Select value={form.safeId} onValueChange={(v) => setForm({ ...form, safeId: v })}>
+                    <SelectTrigger className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 w-full"><SelectValue placeholder={isRTL ? 'اختر الخزينة' : 'Select Safe/Cashbox'} /></SelectTrigger>
+                    <SelectContent>
+                      {safes.map((s) => <SelectItem key={s.id} value={s.id}>{s.name} ({s.code})</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              <div className="space-y-1.5 text-start sm:col-span-2">
+                <Label htmlFor="rev-note" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'ملاحظات' : 'Notes'}</Label>
+                <Textarea id="rev-note" rows={2} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} placeholder={isRTL ? 'وصف الإيراد...' : 'Description...'} className="border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500" />
+              </div>
             </div>
-          </div>
           </DialogBody>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>إلغاء</Button>
-            <Button onClick={submit} disabled={createMut.isPending}>
-              {createMut.isPending ? 'جاري الحفظ...' : 'تسجيل الإيراد'}
+
+          <DialogFooter className="px-6 py-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-end gap-2 shrink-0">
+            <Button variant="outline" onClick={() => setOpen(false)} className="h-10 px-5 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-900 text-xs font-semibold text-slate-700 dark:text-slate-300">
+              {isRTL ? 'إلغاء' : 'Cancel'}
+            </Button>
+            <Button onClick={submit} disabled={createMut.isPending} className="h-10 px-5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-xs font-semibold shadow-sm shadow-blue-100 dark:shadow-none">
+              {createMut.isPending ? (isRTL ? 'جاري الحفظ...' : 'Saving...') : (isRTL ? 'تسجيل وحفـظ' : 'Create and Save')}
             </Button>
           </DialogFooter>
-        </DialogBody>
         </DialogContent>
       </Dialog>
     </ModuleShell>

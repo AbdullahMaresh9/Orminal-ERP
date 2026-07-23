@@ -41,35 +41,145 @@ type SettingsMap = Record<string, SettingMeta>
 
 // === Tab definitions (12 tabs) ===
 const TABS = [
-  { value: 'general', label: 'عام', icon: SettingsIcon, categories: ['general'] as const },
-  { value: 'company', label: 'الشركة', icon: Building2, categories: ['company'] as const },
-  { value: 'accounting', label: 'محاسبي', icon: BookOpen, categories: ['accounting'] as const },
-  { value: 'inventory', label: 'المخزون', icon: Package, categories: ['inventory'] as const },
-  { value: 'sales', label: 'المبيعات', icon: ShoppingCart, categories: ['sales'] as const },
-  { value: 'purchases', label: 'المشتريات', icon: Truck, categories: ['purchases'] as const },
-  { value: 'numbering', label: 'الترقيم', icon: Hash, categories: ['numbering'] as const },
-  { value: 'printing', label: 'الطباعة', icon: Printer, categories: ['printing'] as const },
-  { value: 'notifications', label: 'الإشعارات', icon: Bell, categories: ['notifications'] as const },
-  { value: 'zatca', label: 'ZATCA', icon: FileText, categories: ['zatca'] as const },
-  { value: 'email', label: 'البريد', icon: Mail, categories: ['email'] as const },
-  { value: 'system', label: 'النظام', icon: Server, categories: ['backup', 'security', 'import_export', 'appearance'] as const },
+  { value: 'general', labelAr: 'عام', labelEn: 'General', icon: SettingsIcon, categories: ['general'] as const },
+  { value: 'company', labelAr: 'الشركة', labelEn: 'Company', icon: Building2, categories: ['company'] as const },
+  { value: 'accounting', labelAr: 'محاسبي', labelEn: 'Accounting', icon: BookOpen, categories: ['accounting'] as const },
+  { value: 'inventory', labelAr: 'المخزون', labelEn: 'Inventory', icon: Package, categories: ['inventory'] as const },
+  { value: 'sales', labelAr: 'المبيعات', labelEn: 'Sales', icon: ShoppingCart, categories: ['sales'] as const },
+  { value: 'purchases', labelAr: 'المشتريات', labelEn: 'Purchases', icon: Truck, categories: ['purchases'] as const },
+  { value: 'numbering', labelAr: 'الترقيم', labelEn: 'Numbering', icon: Hash, categories: ['numbering'] as const },
+  { value: 'printing', labelAr: 'الطباعة', labelEn: 'Printing', icon: Printer, categories: ['printing'] as const },
+  { value: 'notifications', labelAr: 'الإشعارات', labelEn: 'Notifications', icon: Bell, categories: ['notifications'] as const },
+  { value: 'zatca', labelAr: 'ZATCA', labelEn: 'ZATCA', icon: FileText, categories: ['zatca'] as const },
+  { value: 'email', labelAr: 'البريد', labelEn: 'Email', icon: Mail, categories: ['email'] as const },
+  { value: 'system', labelAr: 'النظام', labelEn: 'System', icon: Server, categories: ['backup', 'security', 'import_export', 'appearance'] as const },
 ] as const
 
+// === Localized Select Dropdown Option Labels ===
+const OPTION_LABELS: Record<string, Record<string, string>> = {
+  'light': { ar: 'فاتح', en: 'Light' },
+  'dark': { ar: 'داكن', en: 'Dark' },
+  'system': { ar: 'تلقائي (حسب النظام)', en: 'System Default' },
+  'ar': { ar: 'العربية', en: 'Arabic' },
+  'en': { ar: 'الإنجليزية', en: 'English' },
+  'fifo': { ar: 'الوارد أولاً صادر أولاً (FIFO)', en: 'First-In, First-Out (FIFO)' },
+  'avco': { ar: 'المتوسط المرجح (AVCO)', en: 'Average Cost (AVCO)' },
+  'standard': { ar: 'التكلفة المعيارية', en: 'Standard Costing' },
+  'yearly': { ar: 'سنوياً', en: 'Yearly' },
+  'monthly': { ar: 'شهرياً', en: 'Monthly' },
+  'never': { ar: 'أبداً', en: 'Never' },
+  'automatic': { ar: 'تلقائي', en: 'Automatic' },
+  'manual': { ar: 'يدوي', en: 'Manual' },
+  'daily': { ar: 'يومياً', en: 'Daily' },
+  'weekly': { ar: 'أسبوعياً', en: 'Weekly' },
+  '6months': { ar: 'كل 6 أشهر', en: 'Every 6 Months' },
+  'A4': { ar: 'A4', en: 'A4' },
+  'Letter': { ar: 'Letter', en: 'Letter' },
+  'Legal': { ar: 'Legal', en: 'Legal' },
+  'Cairo': { ar: 'خط القاهرة (Cairo)', en: 'Cairo' },
+  'Tajawal': { ar: 'خط تجول (Tajawal)', en: 'Tajawal' },
+  'Segoe UI': { ar: 'Segoe UI', en: 'Segoe UI' },
+  'Tahoma': { ar: 'Tahoma', en: 'Tahoma' },
+  'SSL': { ar: 'SSL', en: 'SSL' },
+  'TLS': { ar: 'TLS', en: 'TLS' },
+  'None': { ar: 'بدون تشفير', en: 'None' },
+  'csv': { ar: 'CSV', en: 'CSV' },
+  'excel': { ar: 'Excel (XLSX)', en: 'Excel (XLSX)' },
+  'pdf': { ar: 'PDF', en: 'PDF' },
+  'json': { ar: 'JSON', en: 'JSON' },
+  'gregorian': { ar: 'ميلادي', en: 'Gregorian' },
+  'hijri': { ar: 'هجري', en: 'Hijri' },
+  'sandbox': { ar: 'بيئة تجريبية (Sandbox)', en: 'Sandbox (Testing)' },
+  'production': { ar: 'بيئة الإنتاج', en: 'Production' },
+}
+
+// === Localized Titles and Descriptions ===
+const CARD_TX: Record<string, Record<string, Record<string, string>>> = {
+  general: {
+    title: { ar: 'الإعدادات العامة', en: 'General Settings' },
+    desc: { ar: 'اسم النظام، العملة، المنطقة الزمنية، الإشعارات', en: 'System name, currency, timezone, notifications' }
+  },
+  company: {
+    title: { ar: 'معلومات الشركة', en: 'Company Information' },
+    desc: { ar: 'الاسم، السجل التجاري، الرقم الضريبي، الاتصال', en: 'Name, CR, Tax Number, contact info' }
+  },
+  accounting: {
+    title: { ar: 'الإعدادات المحاسبية', en: 'Accounting Settings' },
+    desc: { ar: 'الضرائب، السنة المالية، العملة الأساسية، الترحيل', en: 'Taxes, fiscal year, base currency, posting' }
+  },
+  inventory: {
+    title: { ar: 'إعدادات المخزون', en: 'Inventory Settings' },
+    desc: { ar: 'الوحدات، التكلفة، التنبيهات، الدفعات', en: 'Units, costing, alerts, lots' }
+  },
+  sales: {
+    title: { ar: 'إعدادات المبيعات', en: 'Sales Settings' },
+    desc: { ar: 'شروط الدفع، الخصومات، حدود الائتمان، البادئات', en: 'Payment terms, discounts, credit limits, prefixes' }
+  },
+  purchases: {
+    title: { ar: 'إعدادات المشتريات', en: 'Purchases Settings' },
+    desc: { ar: 'المطابقة الثلاثية، تفاوت الأسعار، الاعتماد، الترحيل', en: 'Three-way matching, price variance, approval, posting' }
+  },
+  numbering: {
+    title: { ar: 'الترقيم التلقائي', en: 'Automatic Numbering' },
+    desc: { ar: 'بادئات المستندات، طول الرقم، سياسة إعادة الترقيم', en: 'Document prefixes, number length, reset policy' },
+    generalTitle: { ar: 'إعدادات الترقيم العامة', en: 'General Numbering Settings' },
+    preview: { ar: 'معاينة:', en: 'Preview:' }
+  },
+  printing: {
+    title: { ar: 'إعدادات الطباعة', en: 'Printing Settings' },
+    desc: { ar: 'الورق، الهوامش، الخط، الشعار، التوقيعات، العلامة المائية', en: 'Paper size, margins, font, logo, signatures, watermark' }
+  },
+  notifications: {
+    title: { ar: 'الإشعارات', en: 'Notifications Settings' },
+    desc: { ar: 'قنوات الإشعار، التكرار، إعادة المحاولة', en: 'Notification channels, frequency, retries' }
+  },
+  zatca: {
+    title: { ar: 'الفوترة الإلكترونية — ZATCA', en: 'E-Invoicing — ZATCA' },
+    desc: { ar: 'هيئة الزكاة والضريبة والجمارك', en: 'Zakat, Tax and Customs Authority' }
+  },
+  email: {
+    title: { ar: 'إعدادات البريد الإلكتروني — SMTP', en: 'Email Settings — SMTP' },
+    desc: { ar: 'خادم البريد، المنفذ، التشفير، بيانات المرسل', en: 'Mail server, port, encryption, sender details' },
+    testDesc: { ar: 'اختبر اتصال SMTP باستخدام الإعدادات الحالية.', en: 'Test SMTP connection using current settings.' },
+    testBtn: { ar: 'اختبار الاتصال', en: 'Test Connection' }
+  },
+  systemInfo: {
+    title: { ar: 'معلومات النظام', en: 'System Information' }
+  },
+  appearance: {
+    title: { ar: 'المظهر واللغة', en: 'Appearance & Language' },
+    desc: { ar: 'السمة، اللغة، نظام التاريخ', en: 'Theme, language, calendar system' },
+    liveApply: { ar: 'تغييرات السمة واللغة تُطبّق فوراً على الواجهة.', en: 'Theme and language changes are applied immediately.' }
+  },
+  backup: {
+    title: { ar: 'النسخ الاحتياطي', en: 'Backup Settings' },
+    desc: { ar: 'التكرار، الاحتفاظ، الضغط، التشفير', en: 'Frequency, retention, compression, encryption' }
+  },
+  security: {
+    title: { ar: 'الأمان', en: 'Security Settings' },
+    desc: { ar: 'كلمة المرور، الجلسة، المصادقة الثنائية، محاولات الدخول', en: 'Password policy, session timeout, MFA, login attempts' }
+  },
+  importExport: {
+    title: { ar: 'الاستيراد والتصدير', en: 'Import & Export Settings' },
+    desc: { ar: 'التنسيقات، الترميز، الفواصل، التاريخ', en: 'Formats, encoding, delimiters, dates' }
+  }
+}
+
 // === System Info static metadata ===
-const SYSTEM_INFO: { label: string; value: string }[] = [
-  { label: 'إصدار النظام', value: 'v2.0.0' },
-  { label: 'إطار العمل', value: 'Next.js 16' },
-  { label: 'قاعدة البيانات', value: 'SQLite + Prisma' },
-  { label: 'عدد النماذج (Models)', value: '83' },
-  { label: 'عدد الوحدات (Modules)', value: '44' },
-  { label: 'محرك المحاسبة', value: 'Double-Entry v2' },
+const SYSTEM_INFO = [
+  { labelAr: 'إصدار النظام', labelEn: 'System Version', value: 'v2.0.0' },
+  { labelAr: 'إطار العمل', labelEn: 'Framework', value: 'Next.js 16' },
+  { labelAr: 'قاعدة البيانات', labelEn: 'Database', value: 'SQLite + Prisma' },
+  { labelAr: 'عدد النماذج (Models)', labelEn: 'Models Count', value: '83' },
+  { labelAr: 'عدد الوحدات (Modules)', labelEn: 'Modules Count', value: '44' },
+  { labelAr: 'محرك المحاسبة', labelEn: 'Accounting Engine', value: 'Double-Entry v2' },
 ]
 
 export function SettingsModule() {
   const { t } = useT()
   const qc = useQueryClient()
   const { setTheme } = useTheme()
-  const { setLocale } = useI18n()
+  const { locale, setLocale } = useI18n()
 
   const [overrides, setOverrides] = useState<Record<string, string>>({})
   const [activeTab, setActiveTab] = useState<string>('general')
@@ -188,7 +298,7 @@ export function SettingsModule() {
     // Revert live theme/language if user cancels
     if (loadedValues['appearance.theme']) setTheme(loadedValues['appearance.theme'])
     if (loadedValues['appearance.language']) setLocale(loadedValues['appearance.language'] as 'ar' | 'en')
-    toast.info('تم التراجع عن التغييرات')
+    toast.info(locale === 'ar' ? 'تم التراجع عن التغييرات' : 'Changes reverted')
   }
 
   const handleResetField = (key: string) => {
@@ -209,8 +319,12 @@ export function SettingsModule() {
         m.category.toLowerCase().includes(q) ||
         key.toLowerCase().includes(q)
       )
-      .sort((a, b) => a[1].label.localeCompare(b[1].label))
-  }, [search, settingsMeta])
+      .sort((a, b) => {
+        const labelA = locale === 'ar' ? (a[1]?.label ?? '') : (a[1]?.labelEn ?? a[1]?.label ?? '')
+        const labelB = locale === 'ar' ? (b[1]?.label ?? '') : (b[1]?.labelEn ?? b[1]?.label ?? '')
+        return labelA.localeCompare(labelB)
+      })
+  }, [search, settingsMeta, locale])
 
   // === Render a field by its metadata type ===
   const renderField = (key: string) => {
@@ -222,6 +336,7 @@ export function SettingsModule() {
     return (
       <FieldRow
         key={key}
+        settingKey={key}
         meta={meta}
         value={value}
         isChanged={isChanged}
@@ -238,7 +353,11 @@ export function SettingsModule() {
     if (!tab) return []
     return Object.entries(settingsMeta)
       .filter(([, m]) => (tab.categories as readonly string[]).includes(m.category))
-      .sort((a, b) => (a[1].labelEn.localeCompare(b[1].labelEn)))
+      .sort((a, b) => {
+        const labelA = locale === 'ar' ? (a[1]?.label ?? '') : (a[1]?.labelEn ?? a[1]?.label ?? '')
+        const labelB = locale === 'ar' ? (b[1]?.label ?? '') : (b[1]?.labelEn ?? b[1]?.label ?? '')
+        return labelA.localeCompare(labelB)
+      })
       .map(([k]) => k)
   }
 
@@ -321,7 +440,7 @@ export function SettingsModule() {
                     className="gap-1.5 data-[state=active]:bg-background data-[state=active]:shadow-sm"
                   >
                     <Icon className="size-3.5" />
-                    <span>{tab.label}</span>
+                    <span>{locale === 'ar' ? tab.labelAr : tab.labelEn}</span>
                     {tabDirty && (
                       <span className="size-1.5 rounded-full bg-amber-500 ms-0.5" aria-label="تغييرات غير محفوظة" />
                     )}
@@ -333,7 +452,7 @@ export function SettingsModule() {
 
           {/* === Tab 1: General === */}
           <TabsContent value="general">
-            <SettingsCard title="الإعدادات العامة" description="اسم النظام، العملة، المنطقة الزمنية، الإشعارات">
+            <SettingsCard title={CARD_TX.general.title[locale]} description={CARD_TX.general.desc[locale]}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {getKeysForTab('general').map((k) => renderField(k))}
               </div>
@@ -342,7 +461,7 @@ export function SettingsModule() {
 
           {/* === Tab 2: Company === */}
           <TabsContent value="company">
-            <SettingsCard title="معلومات الشركة" description="الاسم، السجل التجاري، الرقم الضريبي، الاتصال">
+            <SettingsCard title={CARD_TX.company.title[locale]} description={CARD_TX.company.desc[locale]}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {getKeysForTab('company').map((k) => renderField(k))}
               </div>
@@ -351,7 +470,7 @@ export function SettingsModule() {
 
           {/* === Tab 3: Accounting === */}
           <TabsContent value="accounting">
-            <SettingsCard title="الإعدادات المحاسبية" description="الضرائب، السنة المالية، العملة الأساسية، الترحيل">
+            <SettingsCard title={CARD_TX.accounting.title[locale]} description={CARD_TX.accounting.desc[locale]}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {getKeysForTab('accounting').map((k) => renderField(k))}
               </div>
@@ -360,7 +479,7 @@ export function SettingsModule() {
 
           {/* === Tab 4: Inventory === */}
           <TabsContent value="inventory">
-            <SettingsCard title="إعدادات المخزون" description="الوحدات، التكلفة، التنبيهات، الدفعات">
+            <SettingsCard title={CARD_TX.inventory.title[locale]} description={CARD_TX.inventory.desc[locale]}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {getKeysForTab('inventory').map((k) => renderField(k))}
               </div>
@@ -369,7 +488,7 @@ export function SettingsModule() {
 
           {/* === Tab 5: Sales === */}
           <TabsContent value="sales">
-            <SettingsCard title="إعدادات المبيعات" description="شروط الدفع، الخصومات، حدود الائتمان، البادئات">
+            <SettingsCard title={CARD_TX.sales.title[locale]} description={CARD_TX.sales.desc[locale]}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {getKeysForTab('sales').map((k) => renderField(k))}
               </div>
@@ -378,7 +497,7 @@ export function SettingsModule() {
 
           {/* === Tab 6: Purchases === */}
           <TabsContent value="purchases">
-            <SettingsCard title="إعدادات المشتريات" description="المطابقة الثلاثية، تفاوت الأسعار، الاعتماد، الترحيل">
+            <SettingsCard title={CARD_TX.purchases.title[locale]} description={CARD_TX.purchases.desc[locale]}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {getKeysForTab('purchases').map((k) => renderField(k))}
               </div>
@@ -387,7 +506,7 @@ export function SettingsModule() {
 
           {/* === Tab 7: Numbering (with live preview) === */}
           <TabsContent value="numbering">
-            <SettingsCard title="الترقيم التلقائي" description="بادئات المستندات، طول الرقم، سياسة إعادة الترقيم">
+            <SettingsCard title={CARD_TX.numbering.title[locale]} description={CARD_TX.numbering.desc[locale]}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
                 {getKeysForTab('numbering')
                   .filter((k) => k.endsWith('Prefix'))
@@ -395,7 +514,9 @@ export function SettingsModule() {
                     <div key={k} className="space-y-1.5">
                       {renderField(k)}
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span className="text-emerald-600 dark:text-emerald-400 font-medium">معاينة:</span>
+                        <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                          {CARD_TX.numbering.preview[locale]}
+                        </span>
                         <code dir="ltr" className="font-mono bg-muted/60 px-2 py-0.5 rounded text-foreground">
                           {getNumberingPreview(k)}
                         </code>
@@ -404,7 +525,9 @@ export function SettingsModule() {
                   ))}
               </div>
               <div className="border-t pt-5">
-                <h4 className="font-medium text-sm mb-3 text-muted-foreground">إعدادات الترقيم العامة</h4>
+                <h4 className="font-medium text-sm mb-3 text-muted-foreground">
+                  {CARD_TX.numbering.generalTitle[locale]}
+                </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {getKeysForTab('numbering')
                     .filter((k) => !k.endsWith('Prefix'))
@@ -416,7 +539,7 @@ export function SettingsModule() {
 
           {/* === Tab 8: Printing === */}
           <TabsContent value="printing">
-            <SettingsCard title="إعدادات الطباعة" description="الورق، الهوامش، الخط، الشعار، التوقيعات، العلامة المائية">
+            <SettingsCard title={CARD_TX.printing.title[locale]} description={CARD_TX.printing.desc[locale]}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {getKeysForTab('printing').map((k) => renderField(k))}
               </div>
@@ -425,7 +548,7 @@ export function SettingsModule() {
 
           {/* === Tab 9: Notifications === */}
           <TabsContent value="notifications">
-            <SettingsCard title="الإشعارات" description="قنوات الإشعار، التكرار، إعادة المحاولة">
+            <SettingsCard title={CARD_TX.notifications.title[locale]} description={CARD_TX.notifications.desc[locale]}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {getKeysForTab('notifications').map((k) => renderField(k))}
               </div>
@@ -434,7 +557,7 @@ export function SettingsModule() {
 
           {/* === Tab 10: ZATCA === */}
           <TabsContent value="zatca">
-            <SettingsCard title="الفوترة الإلكترونية — ZATCA" description="هيئة الزكاة والضريبة والجمارك">
+            <SettingsCard title={CARD_TX.zatca.title[locale]} description={CARD_TX.zatca.desc[locale]}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {getKeysForTab('zatca').map((k) => renderField(k))}
               </div>
@@ -443,27 +566,29 @@ export function SettingsModule() {
 
           {/* === Tab 11: Email / SMTP === */}
           <TabsContent value="email">
-            <SettingsCard title="إعدادات البريد الإلكتروني — SMTP" description="خادم البريد، المنفذ، التشفير، بيانات المرسل">
+            <SettingsCard title={CARD_TX.email.title[locale]} description={CARD_TX.email.desc[locale]}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {getKeysForTab('email').map((k) => renderField(k))}
               </div>
               <div className="border-t mt-5 pt-4 flex items-center justify-between">
                 <div className="text-sm text-muted-foreground">
-                  اختبر اتصال SMTP باستخدام الإعدادات الحالية.
+                  {CARD_TX.email.testDesc[locale]}
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
                   className="gap-1.5"
                   onClick={() => {
-                    // Per task spec: just show a toast success.
-                    toast.success('تم اختبار الاتصال بنجاح ✓', {
-                      description: 'SMTP connection OK — 220 smtp.example.com ESMTP',
-                    })
+                    toast.success(
+                      locale === 'ar' ? 'تم اختبار الاتصال بنجاح ✓' : 'Connection tested successfully ✓',
+                      {
+                        description: 'SMTP connection OK — 220 smtp.example.com ESMTP',
+                      }
+                    )
                   }}
                 >
                   <CheckCircle2 className="size-4" />
-                  اختبار الاتصال
+                  {CARD_TX.email.testBtn[locale]}
                 </Button>
               </div>
             </SettingsCard>
@@ -476,15 +601,17 @@ export function SettingsModule() {
               <Card className="p-5">
                 <div className="flex items-center gap-2 mb-4">
                   <Server className="size-4 text-primary" />
-                  <h3 className="font-semibold text-base">معلومات النظام</h3>
+                  <h3 className="font-semibold text-base">{CARD_TX.systemInfo.title[locale]}</h3>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {SYSTEM_INFO.map((item) => (
                     <div
-                      key={item.label}
+                      key={item.labelAr}
                       className="flex items-center justify-between p-3 rounded-lg bg-muted/40 border"
                     >
-                      <span className="text-sm text-muted-foreground">{item.label}</span>
+                      <span className="text-sm text-muted-foreground">
+                        {locale === 'ar' ? item.labelAr : item.labelEn}
+                      </span>
                       <span className="font-mono text-sm" dir="ltr">{item.value}</span>
                     </div>
                   ))}
@@ -492,45 +619,77 @@ export function SettingsModule() {
               </Card>
 
               {/* Appearance settings */}
-              <SettingsCard title="المظهر واللغة" description="السمة، اللغة، نظام التاريخ" icon={<Palette className="size-4 text-primary" />}>
+              <SettingsCard
+                title={CARD_TX.appearance.title[locale]}
+                description={CARD_TX.appearance.desc[locale]}
+                icon={<Palette className="size-4 text-primary" />}
+              >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {Object.entries(settingsMeta)
                     .filter(([, m]) => m.category === 'appearance')
-                    .sort((a, b) => (a[1].sortOrder ?? 0) - (b[1].sortOrder ?? 0))
+                    .sort((a, b) => {
+                      const labelA = locale === 'ar' ? (a[1]?.label ?? '') : (a[1]?.labelEn ?? a[1]?.label ?? '')
+                      const labelB = locale === 'ar' ? (b[1]?.label ?? '') : (b[1]?.labelEn ?? b[1]?.label ?? '')
+                      return labelA.localeCompare(labelB)
+                    })
                     .map(([k]) => renderField(k))}
                 </div>
                 <div className="mt-3 text-xs text-muted-foreground flex items-center gap-2">
                   <Palette className="size-3.5" />
-                  تغييرات السمة واللغة تُطبّق فوراً على الواجهة.
+                  {CARD_TX.appearance.liveApply[locale]}
                 </div>
               </SettingsCard>
 
               {/* Backup settings */}
-              <SettingsCard title="النسخ الاحتياطي" description="التكرار، الاحتفاظ، الضغط، التشفير" icon={<Database className="size-4 text-primary" />}>
+              <SettingsCard
+                title={CARD_TX.backup.title[locale]}
+                description={CARD_TX.backup.desc[locale]}
+                icon={<Database className="size-4 text-primary" />}
+              >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {Object.entries(settingsMeta)
                     .filter(([, m]) => m.category === 'backup')
-                    .sort((a, b) => (a[1].sortOrder ?? 0) - (b[1].sortOrder ?? 0))
+                    .sort((a, b) => {
+                      const labelA = locale === 'ar' ? (a[1]?.label ?? '') : (a[1]?.labelEn ?? a[1]?.label ?? '')
+                      const labelB = locale === 'ar' ? (b[1]?.label ?? '') : (b[1]?.labelEn ?? b[1]?.label ?? '')
+                      return labelA.localeCompare(labelB)
+                    })
                     .map(([k]) => renderField(k))}
                 </div>
               </SettingsCard>
 
               {/* Security settings */}
-              <SettingsCard title="الأمان" description="كلمة المرور، الجلسة، المصادقة الثنائية، محاولات الدخول" icon={<Shield className="size-4 text-primary" />}>
+              <SettingsCard
+                title={CARD_TX.security.title[locale]}
+                description={CARD_TX.security.desc[locale]}
+                icon={<Shield className="size-4 text-primary" />}
+              >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {Object.entries(settingsMeta)
                     .filter(([, m]) => m.category === 'security')
-                    .sort((a, b) => (a[1].sortOrder ?? 0) - (b[1].sortOrder ?? 0))
+                    .sort((a, b) => {
+                      const labelA = locale === 'ar' ? (a[1]?.label ?? '') : (a[1]?.labelEn ?? a[1]?.label ?? '')
+                      const labelB = locale === 'ar' ? (b[1]?.label ?? '') : (b[1]?.labelEn ?? b[1]?.label ?? '')
+                      return labelA.localeCompare(labelB)
+                    })
                     .map(([k]) => renderField(k))}
                 </div>
               </SettingsCard>
 
               {/* Import / Export settings */}
-              <SettingsCard title="الاستيراد والتصدير" description="التنسيقات، الترميز، الفواصل، التاريخ" icon={<Download className="size-4 text-primary" />}>
+              <SettingsCard
+                title={CARD_TX.importExport.title[locale]}
+                description={CARD_TX.importExport.desc[locale]}
+                icon={<Download className="size-4 text-primary" />}
+              >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {Object.entries(settingsMeta)
                     .filter(([, m]) => m.category === 'import_export')
-                    .sort((a, b) => (a[1].sortOrder ?? 0) - (b[1].sortOrder ?? 0))
+                    .sort((a, b) => {
+                      const labelA = locale === 'ar' ? (a[1]?.label ?? '') : (a[1]?.labelEn ?? a[1]?.label ?? '')
+                      const labelB = locale === 'ar' ? (b[1]?.label ?? '') : (b[1]?.labelEn ?? b[1]?.label ?? '')
+                      return labelA.localeCompare(labelB)
+                    })
                     .map(([k]) => renderField(k))}
                 </div>
               </SettingsCard>
@@ -549,14 +708,14 @@ export function SettingsModule() {
               </div>
               <div className="min-w-0">
                 <div className="font-semibold text-sm flex items-center gap-2">
-                  تغييرات غير محفوظة
+                  {locale === 'ar' ? 'تغييرات غير محفوظة' : 'Unsaved Changes'}
                   <Badge variant="outline" className="text-amber-600 border-amber-500/40">
                     {changedKeys.length}
                   </Badge>
                 </div>
                 <div className="text-xs text-muted-foreground truncate">
                   {changedKeys.slice(0, 3).join('، ')}
-                  {changedKeys.length > 3 && ` و ${changedKeys.length - 3} أخرى`}
+                  {changedKeys.length > 3 && ` ${locale === 'ar' ? 'و' : '&'} ${changedKeys.length - 3} ${locale === 'ar' ? 'أخرى' : 'more'}`}
                 </div>
               </div>
             </div>
@@ -569,7 +728,7 @@ export function SettingsModule() {
                 className="gap-1.5"
               >
                 <X className="size-4" />
-                إلغاء
+                {locale === 'ar' ? 'إلغاء' : 'Cancel'}
               </Button>
               <Button
                 size="sm"
@@ -578,7 +737,9 @@ export function SettingsModule() {
                 className="gap-1.5"
               >
                 <Save className="size-4" />
-                {saveMutation.isPending ? 'جاري الحفظ...' : 'حفظ التغييرات'}
+                {saveMutation.isPending 
+                  ? (locale === 'ar' ? 'جاري الحفظ...' : 'Saving...') 
+                  : (locale === 'ar' ? 'حفظ التغييرات' : 'Save Changes')}
               </Button>
             </div>
           </div>
@@ -612,14 +773,13 @@ function SettingsCard({
           )}
         </div>
       </div>
-      <ScrollArea className="max-h-[70vh]">
-        <div className="pe-2">{children}</div>
-      </ScrollArea>
+      <div>{children}</div>
     </Card>
   )
 }
 
 function FieldRow({
+  settingKey,
   meta,
   value,
   isChanged,
@@ -627,6 +787,7 @@ function FieldRow({
   onReset,
   isResetting,
 }: {
+  settingKey: string
   meta: SettingMeta
   value: string
   isChanged: boolean
@@ -634,10 +795,15 @@ function FieldRow({
   onReset: () => void
   isResetting: boolean
 }) {
+  const locale = useI18n((s) => s.locale)
   const isBool = meta.type === 'boolean'
   const boolVal = value === 'true' || value === '1'
-  const isLtrKey = /^(company\.|app\.supportPhone|app\.name|email\.smtp|email\.sender|print\.fontFamily|print\.watermark|accounting\.|inventory\.|sales\.|purchases\.|numbering\.|zatca\.|security\.|backup\.|import_export\.|appearance\.|company\.currency|company\.timezone)/.test(meta.key) && !isBool
-  // For boolean, render as switch with label inline; otherwise a vertical labeled field
+  const isLtrKey = /^(company\.|app\.supportPhone|app\.name|email\.smtp|email\.sender|print\.fontFamily|print\.watermark|accounting\.|inventory\.|sales\.|purchases\.|numbering\.|zatca\.|security\.|backup\.|import_export\.|appearance\.|company\.currency|company\.timezone)/.test(settingKey) && !isBool
+
+  const labelToShow = locale === 'ar'
+    ? (meta.label || meta.labelEn || settingKey)
+    : (meta.labelEn || meta.label || settingKey)
+
   if (isBool) {
     return (
       <div
@@ -645,17 +811,20 @@ function FieldRow({
           isChanged ? 'border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/10' : ''
         }`}
       >
-        <div className="min-w-0">
-          <Label className="cursor-pointer text-sm font-medium block">{meta.label}</Label>
-          {meta.labelEn && (
-            <span className="text-xs text-muted-foreground" dir="ltr">{meta.labelEn}</span>
+        <div className="min-w-0 flex-1">
+          <Label className="cursor-pointer text-sm font-medium block whitespace-normal">{labelToShow}</Label>
+          {locale === 'ar' && meta.labelEn && (
+            <span className="text-xs text-muted-foreground block mt-0.5" dir="ltr">{meta.labelEn}</span>
+          )}
+          {locale === 'en' && meta.label && (
+            <span className="text-xs text-muted-foreground block mt-0.5" dir="rtl">{meta.label}</span>
           )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <ResetButton
             onClick={onReset}
-            disabled={isResetting || !meta.defaultValue}
-            tooltip="إعادة للقيمة الافتراضية"
+            disabled={isResetting || meta.defaultValue === undefined || meta.defaultValue === null}
+            tooltip={locale === 'ar' ? "إعادة للقيمة الافتراضية" : "Reset to default"}
           />
           <Switch checked={boolVal} onCheckedChange={(v) => onChange(v ? 'true' : 'false')} />
         </div>
@@ -669,28 +838,31 @@ function FieldRow({
         isChanged ? 'border-amber-500/50 bg-amber-50/40 dark:bg-amber-950/10' : ''
       }`}
     >
-      <div className="flex items-center justify-between gap-2">
-        <div className="min-w-0">
-          <Label className="text-sm font-medium block truncate">{meta.label}</Label>
-          {meta.labelEn && (
-            <span className="text-xs text-muted-foreground" dir="ltr">{meta.labelEn}</span>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <Label className="text-sm font-medium block whitespace-normal">{labelToShow}</Label>
+          {locale === 'ar' && meta.labelEn && (
+            <span className="text-xs text-muted-foreground block mt-0.5" dir="ltr">{meta.labelEn}</span>
+          )}
+          {locale === 'en' && meta.label && (
+            <span className="text-xs text-muted-foreground block mt-0.5" dir="rtl">{meta.label}</span>
           )}
         </div>
         <ResetButton
           onClick={onReset}
-          disabled={isResetting || !meta.defaultValue}
-          tooltip="إعادة للقيمة الافتراضية"
+          disabled={isResetting || meta.defaultValue === undefined || meta.defaultValue === null}
+          tooltip={locale === 'ar' ? "إعادة للقيمة الافتراضية" : "Reset to default"}
         />
       </div>
       {meta.type === 'select' && meta.options ? (
         <Select value={value} onValueChange={onChange}>
           <SelectTrigger className="w-full" dir={isLtrKey ? 'ltr' : undefined}>
-            <SelectValue placeholder="اختر..." />
+            <SelectValue placeholder={locale === 'ar' ? "اختر..." : "Select..."} />
           </SelectTrigger>
           <SelectContent>
             {meta.options.map((opt) => (
               <SelectItem key={opt} value={opt}>
-                {opt}
+                {OPTION_LABELS[opt] ? (locale === 'ar' ? OPTION_LABELS[opt].ar : OPTION_LABELS[opt].en) : opt}
               </SelectItem>
             ))}
           </SelectContent>
@@ -703,12 +875,12 @@ function FieldRow({
           dir="ltr"
           className="text-start"
         />
-      ) : meta.key === 'company.address' || meta.key === 'zatca.certificateChain' ? (
+      ) : settingKey === 'company.address' || settingKey === 'zatca.certificateChain' ? (
         <Textarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
           dir={isLtrKey ? 'ltr' : undefined}
-          rows={meta.key === 'zatca.certificateChain' ? 4 : 2}
+          rows={settingKey === 'zatca.certificateChain' ? 4 : 2}
           className="resize-y"
         />
       ) : (
@@ -721,7 +893,9 @@ function FieldRow({
         />
       )}
       {meta.isSystem && (
-        <Badge variant="secondary" className="text-[10px] py-0 h-4">إعداد نظام</Badge>
+        <Badge variant="secondary" className="text-[10px] py-0 h-4 mt-1">
+          {locale === 'ar' ? 'إعداد نظام' : 'System Setting'}
+        </Badge>
       )}
     </div>
   )

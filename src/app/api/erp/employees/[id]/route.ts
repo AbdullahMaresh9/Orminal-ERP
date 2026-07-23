@@ -30,6 +30,39 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     if (rest.hireDate) rest.hireDate = new Date(rest.hireDate)
     if (rest.terminationDate) rest.terminationDate = new Date(rest.terminationDate)
     if (rest.birthDate) rest.birthDate = new Date(rest.birthDate)
+
+    // Resolve jobPositionId (free text or CUID)
+    if ('jobPositionId' in rest) {
+      if (rest.jobPositionId) {
+        const inputVal = rest.jobPositionId
+        const byId = await db.jobPosition.findUnique({ where: { id: inputVal } })
+        if (byId) {
+          rest.jobPositionId = byId.id
+        } else {
+          const byName = await db.jobPosition.findFirst({
+            where: { OR: [{ nameAr: inputVal }, { nameEn: inputVal }] }
+          })
+          if (byName) {
+            rest.jobPositionId = byName.id
+          } else {
+            const jobCount = await db.jobPosition.count()
+            const code = `JOB-${String(jobCount + 1).padStart(4, '0')}`
+            const newJob = await db.jobPosition.create({
+              data: {
+                code,
+                nameAr: inputVal,
+                nameEn: inputVal,
+                active: true
+              }
+            })
+            rest.jobPositionId = newJob.id
+          }
+        }
+      } else {
+        rest.jobPositionId = null
+      }
+    }
+
     const updated = await db.employee.update({ where: { id }, data: rest })
     return ok(updated)
   } catch (e: any) {

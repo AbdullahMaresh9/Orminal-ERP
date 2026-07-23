@@ -263,7 +263,7 @@ export function SalesPaymentsModule() {
         </>
       }
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
         <KpiCard title="قبوض هذا الشهر" value={formatCurrency(stats.monthTotal)} icon={<Receipt className="size-5" />} accent="blue" />
         <KpiCard title="عدد السندات" value={formatInt(stats.count)} icon={<Hash className="size-5" />} accent="sky" />
         <KpiCard title="متوسط السند" value={formatCurrency(stats.avg)} icon={<TrendingUp className="size-5" />} accent="violet" />
@@ -328,72 +328,72 @@ export function SalesPaymentsModule() {
             <DialogTitle>سند قبض جديد</DialogTitle>
             <DialogDescription>إنشاء سند قبض من عميل — سيُرحّل القيد المحاسبي تلقائياً (من ح/ النقدية إلى ح/ الذمم المدينة)</DialogDescription>
           </DialogHeader>
-          <DialogBody>          <DialogBody>          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>العميل *</Label>
-                <Select value={partnerId} onValueChange={setPartnerId}>
-                  <SelectTrigger><SelectValue placeholder="اختر العميل" /></SelectTrigger>
-                  <SelectContent>
-                    {partners.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        <span dir="ltr" className="font-mono text-xs">{p.code}</span> — {p.nameAr}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>الفاتورة (اختياري)</Label>
-                <Select value={invoiceId} onValueChange={(v) => {
-                  setInvoiceId(v)
-                  const inv = invoices.find((i) => i.id === v)
-                  if (inv) setAmount(String(Math.max(0, inv.total - inv.paid)))
-                }}>
-                  <SelectTrigger><SelectValue placeholder="بدون" /></SelectTrigger>
-                  <SelectContent>
-                    {invoices
-                      .filter((i) => !partnerId || i.partnerId === partnerId)
-                      .map((i) => (
-                        <SelectItem key={i.id} value={i.id}>
-                          <span dir="ltr" className="font-mono text-xs">{i.code}</span> — متبقي {formatCurrency(i.total - i.paid)}
+          <DialogBody>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>العميل *</Label>
+                  <Select value={partnerId} onValueChange={setPartnerId}>
+                    <SelectTrigger><SelectValue placeholder="اختر العميل" /></SelectTrigger>
+                    <SelectContent>
+                      {partners.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          <span dir="ltr" className="font-mono text-xs">{p.code}</span> — {p.nameAr}
                         </SelectItem>
                       ))}
-                  </SelectContent>
-                </Select>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>الفاتورة (اختياري)</Label>
+                  <Select value={invoiceId} onValueChange={(v) => {
+                    setInvoiceId(v)
+                    const inv = invoices.find((i) => i.id === v)
+                    if (inv) setAmount(String(Math.max(0, inv.total - inv.paid)))
+                  }}>
+                    <SelectTrigger><SelectValue placeholder="بدون" /></SelectTrigger>
+                    <SelectContent>
+                      {invoices
+                        .filter((i) => !partnerId || i.partnerId === partnerId)
+                        .map((i) => (
+                          <SelectItem key={i.id} value={i.id}>
+                            <span dir="ltr" className="font-mono text-xs">{i.code}</span> — متبقي {formatCurrency(i.total - i.paid)}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="amount">المبلغ *</Label>
+                  <Input id="amount" type="number" step="0.01" dir="ltr" value={amount} onChange={(e) => setAmount(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="paymentDate">التاريخ</Label>
+                  <Input id="paymentDate" type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>طريقة الدفع</Label>
+                  <Select value={method} onValueChange={setMethod}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {METHOD_OPTIONS.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="reference">المرجع</Label>
+                  <Input id="reference" value={reference} onChange={(e) => setReference(e.target.value)} placeholder="رقم شيك / مرجع تحويل" />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="notes">ملاحظات</Label>
+                <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="ملاحظات إضافية..." />
               </div>
             </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="amount">المبلغ *</Label>
-                <Input id="amount" type="number" step="0.01" dir="ltr" value={amount} onChange={(e) => setAmount(e.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="paymentDate">التاريخ</Label>
-                <Input id="paymentDate" type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>طريقة الدفع</Label>
-                <Select value={method} onValueChange={setMethod}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {METHOD_OPTIONS.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="reference">المرجع</Label>
-                <Input id="reference" value={reference} onChange={(e) => setReference(e.target.value)} placeholder="رقم شيك / مرجع تحويل" />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="notes">ملاحظات</Label>
-              <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="ملاحظات إضافية..." />
-            </div>
-          </div>
-
           </DialogBody>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>إلغاء</Button>
@@ -401,7 +401,6 @@ export function SalesPaymentsModule() {
               {saveMutation.isPending ? 'جاري الحفظ...' : 'إنشاء وترحيل'}
             </Button>
           </DialogFooter>
-        </DialogBody>
         </DialogContent>
       </Dialog>
     </ModuleShell>

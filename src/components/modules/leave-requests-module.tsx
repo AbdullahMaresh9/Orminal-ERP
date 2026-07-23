@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ModuleShell } from '@/components/erp/module-shell'
 import { KpiCard } from '@/components/erp/kpi-card'
@@ -76,6 +76,26 @@ export function LeaveRequestsModule() {
   const [filterStatus, setFilterStatus] = useState('all')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [draft, setDraft] = useState<Draft>(emptyDraft)
+  const [dir, setDir] = useState<'rtl' | 'ltr'>('rtl')
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const updateDir = () => {
+        const docDir = document.documentElement.dir || 'rtl'
+        setDir(docDir as 'rtl' | 'ltr')
+      }
+      updateDir()
+      const observer = new MutationObserver(updateDir)
+      observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['dir'],
+      })
+      return () => observer.disconnect()
+    }
+  }, [])
+
+  const isRTL = dir === 'rtl'
+
 
   const { data, isLoading } = useQuery<{ data: LeaveRequest[]; meta: any }>({
     queryKey: ['leave-requests', search, filterStatus],
@@ -219,7 +239,7 @@ export function LeaveRequestsModule() {
         </Select>
       }
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
         <KpiCard title="إجمالي الطلبات" value={formatInt(stats.total)} icon={<FileClock className="size-5" />} accent="blue" />
         <KpiCard title="قيد الانتظار" value={formatInt(stats.pending)} icon={<Clock className="size-5" />} accent="amber" />
         <KpiCard title="معتمدة" value={formatInt(stats.approved)} icon={<CheckCircle2 className="size-5" />} accent="sky" />
@@ -294,66 +314,85 @@ export function LeaveRequestsModule() {
       </Card>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>طلب إجازة جديد</DialogTitle>
-            <DialogDescription>أدخل بيانات طلب الإجازة</DialogDescription>
-          </DialogHeader>
-          <DialogBody>          <DialogBody>          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="space-y-1.5 md:col-span-2">
-                <Label>الموظف *</Label>
-                <Select value={draft.employeeId} onValueChange={(v) => setDraft({ ...draft, employeeId: v })}>
-                  <SelectTrigger><SelectValue placeholder="اختر الموظف" /></SelectTrigger>
-                  <SelectContent>
-                    {employees.map((e) => (
-                      <SelectItem key={e.id} value={e.id}>
-                        <span dir="ltr" className="font-mono text-xs">{e.employeeNo}</span> — {e.nameAr}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+
+        <DialogContent className="max-w-xl p-0 overflow-hidden bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-700 shadow-2xl" dir={dir}>
+          <DialogHeader className="bg-gradient-to-r rtl:bg-gradient-to-l from-blue-50 to-[#E6F0FF] dark:from-blue-700/80 dark:to-blue-800/90 border-b border-blue-100 dark:border-blue-700/40 p-6 shrink-0 relative">
+            <div className="flex items-start gap-4 text-start">
+              <div className="size-12 rounded-xl bg-white dark:bg-slate-900/80 border border-blue-100 dark:border-blue-500/30 text-blue-600 dark:text-blue-300 flex items-center justify-center shadow-sm shadow-blue-100/40 dark:shadow-none shrink-0">
+                <CalendarOff className="size-6 animate-pulse" />
               </div>
-              <div className="space-y-1.5">
-                <Label>نوع الإجازة</Label>
-                <Select value={draft.leaveType} onValueChange={(v) => setDraft({ ...draft, leaveType: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="annual">سنوية</SelectItem>
-                    <SelectItem value="sick">مرضية</SelectItem>
-                    <SelectItem value="emergency">طارئة</SelectItem>
-                    <SelectItem value="unpaid">بدون أجر</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>عدد الأيام (تلقائي)</Label>
-                <Input value={String(days)} disabled dir="ltr" />
-              </div>
-              <div className="space-y-1.5">
-                <Label>من تاريخ *</Label>
-                <Input type="date" value={draft.startDate} onChange={(e) => setDraft({ ...draft, startDate: e.target.value })} dir="ltr" />
-              </div>
-              <div className="space-y-1.5">
-                <Label>إلى تاريخ *</Label>
-                <Input type="date" value={draft.endDate} onChange={(e) => setDraft({ ...draft, endDate: e.target.value })} dir="ltr" />
-              </div>
-              <div className="space-y-1.5 md:col-span-2">
-                <Label>السبب</Label>
-                <Textarea rows={3} value={draft.reason} onChange={(e) => setDraft({ ...draft, reason: e.target.value })} />
+              <div className="space-y-1 flex-1">
+                <DialogTitle className="text-xl font-bold tracking-tight text-blue-950 dark:text-white">
+                  {isRTL ? 'طلب إجازة جديد' : 'New Leave Request'}
+                </DialogTitle>
+
               </div>
             </div>
-          </div>
+          </DialogHeader>
+
+          <DialogBody className="p-6 overflow-y-auto max-h-[70vh] bg-white dark:bg-slate-950">
+            <div className="space-y-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5 text-start md:col-span-2">
+                  <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{isRTL ? 'الموظف *' : 'Employee *'}</Label>
+                  <Select value={draft.employeeId} onValueChange={(v) => setDraft({ ...draft, employeeId: v })}>
+                    <SelectTrigger className="h-10 bg-slate-50/50 dark:bg-slate-900/50 border-slate-300 dark:border-slate-700 focus:ring-blue-500 focus:border-blue-500">
+                      <SelectValue placeholder={isRTL ? 'اختر الموظف' : 'Select Employee'} />
+                    </SelectTrigger>
+                    <SelectContent className="dark:bg-slate-900 dark:border-slate-800 dark:text-white">
+                      {employees.map((e) => (
+                        <SelectItem key={e.id} value={e.id}>
+                          <span dir="ltr" className="font-mono text-xs text-blue-650 dark:text-blue-400 font-semibold">{e.employeeNo}</span> — {e.nameAr}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5 text-start">
+                  <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{isRTL ? 'نوع الإجازة *' : 'Leave Type *'}</Label>
+                  <Select value={draft.leaveType} onValueChange={(v) => setDraft({ ...draft, leaveType: v })}>
+                    <SelectTrigger className="h-10 bg-slate-50/50 dark:bg-slate-900/50 border-slate-300 dark:border-slate-700 focus:ring-blue-500 focus:border-blue-500">
+                      <SelectValue placeholder={isRTL ? 'اختر النوع' : 'Select Type'} />
+                    </SelectTrigger>
+                    <SelectContent className="dark:bg-slate-900 dark:border-slate-800 dark:text-white">
+                      <SelectItem value="annual">{isRTL ? 'سنوية' : 'Annual'}</SelectItem>
+                      <SelectItem value="sick">{isRTL ? 'مرضية' : 'Sick'}</SelectItem>
+                      <SelectItem value="emergency">{isRTL ? 'طارئة' : 'Emergency'}</SelectItem>
+                      <SelectItem value="unpaid">{isRTL ? 'بدون أجر' : 'Unpaid'}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5 text-start">
+                  <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{isRTL ? 'عدد الأيام (تلقائي)' : 'Days (Auto)'}</Label>
+                  <Input value={String(days)} disabled className="h-10 bg-slate-100 dark:bg-slate-900/90 border-slate-300 dark:border-slate-850 font-mono text-center font-bold text-slate-700 dark:text-slate-300 animate-fade-in" dir="ltr" />
+                </div>
+                <div className="space-y-1.5 text-start">
+                  <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{isRTL ? 'من تاريخ *' : 'Start Date *'}</Label>
+                  <Input type="date" value={draft.startDate} onChange={(e) => setDraft({ ...draft, startDate: e.target.value })} className="h-10 bg-slate-50/50 dark:bg-slate-900/50 border-slate-300 dark:border-slate-700 focus-visible:ring-blue-500 font-mono text-end" dir="ltr" />
+                </div>
+                <div className="space-y-1.5 text-start">
+                  <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{isRTL ? 'إلى تاريخ *' : 'End Date *'}</Label>
+                  <Input type="date" value={draft.endDate} onChange={(e) => setDraft({ ...draft, endDate: e.target.value })} className="h-10 bg-slate-50/50 dark:bg-slate-900/50 border-slate-300 dark:border-slate-700 focus-visible:ring-blue-500 font-mono text-end" dir="ltr" />
+                </div>
+                <div className="space-y-1.5 text-start md:col-span-2">
+                  <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{isRTL ? 'السبب' : 'Reason'}</Label>
+                  <Textarea rows={3} value={draft.reason} onChange={(e) => setDraft({ ...draft, reason: e.target.value })} placeholder={isRTL ? 'اكتب سبب الإجازة هنا...' : 'Write the reason for leave here...'} className="bg-slate-50/50 dark:bg-slate-900/50 border-slate-300 dark:border-slate-700 focus-visible:ring-blue-500" />
+                </div>
+              </div>
+
+              <DialogFooter className="px-0 pt-4 bg-transparent border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-end gap-2 shrink-0">
+                <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} className="h-10 px-5 border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-900 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  {isRTL ? 'إلغاء' : 'Cancel'}
+                </Button>
+                <Button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()} className="h-10 px-5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-xs font-semibold shadow-md shadow-blue-500/20 dark:shadow-none">
+                  {saveMutation.isPending ? (isRTL ? 'جاري الحفظ...' : 'Saving...') : (isRTL ? 'إنشاء الطلب' : 'Create Request')}
+                </Button>
+              </DialogFooter>
+            </div>
           </DialogBody>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>إلغاء</Button>
-            <Button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
-              {saveMutation.isPending ? 'جاري الحفظ...' : 'إنشاء الطلب'}
-            </Button>
-          </DialogFooter>
-        </DialogBody>
         </DialogContent>
       </Dialog>
     </ModuleShell>
+
   )
 }

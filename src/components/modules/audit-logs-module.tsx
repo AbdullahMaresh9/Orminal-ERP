@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ModuleShell } from '@/components/erp/module-shell'
 import { KpiCard } from '@/components/erp/kpi-card'
@@ -118,6 +118,26 @@ export function AuditLogsModule() {
   const [viewOpen, setViewOpen] = useState(false)
   const [viewing, setViewing] = useState<AuditLog | null>(null)
   const [page, setPage] = useState(1)
+  const [dir, setDir] = useState<'rtl' | 'ltr'>('rtl')
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const updateDir = () => {
+        const docDir = document.documentElement.dir || 'rtl'
+        setDir(docDir as 'rtl' | 'ltr')
+      }
+      updateDir()
+      const observer = new MutationObserver(updateDir)
+      observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['dir'],
+      })
+      return () => observer.disconnect()
+    }
+  }, [])
+
+  const isRTL = dir === 'rtl'
+
   const pageSize = 25
 
   const { data, isLoading } = useQuery<AuditResponse>({
@@ -143,14 +163,14 @@ export function AuditLogsModule() {
 
   const filteredLogs = search
     ? logs.filter((l) => {
-        const u = l.user?.nameAr || l.user?.username || ''
-        return (
-          u.includes(search) ||
-          l.documentType.includes(search) ||
-          (l.documentId ?? '').includes(search) ||
-          (l.reason ?? '').includes(search)
-        )
-      })
+      const u = l.user?.nameAr || l.user?.username || ''
+      return (
+        u.includes(search) ||
+        l.documentType.includes(search) ||
+        (l.documentId ?? '').includes(search) ||
+        (l.reason ?? '').includes(search)
+      )
+    })
     : logs
 
   // Use global stats from API; fallback to filtered counts
@@ -227,7 +247,7 @@ export function AuditLogsModule() {
         </>
       }
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
         <KpiCard title="إجمالي السجلات" value={formatInt(totalLogs)} icon={<ScrollText className="size-5" />} accent="blue" />
         <KpiCard title="سجلات اليوم" value={formatInt(todayCount)} icon={<CalendarClock className="size-5" />} accent="sky" />
         <KpiCard title="الأكثر إجراءً" value={topActionLabel} icon={<Activity className="size-5" />} accent="amber" />
@@ -310,56 +330,74 @@ export function AuditLogsModule() {
 
       {/* Read-only detail dialog */}
       <Dialog open={viewOpen} onOpenChange={setViewOpen}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>تفاصيل سجل التدقيق</DialogTitle>
-            <DialogDescription>
-              {viewing && <span>سجل بتاريخ <span className="num" dir="ltr">{formatDateTime(viewing.createdAt)}</span> — للقراءة فقط</span>}
-            </DialogDescription>
+        <DialogContent className="max-w-3xl p-0 overflow-hidden bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800" dir={dir}>
+          <DialogHeader className="bg-gradient-to-r rtl:bg-gradient-to-l from-blue-50 to-[#E6F0FF] dark:bg-none dark:bg-blue-700/80 border-b border-blue-100 dark:border-blue-600/40 p-6 shrink-0 relative">
+            <div className="flex items-start gap-4 text-start">
+              <div className="size-12 rounded-xl bg-white dark:bg-blue-950/60 border border-blue-100 dark:border-blue-500/20 text-blue-600 dark:text-blue-300 flex items-center justify-center shadow-sm shadow-blue-100/40 dark:shadow-none shrink-0">
+                <ScrollText className="size-6" />
+              </div>
+              <div className="space-y-1 flex-1">
+                <DialogTitle className="text-xl font-bold tracking-tight text-blue-955 dark:text-white">
+                  {isRTL ? 'تفاصيل سجل التدقيق' : 'Audit Log Details'}
+                </DialogTitle>
+                <DialogDescription className="text-xs text-blue-700/70 dark:text-blue-200/60 leading-normal">
+                  {viewing && (
+                    <span>
+                      {isRTL ? 'سجل بتاريخ ' : 'Log date: '}
+                      <span className="num font-mono" dir="ltr">{formatDateTime(viewing.createdAt)}</span>
+                      {isRTL ? ' — للقراءة فقط' : ' — Read-only'}
+                    </span>
+                  )}
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
-          <DialogBody>          <DialogBody>          {viewing && (
-            <ScrollArea className="max-h-[70vh] pe-2">
-              <div className="space-y-4 p-1">
-                <div className="grid grid-cols-2 gap-3">
-                  <DetailField label="المستخدم" value={viewing.user?.nameAr ?? viewing.user?.username ?? '—'} />
-                  <DetailField label="البريد" value={viewing.user?.email ?? '—'} dir="ltr" />
-                  <DetailField label="الوحدة" value={viewing.moduleCode} mono />
-                  <DetailField label="نوع المستند" value={viewing.documentType} mono />
-                  <DetailField label="معرف المستند" value={viewing.documentId ?? '—'} mono />
-                  <DetailField label="الإجراء" value={ACTIONS.find((a) => a.value === viewing.action)?.label ?? viewing.action} />
-                  <DetailField label="عنوان IP" value={viewing.ipAddress ?? '—'} mono />
-                  <DetailField label="معرف الارتباط" value={viewing.correlationId ?? '—'} mono />
+
+          <DialogBody className="p-6 overflow-y-auto max-h-[70vh]">
+            {viewing && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3 text-start">
+                  <DetailField label={isRTL ? 'المستخدم' : 'User'} value={viewing.user?.nameAr ?? viewing.user?.username ?? '—'} />
+                  <DetailField label={isRTL ? 'البريد' : 'Email'} value={viewing.user?.email ?? '—'} dir="ltr" />
+                  <DetailField label={isRTL ? 'الوحدة' : 'Module'} value={viewing.moduleCode} mono />
+                  <DetailField label={isRTL ? 'نوع المستند' : 'Document Type'} value={viewing.documentType} mono />
+                  <DetailField label={isRTL ? 'معرف المستند' : 'Document ID'} value={viewing.documentId ?? '—'} mono />
+                  <DetailField label={isRTL ? 'الإجراء' : 'Action'} value={ACTIONS.find((a) => a.value === viewing.action)?.label ?? viewing.action} />
+                  <DetailField label={isRTL ? 'عنوان IP' : 'IP Address'} value={viewing.ipAddress ?? '—'} mono />
+                  <DetailField label={isRTL ? 'معرف الارتباط' : 'Correlation ID'} value={viewing.correlationId ?? '—'} mono />
                 </div>
                 {viewing.reason && (
-                  <DetailField label="السبب" value={viewing.reason} />
+                  <DetailField label={isRTL ? 'السبب' : 'Reason'} value={viewing.reason} />
                 )}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-start">
                   <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">القيمة القديمة ( oldValue )</Label>
-                    <pre className="text-xs font-mono bg-muted/40 rounded-md p-3 max-h-60 overflow-auto whitespace-pre-wrap break-all" dir="ltr">
+                    <Label className="text-xs text-muted-foreground">{isRTL ? 'القيمة القديمة ( oldValue )' : 'Old Value'}</Label>
+                    <pre className="text-xs font-mono bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md p-3 max-h-60 overflow-auto whitespace-pre-wrap break-all" dir="ltr">
                       {prettyJson(viewing.oldValue)}
                     </pre>
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">القيمة الجديدة ( newValue )</Label>
-                    <pre className="text-xs font-mono bg-muted/40 rounded-md p-3 max-h-60 overflow-auto whitespace-pre-wrap break-all" dir="ltr">
+                    <Label className="text-xs text-muted-foreground">{isRTL ? 'القيمة الجديدة ( newValue )' : 'New Value'}</Label>
+                    <pre className="text-xs font-mono bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md p-3 max-h-60 overflow-auto whitespace-pre-wrap break-all" dir="ltr">
                       {prettyJson(viewing.newValue)}
                     </pre>
                   </div>
                 </div>
+
+                <DialogFooter className="px-0 pt-4 bg-transparent border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-end gap-2 shrink-0">
+                  <Button type="button" variant="outline" onClick={() => setViewOpen(false)} className="h-10 px-5 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-900 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    {isRTL ? 'إغلاق' : 'Close'}
+                  </Button>
+                </DialogFooter>
               </div>
-            </ScrollArea>
-          )}
+            )}
           </DialogBody>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setViewOpen(false)}>إغلاق</Button>
-          </DialogFooter>
-        </DialogBody>
         </DialogContent>
       </Dialog>
     </ModuleShell>
   )
 }
+
 
 function DetailField({ label, value, mono, dir }: { label: string; value: string; mono?: boolean; dir?: 'ltr' | 'rtl' }) {
   return (

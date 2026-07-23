@@ -1,326 +1,694 @@
-'use client'
+// 'use client'
 
-import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ModuleShell } from '@/components/erp/module-shell'
-import { KpiCard } from '@/components/erp/kpi-card'
-import { StatusBadge } from '@/components/erp/status-badge'
-import { useT } from '@/lib/i18n/use-t'
-import { formatCurrency, formatInt, formatDate } from '@/lib/format'
-import { exportToCSV } from '@/lib/export'
-import { toast } from 'sonner'
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from '@/components/ui/table'
-import { Card } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
-import { Badge } from '@/components/ui/badge'
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogBody,
-} from '@/components/ui/dialog'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import {
-  Handshake, Users, Truck, Plus, Pencil, Trash2, Phone, Mail, Building2,
-} from 'lucide-react'
+// import { useState } from 'react'
+// import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+// import { ModuleShell } from '@/components/erp/module-shell'
+// import { KpiCard } from '@/components/erp/kpi-card'
+// import { StatusBadge } from '@/components/erp/status-badge'
+// import { useT } from '@/lib/i18n/use-t'
+// import { formatCurrency, formatInt, formatDate } from '@/lib/format'
+// import { exportToCSV } from '@/lib/export'
+// import { toast } from 'sonner'
+// import {
+//   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+// } from '@/components/ui/table'
+// import { Card } from '@/components/ui/card'
+// import { Button } from '@/components/ui/button'
+// import { Input } from '@/components/ui/input'
+// import { Label } from '@/components/ui/label'
+// import { Switch } from '@/components/ui/switch'
+// import { Badge } from '@/components/ui/badge'
+// import {
+//   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogBody,
+// } from '@/components/ui/dialog'
+// import { ScrollArea } from '@/components/ui/scroll-area'
+// import { cn } from '@/lib/utils'
+// import {
+//   Handshake, Users, Truck, Plus, Pencil, Trash2, Phone, Mail, Building2, MapPin, Hash, Coins
+// } from 'lucide-react'
 
-interface Partner {
-  id: string
-  code: string
-  nameAr: string
-  nameEn?: string
-  isCustomer: boolean
-  isSupplier: boolean
-  contactName?: string
-  phone?: string
-  email?: string
-  taxNumber?: string
-  address?: string
-  creditLimit: number
-  openingBalance: number
-  currentBalance: number
-  active: boolean
-  createdAt: string
-  paymentTerm?: { id: string; nameAr: string }
-}
+// interface Partner {
+//   id: string
+//   code: string
+//   nameAr: string
+//   nameEn?: string
+//   isCustomer: boolean
+//   isSupplier: boolean
+//   contactName?: string
+//   phone?: string
+//   email?: string
+//   taxNumber?: string
+//   address?: string
+//   creditLimit: number
+//   openingBalance: number
+//   currentBalance: number
+//   active: boolean
+//   createdAt: string
+//   paymentTerm?: { id: string; nameAr: string }
+// }
 
-export function PartnersModule() {
-  const { t } = useT()
-  const qc = useQueryClient()
-  const [search, setSearch] = useState('')
-  const [filterType, setFilterType] = useState<'all' | 'customer' | 'supplier'>('all')
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [editing, setEditing] = useState<Partner | null>(null)
-  const [page, setPage] = useState(1)
-  const pageSize = 15
+// export interface PartnersModuleProps {
+//   type?: 'customer' | 'supplier' | 'all'
+// }
 
-  const { data, isLoading } = useQuery<{ data: Partner[]; meta: any }>({
-    queryKey: ['partners', search, filterType, page],
-    queryFn: async () => {
-      const params = new URLSearchParams()
-      if (search) params.set('q', search)
-      if (filterType === 'customer') params.set('isCustomer', 'true')
-      if (filterType === 'supplier') params.set('isSupplier', 'true')
-      params.set('page', String(page))
-      params.set('pageSize', String(pageSize))
-      const r = await fetch(`/api/erp/partners?${params}`)
-      if (!r.ok) throw new Error('Failed')
-      return r.json()
-    },
-  })
+// export function PartnersModule({ type = 'all' }: PartnersModuleProps) {
+//   const { t, locale, isRTL, dir } = useT()
+//   const qc = useQueryClient()
+//   const [search, setSearch] = useState('')
+//   const [filterType, setFilterType] = useState<'all' | 'customer' | 'supplier'>(type)
+//   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
+//   const [dialogOpen, setDialogOpen] = useState(false)
+//   const [editing, setEditing] = useState<Partner | null>(null)
+//   const [page, setPage] = useState(1)
+//   const pageSize = 15
 
-  const partners = data?.data ?? []
-  const total = data?.meta?.pagination?.total ?? 0
-  const totalPages = data?.meta?.pagination?.totalPages ?? 1
+//   const { data, isLoading } = useQuery<{ data: Partner[]; meta: any }>({
+//     queryKey: ['partners', search, filterType, statusFilter, page, type],
+//     queryFn: async () => {
+//       const params = new URLSearchParams()
+//       if (search) params.set('q', search)
+      
+//       if (type === 'customer') {
+//         params.set('isCustomer', 'true')
+//       } else if (type === 'supplier') {
+//         params.set('isSupplier', 'true')
+//       } else {
+//         if (filterType === 'customer') params.set('isCustomer', 'true')
+//         if (filterType === 'supplier') params.set('isSupplier', 'true')
+//       }
 
-  const stats = {
-    total: partners.length,
-    customers: partners.filter((p) => p.isCustomer).length,
-    suppliers: partners.filter((p) => p.isSupplier).length,
-    totalBalance: partners.reduce((s, p) => s + (p.currentBalance || 0), 0),
-  }
+//       if (statusFilter === 'active') params.set('active', 'true')
+//       if (statusFilter === 'inactive') params.set('active', 'false')
 
-  const saveMutation = useMutation({
-    mutationFn: async (payload: any) => {
-      const url = editing ? `/api/erp/partners/${editing.id}` : '/api/erp/partners'
-      const method = editing ? 'PUT' : 'POST'
-      const r = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-      if (!r.ok) {
-        const err = await r.json().catch(() => ({}))
-        throw new Error(err?.error?.message ?? 'Failed')
-      }
-      return r.json()
-    },
-    onSuccess: () => {
-      toast.success('تم الحفظ بنجاح')
-      qc.invalidateQueries({ queryKey: ['partners'] })
-      setDialogOpen(false)
-      setEditing(null)
-    },
-    onError: (e: any) => toast.error(e.message || 'حدث خطأ'),
-  })
+//       params.set('page', String(page))
+//       params.set('pageSize', String(pageSize))
+//       const r = await fetch(`/api/erp/partners?${params}`)
+//       if (!r.ok) throw new Error('Failed')
+//       return r.json()
+//     },
+//   })
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const r = await fetch(`/api/erp/partners/${id}`, { method: 'DELETE' })
-      if (!r.ok) throw new Error('Failed')
-      return r.json()
-    },
-    onSuccess: () => {
-      toast.success('تم الحذف بنجاح')
-      qc.invalidateQueries({ queryKey: ['partners'] })
-    },
-    onError: () => toast.error('حدث خطأ'),
-  })
+//   const partners = data?.data ?? []
+//   const total = data?.meta?.pagination?.total ?? 0
+//   const totalPages = data?.meta?.pagination?.totalPages ?? 1
 
-  const handleSave = (formData: FormData) => {
-    const payload: any = {
-      code: formData.get('code') || undefined,
-      nameAr: formData.get('nameAr'),
-      nameEn: formData.get('nameEn') || undefined,
-      isCustomer: formData.get('isCustomer') === 'on',
-      isSupplier: formData.get('isSupplier') === 'on',
-      contactName: formData.get('contactName') || undefined,
-      phone: formData.get('phone') || undefined,
-      email: formData.get('email') || undefined,
-      taxNumber: formData.get('taxNumber') || undefined,
-      address: formData.get('address') || undefined,
-      creditLimit: Number(formData.get('creditLimit')) || 0,
-      openingBalance: Number(formData.get('openingBalance')) || 0,
-      active: formData.get('active') === 'on',
-    }
-    saveMutation.mutate(payload)
-  }
+//   const stats = {
+//     total: partners.length,
+//     customers: partners.filter((p) => p.isCustomer).length,
+//     suppliers: partners.filter((p) => p.isSupplier).length,
+//     active: partners.filter((p) => p.active).length,
+//     totalBalance: partners.reduce((s, p) => s + (p.currentBalance || 0), 0),
+//   }
 
-  const handleExport = () => {
-    const rows = partners.map((p) => ({
-      'الرمز': p.code,
-      'الاسم': p.nameAr,
-      'عميل': p.isCustomer ? 'نعم' : 'لا',
-      'مورد': p.isSupplier ? 'نعم' : 'لا',
-      'جهة الاتصال': p.contactName ?? '',
-      'الهاتف': p.phone ?? '',
-      'البريد': p.email ?? '',
-      'الرقم الضريبي': p.taxNumber ?? '',
-      'حد الائتمان': p.creditLimit,
-      'الرصيد الحالي': p.currentBalance,
-      'الحالة': p.active ? 'نشط' : 'غير نشط',
-    }))
-    exportToCSV('partners', rows)
-    toast.success('تم تصدير الملف')
-  }
+//   const saveMutation = useMutation({
+//     mutationFn: async (payload: any) => {
+//       const url = editing ? `/api/erp/partners/${editing.id}` : '/api/erp/partners'
+//       const method = editing ? 'PUT' : 'POST'
+//       const r = await fetch(url, {
+//         method,
+//         headers: { 'Content-Type': 'application/json' },
+//         body: JSON.stringify(payload),
+//       })
+//       if (!r.ok) {
+//         const err = await r.json().catch(() => ({}))
+//         throw new Error(err?.error?.message ?? 'Failed')
+//       }
+//       return r.json()
+//     },
+//     onSuccess: () => {
+//       toast.success(isRTL ? 'تم الحفظ بنجاح' : 'Saved successfully')
+//       qc.invalidateQueries({ queryKey: ['partners'] })
+//       setDialogOpen(false)
+//       setEditing(null)
+//     },
+//     onError: (e: any) => toast.error(e.message || (isRTL ? 'حدث خطأ' : 'An error occurred')),
+//   })
 
-  return (
-    <ModuleShell
-      title={t('module.partners')}
-      description="إدارة موحدة للعملاء والموردين والشركاء التجاريين"
-      icon={<Handshake className="size-5" />}
-      searchValue={search}
-      onSearch={setSearch}
-      searchPlaceholder="ابحث برمز الشريك أو الاسم أو الهاتف..."
-      onAdd={() => { setEditing(null); setDialogOpen(true) }}
-      addLabel={t('action.add')}
-      onExport={handleExport}
-      filters={
-        <>
-          <Button size="sm" variant={filterType === 'all' ? 'default' : 'outline'} onClick={() => setFilterType('all')}>الكل</Button>
-          <Button size="sm" variant={filterType === 'customer' ? 'default' : 'outline'} onClick={() => setFilterType('customer')}>عملاء</Button>
-          <Button size="sm" variant={filterType === 'supplier' ? 'default' : 'outline'} onClick={() => setFilterType('supplier')}>موردون</Button>
-        </>
-      }
-    >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <KpiCard title="إجمالي الشركاء" value={formatInt(total)} icon={<Handshake className="size-5" />} accent="blue" />
-        <KpiCard title="العملاء" value={formatInt(stats.customers)} icon={<Users className="size-5" />} accent="sky" />
-        <KpiCard title="الموردون" value={formatInt(stats.suppliers)} icon={<Truck className="size-5" />} accent="amber" />
-        <KpiCard title="إجمالي الأرصدة" value={formatCurrency(stats.totalBalance)} icon={<Building2 className="size-5" />} accent="violet" />
-      </div>
+//   const deleteMutation = useMutation({
+//     mutationFn: async (id: string) => {
+//       const r = await fetch(`/api/erp/partners/${id}`, { method: 'DELETE' })
+//       if (!r.ok) throw new Error('Failed')
+//       return r.json()
+//     },
+//     onSuccess: () => {
+//       toast.success(isRTL ? 'تم الحذف بنجاح' : 'Deleted successfully')
+//       qc.invalidateQueries({ queryKey: ['partners'] })
+//     },
+//     onError: () => toast.error(isRTL ? 'حدث خطأ' : 'An error occurred'),
+//   })
 
-      <Card className="rounded-xl overflow-hidden">
-        <ScrollArea className="max-h-[60vh]">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead className="ps-4">الرمز</TableHead>
-                <TableHead>الاسم</TableHead>
-                <TableHead>النوع</TableHead>
-                <TableHead>جهة الاتصال</TableHead>
-                <TableHead>الهاتف</TableHead>
-                <TableHead className="text-end num-cell">الرصيد</TableHead>
-                <TableHead>الحالة</TableHead>
-                <TableHead className="text-end">إجراءات</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow><TableCell colSpan={8} className="text-center py-10 text-muted-foreground">جاري التحميل...</TableCell></TableRow>
-              ) : partners.length === 0 ? (
-                <TableRow><TableCell colSpan={8} className="text-center py-10 text-muted-foreground">لا يوجد شركاء. ابدأ بإضافة أول شريك.</TableCell></TableRow>
-              ) : partners.map((p) => (
-                <TableRow key={p.id} className="hover:bg-muted/40">
-                  <TableCell className="ps-4 font-mono text-xs" dir="ltr">{p.code}</TableCell>
-                  <TableCell className="font-medium">{p.nameAr}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      {p.isCustomer && <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 text-[10px]">عميل</Badge>}
-                      {p.isSupplier && <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 text-[10px]">مورد</Badge>}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{p.contactName ?? '—'}</TableCell>
-                  <TableCell className="text-sm font-mono" dir="ltr">{p.phone ?? '—'}</TableCell>
-                  <TableCell className="text-end num-cell">
-                    <span className="num font-semibold tabular-nums" dir="ltr">{formatCurrency(p.currentBalance)}</span>
-                  </TableCell>
-                  <TableCell><StatusBadge status={p.active ? 'active' : 'inactive'} /></TableCell>
-                  <TableCell className="text-end">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button size="icon" variant="ghost" className="size-8" onClick={() => { setEditing(p); setDialogOpen(true) }}>
-                        <Pencil className="size-3.5" />
-                      </Button>
-                      <Button size="icon" variant="ghost" className="size-8 text-rose-500 hover:text-rose-600" onClick={() => deleteMutation.mutate(p.id)}>
-                        <Trash2 className="size-3.5" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </ScrollArea>
-      </Card>
+//   const handleSave = (formData: FormData) => {
+//     const payload: any = {
+//       code: formData.get('code') || undefined,
+//       nameAr: formData.get('nameAr'),
+//       nameEn: formData.get('nameEn') || undefined,
+//       isCustomer: formData.get('isCustomer') === 'on',
+//       isSupplier: formData.get('isSupplier') === 'on',
+//       contactName: formData.get('contactName') || undefined,
+//       phone: formData.get('phone') || undefined,
+//       email: formData.get('email') || undefined,
+//       taxNumber: formData.get('taxNumber') || undefined,
+//       address: formData.get('address') || undefined,
+//       creditLimit: Number(formData.get('creditLimit')) || 0,
+//       openingBalance: Number(formData.get('openingBalance')) || 0,
+//       active: formData.get('active') === 'on',
+//     }
+//     saveMutation.mutate(payload)
+//   }
 
-      {/* Pagination */}
-      <div className="flex items-center justify-between mt-4 text-sm">
-        <p className="text-muted-foreground">
-          عرض {partners.length === 0 ? 0 : (page - 1) * pageSize + 1}–{(page - 1) * pageSize + partners.length} من {total}
-        </p>
-        <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}>السابق</Button>
-          <span className="text-xs text-muted-foreground">صفحة {page} من {totalPages}</span>
-          <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>التالي</Button>
-        </div>
-      </div>
+//   const handleExport = () => {
+//     const rows = partners.map((p) => ({
+//       [isRTL ? 'الرمز' : 'Code']: p.code,
+//       [isRTL ? 'الاسم' : 'Name']: p.nameAr,
+//       [isRTL ? 'عميل' : 'Customer']: p.isCustomer ? (isRTL ? 'نعم' : 'Yes') : (isRTL ? 'لا' : 'No'),
+//       [isRTL ? 'مورد' : 'Supplier']: p.isSupplier ? (isRTL ? 'نعم' : 'Yes') : (isRTL ? 'لا' : 'No'),
+//       [isRTL ? 'جهة الاتصال' : 'Contact Person']: p.contactName ?? '',
+//       [isRTL ? 'الهاتف' : 'Phone']: p.phone ?? '',
+//       [isRTL ? 'البريد' : 'Email']: p.email ?? '',
+//       [isRTL ? 'الرقم الضريبي' : 'Tax Number']: p.taxNumber ?? '',
+//       [isRTL ? 'حد الائتمان' : 'Credit Limit']: p.creditLimit,
+//       [isRTL ? 'الرصيد الحالي' : 'Current Balance']: p.currentBalance,
+//       [isRTL ? 'الحالة' : 'Status']: p.active ? (isRTL ? 'نشط' : 'Active') : (isRTL ? 'غير نشط' : 'Inactive'),
+//     }))
+//     exportToCSV(type === 'customer' ? 'customers' : type === 'supplier' ? 'suppliers' : 'partners', rows)
+//     toast.success(isRTL ? 'تم تصدير الملف' : 'Exported successfully')
+//   }
 
-      {/* Add/Edit Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
-            <DialogTitle>{editing ? 'تعديل شريك' : 'إضافة شريك جديد'}</DialogTitle>
-            <DialogDescription>أدخل بيانات الشريك التجاري</DialogDescription>
-          </DialogHeader>
-          <DialogBody>          <form onSubmit={(e) => { e.preventDefault(); handleSave(new FormData(e.currentTarget)) }}>
-            <ScrollArea className="max-h-[60vh] pe-2">
-              <div className="grid grid-cols-2 gap-4 p-1">
-                <div className="space-y-1.5">
-                  <Label htmlFor="code">الرمز (تلقائي)</Label>
-                  <Input id="code" name="code" defaultValue={editing?.code} placeholder="P-00001" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="nameAr">الاسم (عربي) *</Label>
-                  <Input id="nameAr" name="nameAr" defaultValue={editing?.nameAr} required />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="nameEn">الاسم (إنجليزي)</Label>
-                  <Input id="nameEn" name="nameEn" defaultValue={editing?.nameEn} dir="ltr" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="contactName">جهة الاتصال</Label>
-                  <Input id="contactName" name="contactName" defaultValue={editing?.contactName} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="phone">الهاتف</Label>
-                  <Input id="phone" name="phone" defaultValue={editing?.phone} dir="ltr" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="email">البريد الإلكتروني</Label>
-                  <Input id="email" name="email" type="email" defaultValue={editing?.email} dir="ltr" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="taxNumber">الرقم الضريبي</Label>
-                  <Input id="taxNumber" name="taxNumber" defaultValue={editing?.taxNumber} dir="ltr" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="creditLimit">حد الائتمان</Label>
-                  <Input id="creditLimit" name="creditLimit" type="number" step="0.01" defaultValue={editing?.creditLimit ?? 0} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="openingBalance">الرصيد الافتتاحي</Label>
-                  <Input id="openingBalance" name="openingBalance" type="number" step="0.01" defaultValue={editing?.openingBalance ?? 0} />
-                </div>
-                <div className="space-y-1.5 col-span-2">
-                  <Label htmlFor="address">العنوان</Label>
-                  <Input id="address" name="address" defaultValue={editing?.address} />
-                </div>
-                <div className="flex items-center gap-6 pt-2">
-                  <div className="flex items-center gap-2">
-                    <Switch id="isCustomer" name="isCustomer" defaultChecked={editing?.isCustomer ?? true} />
-                    <Label htmlFor="isCustomer">عميل</Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Switch id="isSupplier" name="isSupplier" defaultChecked={editing?.isSupplier ?? false} />
-                    <Label htmlFor="isSupplier">مورد</Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Switch id="active" name="active" defaultChecked={editing?.active ?? true} />
-                    <Label htmlFor="active">نشط</Label>
-                  </div>
-                </div>
-              </div>
-            </ScrollArea>
-            <DialogFooter className="mt-4">
-              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>إلغاء</Button>
-              <Button type="submit" disabled={saveMutation.isPending}>{saveMutation.isPending ? 'جاري الحفظ...' : 'حفظ'}</Button>
-            </DialogFooter>
-          </form>
-        </DialogBody>
-        </DialogContent>
-      </Dialog>
-    </ModuleShell>
-  )
-}
+//   return (
+//     <ModuleShell
+//       title={
+//         type === 'customer'
+//           ? (isRTL ? 'العملاء' : 'Customers')
+//           : type === 'supplier'
+//           ? (isRTL ? 'الموردون' : 'Suppliers')
+//           : t('module.partners')
+//       }
+//       description={
+//         type === 'customer'
+//           ? (isRTL ? 'إدارة العملاء والحسابات والذمم المدينة والمبيعات' : 'Manage customers, account parameters, receivables and sales records')
+//           : type === 'supplier'
+//           ? (isRTL ? 'إدارة الموردين وعمليات التوريد والمدفوعات والمستحقات' : 'Manage suppliers, procurement accounts, payables and vendor operations')
+//           : (isRTL ? 'إدارة موحدة للعملاء والموردين والشركاء التجاريين' : 'Unified dashboard for managing customers, suppliers and business partners')
+//       }
+//       icon={
+//         type === 'customer' ? (
+//           <Users className="size-5" />
+//         ) : type === 'supplier' ? (
+//           <Truck className="size-5" />
+//         ) : (
+//           <Handshake className="size-5" />
+//         )
+//       }
+//       searchValue={search}
+//       onSearch={setSearch}
+//       searchPlaceholder={
+//         type === 'customer'
+//           ? (isRTL ? 'ابحث برمز العميل أو الاسم أو الهاتف...' : 'Search by customer code, name or phone...')
+//           : type === 'supplier'
+//           ? (isRTL ? 'ابحث برمز المورد أو الاسم أو الهاتف...' : 'Search by supplier code, name or phone...')
+//           : (isRTL ? 'ابحث برمز الشريك أو الاسم أو الهاتف...' : 'Search by partner code, name or phone...')
+//       }
+//       onAdd={() => { setEditing(null); setDialogOpen(true) }}
+//       addLabel={
+//         type === 'customer'
+//           ? (isRTL ? 'إضافة عميل جديد' : 'Add Customer')
+//           : type === 'supplier'
+//           ? (isRTL ? 'إضافة مورد جديد' : 'Add Supplier')
+//           : t('action.add')
+//       }
+//       onExport={handleExport}
+//       filters={
+//         type === 'all' ? (
+//           <>
+//             <Button size="sm" variant={filterType === 'all' ? 'default' : 'outline'} onClick={() => { setFilterType('all'); setPage(1); }}>
+//               {isRTL ? 'الكل' : 'All'}
+//             </Button>
+//             <Button size="sm" variant={filterType === 'customer' ? 'default' : 'outline'} onClick={() => { setFilterType('customer'); setPage(1); }}>
+//               {isRTL ? 'عملاء' : 'Customers'}
+//             </Button>
+//             <Button size="sm" variant={filterType === 'supplier' ? 'default' : 'outline'} onClick={() => { setFilterType('supplier'); setPage(1); }}>
+//               {isRTL ? 'موردون' : 'Suppliers'}
+//             </Button>
+//           </>
+//         ) : (
+//           <>
+//             <Button size="sm" variant={statusFilter === 'all' ? 'default' : 'outline'} onClick={() => { setStatusFilter('all'); setPage(1); }}>
+//               {isRTL ? 'الكل' : 'All'}
+//             </Button>
+//             <Button size="sm" variant={statusFilter === 'active' ? 'default' : 'outline'} onClick={() => { setStatusFilter('active'); setPage(1); }}>
+//               {isRTL ? 'نشط' : 'Active'}
+//             </Button>
+//             <Button size="sm" variant={statusFilter === 'inactive' ? 'default' : 'outline'} onClick={() => { setStatusFilter('inactive'); setPage(1); }}>
+//               {isRTL ? 'غير نشط' : 'Inactive'}
+//             </Button>
+//           </>
+//         )
+//       }
+//     >
+//       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+//         {type === 'customer' ? (
+//           <>
+//             <KpiCard title={isRTL ? 'إجمالي العملاء' : 'Total Customers'} value={formatInt(total)} icon={<Users className="size-5" />} accent="sky" />
+//             <KpiCard title={isRTL ? 'العملاء النشطون' : 'Active Customers'} value={formatInt(stats.active)} icon={<Users className="size-5" />} accent="blue" />
+//             <KpiCard title={isRTL ? 'إجمالي الأرصدة' : 'Total Balances'} value={formatCurrency(stats.totalBalance)} icon={<Building2 className="size-5" />} accent="violet" />
+//             <KpiCard title={isRTL ? 'متوسط الرصيد' : 'Avg Balance'} value={formatCurrency(stats.total ? Math.round(stats.totalBalance / stats.total) : 0)} icon={<Coins className="size-5" />} accent="amber" />
+//           </>
+//         ) : type === 'supplier' ? (
+//           <>
+//             <KpiCard title={isRTL ? 'إجمالي الموردين' : 'Total Suppliers'} value={formatInt(total)} icon={<Truck className="size-5" />} accent="amber" />
+//             <KpiCard title={isRTL ? 'الموردون النشطون' : 'Active Suppliers'} value={formatInt(stats.active)} icon={<Truck className="size-5" />} accent="blue" />
+//             <KpiCard title={isRTL ? 'إجمالي الأرصدة' : 'Total Balances'} value={formatCurrency(stats.totalBalance)} icon={<Building2 className="size-5" />} accent="violet" />
+//             <KpiCard title={isRTL ? 'متوسط الرصيد' : 'Avg Balance'} value={formatCurrency(stats.total ? Math.round(stats.totalBalance / stats.total) : 0)} icon={<Coins className="size-5" />} accent="sky" />
+//           </>
+//         ) : (
+//           <>
+//             <KpiCard title={isRTL ? 'إجمالي الشركاء' : 'Total Partners'} value={formatInt(total)} icon={<Handshake className="size-5" />} accent="blue" />
+//             <KpiCard title={isRTL ? 'العملاء' : 'Customers'} value={formatInt(stats.customers)} icon={<Users className="size-5" />} accent="sky" />
+//             <KpiCard title={isRTL ? 'الموردون' : 'Suppliers'} value={formatInt(stats.suppliers)} icon={<Truck className="size-5" />} accent="amber" />
+//             <KpiCard title={isRTL ? 'إجمالي الأرصدة' : 'Total Balances'} value={formatCurrency(stats.totalBalance)} icon={<Building2 className="size-5" />} accent="violet" />
+//           </>
+//         )}
+//       </div>
+
+//       <Card className="rounded-xl overflow-hidden">
+//         <ScrollArea className="max-h-[60vh]">
+//           <Table>
+//             <TableHeader>
+//               <TableRow className="bg-muted/50">
+//                 <TableHead className="ps-4">{isRTL ? 'الرمز' : 'Code'}</TableHead>
+//                 <TableHead>{isRTL ? 'الاسم' : 'Name'}</TableHead>
+//                 <TableHead>{isRTL ? 'النوع' : 'Type'}</TableHead>
+//                 <TableHead>{isRTL ? 'جهة الاتصال' : 'Contact Person'}</TableHead>
+//                 <TableHead>{isRTL ? 'الهاتف' : 'Phone'}</TableHead>
+//                 <TableHead className="text-end num-cell">{isRTL ? 'الرصيد' : 'Balance'}</TableHead>
+//                 <TableHead>{isRTL ? 'الحالة' : 'Status'}</TableHead>
+//                 <TableHead className="text-end">{isRTL ? 'إجراءات' : 'Actions'}</TableHead>
+//               </TableRow>
+//             </TableHeader>
+//             <TableBody>
+//               {isLoading ? (
+//                 <TableRow>
+//                   <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
+//                     {isRTL ? 'جاري التحميل...' : 'Loading...'}
+//                   </TableCell>
+//                 </TableRow>
+//               ) : partners.length === 0 ? (
+//                 <TableRow>
+//                   <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
+//                     {isRTL ? 'لا يوجد شركاء. ابدأ بإضافة أول شريك.' : 'No partners found. Add your first partner.'}
+//                   </TableCell>
+//                 </TableRow>
+//               ) : (
+//                 partners.map((p) => (
+//                   <TableRow key={p.id} className="hover:bg-muted/40">
+//                     <TableCell className="ps-4 font-mono text-xs" dir="ltr">
+//                       {p.code}
+//                     </TableCell>
+//                     <TableCell className="font-medium">{p.nameAr}</TableCell>
+//                     <TableCell>
+//                       <div className="flex items-center gap-1">
+//                         {p.isCustomer && (
+//                           <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 text-[10px]">
+//                             {isRTL ? 'عميل' : 'Customer'}
+//                           </Badge>
+//                         )}
+//                         {p.isSupplier && (
+//                           <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 text-[10px]">
+//                             {isRTL ? 'مورد' : 'Supplier'}
+//                           </Badge>
+//                         )}
+//                       </div>
+//                     </TableCell>
+//                     <TableCell className="text-sm text-muted-foreground">{p.contactName ?? '—'}</TableCell>
+//                     <TableCell className="text-sm font-mono" dir="ltr">
+//                       {p.phone ?? '—'}
+//                     </TableCell>
+//                     <TableCell className="text-end num-cell">
+//                       <span className="num font-semibold tabular-nums" dir="ltr">
+//                         {formatCurrency(p.currentBalance)}
+//                       </span>
+//                     </TableCell>
+//                     <TableCell>
+//                       <StatusBadge status={p.active ? 'active' : 'inactive'} />
+//                     </TableCell>
+//                     <TableCell className="text-end">
+//                       <div className="flex items-center justify-end gap-1">
+//                         <Button size="icon" variant="ghost" className="size-8" onClick={() => { setEditing(p); setDialogOpen(true); }}>
+//                           <Pencil className="size-3.5" />
+//                         </Button>
+//                         <Button size="icon" variant="ghost" className="size-8 text-rose-500 hover:text-rose-600" onClick={() => deleteMutation.mutate(p.id)}>
+//                           <Trash2 className="size-3.5" />
+//                         </Button>
+//                       </div>
+//                     </TableCell>
+//                   </TableRow>
+//                 ))
+//               )}
+//             </TableBody>
+//           </Table>
+//         </ScrollArea>
+//       </Card>
+
+//       {/* Pagination */}
+//       <div className="flex items-center justify-between mt-4 text-sm" dir={dir}>
+//         <p className="text-muted-foreground">
+//           {isRTL
+//             ? `عرض ${partners.length === 0 ? 0 : (page - 1) * pageSize + 1}–${(page - 1) * pageSize + partners.length} من ${total}`
+//             : `Showing ${partners.length === 0 ? 0 : (page - 1) * pageSize + 1}–${(page - 1) * pageSize + partners.length} of ${total}`}
+//         </p>
+//         <div className="flex items-center gap-2">
+//           <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+//             {isRTL ? 'السابق' : 'Previous'}
+//           </Button>
+//           <span className="text-xs text-muted-foreground">
+//             {isRTL ? `صفحة ${page} من ${totalPages}` : `Page ${page} of ${totalPages}`}
+//           </span>
+//           <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
+//             {isRTL ? 'التالي' : 'Next'}
+//           </Button>
+//         </div>
+//       </div>
+
+//       {/* Add/Edit Dialog */}
+//       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+//         <DialogContent className="max-w-3xl p-0 overflow-hidden bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800" dir={dir}>
+//           <form
+//             onSubmit={(e) => {
+//               e.preventDefault()
+//               handleSave(new FormData(e.currentTarget))
+//             }}
+//             className="flex flex-col max-h-[90vh] h-full overflow-hidden"
+//           >
+//             <DialogHeader className="bg-gradient-to-r from-blue-50 to-[#E6F0FF] rtl:bg-gradient-to-l dark:bg-none dark:bg-blue-700/80 border-b border-blue-100 dark:border-blue-800 p-6 shrink-0 relative">
+//               <div className="flex items-center gap-3">
+//                 <div className="size-11 rounded-xl bg-blue-600 dark:bg-blue-500 text-white flex items-center justify-center shadow-md dark:shadow-blue-900/30 shrink-0">
+//                   {type === 'customer' ? (
+//                     <Users className="size-5" />
+//                   ) : type === 'supplier' ? (
+//                     <Truck className="size-5" />
+//                   ) : (
+//                     <Handshake className="size-5" />
+//                   )}
+//                 </div>
+//                 <div className="space-y-0.5">
+//                   <DialogTitle className="text-xl font-bold tracking-tight text-blue-900 dark:text-white">
+//                     {editing
+//                       ? (type === 'customer'
+//                           ? (isRTL ? 'تعديل بيانات العميل' : 'Edit Customer Details')
+//                           : type === 'supplier'
+//                           ? (isRTL ? 'تعديل بيانات المورد' : 'Edit Supplier Details')
+//                           : (isRTL ? 'تعديل بيانات الشريك' : 'Edit Partner Details'))
+//                       : (type === 'customer'
+//                           ? (isRTL ? 'إضافة عميل جديد' : 'Add New Customer')
+//                           : type === 'supplier'
+//                           ? (isRTL ? 'إضافة مورد جديد' : 'Add New Supplier')
+//                           : (isRTL ? 'إضافة شريك جديد' : 'Add New Partner'))}
+//                   </DialogTitle>
+//                   <DialogDescription className="text-sm text-blue-700/80 dark:text-blue-100/90">
+//                     {isRTL ? 'أدخل تفاصيل الشريك لإدارته في النظام' : 'Enter details to manage information in the system'}
+//                   </DialogDescription>
+//                 </div>
+//               </div>
+//             </DialogHeader>
+
+//             <DialogBody className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50 dark:bg-slate-900/50 scrollbar-thin">
+//               {/* Section 1: Basic Information */}
+//               <div className="space-y-4">
+//                 <div className="flex items-center gap-2 border-b pb-2 border-slate-200/60 dark:border-slate-800/60">
+//                   <Building2 className="size-4 text-blue-600 dark:text-blue-400" />
+//                   <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200">
+//                     {isRTL ? 'البيانات الأساسية' : 'Basic Information'}
+//                   </h3>
+//                 </div>
+//                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+//                   {/* Partner Code */}
+//                   <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+//                     <Label htmlFor="code" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+//                       {isRTL ? 'رمز الشريك (تلقائي)' : 'Partner Code (Auto)'}
+//                     </Label>
+//                     <Input
+//                       id="code"
+//                       name="code"
+//                       defaultValue={editing?.code}
+//                       placeholder="P-00001"
+//                       dir={dir}
+//                       className={cn("h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 font-mono text-sm bg-slate-50 dark:bg-slate-900/50", isRTL ? "text-right" : "text-left")}
+//                     />
+//                   </div>
+
+//                   {/* Arabic Name */}
+//                   <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+//                     <Label htmlFor="nameAr" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+//                       {isRTL ? 'الاسم بالكامل (عربي) *' : 'Full Name (Arabic) *'}
+//                     </Label>
+//                     <Input
+//                       id="nameAr"
+//                       name="nameAr"
+//                       defaultValue={editing?.nameAr}
+//                       placeholder={isRTL ? 'مثال: شركة الحلول المتقدمة' : 'e.g. Advanced Solutions Co.'}
+//                       required
+//                       dir={dir}
+//                       className={cn("h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-sm", isRTL ? "text-right" : "text-left")}
+//                     />
+//                   </div>
+
+//                   {/* English Name */}
+//                   <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+//                     <Label htmlFor="nameEn" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+//                       {isRTL ? 'الاسم بالكامل (إنجليزي)' : 'Full Name (English)'}
+//                     </Label>
+//                     <Input
+//                       id="nameEn"
+//                       name="nameEn"
+//                       defaultValue={editing?.nameEn}
+//                       placeholder="e.g. Advanced Solutions Co."
+//                       dir={dir}
+//                       className={cn("h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-sm", isRTL ? "text-right" : "text-left")}
+//                     />
+//                   </div>
+
+//                   {/* Tax Number */}
+//                   <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+//                     <Label htmlFor="taxNumber" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+//                       {isRTL ? 'الرقم الضريبي (TIN)' : 'Tax Identification Number (TIN)'}
+//                     </Label>
+//                     <div className="relative">
+//                       <Hash className="absolute inset-y-0 start-3 my-auto size-4 text-slate-400 pointer-events-none" />
+//                       <Input
+//                         id="taxNumber"
+//                         name="taxNumber"
+//                         defaultValue={editing?.taxNumber}
+//                         placeholder="300000000000003"
+//                         dir={dir}
+//                         className={cn("h-10 ps-9 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-sm font-mono", isRTL ? "text-right" : "text-left")}
+//                       />
+//                     </div>
+//                   </div>
+//                 </div>
+//               </div>
+
+//               {/* Section 2: Contact Information */}
+//               <div className="space-y-4">
+//                 <div className="flex items-center gap-2 border-b pb-2 border-slate-200/60 dark:border-slate-800/60">
+//                   <Phone className="size-4 text-blue-600 dark:text-blue-400" />
+//                   <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200">
+//                     {isRTL ? 'بيانات المسؤول والاتصال' : 'Contact Information'}
+//                   </h3>
+//                 </div>
+//                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+//                   {/* Contact Person */}
+//                   <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+//                     <Label htmlFor="contactName" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+//                       {isRTL ? 'اسم جهة الاتصال / المسؤول' : 'Contact Person / Representative'}
+//                     </Label>
+//                     <Input
+//                       id="contactName"
+//                       name="contactName"
+//                       defaultValue={editing?.contactName}
+//                       placeholder={isRTL ? 'مثال: محمد أحمد' : 'e.g. John Doe'}
+//                       dir={dir}
+//                       className={cn("h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-sm", isRTL ? "text-right" : "text-left")}
+//                     />
+//                   </div>
+
+//                   {/* Phone */}
+//                   <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+//                     <Label htmlFor="phone" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+//                       {isRTL ? 'رقم الهاتف' : 'Phone Number'}
+//                     </Label>
+//                     <div className="relative">
+//                       <Phone className="absolute inset-y-0 start-3 my-auto size-4 text-slate-400 pointer-events-none" />
+//                       <Input
+//                         id="phone"
+//                         name="phone"
+//                         defaultValue={editing?.phone}
+//                         placeholder="+966 50 000 0000"
+//                         dir={dir}
+//                         className={cn("h-10 ps-9 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-sm font-mono", isRTL ? "text-right" : "text-left")}
+//                       />
+//                     </div>
+//                   </div>
+
+//                   {/* Email */}
+//                   <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+//                     <Label htmlFor="email" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+//                       {isRTL ? 'البريد الإلكتروني' : 'Email Address'}
+//                     </Label>
+//                     <div className="relative">
+//                       <Mail className="absolute inset-y-0 start-3 my-auto size-4 text-slate-400 pointer-events-none" />
+//                       <Input
+//                         id="email"
+//                         name="email"
+//                         type="email"
+//                         defaultValue={editing?.email}
+//                         placeholder="partner@example.com"
+//                         dir={dir}
+//                         className={cn("h-10 ps-9 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-sm font-mono", isRTL ? "text-right" : "text-left")}
+//                       />
+//                     </div>
+//                   </div>
+
+//                   {/* Address */}
+//                   <div className={cn("space-y-1.5 md:col-span-2", isRTL ? "text-right" : "text-left")}>
+//                     <Label htmlFor="address" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+//                       {isRTL ? 'العنوان' : 'Address'}
+//                     </Label>
+//                     <div className="relative">
+//                       <MapPin className="absolute inset-y-0 start-3 my-auto size-4 text-slate-400 pointer-events-none" />
+//                       <Input
+//                         id="address"
+//                         name="address"
+//                         defaultValue={editing?.address}
+//                         placeholder={isRTL ? 'مثال: الرياض، حي السليمانية، شارع التحلية' : 'e.g. King Fahd Rd, Al Olaya, Riyadh'}
+//                         dir={dir}
+//                         className={cn("h-10 ps-9 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-sm", isRTL ? "text-right" : "text-left")}
+//                       />
+//                     </div>
+//                   </div>
+//                 </div>
+//               </div>
+
+//               {/* Section 3: Financial Information */}
+//               <div className="space-y-4">
+//                 <div className="flex items-center gap-2 border-b pb-2 border-slate-200/60 dark:border-slate-800/60">
+//                   <Coins className="size-4 text-blue-600 dark:text-blue-400" />
+//                   <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200">
+//                     {isRTL ? 'البيانات المالية والأرصدة' : 'Financial & Credit Configuration'}
+//                   </h3>
+//                 </div>
+//                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+//                   {/* Credit Limit */}
+//                   <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+//                     <Label htmlFor="creditLimit" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+//                       {isRTL ? 'حد الائتمان' : 'Credit Limit'}
+//                     </Label>
+//                     <Input
+//                       id="creditLimit"
+//                       name="creditLimit"
+//                       type="number"
+//                       step="0.01"
+//                       defaultValue={editing?.creditLimit ?? 0}
+//                       placeholder="0.00"
+//                       dir={dir}
+//                       className={cn("h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-sm font-semibold tabular-nums", isRTL ? "text-right" : "text-left")}
+//                     />
+//                   </div>
+
+//                   {/* Opening Balance */}
+//                   <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+//                     <Label htmlFor="openingBalance" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+//                       {isRTL ? 'الرصيد الافتتاحي' : 'Opening Balance'}
+//                     </Label>
+//                     <Input
+//                       id="openingBalance"
+//                       name="openingBalance"
+//                       type="number"
+//                       step="0.01"
+//                       defaultValue={editing?.openingBalance ?? 0}
+//                       placeholder="0.00"
+//                       dir={dir}
+//                       className={cn("h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-sm font-semibold tabular-nums", isRTL ? "text-right" : "text-left")}
+//                     />
+//                   </div>
+//                 </div>
+//               </div>
+
+//               {/* Section 4: Account Settings & Status */}
+//               <div className="space-y-4">
+//                 <div className="flex items-center gap-2 border-b pb-2 border-slate-200/60 dark:border-slate-800/60">
+//                   <Building2 className="size-4 text-blue-600 dark:text-blue-400" />
+//                   <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200">
+//                     {isRTL ? 'إعدادات الحساب ونوع الشريك' : 'Account Status & Type Settings'}
+//                   </h3>
+//                 </div>
+
+//                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 divide-y divide-slate-100 dark:divide-slate-800/60">
+//                   {/* Is Customer Switch */}
+//                   <div className="flex items-center justify-between py-3">
+//                     <div className="space-y-0.5">
+//                       <Label htmlFor="isCustomer" className="text-sm font-semibold text-slate-800 dark:text-slate-200 cursor-pointer">
+//                         {isRTL ? 'عميل' : 'Customer'}
+//                       </Label>
+//                       <p className="text-xs text-muted-foreground">
+//                         {isRTL ? 'تنشيط هذا الشريك كعميل' : 'Enable this partner as a customer'}
+//                       </p>
+//                     </div>
+//                     <Switch id="isCustomer" name="isCustomer" defaultChecked={editing?.isCustomer ?? (type === 'all' || type === 'customer')} />
+//                   </div>
+
+//                   {/* Is Supplier Switch */}
+//                   <div className="flex items-center justify-between py-3">
+//                     <div className="space-y-0.5">
+//                       <Label htmlFor="isSupplier" className="text-sm font-semibold text-slate-800 dark:text-slate-200 cursor-pointer">
+//                         {isRTL ? 'مورد' : 'Supplier'}
+//                       </Label>
+//                       <p className="text-xs text-muted-foreground">
+//                         {isRTL ? 'تنشيط هذا الشريك كمورد' : 'Enable this partner as a supplier'}
+//                       </p>
+//                     </div>
+//                     <Switch id="isSupplier" name="isSupplier" defaultChecked={editing?.isSupplier ?? (type === 'all' || type === 'supplier')} />
+//                   </div>
+
+//                   {/* Is Active Switch */}
+//                   <div className="flex items-center justify-between py-3">
+//                     <div className="space-y-0.5">
+//                       <Label htmlFor="active" className="text-sm font-semibold text-slate-800 dark:text-slate-200 cursor-pointer">
+//                         {isRTL ? 'نشط' : 'Active Status'}
+//                       </Label>
+//                       <p className="text-xs text-muted-foreground">
+//                         {isRTL ? 'تفعيل الحساب' : 'Activate the account'}
+//                       </p>
+//                     </div>
+//                     <Switch id="active" name="active" defaultChecked={editing?.active ?? true} />
+//                   </div>
+//                 </div>
+//               </div>
+//             </DialogBody>
+
+//             <DialogFooter className="bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800 p-4 shrink-0">
+//               <div className="flex items-center justify-end gap-3 w-full">
+//                 <Button
+//                   type="button"
+//                   variant="outline"
+//                   onClick={() => setDialogOpen(false)}
+//                   className="px-5 py-2.5 h-11 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
+//                 >
+//                   {isRTL ? 'إلغاء' : 'Cancel'}
+//                 </Button>
+//                 <Button
+//                   type="submit"
+//                   disabled={saveMutation.isPending}
+//                   className="px-6 py-2.5 h-11 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transition-all"
+//                 >
+//                   {saveMutation.isPending
+//                     ? (isRTL ? 'جاري الحفظ...' : 'Saving...')
+//                     : (isRTL ? 'حفظ ' : 'Save ')}
+//                 </Button>
+//               </div>
+//             </DialogFooter>
+//           </form>
+//         </DialogContent>
+//       </Dialog>
+//     </ModuleShell>
+//   )
+// }

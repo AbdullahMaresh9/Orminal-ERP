@@ -336,7 +336,7 @@ export function PurchaseInvoicesModule() {
         </Select>
       }
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
         <KpiCard title="إجمالي الفواتير" value={formatCurrency(stats.totalBilled)} icon={<Receipt className="size-5" />} accent="blue" />
         <KpiCard title="إجمالي المدفوع" value={formatCurrency(stats.totalPaid)} icon={<Wallet className="size-5" />} accent="sky" />
         <KpiCard title="المستحق" value={formatCurrency(stats.outstanding)} icon={<Coins className="size-5" />} accent="amber" />
@@ -550,13 +550,13 @@ export function PurchaseInvoicesModule() {
           </div>
 
           </DialogBody>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>إلغاء</Button>
-            <Button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
-              {saveMutation.isPending ? 'جاري الحفظ...' : 'إنشاء وترحيل'}
-            </Button>
-          </DialogFooter>
-        </DialogBody>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>إلغاء</Button>
+              <Button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
+                {saveMutation.isPending ? 'جاري الحفظ...' : 'إنشاء وترحيل'}
+              </Button>
+            </DialogFooter>
+          </DialogBody>
         </DialogContent>
       </Dialog>
     </ModuleShell>

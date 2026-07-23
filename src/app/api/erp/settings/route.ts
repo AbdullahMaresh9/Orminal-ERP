@@ -7,9 +7,17 @@ export async function GET(req: Request) {
     const url = new URL(req.url)
     const category = url.searchParams.get('category')
 
-    // If no settings exist, seed defaults first
+    // If settings count is less than defaults, or if metadata is missing (e.g. seeded with key/value only), run sync
     const count = await db.setting.count()
-    if (count === 0) {
+    const needsSync = await db.setting.findFirst({
+      where: {
+        OR: [
+          { label: null },
+          { labelEn: null }
+        ]
+      }
+    })
+    if (count < DEFAULT_SETTINGS.length || needsSync) {
       await seedDefaultSettings()
     }
 

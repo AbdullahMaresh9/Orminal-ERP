@@ -14,9 +14,8 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 
 interface Product {
@@ -204,9 +203,9 @@ export function PosModule() {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row gap-4 h-[calc(100vh-3.5rem)] p-4 max-w-[1600px] mx-auto">
+    <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-4 p-4 max-w-[1600px] mx-auto w-full overflow-hidden">
       {/* LEFT — product grid */}
-      <div className="flex-1 flex flex-col min-w-0 gap-3">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0 gap-3 overflow-hidden">
         <div className="flex items-center gap-2 shrink-0">
           <div className="relative flex-1">
             <Search className="absolute inset-y-0 start-3 my-auto size-4 text-muted-foreground pointer-events-none" />
@@ -227,7 +226,7 @@ export function PosModule() {
           </Select>
         </div>
 
-        <ScrollArea className="flex-1 scrollbar-thin">
+        <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin">
           {isLoading ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
               {Array.from({ length: 8 }).map((_, i) => (
@@ -276,12 +275,12 @@ export function PosModule() {
               })}
             </div>
           )}
-        </ScrollArea>
+        </div>
       </div>
 
       {/* RIGHT — cart panel */}
-      <Card className="lg:w-[380px] shrink-0 flex flex-col h-full rounded-xl">
-        <div className="p-4 border-b flex items-center justify-between">
+      <Card className="lg:w-[380px] shrink-0 flex flex-col h-full lg:h-auto min-h-0 rounded-xl overflow-hidden bg-card">
+        <div className="p-4 border-b flex items-center justify-between shrink-0 bg-card">
           <div className="flex items-center gap-2">
             <div className="size-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
               <ShoppingCart className="size-5" />
@@ -298,7 +297,7 @@ export function PosModule() {
           )}
         </div>
 
-        <ScrollArea className="flex-1 min-h-0 scrollbar-thin">
+        <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin bg-card">
           {cart.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center p-8 text-muted-foreground">
               <ShoppingCart className="size-12 opacity-30 mb-2" />
@@ -335,11 +334,11 @@ export function PosModule() {
               ))}
             </div>
           )}
-        </ScrollArea>
+        </div>
 
         {/* Totals + checkout */}
         {cart.length > 0 && (
-          <div className="border-t p-4 space-y-3 shrink-0">
+          <div className="border-t p-4 space-y-3 shrink-0 bg-card">
             <div className="space-y-1.5">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">المجموع الفرعي</span>
@@ -427,39 +426,39 @@ export function PosModule() {
               تمت العملية بنجاح
             </DialogTitle>
           </DialogHeader>
-          <DialogBody>          <DialogBody>          {receipt && (
-            <div className="py-2 space-y-3">
-              <div className="text-center">
-                <p className="text-xs text-muted-foreground">رقم الإيصال</p>
-                <p className="font-mono font-bold text-lg">{receipt.code}</p>
+          <DialogBody>
+            {receipt && (
+              <div className="py-2 space-y-3">
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground">رقم الإيصال</p>
+                  <p className="font-mono font-bold text-lg">{receipt.code}</p>
+                </div>
+                <div className="rounded-lg border divide-y">
+                  {receipt.items.map((it: CartItem) => (
+                    <div key={it.product.id} className="flex items-center justify-between p-2 text-xs">
+                      <span className="flex-1 line-clamp-1">{it.product.nameAr ?? it.product.name} × <span className="num">{it.qty}</span></span>
+                      <span className="font-medium"><span className="num">{formatCurrency(it.product.salePrice * it.qty)}</span></span>
+                    </div>
+                  ))}
+                </div>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between"><span className="text-muted-foreground">المجموع الفرعي</span><span><span className="num">{formatCurrency(receipt.subtotal)}</span></span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">الضريبة</span><span><span className="num">{formatCurrency(receipt.taxTotal)}</span></span></div>
+                  <div className="flex justify-between font-bold text-base pt-1 border-t"><span>الإجمالي</span><span className="text-primary"><span className="num">{formatCurrency(receipt.total)}</span></span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">المدفوع</span><span><span className="num">{formatCurrency(receipt.received)}</span></span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">الباقي</span><span><span className="num">{formatCurrency(receipt.change)}</span></span></div>
+                </div>
               </div>
-              <div className="rounded-lg border divide-y">
-                {receipt.items.map((it: CartItem) => (
-                  <div key={it.product.id} className="flex items-center justify-between p-2 text-xs">
-                    <span className="flex-1 line-clamp-1">{it.product.nameAr ?? it.product.name} × <span className="num">{it.qty}</span></span>
-                    <span className="font-medium"><span className="num">{formatCurrency(it.product.salePrice * it.qty)}</span></span>
-                  </div>
-                ))}
-              </div>
-              <div className="space-y-1 text-sm">
-                <div className="flex justify-between"><span className="text-muted-foreground">المجموع الفرعي</span><span><span className="num">{formatCurrency(receipt.subtotal)}</span></span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">الضريبة</span><span><span className="num">{formatCurrency(receipt.taxTotal)}</span></span></div>
-                <div className="flex justify-between font-bold text-base pt-1 border-t"><span>الإجمالي</span><span className="text-primary"><span className="num">{formatCurrency(receipt.total)}</span></span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">المدفوع</span><span><span className="num">{formatCurrency(receipt.received)}</span></span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">الباقي</span><span><span className="num">{formatCurrency(receipt.change)}</span></span></div>
-              </div>
-            </div>
-          )}
+            )}
           </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => setReceipt(null)} className="gap-1.5">
               {t('action.close')}
             </Button>
             <Button onClick={() => printReceipt(receipt)} className="gap-1.5">
-              <Printer className="size-4" /> طباعة الإيصال
+              <Printer className="size-4" /> طباعة
             </Button>
           </DialogFooter>
-        </DialogBody>
         </DialogContent>
       </Dialog>
     </div>

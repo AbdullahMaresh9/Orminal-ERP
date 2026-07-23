@@ -120,7 +120,7 @@ export function StockOnHandModule() {
         </Select>
       }
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
         <KpiCard title="عدد الأصناف" value={formatInt(stats.totalItems)} icon={<Boxes className="size-5" />} accent="blue" />
         <KpiCard title="إجمالي الكمية" value={formatInt(stats.totalQuantity)} icon={<Package className="size-5" />} accent="sky" />
         <KpiCard title="قيمة المخزون" value={formatCurrency(stats.totalValue)} icon={<Coins className="size-5" />} accent="violet" />

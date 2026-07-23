@@ -23,8 +23,9 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogBody,
 } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { cn } from '@/lib/utils'
 import {
-  Shield, ShieldCheck, Lock, Plus, Pencil, Trash2, Crown, KeyRound,
+  Shield, ShieldCheck, Lock, Plus, Pencil, Trash2, Crown, KeyRound, Search, ChevronDown, ChevronUp, CheckSquare, Eraser,
 } from 'lucide-react'
 
 interface RolePermission {
@@ -106,13 +107,28 @@ function matrixFromRole(role: Role): PermMatrix {
 }
 
 export function RolesModule() {
-  const { t } = useT()
+  const { t, locale, isRTL, dir } = useT()
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState<'all' | 'system' | 'custom'>('all')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<Role | null>(null)
   const [matrix, setMatrix] = useState<PermMatrix>(emptyMatrix())
+  const [matrixSearch, setMatrixSearch] = useState('')
+  const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {}
+    MODULES.forEach((m) => { initial[m.code] = true })
+    return initial
+  })
+
+  const filteredModules = MODULES.filter((m) => {
+    const q = matrixSearch.toLowerCase()
+    return (
+      m.nameAr.toLowerCase().includes(q) ||
+      m.nameEn.toLowerCase().includes(q) ||
+      m.code.toLowerCase().includes(q)
+    )
+  })
 
   const { data, isLoading } = useQuery<{ data: Role[]; meta: any }>({
     queryKey: ['roles', search, filterType],
@@ -267,7 +283,7 @@ export function RolesModule() {
         </>
       }
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
         <KpiCard title="إجمالي الأدوار" value={formatInt(stats.total)} icon={<Shield className="size-5" />} accent="blue" />
         <KpiCard title="أدوار النظام" value={formatInt(stats.system)} icon={<Crown className="size-5" />} accent="amber" />
         <KpiCard title="أدوار مخصصة" value={formatInt(stats.custom)} icon={<KeyRound className="size-5" />} accent="sky" />
@@ -338,117 +354,423 @@ export function RolesModule() {
       </Card>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-5xl">
-          <DialogHeader>
-            <DialogTitle>{editing ? `تعديل الدور: ${editing.nameAr}` : 'إضافة دور جديد'}</DialogTitle>
-            <DialogDescription>
-              {editing ? 'قم بتعديل بيانات الدور ومصفوفة الصلاحيات لكل وحدة' : 'أدخل بيانات الدور الجديد'}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogBody>          <form onSubmit={handleSubmit}>
-            <ScrollArea className="max-h-[68vh] pe-2">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-1 mb-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="code">الكود *</Label>
-                  <Input
-                    id="code"
-                    name="code"
-                    required
-                    defaultValue={editing?.code}
-                    disabled={!!editing}
-                    placeholder="ACCOUNTANT"
-                    dir="ltr"
-                    className="font-mono"
-                  />
+        <DialogContent className="max-w-2xl p-0 overflow-hidden bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800" dir={dir}>
+          <form
+            onSubmit={handleSubmit}
+            className="flex flex-col max-h-[90vh] h-full overflow-hidden"
+          >
+            <DialogHeader className="bg-gradient-to-r from-blue-50 to-[#E6F0FF] dark:bg-none dark:bg-blue-700/80 border-b border-blue-100 dark:border-blue-600/40 p-6 shrink-0 relative">
+              <div className="flex items-start gap-4">
+                <div className="size-12 rounded-xl bg-white dark:bg-blue-950/60 border border-blue-100 dark:border-blue-500/20 text-blue-600 dark:text-blue-300 flex items-center justify-center shadow-sm shadow-blue-100/40 dark:shadow-none shrink-0">
+                  <Shield className="size-5" />
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="nameAr">الاسم (عربي) *</Label>
-                  <Input id="nameAr" name="nameAr" defaultValue={editing?.nameAr} required />
+                <div className="space-y-1">
+                  <DialogTitle className="text-xl font-bold tracking-tight text-blue-950 dark:text-white">
+                    {editing ? (isRTL ? `تعديل الدور: ${editing.nameAr}` : `Edit Role: ${editing.nameEn || editing.nameAr}`) : (isRTL ? 'إضافة دور جديد' : 'Add New Role')}
+                  </DialogTitle>
+
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="nameEn">الاسم (إنجليزي)</Label>
-                  <Input id="nameEn" name="nameEn" defaultValue={editing?.nameEn} dir="ltr" />
+              </div>
+            </DialogHeader>
+
+            <DialogBody className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50 dark:bg-slate-900/50 scrollbar-thin">
+              {/* Role Information Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 border-b pb-2 border-slate-200/60 dark:border-slate-800/60">
+                  <ShieldCheck className="size-4 text-blue-600 dark:text-blue-400" />
+                  <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200">
+                    {isRTL ? 'معلومات الدور وصلاحيات الوصول' : 'Role Information'}
+                  </h3>
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="description">الوصف</Label>
-                  <Input id="description" name="description" defaultValue={editing?.description ?? ''} />
-                </div>
-                <div className="md:col-span-2 flex items-center gap-2 pt-1">
-                  <Switch id="active" name="active" defaultChecked={editing?.active ?? true} disabled={editing?.isSystem} />
-                  <Label htmlFor="active">نشط {editing?.isSystem && <span className="text-xs text-amber-600 ms-1">(دور نظام — لا يمكن تعطيله)</span>}</Label>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Role Code */}
+                  <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                    <Label htmlFor="code" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {isRTL ? 'رمز الدور / الكود *' : 'Role Code / Identifier *'}
+                    </Label>
+                    <Input
+                      id="code"
+                      name="code"
+                      required
+                      defaultValue={editing?.code}
+                      disabled={!!editing}
+                      placeholder="ACCOUNTANT"
+                      dir={dir}
+                      className={cn("h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 font-mono text-sm bg-slate-50 dark:bg-slate-900/50 disabled:opacity-75 disabled:cursor-not-allowed", isRTL ? "text-right" : "text-left")}
+                    />
+                  </div>
+
+                  {/* Arabic Name */}
+                  <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                    <Label htmlFor="nameAr" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {isRTL ? 'الاسم بالكامل (عربي) *' : 'Role Name (Arabic) *'}
+                    </Label>
+                    <Input
+                      id="nameAr"
+                      name="nameAr"
+                      defaultValue={editing?.nameAr}
+                      placeholder={isRTL ? 'مثال: محاسب عام' : 'e.g. Accountant'}
+                      required
+                      dir={dir}
+                      className={cn("h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-sm", isRTL ? "text-right" : "text-left")}
+                    />
+                  </div>
+
+                  {/* English Name */}
+                  <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                    <Label htmlFor="nameEn" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {isRTL ? 'الاسم بالكامل (إنجليزي)' : 'Role Name (English)'}
+                    </Label>
+                    <Input
+                      id="nameEn"
+                      name="nameEn"
+                      defaultValue={editing?.nameEn}
+                      placeholder="e.g. Accountant"
+                      dir={dir}
+                      className={cn("h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-sm", isRTL ? "text-right" : "text-left")}
+                    />
+                  </div>
+
+                  {/* Description */}
+                  <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                    <Label htmlFor="description" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {isRTL ? 'وصف الصلاحية' : 'Description'}
+                    </Label>
+                    <Input
+                      id="description"
+                      name="description"
+                      defaultValue={editing?.description ?? ''}
+                      placeholder={isRTL ? 'وصف موجز للمسؤوليات والوصول' : 'Short description of responsibilities'}
+                      dir={dir}
+                      className={cn("h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-sm", isRTL ? "text-right" : "text-left")}
+                    />
+                  </div>
+
+                  {/* Active Switch */}
+                  <div className="md:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="active" className="text-sm font-semibold text-slate-800 dark:text-slate-200 cursor-pointer">
+                        {isRTL ? 'حالة الدور (نشط)' : 'Role Status (Active)'}
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        {editing?.isSystem
+                          ? (isRTL ? 'هذا الدور خاص بالنظام ولا يمكن تعطيله' : 'This is a system role and cannot be deactivated')
+                          : (isRTL ? 'تنشيط أو تعطيل الدور في النظام للمستخدمين' : 'Activate or deactivate this role for users')}
+                      </p>
+                    </div>
+                    <Switch id="active" name="active" defaultChecked={editing?.active ?? true} disabled={editing?.isSystem} />
+                  </div>
                 </div>
               </div>
 
-              {editing && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-semibold text-sm">مصفوفة الصلاحيات</h4>
-                    <span className="text-xs text-muted-foreground">فعّل الصلاحيات لكل وحدة</span>
+              {/* Permission Matrix Section */}
+              <div className="space-y-4 pt-2">
+                <div className="flex items-center justify-between border-b pb-2 border-slate-200/60 dark:border-slate-800/60">
+                  <div className="flex items-center gap-2">
+                    <Lock className="size-4 text-blue-600 dark:text-blue-400" />
+                    <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200">
+                      {isRTL ? 'مصفوفة الصلاحيات والوصول' : 'Access Control Matrix'}
+                    </h3>
                   </div>
-                  <div className="overflow-auto rounded-lg border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-muted/40">
-                          <TableHead className="ps-3 sticky start-0 bg-background">الوحدة</TableHead>
-                          {ACTIONS.map((a) => (
-                            <TableHead key={a.key} className="text-center text-[11px]">{a.label}</TableHead>
-                          ))}
-                          <TableHead className="text-center text-[11px]">الكل</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {MODULES.map((mod) => {
-                          const allOn = ACTIONS.every((a) => matrix[mod.code][a.key])
-                          const allOff = ACTIONS.every((a) => !matrix[mod.code][a.key])
-                          return (
-                            <TableRow key={mod.code} className="hover:bg-muted/30">
-                              <TableCell className="ps-3 sticky start-0 bg-background font-medium">
-                                <div className="flex flex-col">
-                                  <span>{mod.nameAr}</span>
-                                  <span className="text-[10px] text-muted-foreground font-mono" dir="ltr">{mod.code}</span>
+                  <span className="text-xs text-muted-foreground bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-full font-medium">
+                    {isRTL ? 'تحكم في أذونات الوصول للوحدات' : 'Control module access permissions'}
+                  </span>
+                </div>
+
+                {editing ? (
+                  <div className="space-y-3">
+                    {/* Toolbar */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-slate-100/80 dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-t-xl">
+                      {/* Left: Search input */}
+                      <div className="relative w-full sm:w-72">
+                        <Search className="absolute inset-y-0 start-3 my-auto size-4 text-slate-400 pointer-events-none" />
+                        <Input
+                          placeholder={isRTL ? 'ابحث عن وحدة...' : 'Search modules...'}
+                          value={matrixSearch}
+                          onChange={(e) => setMatrixSearch(e.target.value)}
+                          className="h-9 ps-9 text-xs border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 focus-visible:ring-blue-500"
+                        />
+                      </div>
+
+                      {/* Right: Actions */}
+                      <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            const next: Record<string, boolean> = {}
+                            MODULES.forEach((m) => { next[m.code] = true })
+                            setExpandedModules(next)
+                          }}
+                          className="h-8 gap-1 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800"
+                        >
+                          <ChevronDown className="size-3.5" />
+                          {isRTL ? 'توسيع الكل' : 'Expand All'}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            const next: Record<string, boolean> = {}
+                            MODULES.forEach((m) => { next[m.code] = false })
+                            setExpandedModules(next)
+                          }}
+                          className="h-8 gap-1 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800"
+                        >
+                          <ChevronUp className="size-3.5" />
+                          {isRTL ? 'طي الكل' : 'Collapse All'}
+                        </Button>
+                        <div className="w-[1px] h-4 bg-slate-200 dark:bg-slate-800 mx-1 hidden sm:block" />
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setMatrix((prev) => {
+                              const next = { ...prev }
+                              for (const m of MODULES) {
+                                next[m.code] = {
+                                  canCreate: true, canRead: true, canUpdate: true, canDelete: true,
+                                  canApprove: true, canPost: true, canCancel: true, canReverse: true,
+                                  canExport: true
+                                }
+                              }
+                              return next
+                            })
+                          }}
+                          className="h-8 gap-1 text-blue-600 dark:text-blue-400 border-slate-200 dark:border-slate-800"
+                        >
+                          <CheckSquare className="size-3.5" />
+                          {isRTL ? 'تحديد الكل' : 'Select All'}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setMatrix((prev) => {
+                              const next = { ...prev }
+                              for (const m of MODULES) {
+                                next[m.code] = {
+                                  canCreate: false, canRead: false, canUpdate: false, canDelete: false,
+                                  canApprove: false, canPost: false, canCancel: false, canReverse: false,
+                                  canExport: false
+                                }
+                              }
+                              return next
+                            })
+                          }}
+                          className="h-8 gap-1 text-rose-600 dark:text-rose-400 border-slate-200 dark:border-slate-800"
+                        >
+                          <Eraser className="size-3.5" />
+                          {isRTL ? 'إلغاء الكل' : 'Clear All'}
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Desktop Table Matrix */}
+                    <div className="hidden md:block overflow-x-auto rounded-b-xl border border-t-0 border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-950">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-slate-50/75 dark:bg-slate-900/50 hover:bg-slate-50/75 border-b border-slate-200 dark:border-slate-800">
+                            <TableHead className="ps-4 text-start font-bold text-slate-800 dark:text-slate-200 w-44 sticky start-0 bg-slate-50 dark:bg-slate-900/50 z-20">
+                              {isRTL ? 'الوحدة / الموديول' : 'Module / Feature'}
+                            </TableHead>
+                            {ACTIONS.map((a) => (
+                              <TableHead key={a.key} className="text-center font-bold text-slate-800 dark:text-slate-200 text-xs py-3 w-16">
+                                {a.label}
+                              </TableHead>
+                            ))}
+                            <TableHead className="text-center font-bold text-slate-800 dark:text-slate-200 text-xs py-3 w-20">
+                              {isRTL ? 'الكل' : 'All'}
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredModules.map((mod, idx) => {
+                            const allOn = ACTIONS.every((a) => matrix[mod.code][a.key])
+                            const isExpanded = expandedModules[mod.code] ?? true
+
+                            return (
+                              <>
+                                {/* Main Module Row */}
+                                <TableRow
+                                  key={mod.code}
+                                  className={cn(
+                                    "hover:bg-slate-50/60 dark:hover:bg-slate-900/40 border-b border-slate-100 dark:border-slate-800/60 transition-colors",
+                                    idx % 2 === 1 && "bg-slate-50/20 dark:bg-slate-900/10"
+                                  )}
+                                >
+                                  <TableCell className="ps-4 py-3.5 font-medium text-slate-800 dark:text-slate-200 sticky start-0 bg-white dark:bg-slate-950 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
+                                    <div className="flex items-center gap-2.5">
+                                      <Button
+                                        type="button"
+                                        size="icon"
+                                        variant="ghost"
+                                        onClick={() => setExpandedModules(prev => ({ ...prev, [mod.code]: !isExpanded }))}
+                                        className="size-6 text-slate-400 hover:text-slate-600"
+                                      >
+                                        <ChevronDown className={cn("size-3.5 transition-transform duration-200", isExpanded && "rotate-180")} />
+                                      </Button>
+                                      <div className="flex flex-col">
+                                        <span className="text-xs font-bold leading-none">{mod.nameAr}</span>
+                                        <span className="text-[10px] text-muted-foreground font-mono mt-1" dir="ltr">{mod.code}</span>
+                                      </div>
+                                    </div>
+                                  </TableCell>
+
+                                  {/* Permissions Columns */}
+                                  {ACTIONS.map((a) => (
+                                    <TableCell key={a.key} className="text-center py-3.5">
+                                      <div className="flex justify-center items-center">
+                                        <Checkbox
+                                          checked={matrix[mod.code][a.key]}
+                                          onCheckedChange={() => togglePerm(mod.code, a.key)}
+                                          className="size-4.5 rounded border-slate-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500"
+                                        />
+                                      </div>
+                                    </TableCell>
+                                  ))}
+
+                                  {/* Select All Row Toggle Column */}
+                                  <TableCell className="text-center py-3.5">
+                                    <div className="flex justify-center items-center">
+                                      <Checkbox
+                                        checked={allOn}
+                                        onCheckedChange={() => toggleAllForModule(mod.code, !allOn)}
+                                        className="size-4.5 rounded border-slate-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500"
+                                      />
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+
+                                {/* Expanded Details Row */}
+                                {isExpanded && (
+                                  <TableRow className="bg-slate-50/10 dark:bg-slate-900/5 hover:bg-slate-50/10 border-b border-slate-100 dark:border-slate-800/60">
+                                    <TableCell colSpan={11} className="ps-14 py-2 text-[11px] text-muted-foreground">
+                                      <div className="flex items-center gap-1.5">
+                                        <span className="inline-block size-1.5 rounded-full bg-blue-500" />
+                                        <span>
+                                          {isRTL
+                                            ? `الصلاحيات المفعلة لوحدة ${mod.nameAr}: ${ACTIONS.filter(a => matrix[mod.code][a.key]).map(a => a.label).join(', ') || 'لا يوجد'}`
+                                            : `Enabled actions for ${mod.nameEn}: ${ACTIONS.filter(a => matrix[mod.code][a.key]).map(a => a.key.replace('can', '')).join(', ') || 'None'}`}
+                                        </span>
+                                      </div>
+                                    </TableCell>
+                                  </TableRow>
+                                )}
+                              </>
+                            )
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    {/* Mobile Card-based Matrix */}
+                    <div className="md:hidden space-y-4">
+                      {filteredModules.map((mod) => {
+                        const isExpanded = expandedModules[mod.code] ?? true
+                        const allOn = ACTIONS.every((a) => matrix[mod.code][a.key])
+
+                        return (
+                          <div key={mod.code} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
+                            {/* Card Header */}
+                            <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800">
+                              <div className="flex items-center gap-2.5">
+                                <div className="size-8 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-xs font-mono">
+                                  {mod.code}
                                 </div>
-                              </TableCell>
-                              {ACTIONS.map((a) => (
-                                <TableCell key={a.key} className="text-center">
-                                  <Checkbox
-                                    checked={matrix[mod.code][a.key]}
-                                    onCheckedChange={() => togglePerm(mod.code, a.key)}
-                                  />
-                                </TableCell>
-                              ))}
-                              <TableCell className="text-center">
+                                <div>
+                                  <h4 className="font-bold text-sm text-slate-800 dark:text-slate-200">{mod.nameAr}</h4>
+                                  <p className="text-[10px] text-muted-foreground">{mod.nameEn}</p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {/* Select All Toggle */}
                                 <Button
                                   type="button"
                                   size="sm"
                                   variant="ghost"
-                                  className="h-7 text-[10px]"
                                   onClick={() => toggleAllForModule(mod.code, !allOn)}
+                                  className="h-7 text-[10px] text-blue-600 dark:text-blue-400 animate-fade-in"
                                 >
-                                  {allOn ? 'إلغاء الكل' : 'تحديد الكل'}
+                                  {allOn ? (isRTL ? 'إلغاء الكل' : 'Clear All') : (isRTL ? 'تحديد الكل' : 'Select All')}
                                 </Button>
-                              </TableCell>
-                            </TableRow>
-                          )
-                        })}
-                      </TableBody>
-                    </Table>
+                                {/* Expand Card button */}
+                                <Button
+                                  type="button"
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() => setExpandedModules(prev => ({ ...prev, [mod.code]: !isExpanded }))}
+                                  className="size-7"
+                                >
+                                  <ChevronDown className={cn("size-4 transition-transform duration-200", isExpanded && "rotate-180")} />
+                                </Button>
+                              </div>
+                            </div>
+
+                            {/* Card Body (Perms List) */}
+                            {isExpanded && (
+                              <div className="p-4 grid grid-cols-2 gap-3 text-xs bg-slate-50/50 dark:bg-slate-900/50">
+                                {ACTIONS.map((a) => (
+                                  <label
+                                    key={a.key}
+                                    className="flex items-center gap-2.5 p-2 bg-white dark:bg-slate-900 rounded-lg hover:bg-slate-100/50 dark:hover:bg-slate-900/50 cursor-pointer transition-colors border border-slate-200/40 dark:border-slate-800/40"
+                                  >
+                                    <Checkbox
+                                      checked={matrix[mod.code][a.key]}
+                                      onCheckedChange={() => togglePerm(mod.code, a.key)}
+                                      className="size-4 rounded border-slate-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500"
+                                    />
+                                    <span className="font-semibold text-slate-700 dark:text-slate-300">{a.label}</span>
+                                  </label>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
-              {!editing && (
-                <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground bg-muted/20">
-                  💡 ستتمكن من ضبط مصفوفة الصلاحيات بعد إنشاء الدور (اضغط زر التعديل).
-                </div>
-              )}
-            </ScrollArea>
-            <DialogFooter className="mt-4">
-              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>إلغاء</Button>
-              <Button type="submit" disabled={saveMutation.isPending}>
-                {saveMutation.isPending ? 'جاري الحفظ...' : 'حفظ'}
-              </Button>
+                ) : (
+                  <div className="rounded-xl border border-dashed border-slate-300 dark:border-slate-700 p-6 text-center text-sm text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900/50">
+                    💡 {isRTL
+                      ? 'ستتمكن من ضبط مصفوفة الصلاحيات بالكامل بعد إنشاء الدور وحفظه.'
+                      : 'You will be able to configure the permission matrix after creating and saving the role.'}
+                  </div>
+                )}
+              </div>
+            </DialogBody>
+
+            <DialogFooter className="bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800 p-4 shrink-0">
+              <div className="flex items-center justify-end gap-3 w-full">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setDialogOpen(false)}
+                  className="px-5 py-2.5 h-11 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
+                >
+                  {isRTL ? 'إلغاء' : 'Cancel'}
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={saveMutation.isPending}
+                  className="px-6 py-2.5 h-11 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transition-all"
+                >
+                  {saveMutation.isPending ? (
+                    isRTL ? 'جاري الحفظ...' : 'Saving...'
+                  ) : editing ? (
+                    isRTL ? 'حفظ التعديلات' : 'Save Changes'
+                  ) : (
+                    isRTL ? 'حفظ' : 'Save'
+                  )}
+                </Button>
+              </div>
             </DialogFooter>
           </form>
-        </DialogBody>
         </DialogContent>
       </Dialog>
     </ModuleShell>

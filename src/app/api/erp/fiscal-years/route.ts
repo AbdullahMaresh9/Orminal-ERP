@@ -54,26 +54,79 @@ export async function POST(req: Request) {
       include: { periods: true },
     })
 
-    // Auto-generate 12 monthly periods if requested
+    // Auto-generate financial periods if requested
     if (body.autoPeriods) {
-      const periodMonths = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر']
-      const periods = []
-      const cur = new Date(startDate.getFullYear(), startDate.getMonth(), 1)
-      while (cur <= endDate) {
-        const pStart = new Date(cur)
-        const pEnd = new Date(cur.getFullYear(), cur.getMonth() + 1, 0, 23, 59, 59)
-        const q = Math.floor(cur.getMonth() / 3) + 1
+      const periodType = body.periodType || 'monthly' // monthly | quarterly | semi-annual | annual
+      const periods: any[] = []
+      
+      const start = new Date(startDate)
+      const end = new Date(endDate)
+      
+      if (periodType === 'monthly') {
+        const periodMonthsAr = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر']
+        const cur = new Date(start.getFullYear(), start.getMonth(), 1)
+        while (cur <= end) {
+          const pStart = new Date(cur)
+          const pEnd = new Date(cur.getFullYear(), cur.getMonth() + 1, 0, 23, 59, 59)
+          const q = Math.floor(cur.getMonth() / 3) + 1
+          periods.push({
+            fiscalYearId: fy.id,
+            name: `${periodMonthsAr[cur.getMonth()]} ${cur.getFullYear()}`,
+            startDate: pStart,
+            endDate: pEnd,
+            quarter: q,
+            state: 'open',
+          })
+          cur.setMonth(cur.getMonth() + 1)
+        }
+      } else if (periodType === 'quarterly') {
+        const cur = new Date(start.getFullYear(), start.getMonth(), 1)
+        let qCount = 1
+        while (cur <= end) {
+          const pStart = new Date(cur)
+          const pEnd = new Date(cur.getFullYear(), cur.getMonth() + 3, 0, 23, 59, 59)
+          periods.push({
+            fiscalYearId: fy.id,
+            name: `الربع ${qCount} — ${fy.name}`,
+            startDate: pStart,
+            endDate: pEnd > end ? end : pEnd,
+            quarter: qCount,
+            state: 'open',
+          })
+          cur.setMonth(cur.getMonth() + 3)
+          qCount++
+        }
+      } else if (periodType === 'semi-annual') {
+        const cur = new Date(start.getFullYear(), start.getMonth(), 1)
+        let hCount = 1
+        while (cur <= end) {
+          const pStart = new Date(cur)
+          const pEnd = new Date(cur.getFullYear(), cur.getMonth() + 6, 0, 23, 59, 59)
+          periods.push({
+            fiscalYearId: fy.id,
+            name: `النصف ${hCount} — ${fy.name}`,
+            startDate: pStart,
+            endDate: pEnd > end ? end : pEnd,
+            quarter: hCount === 1 ? 1 : 3,
+            state: 'open',
+          })
+          cur.setMonth(cur.getMonth() + 6)
+          hCount++
+        }
+      } else if (periodType === 'annual') {
         periods.push({
           fiscalYearId: fy.id,
-          name: `${periodMonths[cur.getMonth()]} ${cur.getFullYear()}`,
-          startDate: pStart,
-          endDate: pEnd,
-          quarter: q,
+          name: `الفترة السنوية — ${fy.name}`,
+          startDate: new Date(start),
+          endDate: new Date(end),
+          quarter: 1,
           state: 'open',
         })
-        cur.setMonth(cur.getMonth() + 1)
       }
-      await db.fiscalPeriod.createMany({ data: periods })
+
+      if (periods.length > 0) {
+        await db.fiscalPeriod.createMany({ data: periods })
+      }
     }
 
     const withPeriods = await db.fiscalYear.findUnique({

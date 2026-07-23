@@ -53,7 +53,7 @@ const TYPE_META: Record<string, { label: string; color: string; ring: string }> 
 }
 
 export function ChartOfAccountsModule() {
-  const { t } = useT()
+  const { t, isRTL, dir } = useT()
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -267,66 +267,135 @@ export function ChartOfAccountsModule() {
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
-            <DialogTitle>{editing ? 'تعديل حساب' : 'إضافة حساب جديد'}</DialogTitle>
-            <DialogDescription>أدخل بيانات الحساب</DialogDescription>
-          </DialogHeader>
-          <DialogBody>          <form onSubmit={(e) => { e.preventDefault(); handleSave(new FormData(e.currentTarget)) }}>
-            <ScrollArea className="max-h-[60vh] pe-2">
-              <div className="grid grid-cols-2 gap-4 p-1">
-                <div className="space-y-1.5">
-                  <Label htmlFor="code">الرمز *</Label>
-                  <Input id="code" name="code" defaultValue={editing?.code} required disabled={editing?.isSystem} />
+        <DialogContent className="max-w-xl p-0 overflow-hidden bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800" dir={dir}>
+          <form onSubmit={(e) => { e.preventDefault(); handleSave(new FormData(e.currentTarget)) }} className="flex flex-col h-full">
+            <DialogHeader className="bg-gradient-to-r from-blue-50 to-[#E6F0FF] dark:bg-none dark:bg-blue-700/80 border-b border-blue-100 dark:border-blue-600/40 p-6 shrink-0 relative">
+              <div className="flex items-start gap-4">
+                <div className="size-12 rounded-xl bg-white dark:bg-blue-950/60 border border-blue-100 dark:border-blue-500/20 text-blue-600 dark:text-blue-300 flex items-center justify-center shadow-sm shadow-blue-100/40 dark:shadow-none shrink-0">
+                  <BookOpen className="size-6" />
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="nameAr">الاسم (عربي) *</Label>
-                  <Input id="nameAr" name="nameAr" defaultValue={editing?.nameAr} required />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="nameEn">الاسم (إنجليزي)</Label>
-                  <Input id="nameEn" name="nameEn" defaultValue={editing?.nameEn} dir="ltr" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="type">النوع *</Label>
-                  <Select name="type" defaultValue={editing?.type ?? 'asset'} disabled={editing?.isSystem}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="asset">أصول</SelectItem>
-                      <SelectItem value="liability">التزامات</SelectItem>
-                      <SelectItem value="equity">حقوق ملكية</SelectItem>
-                      <SelectItem value="income">إيرادات</SelectItem>
-                      <SelectItem value="expense">مصروفات</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="subtype">النوع الفرعي</Label>
-                  <Input id="subtype" name="subtype" defaultValue={editing?.subtype} placeholder="current_asset" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="parentId">الحساب الأب</Label>
-                  <Select name="parentId" defaultValue={editing?.parentId}>
-                    <SelectTrigger><SelectValue placeholder="بدون" /></SelectTrigger>
-                    <SelectContent>
-                      {accounts.filter((a) => !editing || a.id !== editing.id).map((a) => (
-                        <SelectItem key={a.id} value={a.id}>{a.code} — {a.nameAr}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-center gap-2 pt-6 col-span-2">
-                  <Switch id="active" name="active" defaultChecked={editing?.active ?? true} />
-                  <Label htmlFor="active">نشط</Label>
+                <div className={cn("space-y-1 flex-1", isRTL ? "text-right" : "text-left")}>
+                  <DialogTitle className="text-xl font-bold tracking-tight text-blue-955 dark:text-white">
+                    {editing
+                      ? (isRTL ? 'تعديل بيانات الحساب' : 'Edit Account Details')
+                      : (isRTL ? 'إضافة حساب جديد' : 'Add New Financial Account')}
+                  </DialogTitle>
                 </div>
               </div>
-            </ScrollArea>
-            <DialogFooter className="mt-4">
-              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>إلغاء</Button>
-              <Button type="submit" disabled={saveMutation.isPending}>{saveMutation.isPending ? 'جاري الحفظ...' : 'حفظ'}</Button>
+            </DialogHeader>
+
+            <DialogBody className="p-6 space-y-4 bg-slate-50/50 dark:bg-slate-900/50">
+              <ScrollArea className="max-h-[60vh] pe-2">
+                <div className="grid grid-cols-2 gap-4 p-1">
+                  <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                    <Label htmlFor="code" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {isRTL ? 'الرمز *' : 'Code *'}
+                    </Label>
+                    <Input
+                      id="code"
+                      name="code"
+                      defaultValue={editing?.code}
+                      required
+                      disabled={editing?.isSystem}
+                      dir={dir}
+                      className={cn("h-10 border-slate-200 dark:border-slate-800 text-sm bg-white dark:bg-slate-950 focus-visible:ring-blue-500", isRTL ? "text-right" : "text-left")}
+                    />
+                  </div>
+                  <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                    <Label htmlFor="nameAr" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {isRTL ? 'الاسم (عربي) *' : 'Name (Arabic) *'}
+                    </Label>
+                    <Input
+                      id="nameAr"
+                      name="nameAr"
+                      defaultValue={editing?.nameAr}
+                      required
+                      dir={dir}
+                      className={cn("h-10 border-slate-200 dark:border-slate-800 text-sm bg-white dark:bg-slate-950 focus-visible:ring-blue-500", isRTL ? "text-right" : "text-left")}
+                    />
+                  </div>
+                  <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                    <Label htmlFor="nameEn" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {isRTL ? 'الاسم (إنجليزي)' : 'Name (English)'}
+                    </Label>
+                    <Input
+                      id="nameEn"
+                      name="nameEn"
+                      defaultValue={editing?.nameEn}
+                      dir={dir}
+                      className={cn("h-10 border-slate-200 dark:border-slate-800 text-sm bg-white dark:bg-slate-950 focus-visible:ring-blue-500", isRTL ? "text-right" : "text-left")}
+                    />
+                  </div>
+                  <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                    <Label htmlFor="type" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {isRTL ? 'النوع *' : 'Type *'}
+                    </Label>
+                    <Select name="type" defaultValue={editing?.type ?? 'asset'} disabled={editing?.isSystem}>
+                      <SelectTrigger dir={dir} className={cn("h-10 border-slate-200 dark:border-slate-800 text-sm bg-white dark:bg-slate-950 focus:ring-blue-500", isRTL ? "text-right" : "text-left")}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent dir={dir}>
+                        <SelectItem value="asset">{isRTL ? 'أصول' : 'Asset'}</SelectItem>
+                        <SelectItem value="liability">{isRTL ? 'التزامات' : 'Liability'}</SelectItem>
+                        <SelectItem value="equity">{isRTL ? 'حقوق ملكية' : 'Equity'}</SelectItem>
+                        <SelectItem value="income">{isRTL ? 'إيرادات' : 'Income'}</SelectItem>
+                        <SelectItem value="expense">{isRTL ? 'مصروفات' : 'Expense'}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                    <Label htmlFor="subtype" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {isRTL ? 'النوع الفرعي' : 'Subtype'}
+                    </Label>
+                    <Input
+                      id="subtype"
+                      name="subtype"
+                      defaultValue={editing?.subtype}
+                      placeholder="current_asset"
+                      dir={dir}
+                      className={cn("h-10 border-slate-200 dark:border-slate-800 text-sm bg-white dark:bg-slate-950 focus-visible:ring-blue-500", isRTL ? "text-right" : "text-left")}
+                    />
+                  </div>
+                  <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                    <Label htmlFor="parentId" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {isRTL ? 'الحساب الأب' : 'Parent Account'}
+                    </Label>
+                    <Select name="parentId" defaultValue={editing?.parentId}>
+                      <SelectTrigger dir={dir} className={cn("h-10 border-slate-200 dark:border-slate-800 text-sm bg-white dark:bg-slate-950 focus:ring-blue-500", isRTL ? "text-right" : "text-left")}>
+                        <SelectValue placeholder={isRTL ? 'بدون' : 'None'} />
+                      </SelectTrigger>
+                      <SelectContent dir={dir}>
+                        {accounts.filter((a) => !editing || a.id !== editing.id).map((a) => (
+                          <SelectItem key={a.id} value={a.id}>{a.code} — {isRTL ? a.nameAr : (a.nameEn || a.nameAr)}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className={cn("flex items-center gap-3 pt-4 col-span-2", isRTL ? "justify-start" : "justify-start")}>
+                    <Switch id="active" name="active" defaultChecked={editing?.active ?? true} className="data-[state=checked]:bg-blue-600" />
+                    <Label htmlFor="active" className="text-sm font-semibold text-slate-700 dark:text-slate-300 cursor-pointer select-none">
+                      {isRTL ? 'حساب نشط' : 'Active Account'}
+                    </Label>
+                  </div>
+                </div>
+              </ScrollArea>
+            </DialogBody>
+
+            <DialogFooter className="px-6 py-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-end gap-2 shrink-0">
+              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} className="h-10 px-5 border-slate-200 dark:border-slate-855 hover:bg-slate-100/80 dark:hover:bg-slate-900 text-xs font-semibold">
+                {isRTL ? 'إلغاء' : 'Cancel'}
+              </Button>
+              <Button
+                type="submit"
+                disabled={saveMutation.isPending}
+                className="h-10 px-5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-xs font-semibold shadow-sm"
+              >
+                {saveMutation.isPending
+                  ? (isRTL ? 'جاري الحفظ...' : 'Saving...')
+                  : (isRTL ? 'حفظ الحساب' : 'Save Account')}
+              </Button>
             </DialogFooter>
           </form>
-        </DialogBody>
         </DialogContent>
       </Dialog>
     </ModuleShell>

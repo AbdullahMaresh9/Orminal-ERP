@@ -221,7 +221,7 @@ export function ReportsModule() {
         </TabsList>
 
         {/* Date range filter */}
-        <Card className="p-4 mb-4">
+        <Card className="p-4 mb-2">
           <div className="flex flex-wrap items-end gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="from" className="text-xs">من تاريخ</Label>

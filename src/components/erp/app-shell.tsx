@@ -45,12 +45,17 @@ export function AppShell() {
       {/* Main */}
       <div className="flex-1 min-w-0 flex flex-col">
         <Topbar />
-        <main className="flex-1 overflow-y-auto overscroll-contain scrollbar-thin min-h-0">
+        <main className={cn(
+          "flex-1 overscroll-contain scrollbar-thin min-h-0 flex flex-col",
+          activeModule === 'pos' ? "overflow-hidden" : "overflow-y-auto"
+        )}>
           <ActiveModule />
-          <footer className="mt-auto border-t bg-muted/30 py-4 px-6 text-center text-xs text-muted-foreground shrink-0">
-            <span className="font-semibold text-foreground">أورمنال</span> — نظام إدارة موارد المؤسسات ERP ·
-            جميع الحقوق محفوظة © {year}
-          </footer>
+          {activeModule !== 'pos' && (
+            <footer className="mt-auto border-t bg-muted/30 py-4 px-6 text-center text-xs text-muted-foreground shrink-0">
+              <span className="font-semibold text-foreground">أورمنال</span> — نظام إدارة موارد المؤسسات ERP ·
+              جميع الحقوق محفوظة © {year}
+            </footer>
+          )}
         </main>
       </div>
     </div>

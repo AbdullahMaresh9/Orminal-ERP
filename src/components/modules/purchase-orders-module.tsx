@@ -304,7 +304,7 @@ export function PurchaseOrdersModule() {
         </Select>
       }
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
         <KpiCard title="إجمالي الطلبات" value={formatInt(total)} icon={<ShoppingCart className="size-5" />} accent="blue" />
         <KpiCard title="إجمالي المشتريات" value={formatCurrency(stats.totalPurchases)} icon={<Coins className="size-5" />} accent="amber" />
         <KpiCard title="المدفوع" value={formatCurrency(stats.totalPaid)} icon={<Wallet className="size-5" />} accent="sky" />
@@ -494,13 +494,13 @@ export function PurchaseOrdersModule() {
           </div>
 
           </DialogBody>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>إلغاء</Button>
-            <Button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
-              {saveMutation.isPending ? 'جاري الحفظ...' : 'إنشاء'}
-            </Button>
-          </DialogFooter>
-        </DialogBody>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>إلغاء</Button>
+              <Button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
+                {saveMutation.isPending ? 'جاري الحفظ...' : 'إنشاء'}
+              </Button>
+            </DialogFooter>
+          </DialogBody>
         </DialogContent>
       </Dialog>
     </ModuleShell>

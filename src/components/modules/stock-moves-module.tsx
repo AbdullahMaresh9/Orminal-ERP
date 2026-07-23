@@ -36,21 +36,21 @@ export function StockMovesModule() {
   })))
 
   const today = new Date().toDateString()
-  const todayCount = rows.filter((r:any) => new Date(r.postingDate).toDateString() === today).length
-  const doneCount = rows.filter((r:any) => r.state === 'done').length
+  const todayCount = rows.filter((r: any) => new Date(r.postingDate).toDateString() === today).length
+  const doneCount = rows.filter((r: any) => r.state === 'done').length
 
   return (
     <ModuleShell title="حركات المخزون" description="سجل حركات المخزون (للقراءة فقط — سجل مُلحق)" icon={<ArrowLeftRight className="size-5" />} onSearch={setSearch} searchValue={search} onExport={handleExport}
       filters={<Select value={stateFilter} onValueChange={setStateFilter}><SelectTrigger className="w-36"><SelectValue placeholder="الحالة" /></SelectTrigger><SelectContent>
         <SelectItem value="all">الكل</SelectItem><SelectItem value="draft">مسودة</SelectItem><SelectItem value="done">مكتمل</SelectItem><SelectItem value="cancelled">ملغي</SelectItem>
       </SelectContent></Select>}>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
         {isLoading ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />) : (
           <>
             <KpiCard title="إجمالي الحركات" value={String(rows.length)} icon={<ArrowLeftRight className="size-5" />} accent="blue" />
             <KpiCard title="اليوم" value={String(todayCount)} icon={<Activity className="size-5" />} accent="sky" />
             <KpiCard title="مكتملة" value={String(doneCount)} icon={<TrendingUp className="size-5" />} accent="violet" />
-            <KpiCard title="أنواع المستندات" value={String(new Set(rows.map((r:any)=>r.documentType)).size)} icon={<Layers className="size-5" />} accent="amber" />
+            <KpiCard title="أنواع المستندات" value={String(new Set(rows.map((r: any) => r.documentType)).size)} icon={<Layers className="size-5" />} accent="amber" />
           </>
         )}
       </div>
@@ -61,19 +61,19 @@ export function StockMovesModule() {
             <TableHead className="num-cell">الكمية</TableHead><TableHead>نوع المستند</TableHead><TableHead>الحالة</TableHead>
           </TableRow></TableHeader>
           <TableBody>
-            {isLoading ? Array.from({length:5}).map((_,i)=><TableRow key={i}>{Array.from({length:7}).map((_,j)=><TableCell key={j}><Skeleton className="h-6" /></TableCell>)}</TableRow>) :
-             !rows.length ? <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-12">لا توجد حركات</TableCell></TableRow> :
-             rows.map((r: any) => (
-              <TableRow key={r.id}>
-                <TableCell className="text-xs text-muted-foreground">{new Date(r.postingDate).toLocaleDateString('en-CA')}</TableCell>
-                <TableCell className="text-sm"><div><p className="font-medium">{r.product?.nameAr || '—'}</p><p className="text-[10px] text-muted-foreground">{r.product?.sku}</p></div></TableCell>
-                <TableCell className="text-xs">{r.sourceWarehouse?.nameAr || '—'}</TableCell>
-                <TableCell className="text-xs">{r.destWarehouse?.nameAr || '—'}</TableCell>
-                <TableCell className="num-cell"><span className="num">{formatNumber(r.quantity)}</span></TableCell>
-                <TableCell className="text-xs">{r.documentType || '—'}</TableCell>
-                <TableCell><StatusBadge status={r.state} /></TableCell>
-              </TableRow>
-            ))}
+            {isLoading ? Array.from({ length: 5 }).map((_, i) => <TableRow key={i}>{Array.from({ length: 7 }).map((_, j) => <TableCell key={j}><Skeleton className="h-6" /></TableCell>)}</TableRow>) :
+              !rows.length ? <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-12">لا توجد حركات</TableCell></TableRow> :
+                rows.map((r: any) => (
+                  <TableRow key={r.id}>
+                    <TableCell className="text-xs text-muted-foreground">{new Date(r.postingDate).toLocaleDateString('en-CA')}</TableCell>
+                    <TableCell className="text-sm"><div><p className="font-medium">{r.product?.nameAr || '—'}</p><p className="text-[10px] text-muted-foreground">{r.product?.sku}</p></div></TableCell>
+                    <TableCell className="text-xs">{r.sourceWarehouse?.nameAr || '—'}</TableCell>
+                    <TableCell className="text-xs">{r.destWarehouse?.nameAr || '—'}</TableCell>
+                    <TableCell className="num-cell"><span className="num">{formatNumber(r.quantity)}</span></TableCell>
+                    <TableCell className="text-xs">{r.documentType || '—'}</TableCell>
+                    <TableCell><StatusBadge status={r.state} /></TableCell>
+                  </TableRow>
+                ))}
           </TableBody>
         </Table></ScrollArea>
       </div>

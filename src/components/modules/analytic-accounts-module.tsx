@@ -42,7 +42,7 @@ interface AnalyticAccount {
 }
 
 export function AnalyticAccountsModule() {
-  const { t } = useT()
+  const { t, isRTL, dir } = useT()
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -183,7 +183,7 @@ export function AnalyticAccountsModule() {
       addLabel="مركز جديد"
       onExport={handleExport}
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
         {isLoading ? (
           Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />)
         ) : (
@@ -239,50 +239,70 @@ export function AnalyticAccountsModule() {
       </Card>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{editing ? 'تعديل مركز تكلفة' : 'مركز تكلفة جديد'}</DialogTitle>
-            <DialogDescription>أدخل بيانات مركز التكلفة</DialogDescription>
+        <DialogContent className="max-w-xl p-0 overflow-hidden bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800" dir={dir}>
+          <DialogHeader className="bg-gradient-to-r from-blue-50 to-[#E6F0FF] dark:bg-none dark:bg-blue-700/80 border-b border-blue-100 dark:border-blue-600/40 p-6 shrink-0 relative">
+            <div className="flex items-start gap-4 text-start">
+              <div className="size-12 rounded-xl bg-white dark:bg-blue-950/60 border border-blue-100 dark:border-blue-500/20 text-blue-600 dark:text-blue-300 flex items-center justify-center shadow-sm shadow-blue-100/40 dark:shadow-none shrink-0">
+                <Network className="size-6" />
+              </div>
+              <div className="space-y-1 flex-1">
+                <DialogTitle className="text-xl font-bold tracking-tight text-blue-955 dark:text-white">
+                  {editing ? (isRTL ? 'تعديل مركز تكلفة' : 'Edit Cost Center') : (isRTL ? 'مركز تكلفة جديد' : 'New Cost Center')}
+                </DialogTitle>
+              </div>
+            </div>
           </DialogHeader>
-          <DialogBody>          <DialogBody>          <div className="grid gap-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>الرمز *</Label>
-                <Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="CC-001" />
+
+          <DialogBody className="p-6 space-y-6 bg-slate-50/30 dark:bg-slate-900/10">
+            <div className="grid gap-4 py-2">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5 text-start">
+                  <Label htmlFor="code" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'الرمز *' : 'Code *'}</Label>
+                  <Input id="code" value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="CC-001" className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500" />
+                </div>
+                <div className="space-y-1.5 text-start">
+                  <Label htmlFor="name" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'الاسم *' : 'Name *'}</Label>
+                  <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={isRTL ? 'إدارة المبيعات' : 'Sales Department'} className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500" />
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label>الاسم *</Label>
-                <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="إدارة المبيعات" />
+
+              <div className="space-y-1.5 text-start">
+                <Label htmlFor="parent" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'المركز الأب' : 'Parent Center'}</Label>
+                <Select value={form.parentId || '__none__'} onValueChange={(v) => setForm({ ...form, parentId: v === '__none__' ? '' : v })}>
+                  <SelectTrigger id="parent" className="w-full h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500">
+                    <SelectValue placeholder="—" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">{isRTL ? '— مركز رئيسي —' : '— Main Center —'}</SelectItem>
+                    {all.filter((a) => a.id !== editing?.id).map((a) => (
+                      <SelectItem key={a.id} value={a.id}>{a.code} · {a.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center gap-3 p-3.5 bg-blue-50/40 dark:bg-blue-950/20 border border-blue-100/50 dark:border-blue-900/30 rounded-xl">
+                <Switch id="active" checked={form.active} onCheckedChange={(v) => setForm({ ...form, active: v })} className="data-[state=checked]:bg-blue-600 shrink-0" />
+                <div className="space-y-0.5 flex-1 text-start">
+                  <Label htmlFor="active" className="text-sm font-bold text-blue-950 dark:text-blue-200 cursor-pointer">{isRTL ? 'نشط' : 'Active'}</Label>
+                  <p className="text-xs text-blue-750/70 dark:text-blue-300/60 leading-normal">{isRTL ? 'تفعيل أو تعطيل مركز التكلفة للترحيل' : 'Enable or disable this analytical center for posting'}</p>
+                </div>
               </div>
             </div>
-            <div className="space-y-1.5">
-              <Label>المركز الأب</Label>
-              <Select value={form.parentId || '__none__'} onValueChange={(v) => setForm({ ...form, parentId: v === '__none__' ? '' : v })}>
-                <SelectTrigger className="w-full"><SelectValue placeholder="—" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">— مركز رئيسي —</SelectItem>
-                  {all.filter((a) => a.id !== editing?.id).map((a) => (
-                    <SelectItem key={a.id} value={a.id}>{a.code} · {a.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center justify-between rounded-lg border p-3">
-              <Label htmlFor="active" className="cursor-pointer">نشط</Label>
-              <Switch id="active" checked={form.active} onCheckedChange={(v) => setForm({ ...form, active: v })} />
-            </div>
-          </div>
           </DialogBody>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>إلغاء</Button>
+
+          <DialogFooter className="px-6 py-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-end gap-2 shrink-0">
+            <Button variant="outline" onClick={() => setDialogOpen(false)} className="h-10 px-5 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-900 text-xs font-semibold text-slate-700 dark:text-slate-300">
+              {isRTL ? 'إلغاء' : 'Cancel'}
+            </Button>
             <Button
               onClick={() => saveMutation.mutate()}
               disabled={saveMutation.isPending || !form.code || !form.name}
+              className="h-10 px-5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-xs font-semibold shadow-sm shadow-blue-100 dark:shadow-none"
             >
-              {saveMutation.isPending ? 'جارٍ الحفظ...' : 'حفظ'}
+              {saveMutation.isPending ? (isRTL ? 'جارٍ الحفظ...' : 'Saving...') : (editing ? (isRTL ? 'حفظ التغييرات' : 'Save Changes') : (isRTL ? 'إنشاء وحفـظ' : 'Create and Save'))}
             </Button>
           </DialogFooter>
-        </DialogBody>
         </DialogContent>
       </Dialog>
     </ModuleShell>

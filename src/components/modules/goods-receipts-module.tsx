@@ -341,7 +341,7 @@ export function GoodsReceiptsModule() {
         </Select>
       }
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
         <KpiCard title="إجمالي السندات" value={formatInt(stats.total)} icon={<PackageCheck className="size-5" />} accent="blue" />
         <KpiCard title="قيد المعالجة" value={formatInt(stats.pending)} icon={<Clock className="size-5" />} accent="amber" />
         <KpiCard title="مُتحقَّق" value={formatInt(stats.validated)} icon={<CheckCircle2 className="size-5" />} accent="sky" />
@@ -537,16 +537,16 @@ export function GoodsReceiptsModule() {
           </div>
 
           </DialogBody>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>إلغاء</Button>
-            <Button type="button" variant="secondary" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate(false)}>
-              {saveMutation.isPending ? 'جاري الحفظ...' : 'حفظ كمسودة'}
-            </Button>
-            <Button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate(true)}>
-              {saveMutation.isPending ? 'جاري الحفظ...' : 'حفظ وتحقق'}
-            </Button>
-          </DialogFooter>
-        </DialogBody>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>إلغاء</Button>
+              <Button type="button" variant="secondary" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate(false)}>
+                {saveMutation.isPending ? 'جاري الحفظ...' : 'حفظ كمسودة'}
+              </Button>
+              <Button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate(true)}>
+                {saveMutation.isPending ? 'جاري الحفظ...' : 'حفظ وتحقق'}
+              </Button>
+            </DialogFooter>
+          </DialogBody>
         </DialogContent>
       </Dialog>
     </ModuleShell>

@@ -1,6 +1,17 @@
 // Enterprise ERP — Comprehensive Seed Script
 // Source: Volume 4 SDTA + Volume 2 Blueprint + Volume 3 FTS + Arabic Accounting Spec
 import { db } from '../src/lib/db'
+import { scrypt, randomBytes } from 'crypto'
+import { promisify } from 'util'
+
+const scryptAsync = promisify(scrypt)
+
+async function hashPassword(password: string): Promise<string> {
+  const N = 16384, r = 8, p = 1
+  const salt = randomBytes(16).toString('hex')
+  const derivedKey = (await (scryptAsync as any)(password, Buffer.from(salt, 'hex'), 64, { N, r, p })) as Buffer
+  return `scrypt:${N}:${r}:${p}$${salt}$${derivedKey.toString('hex')}`
+}
 
 async function main() {
   console.log('🌱 Seeding Enterprise ERP...')
@@ -221,7 +232,7 @@ async function main() {
       email: 'admin@ormenal.io',
       nameAr: 'مدير النظام',
       nameEn: 'System Administrator',
-      passwordHash: '$2a$10$placeholderhash', // In production, use bcrypt
+      passwordHash: await hashPassword('admin123'),
       defaultCompanyId: company.id,
       defaultBranchId: branch.id,
       locale: 'ar',
@@ -229,7 +240,7 @@ async function main() {
       active: true,
     },
   })
-  const adminRole = await db.role.findUnique({ where: { code: 'ADMIN' } })!
+  const adminRole = (await db.role.findUnique({ where: { code: 'ADMIN' } }))!
   await db.userRole.create({ data: { userId: admin.id, roleId: adminRole.id, companyId: company.id, branchId: branch.id, active: true } })
 
   // === Categories ===
@@ -246,10 +257,10 @@ async function main() {
   const locLoss = await db.stockLocation.create({ data: { code: 'LOSS', nameAr: 'خسائر', nameEn: 'Loss', warehouseId: warehouse.id, type: 'loss' } })
 
   // === Products ===
-  const pceUom = await db.unitOfMeasure.findUnique({ where: { code: 'PCE' } })!
-  const kgUom = await db.unitOfMeasure.findUnique({ where: { code: 'KG' } })!
-  const ltrUom = await db.unitOfMeasure.findUnique({ where: { code: 'LTR' } })!
-  const packUom = await db.unitOfMeasure.findUnique({ where: { code: 'PACK' } })!
+  const pceUom = (await db.unitOfMeasure.findUnique({ where: { code: 'PCE' } }))!
+  const kgUom = (await db.unitOfMeasure.findUnique({ where: { code: 'KG' } }))!
+  const ltrUom = (await db.unitOfMeasure.findUnique({ where: { code: 'LTR' } }))!
+  const packUom = (await db.unitOfMeasure.findUnique({ where: { code: 'PACK' } }))!
 
   const products = [
     { sku: 'P-001', barcode: '628100001', nameAr: 'زيت أرغان 100مل', nameEn: 'Argan Oil 100ml', categoryId: catFood.id, uomId: pceUom.id, costPrice: 45, salePrice: 80, taxCodeId: vat15.id, type: 'finished', tracking: 'none', minStock: 10, costingMethod: 'fifo', valuationAccountId: inventoryAccount!.id, cogsAccountId: cogsAccount!.id, revenueAccountId: salesAccount!.id },
@@ -272,7 +283,7 @@ async function main() {
   }
 
   // === Partners (Customers + Suppliers) ===
-  const net30 = await db.paymentTerm.findUnique({ where: { code: 'NET30' } })!
+  const net30 = (await db.paymentTerm.findUnique({ where: { code: 'NET30' } }))!
   const partners = [
     // Customers
     { code: 'C-001', nameAr: 'شركة النخبة التجارية', nameEn: 'Elite Trading Co.', isCustomer: true, contactName: 'أحمد محمد', phone: '0551234567', email: 'info@elite.sa', creditLimit: 50000, currentBalance: 12500, receivableAccountId: arAccount!.id, paymentTermId: net30.id },
@@ -324,7 +335,7 @@ async function main() {
   }
 
   // === Opening Journal Entry ===
-  const generalJournal = await db.journal.findUnique({ where: { code: 'OJ' } })!
+  const generalJournal = (await db.journal.findUnique({ where: { code: 'OJ' } }))!
   const openingPeriod = await db.fiscalPeriod.findFirst({ where: { fiscalYearId: fiscalYear.id }, orderBy: { startDate: 'asc' } })
   await db.journalEntry.create({
     data: {

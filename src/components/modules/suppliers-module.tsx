@@ -2,551 +2,537 @@
 
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
 import { ModuleShell } from '@/components/erp/module-shell'
 import { KpiCard } from '@/components/erp/kpi-card'
 import { StatusBadge } from '@/components/erp/status-badge'
 import { useT } from '@/lib/i18n/use-t'
-import { formatCurrency, formatDate, formatInt } from '@/lib/format'
-import { exportToCSV, printHTML } from '@/lib/export'
-import { Card } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { formatCurrency, formatInt } from '@/lib/format'
+import { exportToCSV } from '@/lib/export'
+import { toast } from 'sonner'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
+import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogBody,
 } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Button } from '@/components/ui/button'
-import { Switch } from '@/components/ui/switch'
-import { Textarea } from '@/components/ui/textarea'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { cn } from '@/lib/utils'
 import {
-  Truck, Plus, Pencil, Trash2, Printer, Wallet, CheckCircle2, CalendarDays, Eye,
+  Truck, Plus, Pencil, Trash2, Phone, Mail, Building2, MapPin, Hash, Coins
 } from 'lucide-react'
 
 interface Supplier {
   id: string
   code: string
-  name: string
-  contactName?: string | null
-  phone?: string | null
-  email?: string | null
-  address?: string | null
-  taxNumber?: string | null
-  balance: number
+  nameAr: string
+  nameEn?: string
+  isCustomer: boolean
+  isSupplier: boolean
+  contactName?: string
+  phone?: string
+  email?: string
+  taxNumber?: string
+  address?: string
+  creditLimit: number
   openingBalance: number
+  currentBalance: number
   active: boolean
   createdAt: string
-  _count?: { purchaseOrders: number; purchaseInvoices: number; purchasePayments: number }
 }
 
-const empty = {
-  code: '',
-  name: '',
-  contactName: '',
-  phone: '',
-  email: '',
-  address: '',
-  taxNumber: '',
-  openingBalance: 0,
-  active: true,
-}
-
-export function SuppliersModule() {
-  const { t } = useT()
+export default function SuppliersModule() {
+  const { t, locale } = useT()
+  const isRTL = locale === 'ar'
+  const dir = isRTL ? 'rtl' : 'ltr'
   const qc = useQueryClient()
-  const [search, setSearch] = useState('')
-  const [open, setOpen] = useState(false)
-  const [viewOpen, setViewOpen] = useState(false)
-  const [viewData, setViewData] = useState<any>(null)
-  const [editId, setEditId] = useState<string | null>(null)
-  const [form, setForm] = useState<any>(empty)
 
-  const { data, isLoading } = useQuery<{ data: Supplier[]; total: number }>({
-    queryKey: ['suppliers'],
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [editing, setEditing] = useState<Supplier | null>(null)
+
+  const [page, setPage] = useState(1)
+  const pageSize = 10
+
+  const { data, isLoading } = useQuery<{ data: Supplier[]; meta: { pagination: { total: number; totalPages: number } } }>({
+    queryKey: ['suppliers', search, statusFilter, page],
     queryFn: async () => {
-      const r = await fetch('/api/erp/suppliers')
-      if (!r.ok) throw new Error('fetch failed')
+      const params = new URLSearchParams()
+      params.set('isSupplier', 'true')
+      if (search) params.set('q', search)
+      if (statusFilter === 'active') params.set('active', 'true')
+      if (statusFilter === 'inactive') params.set('active', 'false')
+
+      params.set('page', String(page))
+      params.set('pageSize', String(pageSize))
+      const r = await fetch(`/api/erp/partners?${params}`)
+      if (!r.ok) throw new Error('Failed to load suppliers')
       return r.json()
     },
   })
 
-  const list = data?.data ?? []
-  const filtered = list.filter((s) => {
-    const q = search.trim().toLowerCase()
-    if (!q) return true
-    return [s.name, s.code, s.contactName, s.phone, s.email].some((v) => (v ?? '').toLowerCase().includes(q))
-  })
+  const suppliers = data?.data ?? []
+  const total = data?.meta?.pagination?.total ?? 0
+  const totalPages = data?.meta?.pagination?.totalPages ?? 1
 
-  // KPIs
-  const totalPayables = list.reduce((s, x) => s + (x.balance ?? 0), 0)
-  const activeCount = list.filter((s) => s.active).length
-  const now = new Date()
-  const thisMonth = list.filter((s) => new Date(s.createdAt).getMonth() === now.getMonth() && new Date(s.createdAt).getFullYear() === now.getFullYear()).length
+  const stats = {
+    total: suppliers.length,
+    active: suppliers.filter((s) => s.active).length,
+    totalBalance: suppliers.reduce((s, c) => s + (c.currentBalance || 0), 0),
+  }
 
-  const saveMut = useMutation({
+  const saveMutation = useMutation({
     mutationFn: async (payload: any) => {
-      const url = editId ? `/api/erp/suppliers/${editId}` : '/api/erp/suppliers'
+      const url = editing ? `/api/erp/partners/${editing.id}` : '/api/erp/partners'
+      const method = editing ? 'PUT' : 'POST'
       const r = await fetch(url, {
-        method: editId ? 'PUT' : 'POST',
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
       if (!r.ok) {
-        const e = await r.json().catch(() => ({}))
-        throw new Error(e.error || 'request failed')
+        const err = await r.json().catch(() => ({}))
+        throw new Error(err?.error?.message ?? 'Failed to save supplier')
       }
       return r.json()
     },
     onSuccess: () => {
-      toast.success('تم الحفظ بنجاح')
-      setOpen(false)
+      toast.success(isRTL ? 'تم الحفظ بنجاح' : 'Saved successfully')
       qc.invalidateQueries({ queryKey: ['suppliers'] })
+      setDialogOpen(false)
+      setEditing(null)
     },
-    onError: (e: any) => toast.error(e.message || 'حدث خطأ'),
+    onError: (e: any) => toast.error(e.message || (isRTL ? 'حدث خطأ' : 'An error occurred')),
   })
 
-  const delMut = useMutation({
+  const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const r = await fetch(`/api/erp/suppliers/${id}`, { method: 'DELETE' })
-      if (!r.ok) throw new Error('request failed')
+      const r = await fetch(`/api/erp/partners/${id}`, { method: 'DELETE' })
+      if (!r.ok) throw new Error('Failed to delete supplier')
       return r.json()
     },
     onSuccess: () => {
-      toast.success('تم الحذف بنجاح')
+      toast.success(isRTL ? 'تم الحفظ بنجاح' : 'Deleted successfully')
       qc.invalidateQueries({ queryKey: ['suppliers'] })
     },
-    onError: () => toast.error('حدث خطأ'),
+    onError: () => toast.error(isRTL ? 'حدث خطأ' : 'An error occurred'),
   })
 
-  function openAdd() {
-    setEditId(null)
-    setForm(empty)
-    setOpen(true)
-  }
-
-  function openEdit(s: Supplier) {
-    setEditId(s.id)
-    setForm({
-      code: s.code,
-      name: s.name,
-      contactName: s.contactName ?? '',
-      phone: s.phone ?? '',
-      email: s.email ?? '',
-      address: s.address ?? '',
-      taxNumber: s.taxNumber ?? '',
-      openingBalance: s.openingBalance,
-      active: s.active,
-    })
-    setOpen(true)
-  }
-
-  async function openView(s: Supplier) {
-    try {
-      const r = await fetch(`/api/erp/suppliers/${s.id}`)
-      if (!r.ok) throw new Error()
-      const d = await r.json()
-      setViewData(d)
-      setViewOpen(true)
-    } catch {
-      toast.error('حدث خطأ')
+  const handleSave = (formData: FormData) => {
+    const payload: any = {
+      code: formData.get('code') || undefined,
+      nameAr: formData.get('nameAr'),
+      nameEn: formData.get('nameEn') || undefined,
+      isCustomer: false,
+      isSupplier: true,
+      contactName: formData.get('contactName') || undefined,
+      phone: formData.get('phone') || undefined,
+      email: formData.get('email') || undefined,
+      taxNumber: formData.get('taxNumber') || undefined,
+      address: formData.get('address') || undefined,
+      creditLimit: Number(formData.get('creditLimit')) || 0,
+      openingBalance: Number(formData.get('openingBalance')) || 0,
+      active: formData.get('active') === 'on',
     }
+    saveMutation.mutate(payload)
   }
 
-  function submit() {
-    if (!form.name.trim()) {
-      toast.error('الاسم مطلوب')
-      return
-    }
-    saveMut.mutate(form)
-  }
-
-  function handleExport() {
-    exportToCSV(
-      'suppliers',
-      filtered.map((s) => ({
-        code: s.code,
-        name: s.name,
-        contactName: s.contactName ?? '',
-        phone: s.phone ?? '',
-        email: s.email ?? '',
-        taxNumber: s.taxNumber ?? '',
-        balance: s.balance,
-        openingBalance: s.openingBalance,
-        active: s.active ? 'نشط' : 'غير نشط',
-      })),
-      [
-        { key: 'code', label: 'الرمز' },
-        { key: 'name', label: 'الاسم' },
-        { key: 'contactName', label: 'جهة الاتصال' },
-        { key: 'phone', label: 'الهاتف' },
-        { key: 'email', label: 'البريد' },
-        { key: 'taxNumber', label: 'الرقم الضريبي' },
-        { key: 'balance', label: 'الرصيد' },
-        { key: 'openingBalance', label: 'رصيد افتتاحي' },
-        { key: 'active', label: 'الحالة' },
-      ]
-    )
-  }
-
-  function handlePrintStatement(s: Supplier) {
-    const d: any = viewData ?? s
-    const invoices: any[] = d.purchaseInvoices ?? []
-    const payments: any[] = d.purchasePayments ?? []
-    const orders: any[] = d.purchaseOrders ?? []
-    const creditNotes: any[] = d.purchaseCreditNotes ?? []
-    const html = `
-      <div class="doc-header">
-        <div class="company">
-          <img src="/logo.png" class="logo" style="width:56px;height:56px;object-fit:contain;border-radius:8px;" />
-          <div class="info">
-            <h2>أورمنال — نظام إدارة موارد المؤسسات ERP</h2>
-            <p>كشف حساب مورد</p>
-          </div>
-        </div>
-        <div class="doc-meta">
-          <div class="type">كشف حساب مورد</div>
-          <div class="code">${s.code}</div>
-          <div class="date">${formatDate(new Date())}</div>
-        </div>
-      </div>
-      <div class="party">
-        <div class="label">بيانات المورد</div>
-        <div class="name">${s.name}</div>
-        <div class="sub">جهة الاتصال: ${s.contactName ?? '—'} | الهاتف: ${s.phone ?? '—'} | الرقم الضريبي: ${s.taxNumber ?? '—'}</div>
-      </div>
-      <h3 style="margin-top:20px;font-size:14px;color:#2563EB">الفواتير</h3>
-      <table>
-        <thead><tr><th>الكود</th><th>التاريخ</th><th>الإجمالي</th><th>المدفوع</th><th>المتبقي</th><th>الحالة</th></tr></thead>
-        <tbody>
-          ${invoices.length === 0 ? '<tr><td colspan="6" style="text-align:center;color:#777;padding:16px">لا توجد فواتير</td></tr>' : invoices.map((i) => `
-            <tr>
-              <td>${i.code}</td>
-              <td>${formatDate(i.issueDate)}</td>
-              <td>${i.total.toFixed(2)}</td>
-              <td>${i.paid.toFixed(2)}</td>
-              <td>${(i.total - i.paid).toFixed(2)}</td>
-              <td>${i.status}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-      <h3 style="margin-top:20px;font-size:14px;color:#2563EB">المدفوعات (سندات الصرف)</h3>
-      <table>
-        <thead><tr><th>الكود</th><th>التاريخ</th><th>المبلغ</th><th>الطريقة</th><th>المرجع</th><th>الحالة</th></tr></thead>
-        <tbody>
-          ${payments.length === 0 ? '<tr><td colspan="6" style="text-align:center;color:#777;padding:16px">لا توجد مدفوعات</td></tr>' : payments.map((p) => `
-            <tr>
-              <td>${p.code}</td>
-              <td>${formatDate(p.date)}</td>
-              <td>${p.amount.toFixed(2)}</td>
-              <td>${p.method}</td>
-              <td>${p.reference ?? '—'}</td>
-              <td>${p.status}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-      <h3 style="margin-top:20px;font-size:14px;color:#2563EB">أوامر الشراء</h3>
-      <table>
-        <thead><tr><th>الكود</th><th>التاريخ</th><th>الإجمالي</th><th>المدفوع</th><th>الحالة</th></tr></thead>
-        <tbody>
-          ${orders.length === 0 ? '<tr><td colspan="5" style="text-align:center;color:#777;padding:16px">لا توجد أوامر شراء</td></tr>' : orders.map((o) => `
-            <tr>
-              <td>${o.code}</td>
-              <td>${formatDate(o.createdAt)}</td>
-              <td>${o.total.toFixed(2)}</td>
-              <td>${o.paid.toFixed(2)}</td>
-              <td>${o.status}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-      <h3 style="margin-top:20px;font-size:14px;color:#2563EB">إشعارات دائنة</h3>
-      <table>
-        <thead><tr><th>الكود</th><th>التاريخ</th><th>المبلغ</th><th>السبب</th><th>الحالة</th></tr></thead>
-        <tbody>
-          ${creditNotes.length === 0 ? '<tr><td colspan="5" style="text-align:center;color:#777;padding:16px">لا توجد إشعارات دائنة</td></tr>' : creditNotes.map((c) => `
-            <tr>
-              <td>${c.code}</td>
-              <td>${formatDate(c.issueDate)}</td>
-              <td>${c.total.toFixed(2)}</td>
-              <td>${c.reason ?? '—'}</td>
-              <td>${c.status}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-      <div class="totals">
-        <div class="row"><span>الرصيد الحالي</span><span>${formatCurrency(s.balance)}</span></div>
-      </div>
-      <div class="signatures">
-        <div class="sig"><div class="line"></div><div class="label">المحاسب</div></div>
-        <div class="sig"><div class="line"></div><div class="label">المورد</div></div>
-        <div class="sig"><div class="line"></div><div class="label">المدير المالي</div></div>
-      </div>
-    `
-    printHTML(html, `كشف حساب — ${s.name}`)
+  const handleExport = () => {
+    const rows = suppliers.map((s) => ({
+      [isRTL ? 'الرمز' : 'Code']: s.code,
+      [isRTL ? 'الاسم' : 'Name']: s.nameAr,
+      [isRTL ? 'جهة الاتصال' : 'Contact Person']: s.contactName ?? '',
+      [isRTL ? 'الهاتف' : 'Phone']: s.phone ?? '',
+      [isRTL ? 'البريد' : 'Email']: s.email ?? '',
+      [isRTL ? 'الرقم الضريبي' : 'Tax Number']: s.taxNumber ?? '',
+      [isRTL ? 'حد الائتمان' : 'Credit Limit']: s.creditLimit,
+      [isRTL ? 'الرصيد الحالي' : 'Current Balance']: s.currentBalance,
+      [isRTL ? 'الحالة' : 'Status']: s.active ? (isRTL ? 'نشط' : 'Active') : (isRTL ? 'غير نشط' : 'Inactive'),
+    }))
+    exportToCSV('suppliers', rows)
+    toast.success(isRTL ? 'تم تصدير الملف' : 'Exported successfully')
   }
 
   return (
     <ModuleShell
-      title={t('module.suppliers')}
-      description="إدارة بيانات الموردين وأرصدتهم وكشوف الحساب"
+      title={isRTL ? 'الموردون' : 'Suppliers'}
+      description={isRTL ? 'إدارة الموردين وعمليات التوريد والمدفوعات والمستحقات' : 'Manage suppliers, procurement accounts, payables and vendor operations'}
       icon={<Truck className="size-5" />}
       searchValue={search}
       onSearch={setSearch}
-      searchPlaceholder="ابحث بالاسم أو الرمز أو الهاتف..."
-      onAdd={openAdd}
-      addLabel="مورد"
+      searchPlaceholder={isRTL ? 'ابحث برمز المورد أو الاسم أو الهاتف...' : 'Search by supplier code, name or phone...'}
+      onAdd={() => { setEditing(null); setDialogOpen(true) }}
+      addLabel={isRTL ? 'إضافة مورد جديد' : 'Add Supplier'}
       onExport={handleExport}
+      filters={
+        <>
+          <Button size="sm" variant={statusFilter === 'all' ? 'default' : 'outline'} onClick={() => { setStatusFilter('all'); setPage(1); }}>
+            {isRTL ? 'الكل' : 'All'}
+          </Button>
+          <Button size="sm" variant={statusFilter === 'active' ? 'default' : 'outline'} onClick={() => { setStatusFilter('active'); setPage(1); }}>
+            {isRTL ? 'نشط' : 'Active'}
+          </Button>
+          <Button size="sm" variant={statusFilter === 'inactive' ? 'default' : 'outline'} onClick={() => { setStatusFilter('inactive'); setPage(1); }}>
+            {isRTL ? 'غير نشط' : 'Inactive'}
+          </Button>
+        </>
+      }
     >
-      {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {isLoading ? (
-          Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />)
-        ) : (
-          <>
-            <KpiCard title="إجمالي الموردين" value={formatInt(list.length)} icon={<Truck className="size-5" />} accent="blue" />
-            <KpiCard title="إجمالي الذمم الدائنة" value={formatCurrency(totalPayables)} icon={<Wallet className="size-5" />} accent="rose" />
-            <KpiCard title="الموردون النشطون" value={formatInt(activeCount)} icon={<CheckCircle2 className="size-5" />} accent="sky" />
-            <KpiCard title="المضافون هذا الشهر" value={formatInt(thisMonth)} icon={<CalendarDays className="size-5" />} accent="amber" />
-          </>
-        )}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
+        <KpiCard title={isRTL ? 'إجمالي الموردين' : 'Total Suppliers'} value={formatInt(total)} icon={<Truck className="size-5" />} accent="amber" />
+        <KpiCard title={isRTL ? 'الموردون النشطون' : 'Active Suppliers'} value={formatInt(stats.active)} icon={<Truck className="size-5" />} accent="blue" />
+        <KpiCard title={isRTL ? 'إجمالي الأرصدة' : 'Total Balances'} value={formatCurrency(stats.totalBalance)} icon={<Building2 className="size-5" />} accent="violet" />
+        <KpiCard title={isRTL ? 'متوسط الرصيد' : 'Avg Balance'} value={formatCurrency(stats.total ? Math.round(stats.totalBalance / stats.total) : 0)} icon={<Coins className="size-5" />} accent="sky" />
       </div>
 
-      {/* Table */}
-      <Card className="rounded-xl border bg-card">
+      <Card className="rounded-xl overflow-hidden">
         <ScrollArea className="max-h-[60vh]">
-          <Table className="table-sticky">
+          <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>الرمز</TableHead>
-                <TableHead>الاسم</TableHead>
-                <TableHead>جهة الاتصال</TableHead>
-                <TableHead>الهاتف</TableHead>
-                <TableHead className="num-cell">الرصيد</TableHead>
-                <TableHead>الحالة</TableHead>
-                <TableHead className="text-end">إجراءات</TableHead>
+              <TableRow className="bg-muted/50">
+                <TableHead className="ps-4">{isRTL ? 'الرمز' : 'Code'}</TableHead>
+                <TableHead>{isRTL ? 'الاسم' : 'Name'}</TableHead>
+                <TableHead>{isRTL ? 'جهة الاتصال' : 'Contact Person'}</TableHead>
+                <TableHead>{isRTL ? 'الهاتف' : 'Phone'}</TableHead>
+                <TableHead className="text-end num-cell">{isRTL ? 'الرصيد' : 'Balance'}</TableHead>
+                <TableHead>{isRTL ? 'الحالة' : 'Status'}</TableHead>
+                <TableHead className="text-end">{isRTL ? 'إجراءات' : 'Actions'}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                Array.from({ length: 4 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell colSpan={7}><Skeleton className="h-10" /></TableCell>
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
+                    {isRTL ? 'جاري التحميل...' : 'Loading...'}
+                  </TableCell>
+                </TableRow>
+              ) : suppliers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
+                    {isRTL ? 'لا يوجد موردون. ابدأ بإضافة أول مورد.' : 'No suppliers found. Add your first supplier.'}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                suppliers.map((s) => (
+                  <TableRow key={s.id} className="hover:bg-muted/40">
+                    <TableCell className="ps-4 font-mono text-xs" dir="ltr">
+                      {s.code}
+                    </TableCell>
+                    <TableCell className="font-medium">{s.nameAr}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{s.contactName ?? '—'}</TableCell>
+                    <TableCell className="text-sm font-mono" dir="ltr">
+                      {s.phone ?? '—'}
+                    </TableCell>
+                    <TableCell className="text-end num-cell">
+                      <span className="num font-semibold tabular-nums" dir="ltr">
+                        {formatCurrency(s.currentBalance)}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={s.active ? 'active' : 'inactive'} />
+                    </TableCell>
+                    <TableCell className="text-end">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button size="icon" variant="ghost" className="size-8" onClick={() => { setEditing(s); setDialogOpen(true); }}>
+                          <Pencil className="size-3.5" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="size-8 text-rose-500 hover:text-rose-600" onClick={() => deleteMutation.mutate(s.id)}>
+                          <Trash2 className="size-3.5" />
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))
-              ) : filtered.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-12">
-                    لا يوجد موردون. ابدأ بإضافة أول مورد.
-                  </TableCell>
-                </TableRow>
-              ) : filtered.map((s) => (
-                <TableRow key={s.id} className="cursor-pointer hover:bg-muted/40" onClick={() => openView(s)}>
-                  <TableCell className="font-mono text-xs font-semibold text-primary">{s.code}</TableCell>
-                  <TableCell className="font-medium text-sm">{s.name}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground cell-truncate">{s.contactName || '—'}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground tabular-nums" dir="ltr">{s.phone || '—'}</TableCell>
-                  <TableCell className={`num-cell font-semibold ${s.balance > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-muted-foreground'}`}>
-                    <span className="num">{formatCurrency(s.balance)}</span>
-                  </TableCell>
-                  <TableCell><StatusBadge status={s.active ? 'active' : 'inactive'} /></TableCell>
-                  <TableCell onClick={(e) => e.stopPropagation()}>
-                    <div className="flex items-center justify-end gap-0.5">
-                      <Button size="sm" variant="ghost" className="size-8 p-0" onClick={() => openView(s)} title="عرض">
-                        <Eye className="size-4" />
-                      </Button>
-                      <Button size="sm" variant="ghost" className="size-8 p-0" onClick={() => { setViewData(s); handlePrintStatement(s) }} title="كشف حساب">
-                        <Printer className="size-4" />
-                      </Button>
-                      <Button size="sm" variant="ghost" className="size-8 p-0" onClick={() => openEdit(s)} title="تعديل">
-                        <Pencil className="size-4" />
-                      </Button>
-                      <Button size="sm" variant="ghost" className="size-8 p-0 text-rose-600 hover:text-rose-700" onClick={() => {
-                        if (confirm('هل أنت متأكد من حذف هذا المورد؟')) delMut.mutate(s.id)
-                      }} title="حذف">
-                        <Trash2 className="size-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </ScrollArea>
       </Card>
 
-      {/* Add/Edit dialog */}
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
-            <DialogTitle>{editId ? 'تعديل مورد' : 'إضافة مورد'}</DialogTitle>
-            <DialogDescription>أدخل بيانات المورد. الرصيد الافتتاخي يُسجّل كرصيد مبدئي للمورد.</DialogDescription>
-          </DialogHeader>
-          <DialogBody>          <DialogBody>          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label>الرمز</Label>
-              <Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="SUP-0001 (تلقائي عند الإفراغ)" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>الاسم *</Label>
-              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="اسم المورد" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>جهة الاتصال</Label>
-              <Input value={form.contactName} onChange={(e) => setForm({ ...form, contactName: e.target.value })} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>الهاتف</Label>
-              <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="05xxxxxxxx" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>البريد الإلكتروني</Label>
-              <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>الرقم الضريبي</Label>
-              <Input value={form.taxNumber} onChange={(e) => setForm({ ...form, taxNumber: e.target.value })} />
-            </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label>العنوان</Label>
-              <Textarea rows={2} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>الرصيد الافتتاحي</Label>
-              <Input type="number" step="0.01" value={form.openingBalance} onChange={(e) => setForm({ ...form, openingBalance: Number(e.target.value) })} />
-            </div>
-            <div className="flex items-center justify-between gap-3 rounded-lg border p-3">
-              <div>
-                <p className="text-sm font-medium">المورد نشط</p>
-                <p className="text-xs text-muted-foreground">الموردون غير النشطون لا يظهرون في القوائم</p>
-              </div>
-              <Switch checked={form.active} onCheckedChange={(v) => setForm({ ...form, active: v })} />
-            </div>
-          </div>
-          </DialogBody>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>إلغاء</Button>
-            <Button onClick={submit} disabled={saveMut.isPending}>
-              {saveMut.isPending ? 'جاري الحفظ...' : editId ? 'تحديث' : 'إضافة'}
-            </Button>
-          </DialogFooter>
-        </DialogBody>
-        </DialogContent>
-      </Dialog>
+      <div className="flex items-center justify-between mt-4 text-sm" dir={dir}>
+        <p className="text-muted-foreground">
+          {isRTL
+            ? `عرض ${suppliers.length === 0 ? 0 : (page - 1) * pageSize + 1}–${(page - 1) * pageSize + suppliers.length} من ${total}`
+            : `Showing ${suppliers.length === 0 ? 0 : (page - 1) * pageSize + 1}–${(page - 1) * pageSize + suppliers.length} of ${total}`}
+        </p>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+            {isRTL ? 'السابق' : 'Previous'}
+          </Button>
+          <span className="text-xs text-muted-foreground">
+            {isRTL ? `صفحة ${page} من ${totalPages}` : `Page ${page} of ${totalPages}`}
+          </span>
+          <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
+            {isRTL ? 'التالي' : 'Next'}
+          </Button>
+        </div>
+      </div>
 
-      {/* View supplier statement */}
-      <Dialog open={viewOpen} onOpenChange={setViewOpen}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>كشف حساب مورد — {viewData?.name ?? ''}</DialogTitle>
-            <DialogDescription>
-              الرمز: {viewData?.code ?? ''} · الرصيد الحالي: <span className="num">{formatCurrency(viewData?.balance ?? 0)}</span>
-            </DialogDescription>
-          </DialogHeader>
-          <DialogBody>          <DialogBody>          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto">
-            <Card className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-sm">الفواتير</h3>
-                <span className="text-xs text-muted-foreground">{viewData?.purchaseInvoices?.length ?? 0}</span>
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-3xl p-0 overflow-hidden bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800" dir={dir}>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              handleSave(new FormData(e.currentTarget))
+            }}
+            className="flex flex-col max-h-[90vh] h-full overflow-hidden"
+          >
+            <DialogHeader className="bg-gradient-to-r from-blue-50 to-[#E6F0FF] rtl:bg-gradient-to-l dark:bg-none dark:bg-blue-700/80 border-b border-blue-100 dark:border-blue-800 p-6 shrink-0 relative">
+              <div className="flex items-center gap-3">
+                <div className="size-11 rounded-xl bg-blue-600 dark:bg-blue-500 text-white flex items-center justify-center shadow-md dark:shadow-blue-900/30 shrink-0">
+                  <Truck className="size-5" />
+                </div>
+                <div className="space-y-0.5">
+                  <DialogTitle className="text-xl font-bold tracking-tight text-blue-900 dark:text-white">
+                    {editing
+                      ? (isRTL ? 'تعديل بيانات المورد' : 'Edit Supplier Details')
+                      : (isRTL ? 'إضافة مورد جديد' : 'Add New Supplier')}
+                  </DialogTitle>
+
+                </div>
               </div>
-              <div className="space-y-2">
-                {(viewData?.purchaseInvoices ?? []).length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-4">لا توجد فواتير</p>
-                ) : (viewData?.purchaseInvoices ?? []).map((i: any) => (
-                  <div key={i.id} className="flex items-center justify-between text-xs p-2 rounded-lg bg-muted/40">
-                    <div>
-                      <p className="font-medium">{i.code}</p>
-                      <p className="text-muted-foreground">{formatDate(i.issueDate)}</p>
-                    </div>
-                    <div className="text-end">
-                      <p className="font-bold"><span className="num">{formatCurrency(i.total)}</span></p>
-                      <p className="text-muted-foreground">متبقي: <span className="num">{formatCurrency(i.total - i.paid)}</span></p>
+            </DialogHeader>
+
+            <DialogBody className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50 dark:bg-slate-900/50 scrollbar-thin">
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 border-b pb-2 border-slate-200/60 dark:border-slate-800/60">
+                  <Building2 className="size-4 text-blue-600 dark:text-blue-400" />
+                  <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200">
+                    {isRTL ? 'البيانات الأساسية' : 'Basic Information'}
+                  </h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                    <Label htmlFor="code" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {isRTL ? 'رمز المورد (تلقائي)' : 'Supplier Code (Auto)'}
+                    </Label>
+                    <Input
+                      id="code"
+                      name="code"
+                      defaultValue={editing?.code}
+                      placeholder="S-00001"
+                      dir={dir}
+                      className={cn("h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 font-mono text-sm bg-slate-50 dark:bg-slate-900/50", isRTL ? "text-right" : "text-left")}
+                    />
+                  </div>
+
+                  <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                    <Label htmlFor="nameAr" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {isRTL ? 'الاسم بالكامل (عربي) *' : 'Full Name (Arabic) *'}
+                    </Label>
+                    <Input
+                      id="nameAr"
+                      name="nameAr"
+                      defaultValue={editing?.nameAr}
+                      placeholder={isRTL ? 'مثال: شركة الحلول المتقدمة' : 'e.g. Advanced Solutions Co.'}
+                      required
+                      dir={dir}
+                      className={cn("h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-sm", isRTL ? "text-right" : "text-left")}
+                    />
+                  </div>
+
+                  <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                    <Label htmlFor="nameEn" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {isRTL ? 'الاسم بالكامل (إنجليزي)' : 'Full Name (English)'}
+                    </Label>
+                    <Input
+                      id="nameEn"
+                      name="nameEn"
+                      defaultValue={editing?.nameEn}
+                      placeholder="e.g. Advanced Solutions Co."
+                      dir={dir}
+                      className={cn("h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-sm", isRTL ? "text-right" : "text-left")}
+                    />
+                  </div>
+
+                  <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                    <Label htmlFor="taxNumber" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {isRTL ? 'الرقم الضريبي (TIN)' : 'Tax Identification Number (TIN)'}
+                    </Label>
+                    <div className="relative">
+                      <Hash className="absolute inset-y-0 start-3 my-auto size-4 text-slate-400 pointer-events-none" />
+                      <Input
+                        id="taxNumber"
+                        name="taxNumber"
+                        defaultValue={editing?.taxNumber}
+                        placeholder="300000000000003"
+                        dir={dir}
+                        className={cn("h-10 ps-9 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-sm font-mono", isRTL ? "text-right" : "text-left")}
+                      />
                     </div>
                   </div>
-                ))}
+                </div>
               </div>
-            </Card>
-            <Card className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-sm">المدفوعات</h3>
-                <span className="text-xs text-muted-foreground">{viewData?.purchasePayments?.length ?? 0}</span>
-              </div>
-              <div className="space-y-2">
-                {(viewData?.purchasePayments ?? []).length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-4">لا توجد مدفوعات</p>
-                ) : (viewData?.purchasePayments ?? []).map((p: any) => (
-                  <div key={p.id} className="flex items-center justify-between text-xs p-2 rounded-lg bg-muted/40">
-                    <div>
-                      <p className="font-medium">{p.code}</p>
-                      <p className="text-muted-foreground">{formatDate(p.date)} · {p.method}</p>
-                    </div>
-                    <div className="text-end">
-                      <p className="font-bold text-blue-600"><span className="num">{formatCurrency(p.amount)}</span></p>
-                      <StatusBadge status={p.status} />
+
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 border-b pb-2 border-slate-200/60 dark:border-slate-800/60">
+                  <Phone className="size-4 text-blue-600 dark:text-blue-400" />
+                  <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200">
+                    {isRTL ? 'بيانات المسؤول والاتصال' : 'Contact Information'}
+                  </h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                    <Label htmlFor="contactName" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {isRTL ? 'اسم جهة الاتصال / المسؤول' : 'Contact Person / Representative'}
+                    </Label>
+                    <Input
+                      id="contactName"
+                      name="contactName"
+                      defaultValue={editing?.contactName}
+                      placeholder={isRTL ? 'مثال: محمد أحمد' : 'e.g. John Doe'}
+                      dir={dir}
+                      className={cn("h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-sm", isRTL ? "text-right" : "text-left")}
+                    />
+                  </div>
+
+                  <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                    <Label htmlFor="phone" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {isRTL ? 'رقم الهاتف' : 'Phone Number'}
+                    </Label>
+                    <div className="relative">
+                      <Phone className="absolute inset-y-0 start-3 my-auto size-4 text-slate-400 pointer-events-none" />
+                      <Input
+                        id="phone"
+                        name="phone"
+                        defaultValue={editing?.phone}
+                        placeholder="+966 50 000 0000"
+                        dir={dir}
+                        className={cn("h-10 ps-9 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-sm font-mono", isRTL ? "text-right" : "text-left")}
+                      />
                     </div>
                   </div>
-                ))}
-              </div>
-            </Card>
-            <Card className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-sm">أوامر الشراء</h3>
-                <span className="text-xs text-muted-foreground">{viewData?.purchaseOrders?.length ?? 0}</span>
-              </div>
-              <div className="space-y-2">
-                {(viewData?.purchaseOrders ?? []).length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-4">لا توجد أوامر شراء</p>
-                ) : (viewData?.purchaseOrders ?? []).map((o: any) => (
-                  <div key={o.id} className="flex items-center justify-between text-xs p-2 rounded-lg bg-muted/40">
-                    <div>
-                      <p className="font-medium">{o.code}</p>
-                      <p className="text-muted-foreground">{formatDate(o.createdAt)}</p>
-                    </div>
-                    <div className="text-end">
-                      <p className="font-bold"><span className="num">{formatCurrency(o.total)}</span></p>
-                      <StatusBadge status={o.status} />
+
+                  <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                    <Label htmlFor="email" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {isRTL ? 'البريد الإلكتروني' : 'Email Address'}
+                    </Label>
+                    <div className="relative">
+                      <Mail className="absolute inset-y-0 start-3 my-auto size-4 text-slate-400 pointer-events-none" />
+                      <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        defaultValue={editing?.email}
+                        placeholder="supplier@example.com"
+                        dir={dir}
+                        className={cn("h-10 ps-9 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-sm font-mono", isRTL ? "text-right" : "text-left")}
+                      />
                     </div>
                   </div>
-                ))}
-              </div>
-            </Card>
-            <Card className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-sm">إشعارات دائنة</h3>
-                <span className="text-xs text-muted-foreground">{viewData?.purchaseCreditNotes?.length ?? 0}</span>
-              </div>
-              <div className="space-y-2">
-                {(viewData?.purchaseCreditNotes ?? []).length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-4">لا توجد إشعارات دائنة</p>
-                ) : (viewData?.purchaseCreditNotes ?? []).map((c: any) => (
-                  <div key={c.id} className="flex items-center justify-between text-xs p-2 rounded-lg bg-muted/40">
-                    <div>
-                      <p className="font-medium">{c.code}</p>
-                      <p className="text-muted-foreground">{c.reason ?? '—'}</p>
-                    </div>
-                    <div className="text-end">
-                      <p className="font-bold text-rose-600"><span className="num">{formatCurrency(c.total)}</span></p>
-                      <StatusBadge status={c.status} />
+
+                  <div className={cn("space-y-1.5 md:col-span-2", isRTL ? "text-right" : "text-left")}>
+                    <Label htmlFor="address" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {isRTL ? 'العنوان' : 'Address'}
+                    </Label>
+                    <div className="relative">
+                      <MapPin className="absolute inset-y-0 start-3 my-auto size-4 text-slate-400 pointer-events-none" />
+                      <Input
+                        id="address"
+                        name="address"
+                        defaultValue={editing?.address}
+                        placeholder={isRTL ? 'مثال: الرياض، حي السليمانية، شارع التحلية' : 'e.g. King Fahd Rd, Al Olaya, Riyadh'}
+                        dir={dir}
+                        className={cn("h-10 ps-9 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-sm", isRTL ? "text-right" : "text-left")}
+                      />
                     </div>
                   </div>
-                ))}
+                </div>
               </div>
-            </Card>
-          </div>
-          </DialogBody>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setViewOpen(false)}>إغلاق</Button>
-            <Button onClick={() => handlePrintStatement(viewData)} className="gap-1.5">
-              <Printer className="size-4" /> طباعة الكشف
-            </Button>
-          </DialogFooter>
-        </DialogBody>
+
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 border-b pb-2 border-slate-200/60 dark:border-slate-800/60">
+                  <Coins className="size-4 text-blue-600 dark:text-blue-400" />
+                  <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200">
+                    {isRTL ? 'البيانات المالية والأرصدة' : 'Financial & Credit Configuration'}
+                  </h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                    <Label htmlFor="creditLimit" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {isRTL ? 'حد الائتمان' : 'Credit Limit'}
+                    </Label>
+                    <Input
+                      id="creditLimit"
+                      name="creditLimit"
+                      type="number"
+                      step="0.01"
+                      defaultValue={editing?.creditLimit ?? 0}
+                      placeholder="0.00"
+                      dir={dir}
+                      className={cn("h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-sm font-semibold tabular-nums", isRTL ? "text-right" : "text-left")}
+                    />
+                  </div>
+
+                  <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                    <Label htmlFor="openingBalance" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {isRTL ? 'الرصيد الافتتاحي' : 'Opening Balance'}
+                    </Label>
+                    <Input
+                      id="openingBalance"
+                      name="openingBalance"
+                      type="number"
+                      step="0.01"
+                      defaultValue={editing?.openingBalance ?? 0}
+                      placeholder="0.00"
+                      dir={dir}
+                      className={cn("h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-sm font-semibold tabular-nums", isRTL ? "text-right" : "text-left")}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 border-b pb-2 border-slate-200/60 dark:border-slate-800/60">
+                  <Building2 className="size-4 text-blue-600 dark:text-blue-400" />
+                  <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200">
+                    {isRTL ? 'حالة الحساب' : 'Account Status'}
+                  </h3>
+                </div>
+
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
+                  <div className="flex items-center justify-between py-1">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="active" className="text-sm font-semibold text-slate-800 dark:text-slate-200 cursor-pointer">
+                        {isRTL ? 'نشط' : 'Active Status'}
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        {isRTL ? 'تفعيل الحساب' : 'Activate the account'}
+                      </p>
+                    </div>
+                    <Switch id="active" name="active" defaultChecked={editing?.active ?? true} />
+                  </div>
+                </div>
+              </div>
+            </DialogBody>
+
+            <DialogFooter className="bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800 p-4 shrink-0">
+              <div className="flex items-center justify-end gap-3 w-full">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setDialogOpen(false)}
+                  className="px-5 py-2.5 h-11 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
+                >
+                  {isRTL ? 'إلغاء' : 'Cancel'}
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={saveMutation.isPending}
+                  className="px-6 py-2.5 h-11 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transition-all"
+                >
+                  {saveMutation.isPending
+                    ? (isRTL ? 'جاري الحفظ...' : 'Saving...')
+                    : (isRTL ? 'حفظ ' : 'Save ')}
+                </Button>
+              </div>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </ModuleShell>

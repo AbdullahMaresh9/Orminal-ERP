@@ -3,27 +3,33 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-// 16 unified modules per Arabic Accounting Spec §22 + Volume 2 bounded contexts
 export type ModuleKey =
   // Platform
   | 'dashboard' | 'profile' | 'users' | 'roles' | 'audit-logs' | 'notifications' | 'settings'
   // Master Data
-  | 'partners' | 'products' | 'categories' | 'warehouses'
+  | 'products' | 'categories' | 'warehouses' | 'branches' | 'customers' | 'suppliers'
   // Finance
   | 'chart-of-accounts' | 'journal-entries' | 'fiscal-periods' | 'cost-centers' | 'bank-accounts' | 'safes'
+  | 'analytic-accounts' | 'closed-periods'
   | 'sales-payments' | 'purchase-payments'
+  | 'expenses' | 'revenues' | 'finance-transfers' | 'finance-requisitions'
   // Sales & CRM
   | 'sales-quotations' | 'sales-orders' | 'sales-invoices' | 'sales-credit-notes' | 'sales-returns'
+  // POS
+  | 'pos'
   // Procurement
   | 'purchase-requests' | 'purchase-orders' | 'goods-receipts' | 'purchase-invoices' | 'purchase-credit-notes' | 'purchase-returns'
   // Inventory
   | 'stock-on-hand' | 'stock-transfers' | 'deliveries' | 'inventory-adjustments' | 'stock-moves'
+  | 'stock-takes' | 'inventory-transfers' | 'inventory-incoming' | 'inventory-outgoing' | 'inventory-requisitions'
   // Manufacturing
   | 'boms' | 'work-centers' | 'production-orders'
   // HR
-  | 'employees' | 'departments' | 'attendance' | 'leave-requests' | 'payroll-runs'
+  | 'employees' | 'departments' | 'attendance' | 'leave-requests' | 'payroll-runs' | 'activities'
   // Reports
   | 'reports'
+  // Document Templates
+  | 'document-templates'
 
 interface NavState {
   activeModule: ModuleKey
@@ -47,7 +53,7 @@ export const useNav = create<NavState>()(
       setMobileSidebarOpen: (v) => set({ mobileSidebarOpen: v }),
     }),
     {
-      name: 'ormenal-nav-v2',
+      name: 'ormenal-nav-v3',
       skipHydration: true,
       partialize: (s) => ({ activeModule: s.activeModule, sidebarCollapsed: s.sidebarCollapsed }),
     }

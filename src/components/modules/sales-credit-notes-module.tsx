@@ -255,7 +255,7 @@ export function SalesCreditNotesModule() {
         </Select>
       }
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
         <KpiCard title="إجمالي الإشعارات" value={formatCurrency(stats.total)} icon={<Coins className="size-5" />} accent="blue" />
         <KpiCard title="عدد الإشعارات" value={formatInt(stats.count)} icon={<Hash className="size-5" />} accent="sky" />
         <KpiCard title="هذا الشهر" value={formatCurrency(stats.thisMonthTotal)} icon={<CalendarDays className="size-5" />} accent="amber" />
@@ -320,87 +320,87 @@ export function SalesCreditNotesModule() {
             <DialogTitle>إشعار دائن جديد</DialogTitle>
             <DialogDescription>إنشاء إشعار دائن لعميل — سيتم عكس قيد الفاتورة الأصلية تلقائياً عند الترحيل</DialogDescription>
           </DialogHeader>
-          <DialogBody>          <DialogBody>          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>العميل *</Label>
-                <Select value={partnerId} onValueChange={setPartnerId}>
-                  <SelectTrigger><SelectValue placeholder="اختر العميل" /></SelectTrigger>
-                  <SelectContent>
-                    {partners.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        <span dir="ltr" className="font-mono text-xs">{p.code}</span> — {p.nameAr}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>الفاتورة المرتبطة (اختياري)</Label>
-                <Select value={invoiceId} onValueChange={(v) => {
-                  setInvoiceId(v)
-                  const inv = invoices.find((i) => i.id === v)
-                  if (inv) setSubtotal(String(inv.total))
-                }}>
-                  <SelectTrigger><SelectValue placeholder="بدون" /></SelectTrigger>
-                  <SelectContent>
-                    {invoices
-                      .filter((i) => !partnerId || i.partnerId === partnerId)
-                      .map((i) => (
-                        <SelectItem key={i.id} value={i.id}>
-                          <span dir="ltr" className="font-mono text-xs">{i.code}</span> — {formatCurrency(i.total)}
+          <DialogBody>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>العميل *</Label>
+                  <Select value={partnerId} onValueChange={setPartnerId}>
+                    <SelectTrigger><SelectValue placeholder="اختر العميل" /></SelectTrigger>
+                    <SelectContent>
+                      {partners.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          <span dir="ltr" className="font-mono text-xs">{p.code}</span> — {p.nameAr}
                         </SelectItem>
                       ))}
-                  </SelectContent>
-                </Select>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>الفاتورة المرتبطة (اختياري)</Label>
+                  <Select value={invoiceId} onValueChange={(v) => {
+                    setInvoiceId(v)
+                    const inv = invoices.find((i) => i.id === v)
+                    if (inv) setSubtotal(String(inv.total))
+                  }}>
+                    <SelectTrigger><SelectValue placeholder="بدون" /></SelectTrigger>
+                    <SelectContent>
+                      {invoices
+                        .filter((i) => !partnerId || i.partnerId === partnerId)
+                        .map((i) => (
+                          <SelectItem key={i.id} value={i.id}>
+                            <span dir="ltr" className="font-mono text-xs">{i.code}</span> — {formatCurrency(i.total)}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="date">التاريخ</Label>
+                  <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="subtotal">المبلغ قبل الضريبة</Label>
+                  <Input id="subtotal" type="number" step="0.01" dir="ltr" value={subtotal} onChange={(e) => setSubtotal(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="taxRate">نسبة الضريبة %</Label>
+                  <Input id="taxRate" type="number" step="0.01" dir="ltr" value={taxRate} onChange={(e) => setTaxRate(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>السبب</Label>
+                  <Select value={reason} onValueChange={setReason}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {REASON_OPTIONS.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3 text-sm">
+                <div className="p-3 rounded-lg bg-muted/40">
+                  <p className="text-xs text-muted-foreground">المجموع الفرعي</p>
+                  <p className="font-bold tabular-nums" dir="ltr">{formatCurrency(Number(subtotal) || 0)}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-muted/40">
+                  <p className="text-xs text-muted-foreground">الضريبة</p>
+                  <p className="font-bold tabular-nums" dir="ltr">{formatCurrency(taxTotal)}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900">
+                  <p className="text-xs text-blue-700 dark:text-blue-400">الإجمالي</p>
+                  <p className="font-bold tabular-nums text-blue-700 dark:text-blue-400" dir="ltr">{formatCurrency(total_)}</p>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="notes_">ملاحظات</Label>
+                <Textarea id="notes_" value={notes_} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="ملاحظات إضافية..." />
               </div>
             </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="date">التاريخ</Label>
-                <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="subtotal">المبلغ قبل الضريبة</Label>
-                <Input id="subtotal" type="number" step="0.01" dir="ltr" value={subtotal} onChange={(e) => setSubtotal(e.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="taxRate">نسبة الضريبة %</Label>
-                <Input id="taxRate" type="number" step="0.01" dir="ltr" value={taxRate} onChange={(e) => setTaxRate(e.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>السبب</Label>
-                <Select value={reason} onValueChange={setReason}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {REASON_OPTIONS.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3 text-sm">
-              <div className="p-3 rounded-lg bg-muted/40">
-                <p className="text-xs text-muted-foreground">المجموع الفرعي</p>
-                <p className="font-bold tabular-nums" dir="ltr">{formatCurrency(Number(subtotal) || 0)}</p>
-              </div>
-              <div className="p-3 rounded-lg bg-muted/40">
-                <p className="text-xs text-muted-foreground">الضريبة</p>
-                <p className="font-bold tabular-nums" dir="ltr">{formatCurrency(taxTotal)}</p>
-              </div>
-              <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900">
-                <p className="text-xs text-blue-700 dark:text-blue-400">الإجمالي</p>
-                <p className="font-bold tabular-nums text-blue-700 dark:text-blue-400" dir="ltr">{formatCurrency(total_)}</p>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="notes_">ملاحظات</Label>
-              <Textarea id="notes_" value={notes_} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="ملاحظات إضافية..." />
-            </div>
-          </div>
-
           </DialogBody>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>إلغاء</Button>
@@ -408,7 +408,6 @@ export function SalesCreditNotesModule() {
               {saveMutation.isPending ? 'جاري الحفظ...' : 'إنشاء وترحيل'}
             </Button>
           </DialogFooter>
-        </DialogBody>
         </DialogContent>
       </Dialog>
     </ModuleShell>

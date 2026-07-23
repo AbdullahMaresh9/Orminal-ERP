@@ -20,7 +20,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         include: {
           entry: {
             select: {
-              id: true, code: true, postingDate: true, description: true, posted: true,
+              id: true, code: true, postingDate: true, description: true, state: true,
             },
           },
         },
@@ -28,12 +28,12 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         take: 50,
       })
       transactions = lines.map((l) => ({
-        code: l.entry.code,
-        date: l.entry.postingDate,
-        description: l.entry.description,
+        code: l.entry?.code,
+        date: l.entry?.postingDate,
+        description: l.entry?.description,
         debit: l.debit,
         credit: l.credit,
-        posted: l.entry.posted,
+        posted: l.entry?.state === 'posted',
       }))
     }
     return ok({ ...item, transactions })
