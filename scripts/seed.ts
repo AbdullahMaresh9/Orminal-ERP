@@ -14,7 +14,7 @@ async function hashPassword(password: string): Promise<string> {
 }
 
 async function main() {
-  console.log('🌱 Seeding Enterprise ERP...')
+  console.log('Seeding Enterprise ERP...')
 
   // === Currencies ===
   const sar = await db.currency.upsert({ where: { code: 'SAR' }, update: {}, create: { code: 'SAR', nameAr: 'ريال سعودي', nameEn: 'Saudi Riyal', symbol: 'ر.س', decimals: 2 } })
@@ -24,7 +24,7 @@ async function main() {
   await db.currency.upsert({ where: { code: 'EGP' }, update: {}, create: { code: 'EGP', nameAr: 'جنيه مصري', nameEn: 'Egyptian Pound', symbol: 'ج.م', decimals: 2 } })
 
   // === Exchange Rates ===
-  await db.exchangeRate.create({ data: { currencyId: sar.id, baseCurrencyId: sar.id, rate: 1, rateDate: new Date(), rateType: 'spot' } }).catch(() => {})
+  await db.exchangeRate.create({ data: { currencyId: sar.id, baseCurrencyId: sar.id, rate: 1, rateDate: new Date(), rateType: 'spot' } }).catch(() => { })
 
   // === Countries ===
   await db.country.upsert({ where: { code: 'SA' }, update: {}, create: { code: 'SA', nameAr: 'المملكة العربية السعودية', nameEn: 'Saudi Arabia', dialCode: '+966' } })

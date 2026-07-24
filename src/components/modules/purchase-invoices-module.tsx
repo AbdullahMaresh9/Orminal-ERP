@@ -401,7 +401,7 @@ export function PurchaseInvoicesModule() {
         <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>فاتورة مشتريات جديدة</DialogTitle>
-
+            <DialogDescription>حدد المورد وتواريخ الفاتورة والبنود — سيتم ترحيل القيد (من ح/ المشتريات وضريبة المدخلات إلى ح/ الذمم الدائنة)</DialogDescription>
           </DialogHeader>
           <DialogBody>          <DialogBody>          <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">

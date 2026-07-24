@@ -326,7 +326,7 @@ export function PurchasePaymentsModule() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>سند صرف جديد</DialogTitle>
-
+            <DialogDescription>إنشاء سند صرف لمورد — سيُرحّل القيد المحاسبي تلقائياً (من ح/ الذمم الدائنة إلى ح/ النقدية)</DialogDescription>
           </DialogHeader>
           <DialogBody>          <DialogBody>          <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

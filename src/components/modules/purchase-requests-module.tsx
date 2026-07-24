@@ -414,7 +414,7 @@ export function PurchaseRequestsModule() {
         <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>طلب شراء جديد</DialogTitle>
-
+            <DialogDescription>حدد الإدارة والبنود المطلوبة مع التواريخ ومراكز التكلفة</DialogDescription>
           </DialogHeader>
           <DialogBody>          <DialogBody>          <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

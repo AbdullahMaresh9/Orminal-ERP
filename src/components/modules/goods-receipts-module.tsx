@@ -409,7 +409,7 @@ export function GoodsReceiptsModule() {
         <DialogContent className="max-w-5xl">
           <DialogHeader>
             <DialogTitle>سند استلام بضاعة جديد</DialogTitle>
-
+            <DialogDescription>حدد المورد والمستودع والبنود المستلمة</DialogDescription>
           </DialogHeader>
           <DialogBody>          <DialogBody>          <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">

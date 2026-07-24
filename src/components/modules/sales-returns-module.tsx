@@ -417,7 +417,7 @@ export function SalesReturnsModule() {
         <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>مرتجع مبيعات جديد</DialogTitle>
-
+            <DialogDescription>حدد العميل والفاتورة الأصلية والبنود المرتجعة</DialogDescription>
           </DialogHeader>
           <DialogBody>
             <div className="space-y-4">
@@ -466,8 +466,8 @@ export function SalesReturnsModule() {
                   <TableHeader>
                     <TableRow className="bg-muted/50">
                       <TableHead className="ps-3">المنتج</TableHead>
-                      <TableHead className="text-end num-cell w-22">الكمية</TableHead>
-                      <TableHead className="text-end num-cell w-38">السعر</TableHead>
+                      <TableHead className="text-end num-cell w-20">الكمية</TableHead>
+                      <TableHead className="text-end num-cell w-28">السعر</TableHead>
                       <TableHead className="text-end num-cell w-20">الضريبة %</TableHead>
                       <TableHead className="text-end num-cell w-28">الإجمالي</TableHead>
                       <TableHead className="w-12"></TableHead>
@@ -494,7 +494,7 @@ export function SalesReturnsModule() {
                             </Select>
                           </TableCell>
                           <TableCell className="text-end num-cell">
-                            <Input className="h-9 text-end tabular-nums" type="number" step="1" dir="ltr" value={l.quantity} onChange={(e) => updateLine(l.key, 'quantity', e.target.value)} />
+                            <Input className="h-9 text-end tabular-nums" type="number" step="0.01" dir="ltr" value={l.quantity} onChange={(e) => updateLine(l.key, 'quantity', e.target.value)} />
                           </TableCell>
                           <TableCell className="text-end num-cell">
                             <Input className="h-9 text-end tabular-nums" type="number" step="0.01" dir="ltr" value={l.unitPrice} onChange={(e) => updateLine(l.key, 'unitPrice', e.target.value)} />
