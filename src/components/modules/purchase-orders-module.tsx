@@ -365,7 +365,7 @@ export function PurchaseOrdersModule() {
         <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>أمر شراء جديد</DialogTitle>
-            <DialogDescription>اختر المورد وأضف بنود الشراء</DialogDescription>
+
           </DialogHeader>
           <DialogBody>          <DialogBody>          <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">

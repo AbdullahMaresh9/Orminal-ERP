@@ -310,7 +310,7 @@ export function PurchaseCreditNotesModule() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>إشعار دائن مشتريات جديد</DialogTitle>
-            <DialogDescription>إنشاء إشعار دائن لمورد — سيتم تقليل رصيد المورد تلقائياً</DialogDescription>
+
           </DialogHeader>
           <DialogBody>          <DialogBody>          <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

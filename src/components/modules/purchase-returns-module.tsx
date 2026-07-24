@@ -317,7 +317,7 @@ export function PurchaseReturnsModule() {
   return (
     <ModuleShell
       title={t('module.purchase-returns')}
-      description="إدارة مرتجعات المشتريات مع عكس القيود تلقائياً عند الإصدار"
+      description="إدارة مرتجعات المشتريات   "
       icon={<Undo2 className="size-5" />}
       searchValue={search}
       onSearch={setSearch}
@@ -418,7 +418,7 @@ export function PurchaseReturnsModule() {
         <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>مرتجع مشتريات جديد</DialogTitle>
-            <DialogDescription>حدد المورد والفاتورة الأصلية والبنود المرتجعة</DialogDescription>
+
           </DialogHeader>
           <DialogBody>          <DialogBody>          <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
