@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils'
 import { Search, Plus, Download, Printer } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { useT } from '@/lib/i18n/use-t'
 import { ReactNode } from 'react'
 
 interface ModuleShellProps {
@@ -30,15 +31,22 @@ export function ModuleShell({
   actions,
   onSearch,
   searchValue,
-  searchPlaceholder = 'بحث...',
+  searchPlaceholder,
   onAdd,
-  addLabel = 'إضافة',
+  addLabel,
   onExport,
   onPrint,
   filters,
   children,
   className,
 }: ModuleShellProps) {
+  const { isRTL } = useT()
+  const L = (ar: string, en: string) => (isRTL ? ar : en)
+
+  // القيم الافتراضية أصبحت ثنائية اللغة (تُحسب داخل المكوّن لا في توقيع الدالة)
+  const searchPlaceholderText = searchPlaceholder ?? L('بحث...', 'Search...')
+  const addLabelText = addLabel ?? L('إضافة', 'Add')
+
   return (
     <div className="flex flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8 max-w-[1600px] mx-auto w-full">
       {/* Header */}
@@ -58,20 +66,20 @@ export function ModuleShell({
           {onPrint && (
             <Button variant="outline" size="sm" onClick={onPrint} className="gap-1.5">
               <Printer className="size-4" />
-              <span className="hidden sm:inline">طباعة</span>
+              <span className="hidden sm:inline">{L('طباعة', 'Print')}</span>
             </Button>
           )}
           {onExport && (
             <Button variant="outline" size="sm" onClick={onExport} className="gap-1.5">
               <Download className="size-4" />
-              <span className="hidden sm:inline">تصدير</span>
+              <span className="hidden sm:inline">{L('تصدير', 'Export')}</span>
             </Button>
           )}
           {actions}
           {onAdd && (
             <Button size="sm" onClick={onAdd} className="gap-1.5">
               <Plus className="size-4" />
-              {addLabel}
+              {addLabelText}
             </Button>
           )}
         </div>
@@ -86,7 +94,7 @@ export function ModuleShell({
               <Input
                 value={searchValue ?? ''}
                 onChange={(e) => onSearch(e.target.value)}
-                placeholder={searchPlaceholder}
+                placeholder={searchPlaceholderText}
                 className="ps-9"
               />
             </div>

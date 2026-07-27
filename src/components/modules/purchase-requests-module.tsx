@@ -7,7 +7,7 @@ import { KpiCard } from '@/components/erp/kpi-card'
 import { StatusBadge } from '@/components/erp/status-badge'
 import { useT } from '@/lib/i18n/use-t'
 import { formatInt, formatDate } from '@/lib/format'
-import { exportToCSV, printHTML } from '@/lib/export'
+import { printHTML, exportRows, type ExportColumn, type ExportMeta, type ExportFormat } from '@/lib/export'
 import { toast } from 'sonner'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter,
@@ -23,9 +23,13 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogBody,
 } from '@/components/ui/dialog'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+
 import {
   ClipboardList, Plus, Trash2, Printer, CheckCircle2, Clock, FileCheck2, ShoppingCart,
+  Download, FileSpreadsheet, FileText, FileDown,
 } from 'lucide-react'
 
 interface Product { id: string; sku: string; nameAr: string }
@@ -62,19 +66,39 @@ interface LineDraft {
 }
 
 const STATUS_FLOW = ['draft', 'submitted', 'approved', 'rejected', 'converted']
-const STATUS_LABELS: Record<string, string> = {
-  draft: 'مسودة',
-  submitted: 'مُقدمة',
-  approved: 'معتمدة',
-  rejected: 'مرفوضة',
-  converted: 'تم تحويلها',
+const STATUS_LABELS: Record<string, { ar: string; en: string }> = {
+  draft: { ar: 'مسودة', en: 'Draft' },
+  submitted: { ar: 'مُقدمة', en: 'Submitted' },
+  approved: { ar: 'معتمدة', en: 'Approved' },
+  rejected: { ar: 'مرفوضة', en: 'Rejected' },
+  converted: { ar: 'تم تحويلها', en: 'Converted' },
 }
 
-const DEPARTMENTS = ['المشتريات', 'المالية', 'المبيعات', 'المخزون', 'تقنية المعلومات', 'الموارد البشرية', 'الإدارة']
+// عدد الصفوف الظاهرة قبل ظهور الاسكرول
+const VISIBLE_ROWS = 5
+const ROW_HEIGHT = 52    // ارتفاع الصف التقريبي بالبكسل
+const HEADER_HEIGHT = 44 // ارتفاع رأس الجدول
+
+const DEPARTMENTS_BI: { ar: string; en: string }[] = [
+  { ar: 'المشتريات', en: 'Procurement' },
+  { ar: 'المالية', en: 'Finance' },
+  { ar: 'المبيعات', en: 'Sales' },
+  { ar: 'المخزون', en: 'Inventory' },
+  { ar: 'تقنية المعلومات', en: 'IT' },
+  { ar: 'الموارد البشرية', en: 'HR' },
+  { ar: 'الإدارة', en: 'Management' },
+]
 
 export function PurchaseRequestsModule() {
-  const { t } = useT()
+  const { t, isRTL } = useT()
   const qc = useQueryClient()
+
+  const L = (ar: string, en: string) => (isRTL ? ar : en)
+  const statusLabel = (s: string) => STATUS_LABELS[s]?.[isRTL ? 'ar' : 'en'] ?? s
+  const deptLabel = (d: typeof DEPARTMENTS_BI[0]) => isRTL ? d.ar : d.en
+
+  const stickyHead = 'sticky top-0 z-20 bg-muted whitespace-nowrap shadow-[inset_0_-1px_0_0_hsl(var(--border))]'
+
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
   const [addOpen, setAddOpen] = useState(false)
@@ -156,14 +180,14 @@ export function PurchaseRequestsModule() {
   }
   const addLine = () => setLines((p) => [...p, { key: String(Date.now()), productId: '', quantity: '1', requiredDate: '', costCenterId: '', notes: '' }])
   const removeLine = (key: string) => {
-    if (lines.length <= 1) { toast.error('يجب وجود بند واحد على الأقل'); return }
+    if (lines.length <= 1) { toast.error(L('يجب وجود بند واحد على الأقل', 'At least one line is required')); return }
     setLines((p) => p.filter((l) => l.key !== key))
   }
 
   const saveMutation = useMutation({
     mutationFn: async () => {
       const validLines = lines.filter((l) => l.productId && Number(l.quantity) > 0)
-      if (validLines.length === 0) throw new Error('أضف بنداً واحداً على الأقل')
+      if (validLines.length === 0) throw new Error(L('أضف بنداً واحداً على الأقل', 'Add at least one line item'))
       const payload = {
         department,
         requiredDate: requiredDate || undefined,
@@ -184,22 +208,22 @@ export function PurchaseRequestsModule() {
       })
       if (!r.ok) {
         const err = await r.json().catch(() => ({}))
-        throw new Error(err?.error?.message ?? 'فشل الحفظ')
+        throw new Error(err?.error?.message ?? L('فشل الحفظ', 'Save failed'))
       }
       return r.json()
     },
     onSuccess: () => {
-      toast.success('تم إنشاء طلب الشراء')
+      toast.success(L('تم إنشاء طلب الشراء', 'Purchase request created'))
       qc.invalidateQueries({ queryKey: ['purchase-requests'] })
       setAddOpen(false); resetForm()
     },
-    onError: (e: any) => toast.error(e.message || 'حدث خطأ'),
+    onError: (e: any) => toast.error(e.message || L('حدث خطأ', 'An error occurred')),
   })
 
   const actionMutation = useMutation({
     mutationFn: async ({ req, action, partnerId: pid }: { req: PurchaseRequest; action: 'approve' | 'reject' | 'convert'; partnerId?: string }) => {
       if (action === 'convert') {
-        if (!pid) throw new Error('اختر المورد أولاً')
+        if (!pid) throw new Error(L('اختر المورد أولاً', 'Please select a supplier first'))
         const payload = {
           partnerId: pid,
           orderDate: new Date().toISOString().slice(0, 10),
@@ -217,7 +241,7 @@ export function PurchaseRequestsModule() {
         })
         if (!r.ok) {
           const err = await r.json().catch(() => ({}))
-          throw new Error(err?.error?.message ?? 'فشل التحويل')
+          throw new Error(err?.error?.message ?? L('فشل التحويل', 'Conversion failed'))
         }
         // Update PR status to converted
         await fetch(`/api/erp/purchase-requests/${req.id}`, {
@@ -234,32 +258,56 @@ export function PurchaseRequestsModule() {
       })
       if (!r.ok) {
         const err = await r.json().catch(() => ({}))
-        throw new Error(err?.error?.message ?? 'فشل الإجراء')
+        throw new Error(err?.error?.message ?? L('فشل الإجراء', 'Action failed'))
       }
       return r.json()
     },
     onSuccess: (_data, vars) => {
-      toast.success(vars.action === 'convert' ? 'تم التحويل إلى أمر شراء' : 'تم تنفيذ الإجراء')
+      toast.success(vars.action === 'convert' ? L('تم التحويل إلى أمر شراء', 'Converted to purchase order') : L('تم تنفيذ الإجراء', 'Action completed'))
       qc.invalidateQueries({ queryKey: ['purchase-requests'] })
       qc.invalidateQueries({ queryKey: ['purchase-orders'] })
       if (vars.action === 'convert') {
         setConvertTarget(null); setConvertPartnerId('')
       }
     },
-    onError: (e: any) => toast.error(e.message || 'حدث خطأ'),
+    onError: (e: any) => toast.error(e.message || L('حدث خطأ', 'An error occurred')),
   })
 
-  const handleExport = () => {
-    const rows = requests.map((r) => ({
-      'الرمز': r.code,
-      'الإدارة': r.department ?? '',
-      'التاريخ المطلوب': r.requiredDate ? formatDate(r.requiredDate) : '',
-      'تاريخ الإنشاء': formatDate(r.createdAt),
-      'عدد البنود': r.lines.length,
-      'الحالة': STATUS_LABELS[r.status] ?? r.status,
-    }))
-    exportToCSV('purchase-requests', rows)
-    toast.success('تم تصدير الملف')
+  const exportColumns: ExportColumn<PurchaseRequest>[] = [
+    { key: 'code', header: L('الرمز', 'Code'), width: 16, align: 'start', type: 'text', value: (r) => r.code },
+    { key: 'department', header: L('الإدارة', 'Department'), width: 18, align: 'start', type: 'text', value: (r) => r.department ?? '' },
+    { key: 'requiredDate', header: L('التاريخ المطلوب', 'Required Date'), width: 14, align: 'center', type: 'date', value: (r) => r.requiredDate ? formatDate(r.requiredDate) : '', dateValue: (r) => r.requiredDate },
+    { key: 'createdAt', header: L('تاريخ الإنشاء', 'Created'), width: 14, align: 'center', type: 'date', value: (r) => formatDate(r.createdAt), dateValue: (r) => r.createdAt },
+    { key: 'lines', header: L('عدد البنود', 'Lines'), width: 10, align: 'center', type: 'number', value: (r) => r.lines.length },
+    { key: 'status', header: L('الحالة', 'Status'), width: 14, align: 'center', type: 'text', value: (r) => statusLabel(r.status) },
+  ]
+
+  const exportMeta: ExportMeta = {
+    fileName: L('طلبات-الشراء', 'purchase-requests'),
+    title: L('تقرير طلبات الشراء', 'Purchase Requests Report'),
+    subtitle: L('أورمنال', 'Orminal'),
+    isRTL,
+    summary: [
+      { label: L('إجمالي الطلبات', 'Total Requests'), value: formatInt(stats.total) },
+      { label: L('قيد المعالجة', 'Pending'), value: formatInt(stats.pending) },
+      { label: L('معتمدة', 'Approved'), value: formatInt(stats.approved) },
+      { label: L('مُحوّلة', 'Converted'), value: formatInt(stats.converted) },
+    ],
+    labels: {
+      generatedAt: L('تاريخ الإنشاء', 'Generated'),
+      totalRecords: L('عدد السجلات', 'Records'),
+      grandTotal: L('الإجمالي', 'Total'),
+    },
+  }
+
+  const handleExport = async (format: ExportFormat) => {
+    if (!requests.length) { toast.error(L('لا توجد بيانات للتصدير', 'No data to export')); return }
+    try {
+      await exportRows(format, requests, exportColumns, exportMeta)
+      toast.success(L('تم تصدير الملف', 'File exported'))
+    } catch (e: any) {
+      toast.error(e?.message || L('فشل التصدير', 'Export failed'))
+    }
   }
 
   const handlePrint = (r: PurchaseRequest) => {
@@ -268,29 +316,29 @@ export function PurchaseRequestsModule() {
         <div class="company">
           <img src="/logo.png" class="logo" style="width:56px;height:56px;object-fit:contain;border-radius:8px;" />
           <div class="info">
-            <h2>أورمنال</h2>
-            <p>نظام إدارة موارد المؤسسات ERP</p>
+            <h2>${L('أورمنال', 'Orminal')}</h2>
+            <p>${L('نظام إدارة موارد المؤسسات ERP', 'Enterprise Resource Planning (ERP)')}</p>
           </div>
         </div>
         <div class="doc-meta">
-          <div class="type">طلب شراء</div>
+          <div class="type">${L('طلب شراء', 'Purchase Request')}</div>
           <div class="code">${r.code}</div>
           <div class="date">${formatDate(r.createdAt)}</div>
         </div>
       </div>
       <div class="party">
-        <div class="label">الإدارة</div>
+        <div class="label">${L('الإدارة', 'Department')}</div>
         <div class="name">${r.department ?? '—'}</div>
-        ${r.requiredDate ? `<div class="sub">التاريخ المطلوب: ${formatDate(r.requiredDate)}</div>` : ''}
+        ${r.requiredDate ? `<div class="sub">${L('التاريخ المطلوب', 'Required Date')}: ${formatDate(r.requiredDate)}</div>` : ''}
       </div>
       <table>
         <thead>
           <tr>
             <th>SKU</th>
-            <th>المنتج</th>
-            <th>الكمية</th>
-            <th>التاريخ المطلوب</th>
-            <th>ملاحظات</th>
+            <th>${L('المنتج', 'Product')}</th>
+            <th>${L('الكمية', 'Qty')}</th>
+            <th>${L('التاريخ المطلوب', 'Required Date')}</th>
+            <th>${L('ملاحظات', 'Notes')}</th>
           </tr>
         </thead>
         <tbody>
@@ -307,84 +355,118 @@ export function PurchaseRequestsModule() {
       </table>
       ${r.notes ? `<div class="notes">${r.notes}</div>` : ''}
       <div class="signatures">
-        <div class="sig"><div class="line"></div><div class="label">طالب الشراء</div></div>
-        <div class="sig"><div class="line"></div><div class="label">مدير المشتريات</div></div>
-        <div class="sig"><div class="line"></div><div class="label">المدير المالي</div></div>
+        <div class="sig"><div class="line"></div><div class="label">${L('طالب الشراء', 'Requester')}</div></div>
+        <div class="sig"><div class="line"></div><div class="label">${L('مدير المشتريات', 'Procurement Manager')}</div></div>
+        <div class="sig"><div class="line"></div><div class="label">${L('المدير المالي', 'Finance Manager')}</div></div>
       </div>
     `
-    printHTML(html, `طلب شراء ${r.code}`)
+    printHTML(html, `${L('طلب شراء', 'Purchase Request')} ${r.code}`, { dir: isRTL ? 'rtl' : 'ltr' })
   }
 
   return (
     <ModuleShell
       title={t('module.purchase-requests')}
-      description="طلبات الشراء الداخلية وتحويلها إلى أوامر شراء"
+      description={L('طلبات الشراء الداخلية وتحويلها إلى أوامر شراء', 'Internal purchase requests and conversion to purchase orders')}
       icon={<ClipboardList className="size-5" />}
       searchValue={search}
       onSearch={setSearch}
-      searchPlaceholder="ابحث برمز الطلب..."
+      searchPlaceholder={L('ابحث برمز الطلب...', 'Search by request code...')}
       onAdd={() => { resetForm(); setAddOpen(true) }}
-      addLabel="طلب شراء جديد"
-      onExport={handleExport}
+      addLabel={L('طلب شراء جديد', 'New Request')}
+      actions={
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-1.5">
+              <Download className="size-4" />
+              <span className="hidden sm:inline">{L('تصدير', 'Export')}</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align={isRTL ? 'start' : 'end'} className="w-44">
+            <DropdownMenuItem onClick={() => handleExport('excel')} className="gap-2 cursor-pointer">
+              <FileSpreadsheet className="size-4 text-emerald-600" /> {L('تصدير Excel', 'Export Excel')}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExport('csv')} className="gap-2 cursor-pointer">
+              <FileText className="size-4 text-sky-600" /> {L('تصدير CSV', 'Export CSV')}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExport('pdf')} className="gap-2 cursor-pointer">
+              <FileDown className="size-4 text-rose-600" /> {L('تصدير PDF', 'Export PDF')}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      }
       filters={
         <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-40"><SelectValue placeholder="الحالة" /></SelectTrigger>
+          <SelectTrigger className="w-40"><SelectValue placeholder={L('الحالة', 'Status')} /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">الكل</SelectItem>
-            {STATUS_FLOW.map((s) => <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>)}
+            <SelectItem value="all">{L('الكل', 'All')}</SelectItem>
+            {STATUS_FLOW.map((s) => <SelectItem key={s} value={s}>{statusLabel(s)}</SelectItem>)}
           </SelectContent>
         </Select>
       }
     >
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
-        <KpiCard title="إجمالي الطلبات" value={formatInt(stats.total)} icon={<ClipboardList className="size-5" />} accent="blue" />
-        <KpiCard title="قيد المعالجة" value={formatInt(stats.pending)} icon={<Clock className="size-5" />} accent="amber" />
-        <KpiCard title="معتمدة" value={formatInt(stats.approved)} icon={<CheckCircle2 className="size-5" />} accent="sky" />
-        <KpiCard title="مُحوّلة" value={formatInt(stats.converted)} icon={<FileCheck2 className="size-5" />} accent="violet" />
+        <KpiCard title={L('إجمالي الطلبات', 'Total Requests')} value={formatInt(stats.total)} icon={<ClipboardList className="size-5" />} accent="blue" />
+        <KpiCard title={L('قيد المعالجة', 'Pending')} value={formatInt(stats.pending)} icon={<Clock className="size-5" />} accent="amber" />
+        <KpiCard title={L('معتمدة', 'Approved')} value={formatInt(stats.approved)} icon={<CheckCircle2 className="size-5" />} accent="sky" />
+        <KpiCard title={L('مُحوّلة', 'Converted')} value={formatInt(stats.converted)} icon={<FileCheck2 className="size-5" />} accent="violet" />
       </div>
 
+      {/* جدول طلبات الشراء — رأس ثابت + تمرير للصفوف فقط + أعمدة بعرض ثابت لمحاذاة دقيقة */}
       <Card className="rounded-xl overflow-hidden">
-        <ScrollArea className="max-h-[60vh]">
-          <Table>
+        <div
+          className="w-full overflow-y-auto overflow-x-auto overscroll-contain"
+          style={{ maxHeight: HEADER_HEIGHT + VISIBLE_ROWS * ROW_HEIGHT }}
+        >
+          <table className="w-full caption-bottom text-sm min-w-[960px] table-fixed border-separate border-spacing-0">
+            <colgroup>
+              <col className="w-[12%]" />{/* الرمز */}
+              <col className="w-[16%]" />{/* الإدارة */}
+              <col className="w-[15%]" />{/* التاريخ المطلوب */}
+              <col className="w-[14%]" />{/* تاريخ الإنشاء */}
+              <col className="w-[10%]" />{/* عدد البنود */}
+              <col className="w-[12%]" />{/* الحالة */}
+              <col className="w-[21%]" />{/* إجراءات */}
+            </colgroup>
+
             <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead className="ps-4">الرمز</TableHead>
-                <TableHead>الإدارة</TableHead>
-                <TableHead>التاريخ المطلوب</TableHead>
-                <TableHead>تاريخ الإنشاء</TableHead>
-                <TableHead className="text-end num-cell">عدد البنود</TableHead>
-                <TableHead>الحالة</TableHead>
-                <TableHead className="text-end">إجراءات</TableHead>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className={`${stickyHead} ps-4 text-start`}>{L('الرمز', 'Code')}</TableHead>
+                <TableHead className={`${stickyHead} text-start`}>{L('الإدارة', 'Department')}</TableHead>
+                <TableHead className={`${stickyHead} text-center`}>{L('التاريخ المطلوب', 'Required Date')}</TableHead>
+                <TableHead className={`${stickyHead} text-center`}>{L('تاريخ الإنشاء', 'Created')}</TableHead>
+                <TableHead className={`${stickyHead} text-center`}>{L('عدد البنود', 'Lines')}</TableHead>
+                <TableHead className={`${stickyHead} text-center`}>{L('الحالة', 'Status')}</TableHead>
+                <TableHead className={`${stickyHead} text-end pe-4`}>{L('إجراءات', 'Actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-10 text-muted-foreground">جاري التحميل...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center py-10 text-muted-foreground">{L('جاري التحميل...', 'Loading...')}</TableCell></TableRow>
               ) : requests.length === 0 ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-10 text-muted-foreground">لا توجد طلبات شراء.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center py-10 text-muted-foreground">{L('لا توجد طلبات شراء.', 'No purchase requests found.')}</TableCell></TableRow>
               ) : requests.map((r) => (
                 <TableRow key={r.id} className="hover:bg-muted/40">
                   <TableCell className="ps-4 font-mono text-xs" dir="ltr">{r.code}</TableCell>
-                  <TableCell className="font-medium">{r.department ?? '—'}</TableCell>
-                  <TableCell className="text-sm">{r.requiredDate ? formatDate(r.requiredDate) : '—'}</TableCell>
-                  <TableCell className="text-sm">{formatDate(r.createdAt)}</TableCell>
-                  <TableCell className="text-end num-cell"><span className="num tabular-nums" dir="ltr">{r.lines.length}</span></TableCell>
-                  <TableCell><StatusBadge status={r.status} /></TableCell>
-                  <TableCell className="text-end">
+                  <TableCell className="font-medium truncate">{r.department ?? '—'}</TableCell>
+                  <TableCell className="text-center text-sm">{r.requiredDate ? formatDate(r.requiredDate) : '—'}</TableCell>
+                  <TableCell className="text-center text-sm">{formatDate(r.createdAt)}</TableCell>
+                  <TableCell className="text-center"><span className="num tabular-nums" dir="ltr">{r.lines.length}</span></TableCell>
+                  <TableCell className="text-center"><StatusBadge status={r.status} /></TableCell>
+                  <TableCell className="text-end pe-4">
                     <div className="flex items-center justify-end gap-1">
                       {r.status === 'submitted' && (
                         <>
                           <Button size="sm" variant="ghost" className="h-8 text-xs gap-1.5 text-blue-600" disabled={actionMutation.isPending} onClick={() => actionMutation.mutate({ req: r, action: 'approve' })}>
-                            <CheckCircle2 className="size-3.5" /> اعتماد
+                            <CheckCircle2 className="size-3.5" /> {L('اعتماد', 'Approve')}
                           </Button>
                           <Button size="sm" variant="ghost" className="h-8 text-xs gap-1.5 text-rose-600" disabled={actionMutation.isPending} onClick={() => actionMutation.mutate({ req: r, action: 'reject' })}>
-                            رفض
+                            {L('رفض', 'Reject')}
                           </Button>
                         </>
                       )}
                       {r.status === 'approved' && (
                         <Button size="sm" variant="ghost" className="h-8 text-xs gap-1.5 text-violet-600" onClick={() => { setConvertTarget(r); setConvertPartnerId('') }}>
-                          <ShoppingCart className="size-3.5" /> تحويل لأمر شراء
+                          <ShoppingCart className="size-3.5" /> {L('تحويل لأمر شراء', 'Convert to PO')}
                         </Button>
                       )}
                       <Button size="icon" variant="ghost" className="size-8" onClick={() => handlePrint(r)}>
@@ -395,40 +477,28 @@ export function PurchaseRequestsModule() {
                 </TableRow>
               ))}
             </TableBody>
-          </Table>
-        </ScrollArea>
+          </table>
+        </div>
       </Card>
 
-      <div className="flex items-center justify-between mt-4 text-sm">
-        <p className="text-muted-foreground">
-          عرض {requests.length === 0 ? 0 : (page - 1) * pageSize + 1}–{(page - 1) * pageSize + requests.length} من {total}
-        </p>
-        <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}>السابق</Button>
-          <span className="text-xs text-muted-foreground">صفحة {page} من {totalPages}</span>
-          <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>التالي</Button>
-        </div>
-      </div>
-
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <DialogTitle>طلب شراء جديد</DialogTitle>
-            <DialogDescription>حدد الإدارة والبنود المطلوبة مع التواريخ ومراكز التكلفة</DialogDescription>
+            <DialogTitle>{L('طلب شراء جديد', 'New Purchase Request')}</DialogTitle>
           </DialogHeader>
           <DialogBody>          <DialogBody>          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label>الإدارة</Label>
+                <Label>{L('الإدارة', 'Department')}</Label>
                 <Select value={department} onValueChange={setDepartment}>
-                  <SelectTrigger><SelectValue placeholder="اختر الإدارة" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={L('اختر الإدارة', 'Select department')} /></SelectTrigger>
                   <SelectContent>
-                    {DEPARTMENTS.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                    {DEPARTMENTS_BI.map((d) => <SelectItem key={d.ar} value={d.ar}>{deptLabel(d)}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="requiredDate">التاريخ المطلوب</Label>
+                <Label htmlFor="requiredDate">{L('التاريخ المطلوب', 'Required Date')}</Label>
                 <Input id="requiredDate" type="date" value={requiredDate} onChange={(e) => setRequiredDate(e.target.value)} />
               </div>
             </div>
@@ -437,20 +507,20 @@ export function PurchaseRequestsModule() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/50">
-                    <TableHead className="ps-3">المنتج</TableHead>
-                    <TableHead className="text-end num-cell w-24">الكمية</TableHead>
-                    <TableHead className="w-36">التاريخ المطلوب</TableHead>
-                    <TableHead className="w-40">مركز التكلفة</TableHead>
-                    <TableHead>ملاحظات</TableHead>
-                    <TableHead className="w-12"></TableHead>
+                    <TableHead className="ps-3 w-60">{L('المنتج', 'Product')}</TableHead>
+                    <TableHead className="text-start w-42">{L('الكمية', 'Qty')}</TableHead>
+                    <TableHead className="w-32">{L('التاريخ المطلوب', 'Required Date')}</TableHead>
+                    <TableHead className="w-40">{L('مركز التكلفة', 'Cost Center')}</TableHead>
+                    <TableHead className="w-40">{L('ملاحظات', 'Notes')}</TableHead>
+                    <TableHead className="w-15"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {lines.map((l) => (
-                    <TableRow key={l.key}>
+                    <TableRow key={l.key} >
                       <TableCell className="ps-3">
                         <Select value={l.productId} onValueChange={(v) => updateLine(l.key, 'productId', v)}>
-                          <SelectTrigger className="h-9 min-w-[220px]"><SelectValue placeholder="اختر المنتج" /></SelectTrigger>
+                          <SelectTrigger className="h-9 min-w-[210px]"><SelectValue placeholder={L('اختر المنتج', 'Select product')} /></SelectTrigger>
                           <SelectContent>
                             {products.map((p) => (
                               <SelectItem key={p.id} value={p.id}>
@@ -460,16 +530,16 @@ export function PurchaseRequestsModule() {
                           </SelectContent>
                         </Select>
                       </TableCell>
-                      <TableCell className="text-end num-cell">
-                        <Input className="h-9 text-end tabular-nums" type="number" step="0.01" dir="ltr" value={l.quantity} onChange={(e) => updateLine(l.key, 'quantity', e.target.value)} />
+                      <TableCell className="text-start ps-1 num-cell">
+                        <Input className="h-9 text-start tabular-nums" type="number" step="1" dir="ltr" value={l.quantity} onChange={(e) => updateLine(l.key, 'quantity', e.target.value)} />
                       </TableCell>
-                      <TableCell>
-                        <Input className="h-9" type="date" value={l.requiredDate} onChange={(e) => updateLine(l.key, 'requiredDate', e.target.value)} />
+                      <TableCell className="ps-1">
+                        <Input className="h-9 ps-1" type="date" value={l.requiredDate} onChange={(e) => updateLine(l.key, 'requiredDate', e.target.value)} />
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="ps-1">
                         <Select value={l.costCenterId} onValueChange={(v) => updateLine(l.key, 'costCenterId', v)}>
-                          <SelectTrigger className="h-9"><SelectValue placeholder="بدون" /></SelectTrigger>
-                          <SelectContent>
+                          <SelectTrigger className="h-9 ps-1"><SelectValue placeholder={L('بدون', 'None')} /></SelectTrigger>
+                          <SelectContent >
                             {costCenters.map((c) => (
                               <SelectItem key={c.id} value={c.id}>
                                 <span dir="ltr" className="font-mono text-xs">{c.code}</span> — {c.nameAr}
@@ -478,12 +548,12 @@ export function PurchaseRequestsModule() {
                           </SelectContent>
                         </Select>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="ps-1">
                         <Input className="h-9" value={l.notes} onChange={(e) => updateLine(l.key, 'notes', e.target.value)} placeholder="—" />
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="ps-1">
                         <Button type="button" size="icon" variant="ghost" className="size-8 text-rose-500" onClick={() => removeLine(l.key)}>
-                          <Trash2 className="size-3.5" />
+                          <Trash2 className="size-4.5" />
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -493,7 +563,7 @@ export function PurchaseRequestsModule() {
                   <TableRow>
                     <TableCell colSpan={5}>
                       <Button type="button" size="sm" variant="outline" onClick={addLine} className="gap-1.5">
-                        <Plus className="size-3.5" /> إضافة بند
+                        <Plus className="size-3.5" /> {L('إضافة بند', 'Add Line')}
                       </Button>
                     </TableCell>
                     <TableCell></TableCell>
@@ -503,16 +573,16 @@ export function PurchaseRequestsModule() {
             </Card>
 
             <div className="space-y-1.5">
-              <Label htmlFor="notes">ملاحظات</Label>
-              <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="ملاحظات إضافية..." />
+              <Label htmlFor="notes">{L('ملاحظات', 'Notes')}</Label>
+              <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder={L('ملاحظات إضافية...', 'Additional notes...')} />
             </div>
           </div>
 
           </DialogBody>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>إلغاء</Button>
+              <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>{L('إلغاء', 'Cancel')}</Button>
               <Button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
-                {saveMutation.isPending ? 'جاري الحفظ...' : 'إنشاء وتقديم'}
+                {saveMutation.isPending ? L('جاري الحفظ...', 'Saving...') : L('إنشاء وتقديم', 'Create & Submit')}
               </Button>
             </DialogFooter>
           </DialogBody>
@@ -522,16 +592,16 @@ export function PurchaseRequestsModule() {
       <Dialog open={!!convertTarget} onOpenChange={(o) => { if (!o) { setConvertTarget(null); setConvertPartnerId('') } }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>تحويل إلى أمر شراء</DialogTitle>
+            <DialogTitle>{L('تحويل إلى أمر شراء', 'Convert to Purchase Order')}</DialogTitle>
             <DialogDescription>
-              اختر المورد لإنشاء أمر شراء من الطلب {convertTarget?.code}
+              {L(`اختر المورد لإنشاء أمر شراء من الطلب ${convertTarget?.code}`, `Select a supplier to create a purchase order from request ${convertTarget?.code}`)}
             </DialogDescription>
           </DialogHeader>
           <DialogBody>          <DialogBody>          <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label>المورد *</Label>
+              <Label>{L('المورد', 'Supplier')} *</Label>
               <Select value={convertPartnerId} onValueChange={setConvertPartnerId}>
-                <SelectTrigger><SelectValue placeholder="اختر المورد" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={L('اختر المورد', 'Select supplier')} /></SelectTrigger>
                 <SelectContent>
                   {suppliers.map((p) => (
                     <SelectItem key={p.id} value={p.id}>
@@ -543,7 +613,7 @@ export function PurchaseRequestsModule() {
             </div>
             {convertTarget && (
               <div className="rounded-lg bg-muted/40 p-3 text-sm">
-                <p className="text-xs text-muted-foreground">عدد البنود: {convertTarget.lines.length}</p>
+                <p className="text-xs text-muted-foreground">{L('عدد البنود', 'Lines')}: {convertTarget.lines.length}</p>
                 <ul className="mt-1 space-y-0.5">
                   {convertTarget.lines.slice(0, 4).map((l) => (
                     <li key={l.id} className="text-xs">{l.product?.nameAr} × <span className="num" dir="ltr">{l.quantity}</span></li>
@@ -554,9 +624,9 @@ export function PurchaseRequestsModule() {
           </div>
           </DialogBody>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => { setConvertTarget(null); setConvertPartnerId('') }}>إلغاء</Button>
+              <Button type="button" variant="outline" onClick={() => { setConvertTarget(null); setConvertPartnerId('') }}>{L('إلغاء', 'Cancel')}</Button>
               <Button type="button" disabled={actionMutation.isPending || !convertPartnerId} onClick={() => convertTarget && actionMutation.mutate({ req: convertTarget, action: 'convert', partnerId: convertPartnerId })}>
-                {actionMutation.isPending ? 'جاري التحويل...' : 'تحويل'}
+                {actionMutation.isPending ? L('جاري التحويل...', 'Converting...') : L('تحويل', 'Convert')}
               </Button>
             </DialogFooter>
           </DialogBody>

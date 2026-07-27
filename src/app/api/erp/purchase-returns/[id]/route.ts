@@ -41,24 +41,28 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       return ok(updated)
     }
     if (action === 'debit') {
-      // Reverse the original purchase invoice's journal entry, update partner balance
+      // Issue debit note: optionally reverse the original invoice journal, update partner balance
       if (exists.status === 'debited' || exists.status === 'closed')
         return badRequest('Return already debited')
-      if (!exists.originalInvoiceId) return badRequest('No original invoice linked to debit')
 
-      const origInvoice = await db.purchaseInvoice.findUnique({ where: { id: exists.originalInvoiceId } })
-      if (!origInvoice) return badRequest('Original invoice not found')
-      if (!origInvoice.journalEntryId) return badRequest('Original invoice has no journal entry to reverse')
+      let journalEntryId: string | null = null
 
-      const reversal = await reverseJournalEntry(
-        origInvoice.journalEntryId,
-        body.userId,
-        `مرتجع مشتريات ${exists.code}`
-      )
+      // If an original invoice is linked, try to reverse its journal entry
+      if (exists.originalInvoiceId) {
+        const origInvoice = await db.purchaseInvoice.findUnique({ where: { id: exists.originalInvoiceId } })
+        if (origInvoice?.journalEntryId) {
+          const reversal = await reverseJournalEntry(
+            origInvoice.journalEntryId,
+            body.userId,
+            `مرتجع مشتريات ${exists.code}`
+          )
+          journalEntryId = reversal.id
+        }
+      }
 
       await db.purchaseReturn.update({
         where: { id },
-        data: { status: 'debited', journalEntryId: reversal.id },
+        data: { status: 'debited', ...(journalEntryId ? { journalEntryId } : {}) },
       })
 
       // Decrease AP (partner balance — supplier is owed less)
@@ -87,8 +91,57 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
     // Default: simple field update (only draft)
     if (exists.status !== 'draft') return badRequest('Only draft returns can be edited')
-    const { id: _id, lines, createdAt: _c, updatedAt: _u, ...rest } = body
-    const updated = await db.purchaseReturn.update({ where: { id }, data: rest })
+    const { id: _id, lines, createdAt: _c, updatedAt: _u, status: _s, ...rest } = body
+
+    // Convert date-only string (YYYY-MM-DD) to full ISO-8601 DateTime for Prisma
+    if (rest.date && typeof rest.date === 'string' && rest.date.length === 10) {
+      rest.date = new Date(rest.date + 'T00:00:00.000Z').toISOString()
+    }
+
+    // Recalculate totals from lines
+    let subtotal = 0, taxTotal = 0
+    const validLines = Array.isArray(lines) ? lines.filter((l: any) => l.productId && Number(l.quantity) > 0) : []
+    for (const l of validLines) {
+      const lineSub = (Number(l.quantity) || 0) * (Number(l.unitCost) || 0)
+      const lineTax = lineSub * ((Number(l.taxRate) || 0) / 100)
+      subtotal += lineSub
+      taxTotal += lineTax
+    }
+    const total = subtotal + taxTotal
+
+    const updated = await db.$transaction(async (tx) => {
+      // Update main record fields + totals
+      await tx.purchaseReturn.update({
+        where: { id },
+        data: { ...rest, subtotal, taxTotal, total },
+      })
+
+      // Replace lines: delete old, create new
+      if (validLines.length > 0) {
+        await tx.purchaseReturnLine.deleteMany({ where: { returnId: id } })
+        await tx.purchaseReturnLine.createMany({
+          data: validLines.map((l: any) => {
+            const qty = Number(l.quantity) || 0
+            const cost = Number(l.unitCost) || 0
+            const tax = Number(l.taxRate) || 0
+            return {
+              returnId: id,
+              productId: l.productId,
+              quantity: qty,
+              unitCost: cost,
+              taxRate: tax,
+              total: qty * cost * (1 + tax / 100),
+            }
+          }),
+        })
+      }
+
+      return tx.purchaseReturn.findUnique({
+        where: { id },
+        include: { partner: true, lines: { include: { product: true } } },
+      })
+    })
+
     return ok(updated)
   } catch (e: any) {
     return serverError(e.message)

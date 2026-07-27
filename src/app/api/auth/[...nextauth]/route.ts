@@ -72,7 +72,7 @@ const handler = NextAuth({
           if (!valid) return null
 
           // Update last login timestamp (fire-and-forget)
-          db.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } }).catch(() => {})
+          db.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } }).catch(() => { })
 
           const primaryRole = user.userRoles[0]?.role
 
@@ -119,15 +119,15 @@ const handler = NextAuth({
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string
-        ;(session.user as any).username = token.username
-        ;(session.user as any).nameAr = token.nameAr
-        ;(session.user as any).nameEn = token.nameEn
-        ;(session.user as any).locale = token.locale
-        ;(session.user as any).roleCode = token.roleCode
-        ;(session.user as any).roleNameAr = token.roleNameAr
-        ;(session.user as any).defaultCompanyId = token.defaultCompanyId
-        ;(session.user as any).defaultBranchId = token.defaultBranchId
-        ;(session.user as any).avatar = token.avatar
+          ; (session.user as any).username = token.username
+          ; (session.user as any).nameAr = token.nameAr
+          ; (session.user as any).nameEn = token.nameEn
+          ; (session.user as any).locale = token.locale
+          ; (session.user as any).roleCode = token.roleCode
+          ; (session.user as any).roleNameAr = token.roleNameAr
+          ; (session.user as any).defaultCompanyId = token.defaultCompanyId
+          ; (session.user as any).defaultBranchId = token.defaultBranchId
+          ; (session.user as any).avatar = token.avatar
       }
       return session
     },

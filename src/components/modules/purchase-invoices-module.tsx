@@ -28,8 +28,8 @@ import {
   Plus, Trash2, Printer, Hash, Wallet, Coins, Receipt,
 } from 'lucide-react'
 
-interface Partner { id: string; code: string; nameAr: string }
-interface Product { id: string; sku: string; nameAr: string; costPrice: number }
+interface Partner { id: string; code: string; nameAr: string; nameEn?: string }
+interface Product { id: string; sku: string; nameAr: string; nameEn?: string; costPrice: number }
 interface PurchaseOrder { id: string; code: string; partnerId: string }
 interface PurchaseInvoiceLine {
   id?: string
@@ -69,8 +69,26 @@ interface LineDraft {
   taxRate: string
 }
 
+const VISIBLE_ROWS = 5
+const ROW_HEIGHT = 44
+const HEADER_HEIGHT = 40
+
+const STATUS_LABELS: Record<string, { ar: string; en: string }> = {
+  draft: { ar: 'مسودة', en: 'Draft' },
+  posted: { ar: 'مُرحّل', en: 'Posted' },
+  partially_paid: { ar: 'مدفوع جزئياً', en: 'Partially Paid' },
+  paid: { ar: 'مدفوع', en: 'Paid' },
+  reversed: { ar: 'معكوس', en: 'Reversed' },
+  cancelled: { ar: 'ملغي', en: 'Cancelled' },
+}
+
 export function PurchaseInvoicesModule() {
-  const { t } = useT()
+  const { t, isRTL } = useT()
+  const L = (ar: string, en: string) => (isRTL ? ar : en)
+  const statusLabel = (s: string) => STATUS_LABELS[s]?.[isRTL ? 'ar' : 'en'] ?? s
+  const partnerName = (p?: Partner) => (isRTL ? p?.nameAr : (p?.nameEn || p?.nameAr)) ?? '—'
+  const productName = (p?: Product) => (isRTL ? p?.nameAr : (p?.nameEn || p?.nameAr)) ?? ''
+  const stickyHead = 'sticky top-0 z-20 bg-muted whitespace-nowrap shadow-[inset_0_-1px_0_0_hsl(var(--border))]'
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
@@ -175,7 +193,7 @@ export function PurchaseInvoicesModule() {
 
   const addLine = () => setLines((p) => [...p, { key: String(Date.now()), productId: '', quantity: '1', unitCost: '0', discountAmount: '0', taxRate: '15' }])
   const removeLine = (key: string) => {
-    if (lines.length <= 1) { toast.error('يجب وجود بند واحد على الأقل'); return }
+    if (lines.length <= 1) { toast.error(L('يجب وجود بند واحد على الأقل', 'Must have at least one line item')); return }
     setLines((p) => p.filter((l) => l.key !== key))
   }
 
@@ -189,9 +207,9 @@ export function PurchaseInvoicesModule() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      if (!partnerId) throw new Error('اختر المورد')
+      if (!partnerId) throw new Error(L('اختر المورد', 'Select a supplier'))
       const validLines = lines.filter((l) => l.productId && Number(l.quantity) > 0)
-      if (validLines.length === 0) throw new Error('أضف بنداً واحداً على الأقل')
+      if (validLines.length === 0) throw new Error(L('أضف بنداً واحداً على الأقل', 'Add at least one line item'))
       const payload = {
         partnerId,
         purchaseOrderId: purchaseOrderId || undefined,
@@ -216,33 +234,33 @@ export function PurchaseInvoicesModule() {
       })
       if (!r.ok) {
         const err = await r.json().catch(() => ({}))
-        throw new Error(err?.error?.message ?? 'فشل الحفظ')
+        throw new Error(err?.error?.message ?? L('فشل الحفظ', 'Save failed'))
       }
       return r.json()
     },
     onSuccess: () => {
-      toast.success('تم إنشاء فاتورة المشتريات وترحيلها')
+      toast.success(L('تم إنشاء فاتورة المشتريات وترحيلها', 'Purchase invoice created and posted'))
       qc.invalidateQueries({ queryKey: ['purchase-invoices'] })
       setAddOpen(false); resetForm()
     },
-    onError: (e: any) => toast.error(e.message || 'حدث خطأ'),
+    onError: (e: any) => toast.error(e.message || L('حدث خطأ', 'An error occurred')),
   })
 
   const handleExport = () => {
     const rows = invoices.map((i) => ({
-      'الرمز': i.code,
-      'المورد': i.partner?.nameAr ?? '',
-      'أمر الشراء': purchaseOrders.find((p) => p.id === i.purchaseOrderId)?.code ?? '',
-      'رقم فاتورة المورد': i.vendorBillNo ?? '',
-      'تاريخ الفاتورة': formatDate(i.billDate),
-      'تاريخ الاستحقاق': i.dueDate ? formatDate(i.dueDate) : '',
-      'الإجمالي': i.total,
-      'المدفوع': i.paid,
-      'المتبقي': i.total - i.paid,
-      'الحالة': i.status,
+      [L('الرمز', 'Code')]: i.code,
+      [L('المورد', 'Supplier')]: partnerName(i.partner),
+      [L('أمر الشراء', 'Purchase Order')]: purchaseOrders.find((p) => p.id === i.purchaseOrderId)?.code ?? '',
+      [L('رقم فاتورة المورد', 'Vendor Bill No')]: i.vendorBillNo ?? '',
+      [L('تاريخ الفاتورة', 'Bill Date')]: formatDate(i.billDate),
+      [L('تاريخ الاستحقاق', 'Due Date')]: i.dueDate ? formatDate(i.dueDate) : '',
+      [L('الإجمالي', 'Total')]: i.total,
+      [L('المدفوع', 'Paid')]: i.paid,
+      [L('المتبقي', 'Balance Due')]: i.total - i.paid,
+      [L('الحالة', 'Status')]: statusLabel(i.status),
     }))
     exportToCSV('purchase-invoices', rows)
-    toast.success('تم تصدير الملف')
+    toast.success(L('تم تصدير الملف', 'File exported'))
   }
 
   const handlePrint = (i: PurchaseInvoice) => {
@@ -251,40 +269,40 @@ export function PurchaseInvoicesModule() {
         <div class="company">
           <img src="/logo.png" class="logo" style="width:56px;height:56px;object-fit:contain;border-radius:8px;" />
           <div class="info">
-            <h2>أورمنال</h2>
-            <p>نظام إدارة موارد المؤسسات ERP</p>
+            <h2>${L('أورمنال', 'Orminal')}</h2>
+            <p>${L('نظام إدارة موارد المؤسسات ERP', 'Enterprise Resource Planning (ERP)')}</p>
           </div>
         </div>
         <div class="doc-meta">
-          <div class="type">فاتورة مشتريات</div>
+          <div class="type">${L('فاتورة مشتريات', 'Purchase Invoice')}</div>
           <div class="code">${i.code}</div>
           <div class="date">${formatDate(i.billDate)}</div>
         </div>
       </div>
       <div class="party">
-        <div class="label">المورد</div>
-        <div class="name">${i.partner?.nameAr ?? ''}</div>
-        <div class="sub">رمز: ${i.partner?.code ?? ''}</div>
-        ${i.vendorBillNo ? `<div class="sub">رقم فاتورة المورد: ${i.vendorBillNo}</div>` : ''}
-        ${i.dueDate ? `<div class="sub">تاريخ الاستحقاق: ${formatDate(i.dueDate)}</div>` : ''}
+        <div class="label">${L('المورد', 'Supplier')}</div>
+        <div class="name">${partnerName(i.partner)}</div>
+        <div class="sub">${L('رمز', 'Code')}: ${i.partner?.code ?? ''}</div>
+        ${i.vendorBillNo ? `<div class="sub">${L('رقم فاتورة المورد', 'Vendor Bill No.')}: ${i.vendorBillNo}</div>` : ''}
+        ${i.dueDate ? `<div class="sub">${L('تاريخ الاستحقاق', 'Due Date')}: ${formatDate(i.dueDate)}</div>` : ''}
       </div>
       <table>
         <thead>
           <tr>
             <th>SKU</th>
-            <th>المنتج</th>
-            <th>الكمية</th>
-            <th>التكلفة</th>
-            <th>الخصم</th>
-            <th>الضريبة</th>
-            <th>الإجمالي</th>
+            <th>${L('المنتج', 'Product')}</th>
+            <th>${L('الكمية', 'Qty')}</th>
+            <th>${L('التكلفة', 'Cost')}</th>
+            <th>${L('الخصم', 'Discount')}</th>
+            <th>${L('الضريبة', 'Tax')}</th>
+            <th>${L('الإجمالي', 'Total')}</th>
           </tr>
         </thead>
         <tbody>
           ${i.lines.map((l) => `
             <tr>
               <td>${l.product?.sku ?? ''}</td>
-              <td>${l.product?.nameAr ?? ''}</td>
+              <td>${productName(l.product)}</td>
               <td>${l.quantity}</td>
               <td>${formatCurrency(l.unitCost)}</td>
               <td>${formatCurrency(l.discountAmount)}</td>
@@ -295,268 +313,289 @@ export function PurchaseInvoicesModule() {
         </tbody>
       </table>
       <div class="totals">
-        <div class="row"><span>المجموع الفرعي:</span><span>${formatCurrency(i.subtotal)}</span></div>
-        <div class="row"><span>الضريبة:</span><span>${formatCurrency(i.taxTotal)}</span></div>
-        <div class="row grand"><span>الإجمالي:</span><span>${formatCurrency(i.total)}</span></div>
-        <div class="row"><span>المدفوع:</span><span>${formatCurrency(i.paid)}</span></div>
-        <div class="row"><span>المتبقي:</span><span>${formatCurrency(i.total - i.paid)}</span></div>
+        <div class="row"><span>${L('المجموع الفرعي:', 'Subtotal:')}</span><span>${formatCurrency(i.subtotal)}</span></div>
+        <div class="row"><span>${L('الضريبة:', 'Tax:')}</span><span>${formatCurrency(i.taxTotal)}</span></div>
+        <div class="row grand"><span>${L('الإجمالي:', 'Total:')}</span><span>${formatCurrency(i.total)}</span></div>
+        <div class="row"><span>${L('المدفوع:', 'Paid:')}</span><span>${formatCurrency(i.paid)}</span></div>
+        <div class="row"><span>${L('المتبقي:', 'Balance Due:')}</span><span>${formatCurrency(i.total - i.paid)}</span></div>
       </div>
       ${i.notes ? `<div class="notes">${i.notes}</div>` : ''}
       <div class="signatures">
-        <div class="sig"><div class="line"></div><div class="label">المحاسب</div></div>
-        <div class="sig"><div class="line"></div><div class="label">المدير المالي</div></div>
-        <div class="sig"><div class="line"></div><div class="label">المورد</div></div>
+        <div class="sig"><div class="line"></div><div class="label">${L('المحاسب', 'Accountant')}</div></div>
+        <div class="sig"><div class="line"></div><div class="label">${L('المدير المالي', 'Financial Manager')}</div></div>
+        <div class="sig"><div class="line"></div><div class="label">${L('المورد', 'Supplier')}</div></div>
       </div>
     `
-    printHTML(html, `فاتورة مشتريات ${i.code}`)
+    printHTML(html, `${L('فاتورة مشتريات', 'Purchase Invoice')} ${i.code}`, { dir: isRTL ? 'rtl' : 'ltr' })
   }
 
   return (
     <ModuleShell
       title={t('module.purchase-invoices')}
-      description="فواتير المشتريات من الموردين مع الترحيل المحاسبي التلقائي"
+      description={L(
+        'فواتير المشتريات من الموردين مع الترحيل المحاسبي التلقائي',
+        'Supplier purchase invoices with automatic accounting posting'
+      )}
       icon={<Receipt className="size-5" />}
       searchValue={search}
       onSearch={setSearch}
-      searchPlaceholder="ابحث برمز الفاتورة أو رقم المورد..."
+      searchPlaceholder={L('ابحث برمز الفاتورة أو رقم المورد...', 'Search by invoice code or supplier...')}
       onAdd={() => { resetForm(); setAddOpen(true) }}
-      addLabel="فاتورة مشتريات جديدة"
+      addLabel={L('فاتورة مشتريات جديدة', 'New Purchase Invoice')}
       onExport={handleExport}
       filters={
         <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-40"><SelectValue placeholder="الحالة" /></SelectTrigger>
+          <SelectTrigger className="w-40"><SelectValue placeholder={L('الحالة', 'Status')} /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">الكل</SelectItem>
-            <SelectItem value="draft">مسودة</SelectItem>
-            <SelectItem value="posted">مُرحّل</SelectItem>
-            <SelectItem value="partially_paid">مدفوع جزئياً</SelectItem>
-            <SelectItem value="paid">مدفوع</SelectItem>
-            <SelectItem value="reversed">معكوس</SelectItem>
+            <SelectItem value="all">{L('الكل', 'All')}</SelectItem>
+            {Object.keys(STATUS_LABELS).map((s) => (
+              <SelectItem key={s} value={s}>{statusLabel(s)}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
       }
     >
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
-        <KpiCard title="إجمالي الفواتير" value={formatCurrency(stats.totalBilled)} icon={<Receipt className="size-5" />} accent="blue" />
-        <KpiCard title="إجمالي المدفوع" value={formatCurrency(stats.totalPaid)} icon={<Wallet className="size-5" />} accent="sky" />
-        <KpiCard title="المستحق" value={formatCurrency(stats.outstanding)} icon={<Coins className="size-5" />} accent="amber" />
-        <KpiCard title="عدد الفواتير" value={formatInt(stats.count)} icon={<Hash className="size-5" />} accent="violet" />
+        <KpiCard title={L('إجمالي الفواتير', 'Total Billed')} value={formatCurrency(stats.totalBilled)} icon={<Receipt className="size-5" />} accent="blue" />
+        <KpiCard title={L('إجمالي المدفوع', 'Total Paid')} value={formatCurrency(stats.totalPaid)} icon={<Wallet className="size-5" />} accent="sky" />
+        <KpiCard title={L('المستحق', 'Outstanding')} value={formatCurrency(stats.outstanding)} icon={<Coins className="size-5" />} accent="amber" />
+        <KpiCard title={L('عدد الفواتير', 'Total Invoices')} value={formatInt(stats.count)} icon={<Hash className="size-5" />} accent="violet" />
       </div>
 
       <Card className="rounded-xl overflow-hidden">
-        <ScrollArea className="max-h-[60vh]">
-          <Table>
+        <div
+          className="w-full overflow-y-auto overflow-x-auto overscroll-contain"
+          style={{ maxHeight: HEADER_HEIGHT + VISIBLE_ROWS * ROW_HEIGHT }}
+        >
+          <table className="w-full caption-bottom text-sm min-w-[960px] table-fixed border-separate border-spacing-0">
+            <colgroup>
+              <col className="w-[11%]" />
+              <col className="w-[17%]" />
+              <col className="w-[12%]" />
+              <col className="w-[11%]" />
+              <col className="w-[11%]" />
+              <col className="w-[12%]" />
+              <col className="w-[11%]" />
+              <col className="w-[9%]" />
+              <col className="w-[6%]" />
+            </colgroup>
+
             <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead className="ps-4">الرمز</TableHead>
-                <TableHead>المورد</TableHead>
-                <TableHead>أمر الشراء</TableHead>
-                <TableHead>تاريخ الفاتورة</TableHead>
-                <TableHead>الاستحقاق</TableHead>
-                <TableHead className="text-end num-cell">الإجمالي</TableHead>
-                <TableHead className="text-end num-cell">المدفوع</TableHead>
-                <TableHead>الحالة</TableHead>
-                <TableHead className="text-end">إجراءات</TableHead>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className={`${stickyHead} ps-4 text-start`}>{L('الرمز', 'Code')}</TableHead>
+                <TableHead className={`${stickyHead} text-start`}>{L('المورد', 'Supplier')}</TableHead>
+                <TableHead className={`${stickyHead} text-center`}>{L('أمر الشراء', 'Purchase Order')}</TableHead>
+                <TableHead className={`${stickyHead} text-center`}>{L('تاريخ الفاتورة', 'Bill Date')}</TableHead>
+                <TableHead className={`${stickyHead} text-center`}>{L('الاستحقاق', 'Due Date')}</TableHead>
+                <TableHead className={`${stickyHead} text-center`}>{L('الإجمالي', 'Total')}</TableHead>
+                <TableHead className={`${stickyHead} text-center`}>{L('المدفوع', 'Paid')}</TableHead>
+                <TableHead className={`${stickyHead} text-center`}>{L('الحالة', 'Status')}</TableHead>
+                <TableHead className={`${stickyHead} text-end pe-4`}>{L('إجراءات', 'Actions')}</TableHead>
               </TableRow>
             </TableHeader>
+
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={9} className="text-center py-10 text-muted-foreground">جاري التحميل...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={9} className="text-center py-10 text-muted-foreground border-b">{L('جاري التحميل...', 'Loading...')}</TableCell></TableRow>
               ) : invoices.length === 0 ? (
-                <TableRow><TableCell colSpan={9} className="text-center py-10 text-muted-foreground">لا توجد فواتير مشتريات.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={9} className="text-center py-10 text-muted-foreground border-b">{L('لا توجد فواتير مشتريات.', 'No purchase invoices found.')}</TableCell></TableRow>
               ) : invoices.map((i) => (
                 <TableRow key={i.id} className="hover:bg-muted/40">
-                  <TableCell className="ps-4 font-mono text-xs" dir="ltr">{i.code}</TableCell>
-                  <TableCell className="font-medium">{i.partner?.nameAr ?? '—'}</TableCell>
-                  <TableCell className="font-mono text-xs" dir="ltr">{purchaseOrders.find((p) => p.id === i.purchaseOrderId)?.code ?? '—'}</TableCell>
-                  <TableCell className="text-sm">{formatDate(i.billDate)}</TableCell>
-                  <TableCell className="text-sm">{i.dueDate ? formatDate(i.dueDate) : '—'}</TableCell>
-                  <TableCell className="text-end num-cell"><span className="num tabular-nums font-semibold" dir="ltr">{formatCurrency(i.total)}</span></TableCell>
-                  <TableCell className="text-end num-cell"><span className="num tabular-nums" dir="ltr">{formatCurrency(i.paid)}</span></TableCell>
-                  <TableCell><StatusBadge status={i.status} /></TableCell>
-                  <TableCell className="text-end">
-                    <Button size="icon" variant="ghost" className="size-8" onClick={() => handlePrint(i)}>
-                      <Printer className="size-3.5" />
+                  <TableCell className="ps-4 font-mono text-xs border-b truncate" dir="ltr">{i.code}</TableCell>
+                  <TableCell className="font-medium border-b truncate">{partnerName(i.partner)}</TableCell>
+                  <TableCell className="font-mono text-xs text-center border-b truncate" dir="ltr">{purchaseOrders.find((p) => p.id === i.purchaseOrderId)?.code ?? '—'}</TableCell>
+                  <TableCell className="text-sm text-center border-b whitespace-nowrap">{formatDate(i.billDate)}</TableCell>
+                  <TableCell className="text-sm text-center border-b whitespace-nowrap">{i.dueDate ? formatDate(i.dueDate) : '—'}</TableCell>
+                  <TableCell className="text-center border-b whitespace-nowrap"><span className="num tabular-nums font-semibold" dir="ltr">{formatCurrency(i.total)}</span></TableCell>
+                  <TableCell className="text-center border-b whitespace-nowrap"><span className="num tabular-nums" dir="ltr">{formatCurrency(i.paid)}</span></TableCell>
+                  <TableCell className="text-center border-b"><StatusBadge status={i.status} /></TableCell>
+                  <TableCell className="text-end pe-4 border-b">
+                    <Button size="icon" variant="ghost" className="size-8" onClick={() => handlePrint(i)} title={L('طباعة', 'Print')}>
+                      <Printer className="size-4.5" />
                     </Button>
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
-          </Table>
-        </ScrollArea>
+          </table>
+        </div>
       </Card>
 
       <div className="flex items-center justify-between mt-4 text-sm">
         <p className="text-muted-foreground">
-          عرض {invoices.length === 0 ? 0 : (page - 1) * pageSize + 1}–{(page - 1) * pageSize + invoices.length} من {total}
+          {isRTL
+            ? `عرض ${invoices.length === 0 ? 0 : (page - 1) * pageSize + 1}–${(page - 1) * pageSize + invoices.length} من ${total}`
+            : `Showing ${invoices.length === 0 ? 0 : (page - 1) * pageSize + 1}–${(page - 1) * pageSize + invoices.length} of ${total}`}
         </p>
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}>السابق</Button>
-          <span className="text-xs text-muted-foreground">صفحة {page} من {totalPages}</span>
-          <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>التالي</Button>
+          <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}>{L('السابق', 'Previous')}</Button>
+          <span className="text-xs text-muted-foreground">
+            {isRTL ? `صفحة ${page} من ${totalPages}` : `Page ${page} of ${totalPages}`}
+          </span>
+          <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>{L('التالي', 'Next')}</Button>
         </div>
       </div>
 
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
-            <DialogTitle>فاتورة مشتريات جديدة</DialogTitle>
-            <DialogDescription>حدد المورد وتواريخ الفاتورة والبنود — سيتم ترحيل القيد (من ح/ المشتريات وضريبة المدخلات إلى ح/ الذمم الدائنة)</DialogDescription>
+            <DialogTitle>{L('إضافة فاتورة مشتريات', 'New Purchase Invoice')}</DialogTitle>
           </DialogHeader>
-          <DialogBody>          <DialogBody>          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className="space-y-1.5">
-                <Label>المورد *</Label>
-                <Select value={partnerId} onValueChange={setPartnerId}>
-                  <SelectTrigger><SelectValue placeholder="اختر المورد" /></SelectTrigger>
-                  <SelectContent>
-                    {partners.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        <span dir="ltr" className="font-mono text-xs">{p.code}</span> — {p.nameAr}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>أمر الشراء (اختياري)</Label>
-                <Select value={purchaseOrderId} onValueChange={setPurchaseOrderId}>
-                  <SelectTrigger><SelectValue placeholder="بدون" /></SelectTrigger>
-                  <SelectContent>
-                    {purchaseOrders
-                      .filter((p) => !partnerId || p.partnerId === partnerId)
-                      .map((p) => (
+
+          <DialogBody>
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="space-y-1.5">
+                  <Label>{L('المورد *', 'Supplier *')}</Label>
+                  <Select value={partnerId} onValueChange={setPartnerId}>
+                    <SelectTrigger><SelectValue placeholder={L('اختر المورد', 'Select Supplier')} /></SelectTrigger>
+                    <SelectContent>
+                      {partners.map((p) => (
                         <SelectItem key={p.id} value={p.id}>
-                          <span dir="ltr" className="font-mono text-xs">{p.code}</span>
+                          <span dir="ltr" className="font-mono text-xs">{p.code}</span> — {partnerName(p)}
                         </SelectItem>
                       ))}
-                  </SelectContent>
-                </Select>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>{L('أمر الشراء (اختياري)', 'Purchase Order (Optional)')}</Label>
+                  <Select value={purchaseOrderId} onValueChange={setPurchaseOrderId}>
+                    <SelectTrigger><SelectValue placeholder={L('بدون', 'None')} /></SelectTrigger>
+                    <SelectContent>
+                      {purchaseOrders
+                        .filter((p) => !partnerId || p.partnerId === partnerId)
+                        .map((p) => (
+                          <SelectItem key={p.id} value={p.id}>
+                            <span dir="ltr" className="font-mono text-xs">{p.code}</span>
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="vendorBillNo">{L('رقم فاتورة المورد', 'Vendor Bill No.')}</Label>
+                  <Input id="vendorBillNo" value={vendorBillNo} onChange={(e) => setVendorBillNo(e.target.value)} placeholder="—" />
+                </div>
               </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="billDate">{L('تاريخ الفاتورة', 'Bill Date')}</Label>
+                  <Input id="billDate" type="date" value={billDate} onChange={(e) => setBillDate(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="accountingDate">{L('تاريخ القيد', 'Accounting Date')}</Label>
+                  <Input id="accountingDate" type="date" value={accountingDate} onChange={(e) => setAccountingDate(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="dueDate">{L('تاريخ الاستحقاق', 'Due Date')}</Label>
+                  <Input id="dueDate" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+                </div>
+              </div>
+
+              <Card className="rounded-lg overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50">
+                      <TableHead className="ps-3 w-60">{L('المنتج', 'Product')}</TableHead>
+                      <TableHead className="text-end num-cell w-24">{L('الكمية', 'Qty')}</TableHead>
+                      <TableHead className="text-end num-cell w-30">{L('التكلفة', 'Cost')}</TableHead>
+                      <TableHead className="text-end num-cell w-24">{L('الخصم', 'Discount')}</TableHead>
+                      <TableHead className="text-end num-cell w-24">{L('الضريبة %', 'Tax %')}</TableHead>
+                      <TableHead className="text-end num-cell w-28">{L('الإجمالي', 'Total')}</TableHead>
+                      <TableHead className="w-15"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {lines.map((l) => {
+                      const qty = Number(l.quantity) || 0
+                      const cost = Number(l.unitCost) || 0
+                      const disc = Number(l.discountAmount) || 0
+                      const taxRate = Number(l.taxRate) || 0
+                      const lineTotal = (qty * cost - disc) * (1 + taxRate / 100)
+                      return (
+                        <TableRow key={l.key}>
+                          <TableCell className="ps-3">
+                            <Select value={l.productId} onValueChange={(v) => updateLine(l.key, 'productId', v)}>
+                              <SelectTrigger className="h-9 min-w-[220px]"><SelectValue placeholder={L('اختر المنتج', 'Select Product')} /></SelectTrigger>
+                              <SelectContent>
+                                {products.map((p) => (
+                                  <SelectItem key={p.id} value={p.id}>
+                                    <span dir="ltr" className="font-mono text-xs">{p.sku}</span> — {productName(p)}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell className="text-start num-cell">
+                            <Input className="h-9 text-start tabular-nums" type="number" step="1" dir="ltr" value={l.quantity} onChange={(e) => updateLine(l.key, 'quantity', e.target.value)} />
+                          </TableCell>
+                          <TableCell className="text-start num-cell">
+                            <Input className="h-9 text-start tabular-nums" type="number" step="0.01" dir="ltr" value={l.unitCost} onChange={(e) => updateLine(l.key, 'unitCost', e.target.value)} />
+                          </TableCell>
+                          <TableCell className="text-start num-cell">
+                            <Input className="h-9 text-start tabular-nums" type="number" step="0.1" dir="ltr" value={l.discountAmount} onChange={(e) => updateLine(l.key, 'discountAmount', e.target.value)} />
+                          </TableCell>
+                          <TableCell className="text-start num-cell">
+                            <Input className="h-9 text-start tabular-nums" type="number" step="0.1" dir="ltr" value={l.taxRate} onChange={(e) => updateLine(l.key, 'taxRate', e.target.value)} />
+                          </TableCell>
+                          <TableCell className="text-end num-cell">
+                            <span className="num font-semibold tabular-nums" dir="ltr">{formatCurrency(lineTotal)}</span>
+                          </TableCell>
+                          <TableCell>
+                            <Button type="button" size="icon" variant="ghost" className="size-8 text-rose-500" onClick={() => removeLine(l.key)}>
+                              <Trash2 className="size-4.5" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                  <TableFooter>
+                    <TableRow>
+                      <TableCell colSpan={5}>
+                        <Button type="button" size="sm" variant="outline" onClick={addLine} className="gap-1.5">
+                          <Plus className="size-3.5" /> {L('إضافة بند', 'Add Line')}
+                        </Button>
+                      </TableCell>
+                      <TableCell className="text-end num-cell">
+                        <span className="num font-bold tabular-nums" dir="ltr">{formatCurrency(computed.total)}</span>
+                      </TableCell>
+                      <TableCell></TableCell>
+                    </TableRow>
+                  </TableFooter>
+                </Table>
+              </Card>
+
+              <div className="grid grid-cols-3 gap-3 text-sm">
+                <div className="p-3 rounded-lg bg-muted/40">
+                  <p className="text-xs text-muted-foreground">{L('المجموع الفرعي', 'Subtotal')}</p>
+                  <p className="font-bold tabular-nums" dir="ltr">{formatCurrency(computed.subtotal)}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-muted/40">
+                  <p className="text-xs text-muted-foreground">{L('الضريبة', 'Tax')}</p>
+                  <p className="font-bold tabular-nums" dir="ltr">{formatCurrency(computed.taxTotal)}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900">
+                  <p className="text-xs text-blue-700 dark:text-blue-400">{L('الإجمالي', 'Total')}</p>
+                  <p className="font-bold tabular-nums text-blue-700 dark:text-blue-400" dir="ltr">{formatCurrency(computed.total)}</p>
+                </div>
+              </div>
+
               <div className="space-y-1.5">
-                <Label htmlFor="vendorBillNo">رقم فاتورة المورد</Label>
-                <Input id="vendorBillNo" value={vendorBillNo} onChange={(e) => setVendorBillNo(e.target.value)} placeholder="—" />
+                <Label htmlFor="notes">{L('ملاحظات', 'Notes')}</Label>
+                <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder={L('ملاحظات إضافية...', 'Additional notes...')} />
               </div>
             </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="billDate">تاريخ الفاتورة</Label>
-                <Input id="billDate" type="date" value={billDate} onChange={(e) => setBillDate(e.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="accountingDate">تاريخ القيد</Label>
-                <Input id="accountingDate" type="date" value={accountingDate} onChange={(e) => setAccountingDate(e.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="dueDate">تاريخ الاستحقاق</Label>
-                <Input id="dueDate" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
-              </div>
-            </div>
-
-            <Card className="rounded-lg overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50">
-                    <TableHead className="ps-3">المنتج</TableHead>
-                    <TableHead className="text-end num-cell w-20">الكمية</TableHead>
-                    <TableHead className="text-end num-cell w-28">التكلفة</TableHead>
-                    <TableHead className="text-end num-cell w-24">الخصم</TableHead>
-                    <TableHead className="text-end num-cell w-20">الضريبة %</TableHead>
-                    <TableHead className="text-end num-cell w-28">الإجمالي</TableHead>
-                    <TableHead className="w-12"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {lines.map((l) => {
-                    const qty = Number(l.quantity) || 0
-                    const cost = Number(l.unitCost) || 0
-                    const disc = Number(l.discountAmount) || 0
-                    const taxRate = Number(l.taxRate) || 0
-                    const lineTotal = (qty * cost - disc) * (1 + taxRate / 100)
-                    return (
-                      <TableRow key={l.key}>
-                        <TableCell className="ps-3">
-                          <Select value={l.productId} onValueChange={(v) => updateLine(l.key, 'productId', v)}>
-                            <SelectTrigger className="h-9 min-w-[220px]"><SelectValue placeholder="اختر المنتج" /></SelectTrigger>
-                            <SelectContent>
-                              {products.map((p) => (
-                                <SelectItem key={p.id} value={p.id}>
-                                  <span dir="ltr" className="font-mono text-xs">{p.sku}</span> — {p.nameAr}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell className="text-end num-cell">
-                          <Input className="h-9 text-end tabular-nums" type="number" step="0.01" dir="ltr" value={l.quantity} onChange={(e) => updateLine(l.key, 'quantity', e.target.value)} />
-                        </TableCell>
-                        <TableCell className="text-end num-cell">
-                          <Input className="h-9 text-end tabular-nums" type="number" step="0.01" dir="ltr" value={l.unitCost} onChange={(e) => updateLine(l.key, 'unitCost', e.target.value)} />
-                        </TableCell>
-                        <TableCell className="text-end num-cell">
-                          <Input className="h-9 text-end tabular-nums" type="number" step="0.01" dir="ltr" value={l.discountAmount} onChange={(e) => updateLine(l.key, 'discountAmount', e.target.value)} />
-                        </TableCell>
-                        <TableCell className="text-end num-cell">
-                          <Input className="h-9 text-end tabular-nums" type="number" step="0.01" dir="ltr" value={l.taxRate} onChange={(e) => updateLine(l.key, 'taxRate', e.target.value)} />
-                        </TableCell>
-                        <TableCell className="text-end num-cell">
-                          <span className="num font-semibold tabular-nums" dir="ltr">{formatCurrency(lineTotal)}</span>
-                        </TableCell>
-                        <TableCell>
-                          <Button type="button" size="icon" variant="ghost" className="size-8 text-rose-500" onClick={() => removeLine(l.key)}>
-                            <Trash2 className="size-3.5" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-                <TableFooter>
-                  <TableRow>
-                    <TableCell colSpan={5}>
-                      <Button type="button" size="sm" variant="outline" onClick={addLine} className="gap-1.5">
-                        <Plus className="size-3.5" /> إضافة بند
-                      </Button>
-                    </TableCell>
-                    <TableCell className="text-end num-cell">
-                      <span className="num font-bold tabular-nums" dir="ltr">{formatCurrency(computed.total)}</span>
-                    </TableCell>
-                    <TableCell></TableCell>
-                  </TableRow>
-                </TableFooter>
-              </Table>
-            </Card>
-
-            <div className="grid grid-cols-3 gap-3 text-sm">
-              <div className="p-3 rounded-lg bg-muted/40">
-                <p className="text-xs text-muted-foreground">المجموع الفرعي</p>
-                <p className="font-bold tabular-nums" dir="ltr">{formatCurrency(computed.subtotal)}</p>
-              </div>
-              <div className="p-3 rounded-lg bg-muted/40">
-                <p className="text-xs text-muted-foreground">الضريبة</p>
-                <p className="font-bold tabular-nums" dir="ltr">{formatCurrency(computed.taxTotal)}</p>
-              </div>
-              <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900">
-                <p className="text-xs text-blue-700 dark:text-blue-400">الإجمالي</p>
-                <p className="font-bold tabular-nums text-blue-700 dark:text-blue-400" dir="ltr">{formatCurrency(computed.total)}</p>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="notes">ملاحظات</Label>
-              <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="ملاحظات إضافية..." />
-            </div>
-          </div>
-
           </DialogBody>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>إلغاء</Button>
-              <Button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
-                {saveMutation.isPending ? 'جاري الحفظ...' : 'إنشاء وترحيل'}
-              </Button>
-            </DialogFooter>
-          </DialogBody>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>{L('إلغاء', 'Cancel')}</Button>
+            <Button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
+              {saveMutation.isPending ? L('جاري الحفظ...', 'Saving...') : L('إنشاء وترحيل', 'Create & Post')}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </ModuleShell>
