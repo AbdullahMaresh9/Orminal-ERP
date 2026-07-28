@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ModuleShell } from '@/components/erp/module-shell'
 import { KpiCard } from '@/components/erp/kpi-card'
@@ -25,9 +25,12 @@ import {
 } from '@/components/ui/dialog'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+  DropdownMenuSeparator, DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu'
 import {
-  FileText, Plus, Trash2, Printer, FileSignature, CheckCircle2, Clock, Percent, Download, FileSpreadsheet, FileDown
+  FileText, Plus, Trash2, Printer, FileSignature, CheckCircle2, Clock, Percent,
+  Download, FileSpreadsheet, FileDown, MoreHorizontal, Pencil, Eye,
+  ChevronLeft, ChevronRight, AlertTriangle,
 } from 'lucide-react'
 
 interface Partner { id: string; code: string; nameAr: string; nameEn?: string }
@@ -59,7 +62,6 @@ interface SalesQuotation {
   partner?: Partner
   lines: SalesQuotationLine[]
 }
-
 interface LineDraft {
   key: string
   productId: string
@@ -67,6 +69,14 @@ interface LineDraft {
   unitPrice: string
   discountAmount: string
   taxRate: string
+}
+
+// ✅ (P1) شكل الإحصائيات المجمّعة القادمة من الخادم
+interface QuotationStats {
+  total: number
+  accepted: number
+  pending: number
+  converted: number
 }
 
 const STATUS_FLOW = ['draft', 'sent', 'accepted', 'expired', 'cancelled', 'converted']
@@ -78,24 +88,33 @@ const STATUS_LABELS: Record<string, { ar: string; en: string }> = {
   cancelled: { ar: 'ملغي', en: 'Cancelled' },
   converted: { ar: 'تم تحويله', en: 'Converted' },
 }
+// الحالات القابلة للتغيير اليدوي (لا نسمح بتعيين converted يدويًا — يتم عبر التحويل فقط)
+const MANUAL_STATUSES = ['draft', 'sent', 'accepted', 'expired', 'cancelled']
 
 const VISIBLE_ROWS = 5
 const ROW_HEIGHT = 44
 const HEADER_HEIGHT = 40
 
 export function SalesQuotationsModule() {
-  const { t, isRTL } = useT()
+  const { isRTL } = useT()
   const L = (ar: string, en: string) => (isRTL ? ar : en)
   const partnerName = (p?: Partner) => (p ? (isRTL ? p.nameAr : p.nameEn || p.nameAr) : '')
   const productName = (p?: Product) => (p ? (isRTL ? p.nameAr : p.nameEn || p.nameAr) : '')
-
   const stickyHead = 'sticky top-0 z-20 bg-muted whitespace-nowrap shadow-[inset_0_-1px_0_0_hsl(var(--border))]'
   const qc = useQueryClient()
+
+  // ✅ (P1) بحث مع debounce + إعادة الترقيم للصفحة الأولى
+  const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
-  const [addOpen, setAddOpen] = useState(false)
   const [page, setPage] = useState(1)
   const pageSize = 15
+
+  useEffect(() => {
+    const t = setTimeout(() => { setSearch(searchInput); setPage(1) }, 300)
+    return () => clearTimeout(t)
+  }, [searchInput])
+  useEffect(() => { setPage(1) }, [filterStatus])
 
   const { data, isLoading } = useQuery<{ data: SalesQuotation[]; meta: any }>({
     queryKey: ['sales-quotations', search, filterStatus, page],
@@ -135,15 +154,26 @@ export function SalesQuotationsModule() {
   const partners = partnersData?.data ?? []
   const products = productsData?.data ?? []
 
+  // ✅ (P1) تصحيح الـ KPIs: تُقرأ من إحصائيات الخادم المجمّعة (meta.stats)
+  // مع fallback مؤقت (نطاق الصفحة الحالية) لحين توفير الـ backend لها.
   const stats = useMemo(() => {
+    const s: QuotationStats | undefined = data?.meta?.stats
+    if (s) {
+      const conversionRate = s.total > 0 ? (s.converted / s.total) * 100 : 0
+      return { total: s.total, accepted: s.accepted, pending: s.pending, converted: s.converted, conversionRate }
+    }
+    // fallback (نطاق الصفحة فقط) — يُفضّل تعطيله بعد دعم meta.stats في الخادم
     const accepted = quotations.filter((q) => q.status === 'accepted' || q.status === 'converted').length
     const pending = quotations.filter((q) => q.status === 'draft' || q.status === 'sent').length
     const converted = quotations.filter((q) => q.status === 'converted').length
-    const conversionRate = quotations.length > 0 ? (converted / quotations.length) * 100 : 0
-    return { total: quotations.length, accepted, pending, conversionRate }
-  }, [quotations])
+    const conversionRate = total > 0 ? (converted / (quotations.length || 1)) * 100 : 0
+    return { total, accepted, pending, converted, conversionRate }
+  }, [data, quotations, total])
 
-  // Form state
+  // ============ حالة النموذج (إنشاء + تعديل + عرض) ============
+  const [addOpen, setAddOpen] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [viewOnly, setViewOnly] = useState(false) // العروض المحوّلة تُفتح للعرض فقط
   const [partnerId, setPartnerId] = useState('')
   const [quotationDate, setQuotationDate] = useState(new Date().toISOString().slice(0, 10))
   const [validUntil, setValidUntil] = useState('')
@@ -152,6 +182,9 @@ export function SalesQuotationsModule() {
   const [lines, setLines] = useState<LineDraft[]>([
     { key: '1', productId: '', quantity: '1', unitPrice: '0', discountAmount: '0', taxRate: '15' },
   ])
+
+  // حالة تأكيد الحذف
+  const [deleteTarget, setDeleteTarget] = useState<SalesQuotation | null>(null)
 
   const computed = useMemo(() => {
     let subtotal = 0, taxTotal = 0, discount = 0
@@ -188,6 +221,8 @@ export function SalesQuotationsModule() {
   }
 
   const resetForm = () => {
+    setEditingId(null)
+    setViewOnly(false)
     setPartnerId('')
     setQuotationDate(new Date().toISOString().slice(0, 10))
     setValidUntil('')
@@ -196,9 +231,39 @@ export function SalesQuotationsModule() {
     setLines([{ key: '1', productId: '', quantity: '1', unitPrice: '0', discountAmount: '0', taxRate: '15' }])
   }
 
+  const openCreate = () => { resetForm(); setAddOpen(true) }
+
+  // ✅ (P1) فتح شاشة التعديل عند النقر على الصف — تعبئة النموذج ببيانات العملية
+  const openEdit = (q: SalesQuotation, readOnly = false) => {
+    setEditingId(q.id)
+    setViewOnly(readOnly || q.status === 'converted')
+    setPartnerId(q.partnerId)
+    setQuotationDate((q.quotationDate || '').slice(0, 10) || new Date().toISOString().slice(0, 10))
+    setValidUntil((q.validUntil || '').slice(0, 10))
+    setNotes(q.notes || '')
+    setStatus(q.status)
+    setLines(
+      q.lines?.length
+        ? q.lines.map((l, i) => ({
+          key: l.id ?? `${q.id}-${i}`,
+          productId: l.productId ?? '',
+          quantity: String(l.quantity ?? 1),
+          unitPrice: String(l.unitPrice ?? 0),
+          discountAmount: String(l.discountAmount ?? 0),
+          taxRate: String(l.taxRate ?? 15),
+        }))
+        : [{ key: '1', productId: '', quantity: '1', unitPrice: '0', discountAmount: '0', taxRate: '15' }],
+    )
+    setAddOpen(true)
+  }
+
+  // ✅ (P1) حفظ موحّد: PUT عند التعديل / POST عند الإنشاء
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!partnerId) throw new Error(L('اختر العميل', 'Select a customer'))
+      if (validUntil && validUntil < quotationDate) {
+        throw new Error(L('تاريخ الصلاحية يجب أن يكون بعد تاريخ العرض', 'Valid-until must be after the quotation date'))
+      }
       const validLines = lines.filter((l) => l.productId && Number(l.quantity) > 0)
       if (validLines.length === 0) throw new Error(L('أضف بنداً واحداً على الأقل', 'Add at least one line'))
       const payload = {
@@ -215,8 +280,10 @@ export function SalesQuotationsModule() {
           taxRate: Number(l.taxRate),
         })),
       }
-      const r = await fetch('/api/erp/sales-quotations', {
-        method: 'POST',
+      const url = editingId ? `/api/erp/sales-quotations/${editingId}` : '/api/erp/sales-quotations'
+      const method = editingId ? 'PUT' : 'POST'
+      const r = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
@@ -227,10 +294,52 @@ export function SalesQuotationsModule() {
       return r.json()
     },
     onSuccess: () => {
-      toast.success(L('تم إنشاء عرض السعر بنجاح', 'Sales quotation created successfully'))
+      toast.success(editingId
+        ? L('تم تحديث عرض السعر بنجاح', 'Sales quotation updated successfully')
+        : L('تم إنشاء عرض السعر بنجاح', 'Sales quotation created successfully'))
+      // ✅ تحديث بيانات الصف في الجدول فورًا
       qc.invalidateQueries({ queryKey: ['sales-quotations'] })
       setAddOpen(false)
       resetForm()
+    },
+    onError: (e: any) => toast.error(e.message || L('حدث خطأ', 'An error occurred')),
+  })
+
+  // ✅ (P1) تغيير الحالة السريع من القائمة
+  const statusMutation = useMutation({
+    mutationFn: async ({ q, newStatus }: { q: SalesQuotation; newStatus: string }) => {
+      const r = await fetch(`/api/erp/sales-quotations/${q.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      })
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({}))
+        throw new Error(err?.error?.message ?? L('فشل تغيير الحالة', 'Failed to change status'))
+      }
+      return r.json()
+    },
+    onSuccess: () => {
+      toast.success(L('تم تحديث الحالة', 'Status updated'))
+      qc.invalidateQueries({ queryKey: ['sales-quotations'] })
+    },
+    onError: (e: any) => toast.error(e.message || L('حدث خطأ', 'An error occurred')),
+  })
+
+  // ✅ (P1) حذف
+  const deleteMutation = useMutation({
+    mutationFn: async (q: SalesQuotation) => {
+      const r = await fetch(`/api/erp/sales-quotations/${q.id}`, { method: 'DELETE' })
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({}))
+        throw new Error(err?.error?.message ?? L('فشل الحذف', 'Failed to delete'))
+      }
+      return true
+    },
+    onSuccess: () => {
+      toast.success(L('تم حذف عرض السعر', 'Sales quotation deleted'))
+      qc.invalidateQueries({ queryKey: ['sales-quotations'] })
+      setDeleteTarget(null)
     },
     onError: (e: any) => toast.error(e.message || L('حدث خطأ', 'An error occurred')),
   })
@@ -290,7 +399,7 @@ export function SalesQuotationsModule() {
     subtitle: L('أورمنال', 'Orminal'),
     isRTL,
     summary: [
-      { label: L('إجمالي العروض', 'Total Quotations'), value: formatInt(total) },
+      { label: L('إجمالي العروض', 'Total Quotations'), value: formatInt(stats.total) },
       { label: L('المقبولة', 'Accepted'), value: formatInt(stats.accepted) },
       { label: L('معدل التحويل', 'Conversion Rate'), value: `${stats.conversionRate.toFixed(1)}%` },
     ],
@@ -302,10 +411,7 @@ export function SalesQuotationsModule() {
   }
 
   const handleExport = async (format: ExportFormat) => {
-    if (!quotations.length) {
-      toast.error(L('لا توجد بيانات للتصدير', 'No data to export'))
-      return
-    }
+    if (!quotations.length) { toast.error(L('لا توجد بيانات للتصدير', 'No data to export')); return }
     try {
       await exportRows(format, quotations, exportColumns, exportMeta)
       toast.success(L('تم تصدير الملف بنجاح', 'File exported successfully'))
@@ -377,15 +483,18 @@ export function SalesQuotationsModule() {
     printHTML(html, `${L('عرض سعر', 'Sales Quotation')} ${q.code}`)
   }
 
+  const from = total === 0 ? 0 : (page - 1) * pageSize + 1
+  const to = Math.min(page * pageSize, total)
+
   return (
     <ModuleShell
       title={L('عروض الأسعار', 'Sales Quotations')}
       description={L('إدارة عروض أسعار العملاء وتحويلها إلى أوامر بيع', 'Manage customer sales quotations and convert to sales orders')}
       icon={<FileSignature className="size-5" />}
-      searchValue={search}
-      onSearch={setSearch}
+      searchValue={searchInput}
+      onSearch={setSearchInput}
       searchPlaceholder={L('ابحث برمز العرض أو العميل...', 'Search by quotation code or customer...')}
-      onAdd={() => { resetForm(); setAddOpen(true) }}
+      onAdd={openCreate}
       addLabel={L('عرض سعر جديد', 'New Quotation')}
       actions={
         <DropdownMenu>
@@ -459,14 +568,20 @@ export function SalesQuotationsModule() {
               ) : quotations.length === 0 ? (
                 <TableRow><TableCell colSpan={7} className="text-center py-10 text-muted-foreground border-b">{L('لا توجد عروض أسعار. ابدأ بإنشاء أول عرض.', 'No sales quotations found. Start by creating the first quotation.')}</TableCell></TableRow>
               ) : quotations.map((q) => (
-                <TableRow key={q.id} className="hover:bg-muted/40 align-middle">
+                // ✅ (P1) النقر على الصف يفتح شاشة التعديل
+                <TableRow
+                  key={q.id}
+                  className="hover:bg-muted/40 align-middle cursor-pointer"
+                  onClick={() => openEdit(q)}
+                >
                   <TableCell className="ps-6 font-mono text-xs border-b truncate" dir="ltr" title={q.code}>{q.code}</TableCell>
                   <TableCell className="font-medium border-b truncate" title={partnerName(q.partner)}>{partnerName(q.partner) || '—'}</TableCell>
                   <TableCell className="text-sm text-center whitespace-nowrap border-b">{formatDate(q.quotationDate)}</TableCell>
                   <TableCell className="text-sm text-center whitespace-nowrap border-b">{q.validUntil ? formatDate(q.validUntil) : '—'}</TableCell>
                   <TableCell className="text-center whitespace-nowrap border-b"><span className="num tabular-nums font-semibold" dir="ltr">{formatCurrency(q.total)}</span></TableCell>
                   <TableCell className="text-center border-b"><div className="flex justify-center"><StatusBadge status={q.status} /></div></TableCell>
-                  <TableCell className="text-end pe-4 border-b">
+                  {/* ✅ إيقاف انتشار النقر حتى لا يفتح التعديل عند الضغط على الأزرار */}
+                  <TableCell className="text-end pe-4 border-b" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-1">
                       {q.status === 'accepted' && !q.convertedSalesOrderId && (
                         <Button
@@ -483,6 +598,46 @@ export function SalesQuotationsModule() {
                       <Button size="icon" variant="ghost" className="size-8" title={L('طباعة عرض السعر', 'Print Quotation')} onClick={() => handlePrint(q)}>
                         <Printer className="size-3.5" />
                       </Button>
+
+                      {/* ✅ (P1) قائمة إجراءات الصف: عرض/تعديل، تغيير الحالة، حذف */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="icon" variant="ghost" className="size-8" title={L('إجراءات', 'Actions')}>
+                            <MoreHorizontal className="size-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align={isRTL ? 'start' : 'end'} className="w-30">
+                          <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => openEdit(q, q.status === 'converted')}>
+                            {q.status === 'converted'
+                              ? <><Eye className="size-4" /> {L('عرض', 'View')}</>
+                              : <><Pencil className="size-4" /> {L('تعديل', 'Edit')}</>}
+                          </DropdownMenuItem>
+
+                          {q.status !== 'converted' && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuLabel className="text-xs text-muted-foreground">{L('تغيير الحالة', 'Change status')}</DropdownMenuLabel>
+                              {MANUAL_STATUSES.filter((s) => s !== q.status).map((s) => (
+                                <DropdownMenuItem
+                                  key={s}
+                                  className="cursor-pointer"
+                                  disabled={statusMutation.isPending}
+                                  onClick={() => statusMutation.mutate({ q, newStatus: s })}
+                                >
+                                  {STATUS_LABELS[s]?.[isRTL ? 'ar' : 'en'] ?? s}
+                                </DropdownMenuItem>
+                              ))}
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="gap-2 cursor-pointer text-rose-600 focus:text-rose-600"
+                                onClick={() => setDeleteTarget(q)}
+                              >
+                                <Trash2 className="size-4" /> {L('حذف', 'Delete')}
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -492,17 +647,54 @@ export function SalesQuotationsModule() {
         </div>
       </Card>
 
+      {/* ✅ (P1) شريط الترقيم */}
+      <div className="flex items-center justify-between mt-3 text-sm text-muted-foreground">
+        <span>
+          {total === 0
+            ? L('لا توجد سجلات', 'No records')
+            : L(`عرض ${from}–${to} من ${total}`, `Showing ${from}–${to} of ${total}`)}
+        </span>
+        <div className="flex items-center gap-2">
+          <Button
+            size="icon" variant="outline" className="size-8"
+            disabled={page <= 1 || isLoading}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            title={L('السابق', 'Previous')}
+          >
+            {isRTL ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}
+          </Button>
+          <span className="tabular-nums">{L(`صفحة ${page} من ${totalPages}`, `Page ${page} of ${totalPages}`)}</span>
+          <Button
+            size="icon" variant="outline" className="size-8"
+            disabled={page >= totalPages || isLoading}
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            title={L('التالي', 'Next')}
+          >
+            {isRTL ? <ChevronLeft className="size-4" /> : <ChevronRight className="size-4" />}
+          </Button>
+        </div>
+      </div>
 
-
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+      {/* ============ نموذج إنشاء / تعديل / عرض ============ */}
+      <Dialog open={addOpen} onOpenChange={(o) => { setAddOpen(o); if (!o) resetForm() }}>
         <DialogContent className="max-w-4xl" dir={isRTL ? 'rtl' : 'ltr'}>
           <DialogHeader>
-            <DialogTitle>{L('عرض سعر جديد', 'New Sales Quotation')}</DialogTitle>
-
+            <DialogTitle>
+              {viewOnly
+                ? L('عرض عرض السعر', 'View Sales Quotation')
+                : editingId
+                  ? L('تعديل عرض السعر', 'Edit Sales Quotation')
+                  : L('عرض سعر جديد', 'New Sales Quotation')}
+            </DialogTitle>
+            <DialogDescription>
+              {viewOnly
+                ? L('هذا العرض محوّل إلى أمر بيع ولا يمكن تعديله', 'This quotation is converted and cannot be edited')
+                : L('أدخل بيانات العميل والبنود ثم احفظ', 'Enter customer and line details, then save')}
+            </DialogDescription>
           </DialogHeader>
           <DialogBody>
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <fieldset disabled={viewOnly} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                 <div className="space-y-1.5 md:col-span-1">
                   <Label>{L('العميل *', 'Customer *')}</Label>
                   <Select value={partnerId} onValueChange={setPartnerId}>
@@ -523,6 +715,21 @@ export function SalesQuotationsModule() {
                 <div className="space-y-1.5">
                   <Label htmlFor="validUntil">{L('صالح حتى', 'Valid Until')}</Label>
                   <Input id="validUntil" type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} />
+                </div>
+                {/* ✅ (P1) تغيير الحالة من داخل النموذج */}
+                <div className="space-y-1.5">
+                  <Label>{L('الحالة', 'Status')}</Label>
+                  <Select value={status} onValueChange={setStatus}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
+                      {MANUAL_STATUSES.map((s) => (
+                        <SelectItem key={s} value={s}>{STATUS_LABELS[s]?.[isRTL ? 'ar' : 'en'] ?? s}</SelectItem>
+                      ))}
+                      {status === 'converted' && (
+                        <SelectItem value="converted" disabled>{STATUS_LABELS.converted[isRTL ? 'ar' : 'en']}</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -619,12 +826,46 @@ export function SalesQuotationsModule() {
                 <Label htmlFor="notes">{L('ملاحظات', 'Notes')}</Label>
                 <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder={L('ملاحظات إضافية...', 'Additional notes...')} />
               </div>
-            </div>
+            </fieldset>
           </DialogBody>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>{L('إلغاء', 'Cancel')}</Button>
-            <Button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
-              {saveMutation.isPending ? L('جاري الحفظ...', 'Saving...') : L('إنشاء', 'Create')}
+            <Button type="button" variant="outline" onClick={() => { setAddOpen(false); resetForm() }}>
+              {viewOnly ? L('إغلاق', 'Close') : L('إلغاء', 'Cancel')}
+            </Button>
+            {!viewOnly && (
+              <Button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
+                {saveMutation.isPending
+                  ? L('جاري الحفظ...', 'Saving...')
+                  : editingId ? L('حفظ التغييرات', 'Save Changes') : L('إنشاء', 'Create')}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ============ تأكيد الحذف ============ */}
+      <Dialog open={!!deleteTarget} onOpenChange={(o) => { if (!o) setDeleteTarget(null) }}>
+        <DialogContent className="max-w-md" dir={isRTL ? 'rtl' : 'ltr'}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-rose-600">
+              <AlertTriangle className="size-5" /> {L('حذف عرض السعر', 'Delete Quotation')}
+            </DialogTitle>
+            <DialogDescription>
+              {L(
+                `هل أنت متأكد من حذف عرض السعر "${deleteTarget?.code ?? ''}"؟ لا يمكن التراجع عن هذا الإجراء.`,
+                `Are you sure you want to delete quotation "${deleteTarget?.code ?? ''}"? This action cannot be undone.`,
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setDeleteTarget(null)}>{L('إلغاء', 'Cancel')}</Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={deleteMutation.isPending}
+              onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget)}
+            >
+              {deleteMutation.isPending ? L('جاري الحذف...', 'Deleting...') : L('حذف', 'Delete')}
             </Button>
           </DialogFooter>
         </DialogContent>
