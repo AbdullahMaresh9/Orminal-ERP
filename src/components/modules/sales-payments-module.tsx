@@ -7,7 +7,7 @@ import { KpiCard } from '@/components/erp/kpi-card'
 import { StatusBadge } from '@/components/erp/status-badge'
 import { useT } from '@/lib/i18n/use-t'
 import { formatCurrency, formatInt, formatDate } from '@/lib/format'
-import { exportToCSV, printHTML } from '@/lib/export'
+import { exportRows, ExportColumn, ExportFormat, ExportMeta, printHTML } from '@/lib/export'
 import { toast } from 'sonner'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -23,12 +23,14 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogBody,
 } from '@/components/ui/dialog'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import {
-  Receipt, Wallet, Hash, TrendingUp, Plus, Printer, CreditCard,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
+  Receipt, Wallet, Hash, TrendingUp, Plus, Printer, CreditCard, Download, FileSpreadsheet, FileText, FileDown,
 } from 'lucide-react'
 
-interface Partner { id: string; code: string; nameAr: string }
+interface Partner { id: string; code: string; nameAr: string; nameEn?: string }
 interface Invoice { id: string; code: string; total: number; paid: number; partnerId: string }
 interface SalesPayment {
   id: string
@@ -45,15 +47,29 @@ interface SalesPayment {
 }
 
 const METHOD_OPTIONS = [
-  { value: 'cash', label: 'نقد' },
-  { value: 'card', label: 'بطاقة' },
-  { value: 'transfer', label: 'تحويل' },
-  { value: 'check', label: 'شيك' },
+  { value: 'cash', ar: 'نقد', en: 'Cash' },
+  { value: 'card', ar: 'بطاقة', en: 'Card' },
+  { value: 'transfer', ar: 'تحويل', en: 'Transfer' },
+  { value: 'check', ar: 'شيك', en: 'Check' },
 ]
-const METHOD_LABELS: Record<string, string> = Object.fromEntries(METHOD_OPTIONS.map((m) => [m.value, m.label]))
+
+const STATUS_FLOW = ['draft', 'posted', 'cancelled']
+const STATUS_LABELS: Record<string, { ar: string; en: string }> = {
+  draft: { ar: 'مسودة', en: 'Draft' },
+  posted: { ar: 'مُرحّل', en: 'Posted' },
+  cancelled: { ar: 'ملغي', en: 'Cancelled' },
+}
+
+const VISIBLE_ROWS = 5
+const ROW_HEIGHT = 44
+const HEADER_HEIGHT = 40
 
 export function SalesPaymentsModule() {
-  const { t } = useT()
+  const { t, isRTL } = useT()
+  const L = (ar: string, en: string) => (isRTL ? ar : en)
+  const partnerName = (p?: Partner) => (p ? (isRTL ? p.nameAr : p.nameEn || p.nameAr) : '')
+
+  const stickyHead = 'sticky top-0 z-20 bg-muted whitespace-nowrap shadow-[inset_0_-1px_0_0_hsl(var(--border))]'
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
   const [filterMethod, setFilterMethod] = useState('all')
@@ -100,6 +116,11 @@ export function SalesPaymentsModule() {
   const partners = partnersData?.data ?? []
   const invoices = invoicesData?.data ?? []
 
+  const methodLabel = (m: string) => {
+    const opt = METHOD_OPTIONS.find((o) => o.value === m)
+    return opt ? (isRTL ? opt.ar : opt.en) : m
+  }
+
   const stats = useMemo(() => {
     const now = new Date()
     const thisMonth = payments.filter((p) => {
@@ -113,9 +134,9 @@ export function SalesPaymentsModule() {
       monthTotal: thisMonth.reduce((s, p) => s + p.amount, 0),
       count: thisMonth.length,
       avg: thisMonth.length > 0 ? thisMonth.reduce((s, p) => s + p.amount, 0) / thisMonth.length : 0,
-      topMethod: topMethod ? METHOD_LABELS[topMethod[0]] ?? topMethod[0] : '—',
+      topMethod: topMethod ? methodLabel(topMethod[0]) : '—',
     }
-  }, [payments])
+  }, [payments, isRTL])
 
   // Form
   const [partnerId, setPartnerId] = useState('')
@@ -134,9 +155,9 @@ export function SalesPaymentsModule() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      if (!partnerId) throw new Error('اختر العميل')
+      if (!partnerId) throw new Error(L('اختر العميل', 'Select a customer'))
       const amt = Number(amount) || 0
-      if (amt <= 0) throw new Error('المبلغ يجب أن يكون أكبر من صفر')
+      if (amt <= 0) throw new Error(L('المبلغ يجب أن يكون أكبر من صفر', 'Amount must be greater than zero'))
       const payload = {
         partnerId,
         invoiceId: invoiceId || undefined,
@@ -154,32 +175,59 @@ export function SalesPaymentsModule() {
       })
       if (!r.ok) {
         const err = await r.json().catch(() => ({}))
-        throw new Error(err?.error?.message ?? 'فشل الحفظ')
+        throw new Error(err?.error?.message ?? L('فشل الحفظ', 'Failed to save'))
       }
       return r.json()
     },
     onSuccess: () => {
-      toast.success('تم إنشاء سند القبض بنجاح')
+      toast.success(L('تم إنشاء سند القبض بنجاح', 'Receipt created successfully'))
       qc.invalidateQueries({ queryKey: ['sales-payments'] })
       qc.invalidateQueries({ queryKey: ['sales-invoices'] })
       setAddOpen(false); resetForm()
     },
-    onError: (e: any) => toast.error(e.message || 'حدث خطأ'),
+    onError: (e: any) => toast.error(e.message || L('حدث خطأ', 'An error occurred')),
   })
 
-  const handleExport = () => {
-    const rows = payments.map((p) => ({
-      'الرمز': p.code,
-      'العميل': p.partner?.nameAr ?? '',
-      'الفاتورة': invoices.find((i) => i.id === p.invoiceId)?.code ?? '',
-      'التاريخ': formatDate(p.paymentDate),
-      'المبلغ': p.amount,
-      'الطريقة': METHOD_LABELS[p.method] ?? p.method,
-      'المرجع': p.reference ?? '',
-      'الحالة': p.status,
-    }))
-    exportToCSV('sales-payments', rows)
-    toast.success('تم تصدير الملف')
+  const exportColumns: ExportColumn<SalesPayment>[] = [
+    { key: 'code', header: L('الرمز', 'Code'), width: 14, align: 'center', value: (p) => p.code },
+    { key: 'customer', header: L('العميل', 'Customer'), width: 22, align: 'center', value: (p) => partnerName(p.partner) },
+    { key: 'invoice', header: L('الفاتورة', 'Invoice'), width: 16, align: 'center', value: (p) => invoices.find((i) => i.id === p.invoiceId)?.code ?? '—' },
+    { key: 'date', header: L('التاريخ', 'Date'), width: 14, align: 'center', type: 'date', value: (p) => formatDate(p.paymentDate), dateValue: (p) => p.paymentDate },
+    { key: 'amount', header: L('المبلغ', 'Amount'), width: 16, align: 'center', type: 'currency', summable: true, value: (p) => p.amount },
+    { key: 'method', header: L('الطريقة', 'Method'), width: 14, align: 'center', value: (p) => methodLabel(p.method) },
+    { key: 'reference', header: L('المرجع', 'Reference'), width: 16, align: 'center', value: (p) => p.reference ?? '—' },
+    { key: 'status', header: L('الحالة', 'Status'), width: 12, align: 'center', value: (p) => STATUS_LABELS[p.status]?.[isRTL ? 'ar' : 'en'] ?? p.status },
+  ]
+
+  const exportMeta: ExportMeta = {
+    fileName: L('سندات_القبض_مبيعات', 'sales-receipts'),
+    title: L('تقرير سندات القبض - المبيعات', 'Sales Receipts Report'),
+    subtitle: L('أورمنال', 'Orminal'),
+    isRTL,
+    summary: [
+      { label: L('قبوض هذا الشهر', 'This Month Total'), value: formatCurrency(stats.monthTotal) },
+      { label: L('عدد السندات', 'Total Count'), value: formatInt(stats.count) },
+      { label: L('متوسط السند', 'Average Amount'), value: formatCurrency(stats.avg) },
+      { label: L('أعلى طريقة', 'Top Method'), value: stats.topMethod },
+    ],
+    labels: {
+      generatedAt: L('تاريخ الإنشاء', 'Generated'),
+      totalRecords: L('عدد السجلات', 'Records'),
+      grandTotal: L('الإجمالي', 'Total'),
+    },
+  }
+
+  const handleExport = async (format: ExportFormat) => {
+    if (!payments.length) {
+      toast.error(L('لا توجد بيانات للتصدير', 'No data to export'))
+      return
+    }
+    try {
+      await exportRows(format, payments, exportColumns, exportMeta)
+      toast.success(L('تم تصدير الملف بنجاح', 'File exported successfully'))
+    } catch (e: any) {
+      toast.error(e?.message || L('فشل التصدير', 'Export failed'))
+    }
   }
 
   const handlePrint = (p: SalesPayment) => {
@@ -189,175 +237,197 @@ export function SalesPaymentsModule() {
         <div class="company">
           <img src="/logo.png" class="logo" style="width:56px;height:56px;object-fit:contain;border-radius:8px;" />
           <div class="info">
-            <h2>أورمنال</h2>
-            <p>نظام إدارة موارد المؤسسات ERP</p>
+            <h2>${L('أورمنال', 'Orminal')}</h2>
+            <p>${L('نظام إدارة موارد المؤسسات ERP', 'ERP Management System')}</p>
           </div>
         </div>
         <div class="doc-meta">
-          <div class="type">سند قبض</div>
+          <div class="type">${L('سند قبض', 'Receipt')}</div>
           <div class="code">${p.code}</div>
           <div class="date">${formatDate(p.paymentDate)}</div>
         </div>
       </div>
       <div class="party">
-        <div class="label">استلمنا من</div>
-        <div class="name">${p.partner?.nameAr ?? ''}</div>
-        <div class="sub">رمز: ${p.partner?.code ?? ''}</div>
-        ${inv ? `<div class="sub">فاتورة: ${inv.code}</div>` : ''}
+        <div class="label">${L('استلمنا من', 'Received From')}</div>
+        <div class="name">${partnerName(p.partner)}</div>
+        <div class="sub">${L('رمز', 'Code')}: ${p.partner?.code ?? ''}</div>
+        ${inv ? `<div class="sub">${L('فاتورة', 'Invoice')}: ${inv.code}</div>` : ''}
       </div>
       <table>
         <thead>
           <tr>
-            <th>البيان</th>
-            <th>القيمة</th>
+            <th>${L('البيان', 'Description')}</th>
+            <th>${L('القيمة', 'Amount')}</th>
           </tr>
         </thead>
         <tbody>
-          <tr><td>المبلغ المستلم</td><td>${formatCurrency(p.amount)}</td></tr>
-          <tr><td>طريقة الدفع</td><td>${METHOD_LABELS[p.method] ?? p.method}</td></tr>
-          ${p.reference ? `<tr><td>المرجع</td><td>${p.reference}</td></tr>` : ''}
+          <tr><td>${L('المبلغ المستلم', 'Received Amount')}</td><td>${formatCurrency(p.amount)}</td></tr>
+          <tr><td>${L('طريقة الدفع', 'Payment Method')}</td><td>${methodLabel(p.method)}</td></tr>
+          ${p.reference ? `<tr><td>${L('المرجع', 'Reference')}</td><td>${p.reference}</td></tr>` : ''}
         </tbody>
       </table>
       <div class="totals">
-        <div class="row grand"><span>الإجمالي:</span><span>${formatCurrency(p.amount)}</span></div>
+        <div class="row grand"><span>${L('الإجمالي:', 'Total:')}</span><span>${formatCurrency(p.amount)}</span></div>
       </div>
       ${p.notes ? `<div class="notes">${p.notes}</div>` : ''}
       <div class="signatures">
-        <div class="sig"><div class="line"></div><div class="label">المحاسب</div></div>
-        <div class="sig"><div class="line"></div><div class="label">العامل</div></div>
-        <div class="sig"><div class="line"></div><div class="label">العميل</div></div>
+        <div class="sig"><div class="line"></div><div class="label">${L('المحاسب', 'Accountant')}</div></div>
+        <div class="sig"><div class="line"></div><div class="label">${L('العامل', 'Cashier')}</div></div>
+        <div class="sig"><div class="line"></div><div class="label">${L('العميل', 'Customer')}</div></div>
       </div>
     `
-    printHTML(html, `سند قبض ${p.code}`)
+    printHTML(html, `${L('سند قبض', 'Receipt')} ${p.code}`)
   }
 
   return (
     <ModuleShell
-      title={t('module.sales-payments')}
-      description="سندات قبض العملاء وإيصالات الاستلام"
+      title={L('سندات القبض - المبيعات', 'Sales Receipts')}
+      description={L('سندات قبض العملاء وإيصالات الاستلام', 'Customer receipts and payment collection vouchers')}
       icon={<Receipt className="size-5" />}
       searchValue={search}
       onSearch={setSearch}
-      searchPlaceholder="ابحث برمز السند أو المرجع..."
+      searchPlaceholder={L('ابحث برمز السند أو المرجع...', 'Search by code or reference...')}
       onAdd={() => { resetForm(); setAddOpen(true) }}
-      addLabel="سند قبض جديد"
-      onExport={handleExport}
+      addLabel={L('سند قبض جديد', 'New Receipt')}
+      actions={
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-1.5">
+              <Download className="size-4" />
+              <span className="hidden sm:inline">{L('تصدير', 'Export')}</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align={isRTL ? 'start' : 'end'} className="w-44">
+            <DropdownMenuItem onClick={() => handleExport('excel')} className="gap-2 cursor-pointer">
+              <FileSpreadsheet className="size-4 text-emerald-600" /> {L('تصدير Excel', 'Export Excel')}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExport('csv')} className="gap-2 cursor-pointer">
+              <FileText className="size-4 text-sky-600" /> {L('تصدير CSV', 'Export CSV')}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExport('pdf')} className="gap-2 cursor-pointer">
+              <FileDown className="size-4 text-rose-600" /> {L('تصدير PDF', 'Export PDF')}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      }
       filters={
         <>
           <Select value={filterMethod} onValueChange={setFilterMethod}>
-            <SelectTrigger className="w-36"><SelectValue placeholder="الطريقة" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">كل الطرق</SelectItem>
-              {METHOD_OPTIONS.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
+            <SelectTrigger className="w-36"><SelectValue placeholder={L('الطريقة', 'Method')} /></SelectTrigger>
+            <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
+              <SelectItem value="all">{L('كل الطرق', 'All Methods')}</SelectItem>
+              {METHOD_OPTIONS.map((m) => <SelectItem key={m.value} value={m.value}>{isRTL ? m.ar : m.en}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-36"><SelectValue placeholder="الحالة" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">الكل</SelectItem>
-              <SelectItem value="draft">مسودة</SelectItem>
-              <SelectItem value="posted">مُرحّل</SelectItem>
-              <SelectItem value="cancelled">ملغي</SelectItem>
+            <SelectTrigger className="w-36"><SelectValue placeholder={L('الحالة', 'Status')} /></SelectTrigger>
+            <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
+              <SelectItem value="all">{L('الكل', 'All')}</SelectItem>
+              {STATUS_FLOW.map((s) => (
+                <SelectItem key={s} value={s}>{STATUS_LABELS[s]?.[isRTL ? 'ar' : 'en'] ?? s}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </>
       }
     >
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
-        <KpiCard title="قبوض هذا الشهر" value={formatCurrency(stats.monthTotal)} icon={<Receipt className="size-5" />} accent="blue" />
-        <KpiCard title="عدد السندات" value={formatInt(stats.count)} icon={<Hash className="size-5" />} accent="sky" />
-        <KpiCard title="متوسط السند" value={formatCurrency(stats.avg)} icon={<TrendingUp className="size-5" />} accent="violet" />
-        <KpiCard title="أعلى طريقة" value={stats.topMethod} icon={<CreditCard className="size-5" />} accent="amber" />
+        <KpiCard title={L('قبوض هذا الشهر', 'This Month Total')} value={formatCurrency(stats.monthTotal)} icon={<Receipt className="size-5" />} accent="blue" />
+        <KpiCard title={L('عدد السندات', 'Total Count')} value={formatInt(stats.count)} icon={<Hash className="size-5" />} accent="sky" />
+        <KpiCard title={L('متوسط السند', 'Average Amount')} value={formatCurrency(stats.avg)} icon={<TrendingUp className="size-5" />} accent="violet" />
+        <KpiCard title={L('أعلى طريقة', 'Top Method')} value={stats.topMethod} icon={<CreditCard className="size-5" />} accent="amber" />
       </div>
 
       <Card className="rounded-xl overflow-hidden">
-        <ScrollArea className="max-h-[60vh]">
-          <Table>
+        <div
+          className="w-full overflow-y-auto overflow-x-auto overscroll-contain"
+          style={{ maxHeight: HEADER_HEIGHT + VISIBLE_ROWS * ROW_HEIGHT }}
+        >
+          <table className="w-full caption-bottom text-sm min-w-[960px] table-fixed border-separate border-spacing-0">
+            <colgroup>
+              <col className="w-[12%]" />
+              <col className="w-[18%]" />
+              <col className="w-[14%]" />
+              <col className="w-[12%]" />
+              <col className="w-[14%]" />
+              <col className="w-[10%]" />
+              <col className="w-[10%]" />
+              <col className="w-[10%]" />
+            </colgroup>
             <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead className="ps-4">الرمز</TableHead>
-                <TableHead>العميل</TableHead>
-                <TableHead>الفاتورة</TableHead>
-                <TableHead>التاريخ</TableHead>
-                <TableHead className="text-end num-cell">المبلغ</TableHead>
-                <TableHead>الطريقة</TableHead>
-                <TableHead>الحالة</TableHead>
-                <TableHead className="text-end">إجراءات</TableHead>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className={`${stickyHead} ps-6 text-start`}>{L('الرمز', 'Code')}</TableHead>
+                <TableHead className={`${stickyHead} text-start`}>{L('العميل', 'Customer')}</TableHead>
+                <TableHead className={`${stickyHead} text-center`}>{L('الفاتورة', 'Invoice')}</TableHead>
+                <TableHead className={`${stickyHead} text-center`}>{L('التاريخ', 'Date')}</TableHead>
+                <TableHead className={`${stickyHead} text-center`}>{L('المبلغ', 'Amount')}</TableHead>
+                <TableHead className={`${stickyHead} text-center`}>{L('الطريقة', 'Method')}</TableHead>
+                <TableHead className={`${stickyHead} text-center`}>{L('الحالة', 'Status')}</TableHead>
+                <TableHead className={`${stickyHead} text-end pe-4`}>{L('إجراءات', 'Actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={8} className="text-center py-10 text-muted-foreground">جاري التحميل...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className="text-center py-10 text-muted-foreground border-b">{L('جاري التحميل...', 'Loading...')}</TableCell></TableRow>
               ) : payments.length === 0 ? (
-                <TableRow><TableCell colSpan={8} className="text-center py-10 text-muted-foreground">لا توجد سندات قبض.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className="text-center py-10 text-muted-foreground border-b">{L('لا توجد سندات قبض.', 'No receipts found.')}</TableCell></TableRow>
               ) : payments.map((p) => (
-                <TableRow key={p.id} className="hover:bg-muted/40">
-                  <TableCell className="ps-4 font-mono text-xs" dir="ltr">{p.code}</TableCell>
-                  <TableCell className="font-medium">{p.partner?.nameAr ?? '—'}</TableCell>
-                  <TableCell className="font-mono text-xs" dir="ltr">{invoices.find((i) => i.id === p.invoiceId)?.code ?? '—'}</TableCell>
-                  <TableCell className="text-sm">{formatDate(p.paymentDate)}</TableCell>
-                  <TableCell className="text-end num-cell"><span className="num tabular-nums font-semibold" dir="ltr">{formatCurrency(p.amount)}</span></TableCell>
-                  <TableCell><span className="text-xs">{METHOD_LABELS[p.method] ?? p.method}</span></TableCell>
-                  <TableCell><StatusBadge status={p.status} /></TableCell>
-                  <TableCell className="text-end">
-                    <Button size="icon" variant="ghost" className="size-8" onClick={() => handlePrint(p)}>
+                <TableRow key={p.id} className="hover:bg-muted/40 align-middle">
+                  <TableCell className="ps-6 font-mono text-xs border-b truncate" dir="ltr" title={p.code}>{p.code}</TableCell>
+                  <TableCell className="font-medium border-b truncate" title={partnerName(p.partner)}>{partnerName(p.partner) || '—'}</TableCell>
+                  <TableCell className="font-mono text-xs text-center border-b truncate" dir="ltr">{invoices.find((i) => i.id === p.invoiceId)?.code ?? '—'}</TableCell>
+                  <TableCell className="text-sm text-center whitespace-nowrap border-b">{formatDate(p.paymentDate)}</TableCell>
+                  <TableCell className="text-center whitespace-nowrap border-b"><span className="num tabular-nums font-semibold" dir="ltr">{formatCurrency(p.amount)}</span></TableCell>
+                  <TableCell className="text-center whitespace-nowrap border-b"><span className="text-xs">{methodLabel(p.method)}</span></TableCell>
+                  <TableCell className="text-center border-b"><div className="flex justify-center"><StatusBadge status={p.status} /></div></TableCell>
+                  <TableCell className="text-end pe-4 border-b">
+                    <Button size="icon" variant="ghost" className="size-8" title={L('طباعة سند القبض', 'Print Receipt')} onClick={() => handlePrint(p)}>
                       <Printer className="size-3.5" />
                     </Button>
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
-          </Table>
-        </ScrollArea>
+          </table>
+        </div>
       </Card>
 
-      <div className="flex items-center justify-between mt-4 text-sm">
-        <p className="text-muted-foreground">
-          عرض {payments.length === 0 ? 0 : (page - 1) * pageSize + 1}–{(page - 1) * pageSize + payments.length} من {total}
-        </p>
-        <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}>السابق</Button>
-          <span className="text-xs text-muted-foreground">صفحة {page} من {totalPages}</span>
-          <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>التالي</Button>
-        </div>
-      </div>
-
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl" dir={isRTL ? 'rtl' : 'ltr'}>
           <DialogHeader>
-            <DialogTitle>سند قبض جديد</DialogTitle>
-            <DialogDescription>إنشاء سند قبض من عميل — سيُرحّل القيد المحاسبي تلقائياً (من ح/ النقدية إلى ح/ الذمم المدينة)</DialogDescription>
+            <DialogTitle>{L('سند قبض جديد', 'New Receipt')}</DialogTitle>
+            <DialogDescription>{L('إنشاء سند قبض من عميل — سيُرحّل القيد المحاسبي تلقائياً (من ح/ النقدية إلى ح/ الذمم المدينة)', 'Create customer receipt — entry will be automatically posted (Cash/Bank to Accounts Receivable)')}</DialogDescription>
           </DialogHeader>
           <DialogBody>
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label>العميل *</Label>
+                  <Label>{L('العميل *', 'Customer *')}</Label>
                   <Select value={partnerId} onValueChange={setPartnerId}>
-                    <SelectTrigger><SelectValue placeholder="اختر العميل" /></SelectTrigger>
-                    <SelectContent>
+                    <SelectTrigger><SelectValue placeholder={L('اختر العميل', 'Select Customer')} /></SelectTrigger>
+                    <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
                       {partners.map((p) => (
                         <SelectItem key={p.id} value={p.id}>
-                          <span dir="ltr" className="font-mono text-xs">{p.code}</span> — {p.nameAr}
+                          <span dir="ltr" className="font-mono text-xs">{p.code}</span> — {partnerName(p)}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>الفاتورة (اختياري)</Label>
+                  <Label>{L('الفاتورة (اختياري)', 'Linked Invoice (Optional)')}</Label>
                   <Select value={invoiceId} onValueChange={(v) => {
                     setInvoiceId(v)
                     const inv = invoices.find((i) => i.id === v)
                     if (inv) setAmount(String(Math.max(0, inv.total - inv.paid)))
                   }}>
-                    <SelectTrigger><SelectValue placeholder="بدون" /></SelectTrigger>
-                    <SelectContent>
+                    <SelectTrigger><SelectValue placeholder={L('بدون', 'None')} /></SelectTrigger>
+                    <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
                       {invoices
                         .filter((i) => !partnerId || i.partnerId === partnerId)
                         .map((i) => (
                           <SelectItem key={i.id} value={i.id}>
-                            <span dir="ltr" className="font-mono text-xs">{i.code}</span> — متبقي {formatCurrency(i.total - i.paid)}
+                            <span dir="ltr" className="font-mono text-xs">{i.code}</span> — {L('متبقي', 'Remaining')} {formatCurrency(i.total - i.paid)}
                           </SelectItem>
                         ))}
                     </SelectContent>
@@ -367,38 +437,38 @@ export function SalesPaymentsModule() {
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div className="space-y-1.5">
-                  <Label htmlFor="amount">المبلغ *</Label>
+                  <Label htmlFor="amount">{L('المبلغ *', 'Amount *')}</Label>
                   <Input id="amount" type="number" step="0.01" dir="ltr" value={amount} onChange={(e) => setAmount(e.target.value)} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="paymentDate">التاريخ</Label>
+                  <Label htmlFor="paymentDate">{L('التاريخ', 'Date')}</Label>
                   <Input id="paymentDate" type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>طريقة الدفع</Label>
+                  <Label>{L('طريقة الدفع', 'Payment Method')}</Label>
                   <Select value={method} onValueChange={setMethod}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {METHOD_OPTIONS.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
+                    <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
+                      {METHOD_OPTIONS.map((m) => <SelectItem key={m.value} value={m.value}>{isRTL ? m.ar : m.en}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="reference">المرجع</Label>
-                  <Input id="reference" value={reference} onChange={(e) => setReference(e.target.value)} placeholder="رقم شيك / مرجع تحويل" />
+                  <Label htmlFor="reference">{L('المرجع', 'Reference')}</Label>
+                  <Input id="reference" value={reference} onChange={(e) => setReference(e.target.value)} placeholder={L('رقم شيك / مرجع تحويل', 'Check # / Transfer Ref')} />
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="notes">ملاحظات</Label>
-                <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="ملاحظات إضافية..." />
+                <Label htmlFor="notes">{L('ملاحظات', 'Notes')}</Label>
+                <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder={L('ملاحظات إضافية...', 'Additional notes...')} />
               </div>
             </div>
           </DialogBody>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>إلغاء</Button>
+            <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>{L('إلغاء', 'Cancel')}</Button>
             <Button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
-              {saveMutation.isPending ? 'جاري الحفظ...' : 'إنشاء وترحيل'}
+              {saveMutation.isPending ? L('جاري الحفظ...', 'Saving...') : L('إنشاء وترحيل', 'Create & Post')}
             </Button>
           </DialogFooter>
         </DialogContent>

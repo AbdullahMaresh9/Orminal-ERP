@@ -427,21 +427,6 @@ export function SalesInvoicesModule() {
         </div>
       </Card>
 
-      <div className="flex items-center justify-between mt-4 text-sm" dir={isRTL ? 'rtl' : 'ltr'}>
-        <p className="text-muted-foreground">
-          {isRTL
-            ? `عرض ${invoices.length === 0 ? 0 : (page - 1) * pageSize + 1}–${(page - 1) * pageSize + invoices.length} من ${total}`
-            : `Showing ${invoices.length === 0 ? 0 : (page - 1) * pageSize + 1}–${(page - 1) * pageSize + invoices.length} of ${total}`}
-        </p>
-        <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}>{L('السابق', 'Previous')}</Button>
-          <span className="text-xs text-muted-foreground">
-            {isRTL ? `صفحة ${page} من ${totalPages}` : `Page ${page} of ${totalPages}`}
-          </span>
-          <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>{L('التالي', 'Next')}</Button>
-        </div>
-      </div>
-
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent className="max-w-4xl" dir={isRTL ? 'rtl' : 'ltr'}>
           <DialogHeader>

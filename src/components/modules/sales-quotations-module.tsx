@@ -91,7 +91,7 @@ const STATUS_LABELS: Record<string, { ar: string; en: string }> = {
 // الحالات القابلة للتغيير اليدوي (لا نسمح بتعيين converted يدويًا — يتم عبر التحويل فقط)
 const MANUAL_STATUSES = ['draft', 'sent', 'accepted', 'expired', 'cancelled']
 
-const VISIBLE_ROWS = 5
+const VISIBLE_ROWS = 6
 const ROW_HEIGHT = 44
 const HEADER_HEIGHT = 40
 
@@ -646,34 +646,6 @@ export function SalesQuotationsModule() {
           </table>
         </div>
       </Card>
-
-      {/* ✅ (P1) شريط الترقيم */}
-      <div className="flex items-center justify-between mt-3 text-sm text-muted-foreground">
-        <span>
-          {total === 0
-            ? L('لا توجد سجلات', 'No records')
-            : L(`عرض ${from}–${to} من ${total}`, `Showing ${from}–${to} of ${total}`)}
-        </span>
-        <div className="flex items-center gap-2">
-          <Button
-            size="icon" variant="outline" className="size-8"
-            disabled={page <= 1 || isLoading}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            title={L('السابق', 'Previous')}
-          >
-            {isRTL ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}
-          </Button>
-          <span className="tabular-nums">{L(`صفحة ${page} من ${totalPages}`, `Page ${page} of ${totalPages}`)}</span>
-          <Button
-            size="icon" variant="outline" className="size-8"
-            disabled={page >= totalPages || isLoading}
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            title={L('التالي', 'Next')}
-          >
-            {isRTL ? <ChevronLeft className="size-4" /> : <ChevronRight className="size-4" />}
-          </Button>
-        </div>
-      </div>
 
       {/* ============ نموذج إنشاء / تعديل / عرض ============ */}
       <Dialog open={addOpen} onOpenChange={(o) => { setAddOpen(o); if (!o) resetForm() }}>

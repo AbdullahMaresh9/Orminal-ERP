@@ -74,7 +74,7 @@ const STATUS_LABELS: Record<string, { ar: string; en: string }> = {
   cancelled: { ar: 'ملغي', en: 'Cancelled' },
 }
 
-const VISIBLE_ROWS = 5
+const VISIBLE_ROWS = 6
 const ROW_HEIGHT = 44
 const HEADER_HEIGHT = 40
 
@@ -433,26 +433,13 @@ export function SalesOrdersModule() {
         </div>
       </Card>
 
-      <div className="flex items-center justify-between mt-4 text-sm" dir={isRTL ? 'rtl' : 'ltr'}>
-        <p className="text-muted-foreground">
-          {isRTL
-            ? `عرض ${orders.length === 0 ? 0 : (page - 1) * pageSize + 1}–${(page - 1) * pageSize + orders.length} من ${total}`
-            : `Showing ${orders.length === 0 ? 0 : (page - 1) * pageSize + 1}–${(page - 1) * pageSize + orders.length} of ${total}`}
-        </p>
-        <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}>{L('السابق', 'Previous')}</Button>
-          <span className="text-xs text-muted-foreground">
-            {isRTL ? `صفحة ${page} من ${totalPages}` : `Page ${page} of ${totalPages}`}
-          </span>
-          <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>{L('التالي', 'Next')}</Button>
-        </div>
-      </div>
+
 
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent className="max-w-4xl" dir={isRTL ? 'rtl' : 'ltr'}>
           <DialogHeader>
             <DialogTitle>{L('أمر بيع جديد', 'New Sales Order')}</DialogTitle>
-            <DialogDescription>{L('اختر العميل وأضف بنود البيع', 'Select customer and add sales order line items')}</DialogDescription>
+
           </DialogHeader>
           <DialogBody>
             <div className="space-y-4">
