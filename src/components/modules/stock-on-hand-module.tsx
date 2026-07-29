@@ -425,8 +425,8 @@ export function StockOnHandModule() {
             <span className="hidden md:inline">{L('تصدير', 'Export')}</span>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" side="bottom" sideOffset={4} collisionPadding={8} className="w-40">
-          <DropdownMenuLabel>{L('تصدير كامل البيانات', 'Export all data')}</DropdownMenuLabel>
+        <DropdownMenuContent align="end" side="bottom" sideOffset={4} collisionPadding={8} className="w-30">
+          <DropdownMenuLabel>{L('تصدير البيانات', 'Export Data')}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => handleExport('excel')} className="gap-2">
             <FileSpreadsheet className="size-4 text-emerald-600" /> Excel
