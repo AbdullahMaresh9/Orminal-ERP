@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useT } from '@/lib/i18n/use-t'
 import { formatCurrency, formatNumber, formatDateTime } from '@/lib/format'
@@ -82,9 +82,12 @@ export function InventoryIncomingModule() {
     },
   })
   const { data: productsData } = useQuery<{ data: any[] }>({
-    queryKey: ['products-for-incoming'],
+    queryKey: ['products-for-incoming', form.storehouseId],
     queryFn: async () => {
-      const r = await fetch('/api/erp/products?type=product')
+      const url = form.storehouseId
+        ? `/api/erp/products?type=product&warehouseId=${form.storehouseId}`
+        : '/api/erp/products?type=product'
+      const r = await fetch(url)
       if (!r.ok) throw new Error('fetch failed')
       return r.json()
     },
@@ -92,9 +95,14 @@ export function InventoryIncomingModule() {
   const { data: suppliersData } = useQuery<{ data: any[] }>({
     queryKey: ['suppliers-for-incoming'],
     queryFn: async () => {
-      const r = await fetch('/api/erp/suppliers')
+      const r = await fetch('/api/erp/partners?isSupplier=true&pageSize=100')
       if (!r.ok) return { data: [] }
-      return r.json()
+      const json = await r.json()
+      if (!json.data || json.data.length === 0) {
+        const rAll = await fetch('/api/erp/partners?pageSize=100')
+        if (rAll.ok) return rAll.json()
+      }
+      return json
     },
   })
 
@@ -102,6 +110,12 @@ export function InventoryIncomingModule() {
   const storehouses = storehousesData?.data ?? []
   const products = productsData?.data ?? []
   const suppliers = suppliersData?.data ?? []
+
+  useEffect(() => {
+    if (storehouses.length > 0 && !form.storehouseId) {
+      setForm(prev => ({ ...prev, storehouseId: storehouses[0].id }))
+    }
+  }, [storehouses, form.storehouseId])
 
   const saveMutation = useMutation({
     mutationFn: async (payload: any) => {
@@ -136,7 +150,18 @@ export function InventoryIncomingModule() {
   }
   function updateItem(idx: number, field: keyof LineItem, value: any) {
     const next = [...items]
-    next[idx] = { ...next[idx], [field]: value }
+    const cur = next[idx]
+    if (field === 'productId') {
+      const selectedProd = products.find((p: any) => p.id === value)
+      const defaultCost = selectedProd?.costPrice ?? selectedProd?.purchasePrice ?? 0
+      next[idx] = {
+        ...cur,
+        productId: value,
+        cost: cur.cost > 0 ? cur.cost : defaultCost,
+      }
+    } else {
+      next[idx] = { ...cur, [field]: value }
+    }
     setItems(next)
   }
   function removeItem(idx: number) {
@@ -150,16 +175,22 @@ export function InventoryIncomingModule() {
     saveMutation.mutate({ ...form, items: validItems })
   }
   function handleExport() {
-    exportToCSV('inventory-incoming', movements.map(m => ({
-      date: formatDateTime(m.createdAt),
-      product: m.product.name,
-      sku: m.product.sku,
-      storehouse: m.storehouse.name,
-      quantity: m.quantity,
-      cost: m.product.costPrice,
-      total: m.quantity * m.product.costPrice,
-      note: m.note ?? '',
-    })), [
+    exportToCSV('inventory-incoming', movements.map(m => {
+      const cost = m.product?.costPrice ?? 0
+      const name = m.product?.name ?? '—'
+      const sku = m.product?.sku ?? '—'
+      const storehouseName = m.storehouse?.name ?? '—'
+      return {
+        date: formatDateTime(m.createdAt),
+        product: name,
+        sku: sku,
+        storehouse: storehouseName,
+        quantity: m.quantity ?? 0,
+        cost: cost,
+        total: (m.quantity ?? 0) * cost,
+        note: m.note ?? '',
+      }
+    }), [
       { key: 'date', label: 'التاريخ' },
       { key: 'product', label: 'المنتج' },
       { key: 'sku', label: 'SKU' },
@@ -173,8 +204,8 @@ export function InventoryIncomingModule() {
 
   const kpis = useMemo(() => {
     const total = movements.length
-    const totalQty = movements.reduce((s, m) => s + m.quantity, 0)
-    const totalValue = movements.reduce((s, m) => s + m.quantity * m.product.costPrice, 0)
+    const totalQty = movements.reduce((s, m) => s + (m.quantity ?? 0), 0)
+    const totalValue = movements.reduce((s, m) => s + (m.quantity ?? 0) * (m.product?.costPrice ?? 0), 0)
     const uniqueProducts = new Set(movements.map(m => m.productId)).size
     return { total, totalQty, totalValue, uniqueProducts }
   }, [movements])
@@ -242,25 +273,32 @@ export function InventoryIncomingModule() {
                     لا توجد عمليات توريد مسجلة. ابدأ بتسجيل أول توريد.
                   </TableCell>
                 </TableRow>
-              ) : movements.map(m => (
-                <TableRow key={m.id}>
-                  <TableCell className="text-xs text-muted-foreground">{formatDateTime(m.createdAt)}</TableCell>
-                  <TableCell className="text-sm font-medium">{m.product.name}</TableCell>
-                  <TableCell className="font-mono text-xs">{m.product.sku}</TableCell>
-                  <TableCell className="text-sm">{m.storehouse.name}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{m.refType ?? '—'}</TableCell>
-                  <TableCell className="num-cell text-sm font-medium text-blue-600 dark:text-blue-400">
-                    <span className="num">+{formatNumber(m.quantity, 0)}</span>
-                  </TableCell>
-                  <TableCell className="num-cell text-xs">
-                    <span className="num">{formatNumber(m.product.costPrice)}</span>
-                  </TableCell>
-                  <TableCell className="num-cell text-sm font-medium">
-                    <span className="num">{formatCurrency(m.quantity * m.product.costPrice)}</span>
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground max-w-32 cell-truncate">{m.note ?? '—'}</TableCell>
-                </TableRow>
-              ))}
+              ) : movements.map(m => {
+                const cost = m.product?.costPrice ?? 0
+                const name = m.product?.name ?? '—'
+                const sku = m.product?.sku ?? '—'
+                const storehouseName = m.storehouse?.name ?? '—'
+                const qty = m.quantity ?? 0
+                return (
+                  <TableRow key={m.id}>
+                    <TableCell className="text-xs text-muted-foreground">{formatDateTime(m.createdAt)}</TableCell>
+                    <TableCell className="text-sm font-medium">{name}</TableCell>
+                    <TableCell className="font-mono text-xs">{sku}</TableCell>
+                    <TableCell className="text-sm">{storehouseName}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{m.refType ?? '—'}</TableCell>
+                    <TableCell className="num-cell text-sm font-medium text-blue-600 dark:text-blue-400">
+                      <span className="num">+{formatNumber(qty, 0)}</span>
+                    </TableCell>
+                    <TableCell className="num-cell text-xs">
+                      <span className="num">{formatNumber(cost)}</span>
+                    </TableCell>
+                    <TableCell className="num-cell text-sm font-medium">
+                      <span className="num">{formatCurrency(qty * cost)}</span>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground max-w-32 cell-truncate">{m.note ?? '—'}</TableCell>
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
         </ScrollArea>
@@ -318,8 +356,15 @@ export function InventoryIncomingModule() {
                           <SelectValue placeholder={isRTL ? 'بدون مورد' : 'No supplier'} />
                         </SelectTrigger>
                         <SelectContent dir={dir}>
-                          <SelectItem value="none">{isRTL ? 'بدون مورد' : 'No supplier'}</SelectItem>
-                          {suppliers.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                          <SelectItem value="none">{isRTL ? 'بدون مورد (مورد افتراضي / داخلي)' : 'No supplier (Default / Internal)'}</SelectItem>
+                          {suppliers.map(s => {
+                            const supplierName = s.nameAr || s.nameEn || s.name || s.code || 'مورد'
+                            return (
+                              <SelectItem key={s.id} value={s.id}>
+                                {supplierName} {s.code ? `(${s.code})` : ''}
+                              </SelectItem>
+                            )
+                          })}
                         </SelectContent>
                       </Select>
                     </div>
@@ -367,7 +412,18 @@ export function InventoryIncomingModule() {
                                   <SelectValue placeholder={isRTL ? 'اختر منتج' : 'Select product'} />
                                 </SelectTrigger>
                                 <SelectContent dir={dir}>
-                                  {products.map(p => <SelectItem key={p.id} value={p.id}>{p.name} ({p.sku})</SelectItem>)}
+                                  {products.map(p => {
+                                    const productName = p.nameAr || p.nameEn || p.name || 'منتج'
+                                    const stockCount = p.warehouseStock ?? p.stock ?? 0
+                                    return (
+                                      <SelectItem key={p.id} value={p.id}>
+                                        <div className="flex items-center justify-between gap-3 w-full">
+                                          <span>{productName}</span>
+
+                                        </div>
+                                      </SelectItem>
+                                    )
+                                  })}
                                 </SelectContent>
                               </Select>
                             </TableCell>

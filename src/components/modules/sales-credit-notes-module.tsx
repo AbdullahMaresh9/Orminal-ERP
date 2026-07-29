@@ -9,9 +9,7 @@ import { useT } from '@/lib/i18n/use-t'
 import { formatCurrency, formatInt, formatDate } from '@/lib/format'
 import { exportRows, ExportColumn, ExportFormat, ExportMeta, printHTML } from '@/lib/export'
 import { toast } from 'sonner'
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from '@/components/ui/table'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, } from '@/components/ui/table'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'

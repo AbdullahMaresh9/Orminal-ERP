@@ -25,6 +25,8 @@ export async function GET(req: Request) {
     if (active === 'true') where.active = true
     if (active === 'false') where.active = false
 
+    const warehouseId = url.searchParams.get('warehouseId') || url.searchParams.get('storehouseId')
+
     const [data, total] = await Promise.all([
       db.product.findMany({
         where,
@@ -37,12 +39,31 @@ export async function GET(req: Request) {
           valuationAccount: { select: { id: true, code: true, nameAr: true } },
           cogsAccount: { select: { id: true, code: true, nameAr: true } },
           revenueAccount: { select: { id: true, code: true, nameAr: true } },
+          stockQuants: { select: { warehouseId: true, quantity: true, reservedQty: true } },
         },
         orderBy: { createdAt: 'desc' },
       }),
       db.product.count({ where }),
     ])
-    return list(data, total, page, pageSize)
+
+    const enriched = data.map((p: any) => {
+      const totalStock = p.stockQuants?.reduce((sum: number, q: any) => sum + (q.quantity || 0), 0) ?? 0
+      const totalReserved = p.stockQuants?.reduce((sum: number, q: any) => sum + (q.reservedQty || 0), 0) ?? 0
+
+      const whQuants = warehouseId ? p.stockQuants?.filter((q: any) => q.warehouseId === warehouseId) : p.stockQuants
+      const whStock = whQuants?.reduce((sum: number, q: any) => sum + (q.quantity || 0), 0) ?? 0
+      const whReserved = whQuants?.reduce((sum: number, q: any) => sum + (q.reservedQty || 0), 0) ?? 0
+
+      return {
+        ...p,
+        stock: totalStock,
+        availableStock: totalStock - totalReserved,
+        warehouseStock: whStock,
+        warehouseAvailableStock: whStock - whReserved,
+      }
+    })
+
+    return list(enriched, total, page, pageSize)
   } catch (e: any) {
     return serverError(e.message)
   }

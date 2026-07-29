@@ -456,7 +456,7 @@ export function PurchasePaymentsModule() {
                                 <MoreHorizontal className="size-4.5" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align={isRTL ? 'start' : 'end'}>
+                            <DropdownMenuContent align="end" side="bottom" sideOffset={4} collisionPadding={8} className="w-25">
                               {p.status === 'draft' && (
                                 <DropdownMenuItem
                                   onClick={() => statusMutation.mutate({ id: p.id, action: 'post' })}

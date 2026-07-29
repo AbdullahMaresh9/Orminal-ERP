@@ -318,24 +318,7 @@ export default function SuppliersModule() {
         </div>
       </Card>
 
-      <div className="flex items-center justify-between mt-4 text-sm" dir={dir}>
-        <p className="text-muted-foreground">
-          {isRTL
-            ? `عرض ${suppliers.length === 0 ? 0 : (page - 1) * pageSize + 1}–${(page - 1) * pageSize + suppliers.length} من ${total}`
-            : `Showing ${suppliers.length === 0 ? 0 : (page - 1) * pageSize + 1}–${(page - 1) * pageSize + suppliers.length} of ${total}`}
-        </p>
-        <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-            {isRTL ? 'السابق' : 'Previous'}
-          </Button>
-          <span className="text-xs text-muted-foreground">
-            {isRTL ? `صفحة ${page} من ${totalPages}` : `Page ${page} of ${totalPages}`}
-          </span>
-          <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
-            {isRTL ? 'التالي' : 'Next'}
-          </Button>
-        </div>
-      </div>
+
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-3xl p-0 overflow-hidden bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800" dir={dir}>

@@ -368,3 +368,19 @@ export function depreciationPosting(args: { amount: number }): JournalLineInput[
     { accountCode: SYSTEM_ACCOUNTS.ACC_DEPRECIATION, debit: 0, credit: args.amount, description: 'مجمع الإهلاك' },
   ]
 }
+
+// Inventory Adjustment: Surplus (Dr Inventory / Cr Revenue) or Shortage (Dr Expense / Cr Inventory)
+export function inventoryAdjustmentPosting(args: { varianceAmount: number }): JournalLineInput[] {
+  const absAmount = Math.abs(args.varianceAmount)
+  if (args.varianceAmount > 0) {
+    return [
+      { accountCode: SYSTEM_ACCOUNTS.INVENTORY, debit: absAmount, credit: 0, description: 'فائض تسوية مخزنية' },
+      { accountCode: SYSTEM_ACCOUNTS.OTHER_REVENUE, debit: 0, credit: absAmount, description: 'أرباح تسوية المخزون' },
+    ]
+  } else {
+    return [
+      { accountCode: SYSTEM_ACCOUNTS.OPERATING_EXPENSES, debit: absAmount, credit: 0, description: 'خسارة تسوية مخزنية / عجز' },
+      { accountCode: SYSTEM_ACCOUNTS.INVENTORY, debit: 0, credit: absAmount, description: 'تسوية عجز المخزون' },
+    ]
+  }
+}
