@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useT } from '@/lib/i18n/use-t'
 import { formatDate } from '@/lib/format'
-import { exportToCSV } from '@/lib/export'
+import { exportRows, printHTML, ExportColumn, ExportMeta, ExportFormat } from '@/lib/export'
 import { ModuleShell } from '@/components/erp/module-shell'
 import { KpiCard } from '@/components/erp/kpi-card'
 import { StatusBadge } from '@/components/erp/status-badge'
@@ -12,8 +12,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from '@/components/ui/table'
@@ -28,7 +28,10 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
-import { ArrowLeftRight, Plus, Trash2, CheckCircle2, XCircle, MoreVertical, Package, Truck } from 'lucide-react'
+import {
+  ArrowLeftRight, Plus, Trash2, CheckCircle2, XCircle, MoreVertical, Package, Truck,
+  Download, FileSpreadsheet, FileText, FileCheck, ChevronDown, Eye, Printer
+} from 'lucide-react'
 
 interface Transfer {
   id: string
@@ -43,6 +46,12 @@ interface Transfer {
   fromStorehouse: { id: string; name: string; code: string }
   toStorehouse: { id: string; name: string; code: string }
 }
+
+// أبعاد الجدول وحساب الارتفاع الثابت لخمسة/ستة صفوف تماشياً مع نمط مرتجعات المشتريات
+const HEADER_HEIGHT = 44
+const VISIBLE_ROWS = 6
+const ROW_HEIGHT = 52
+const stickyHead = 'sticky top-0 z-20 bg-muted whitespace-nowrap shadow-[inset_0_-1px_0_0_hsl(var(--border))]'
 
 export function InventoryTransfersModule() {
   const { t, isRTL, dir } = useT()
@@ -104,12 +113,12 @@ export function InventoryTransfersModule() {
       return r.json()
     },
     onSuccess: () => {
-      toast.success('تم إنشاء التحويل بنجاح')
+      toast.success(isRTL ? 'تم إنشاء التحويل بنجاح' : 'Transfer created successfully')
       qc.invalidateQueries({ queryKey: ['inventory-transfers'] })
       setDialogOpen(false)
       resetForm()
     },
-    onError: (e: any) => toast.error(e.message || 'حدث خطأ'),
+    onError: (e: any) => toast.error(e.message || (isRTL ? 'حدث خطأ' : 'Error occurred')),
   })
 
   const updateMutation = useMutation({
@@ -126,12 +135,12 @@ export function InventoryTransfersModule() {
       return r.json()
     },
     onSuccess: () => {
-      toast.success('تم التحديث بنجاح')
+      toast.success(isRTL ? 'تم التحديث بنجاح' : 'Updated successfully')
       qc.invalidateQueries({ queryKey: ['inventory-transfers'] })
       qc.invalidateQueries({ queryKey: ['products'] })
       setDetailTransfer(null)
     },
-    onError: (e: any) => toast.error(e.message || 'حدث خطأ'),
+    onError: (e: any) => toast.error(e.message || (isRTL ? 'حدث خطأ' : 'Error occurred')),
   })
 
   function resetForm() {
@@ -151,33 +160,11 @@ export function InventoryTransfersModule() {
   }
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!form.fromStorehouseId || !form.toStorehouseId) return toast.error('المستودع المصدر والوجهة مطلوبان')
-    if (form.fromStorehouseId === form.toStorehouseId) return toast.error('لا يمكن التحويل لنفس المستودع')
+    if (!form.fromStorehouseId || !form.toStorehouseId) return toast.error(isRTL ? 'المستودع المصدر والوجهة مطلوبان' : 'Source and destination storehouses required')
+    if (form.fromStorehouseId === form.toStorehouseId) return toast.error(isRTL ? 'لا يمكن التحويل لنفس المستودع' : 'Cannot transfer to the same storehouse')
     const validItems = items.filter(i => i.productId && i.quantity > 0)
-    if (!validItems.length) return toast.error('أضف عنصراً واحداً على الأقل')
+    if (!validItems.length) return toast.error(isRTL ? 'أضف عنصراً واحداً على الأقل' : 'Add at least one item')
     saveMutation.mutate({ ...form, items: validItems })
-  }
-  function handleExport() {
-    exportToCSV('inventory-transfers', transfers.map(tr => {
-      const parsed = JSON.parse(tr.itemsJson || '[]')
-      return {
-        code: tr.code,
-        date: formatDate(tr.createdAt),
-        from: tr.fromStorehouse.name,
-        to: tr.toStorehouse.name,
-        itemsCount: parsed.length,
-        totalQty: parsed.reduce((s: number, x: any) => s + Number(x.quantity ?? 0), 0),
-        status: tr.status,
-      }
-    }), [
-      { key: 'code', label: 'الرمز' },
-      { key: 'date', label: 'التاريخ' },
-      { key: 'from', label: 'من' },
-      { key: 'to', label: 'إلى' },
-      { key: 'itemsCount', label: 'عدد العناصر' },
-      { key: 'totalQty', label: 'إجمالي الكمية' },
-      { key: 'status', label: 'الحالة' },
-    ])
   }
 
   const kpis = useMemo(() => {
@@ -188,23 +175,204 @@ export function InventoryTransfersModule() {
     return { total, inTransit, received, draft }
   }, [transfers])
 
+  // إعدادات التصدير الموحدة عالية الجودة مع محاذاة في الوسط لتطابق عناوين الأعمدة
+  const exportColumns: ExportColumn<Transfer>[] = [
+    {
+      key: 'code',
+      header: isRTL ? 'الرمز' : 'Code',
+      width: 14,
+      align: 'center',
+      type: 'text',
+      value: (tr) => tr.code,
+    },
+    {
+      key: 'createdAt',
+      header: isRTL ? 'التاريخ' : 'Date',
+      width: 16,
+      align: 'center',
+      type: 'date',
+      value: (tr) => (tr.createdAt ? formatDate(tr.createdAt) : '—'),
+      dateValue: (tr) => tr.createdAt,
+    },
+    {
+      key: 'from',
+      header: isRTL ? 'من مستودع' : 'From Storehouse',
+      width: 20,
+      align: 'center',
+      type: 'text',
+      value: (tr) => tr.fromStorehouse?.name ?? '—',
+    },
+    {
+      key: 'to',
+      header: isRTL ? 'إلى مستودع' : 'To Storehouse',
+      width: 20,
+      align: 'center',
+      type: 'text',
+      value: (tr) => tr.toStorehouse?.name ?? '—',
+    },
+    {
+      key: 'itemsCount',
+      header: isRTL ? 'عدد العناصر' : 'Items Count',
+      width: 12,
+      align: 'center',
+      type: 'number',
+      summable: true,
+      value: (tr) => {
+        const parsed: any[] = JSON.parse(tr.itemsJson || '[]')
+        return parsed.length
+      },
+    },
+    {
+      key: 'totalQty',
+      header: isRTL ? 'إجمالي الكمية' : 'Total Qty',
+      width: 12,
+      align: 'center',
+      type: 'number',
+      summable: true,
+      value: (tr) => {
+        const parsed: any[] = JSON.parse(tr.itemsJson || '[]')
+        return parsed.reduce((s: number, x: any) => s + Number(x.quantity ?? 0), 0)
+      },
+    },
+    {
+      key: 'status',
+      header: isRTL ? 'الحالة' : 'Status',
+      width: 14,
+      align: 'center',
+      type: 'text',
+      value: (tr) => tr.status,
+    },
+  ]
+
+  const exportMeta: ExportMeta = {
+    fileName: isRTL ? 'تحويلات-المخزون' : 'inventory-transfers',
+    title: isRTL ? 'تقرير تحويلات المخزون' : 'Inventory Transfers Report',
+    subtitle: isRTL ? 'أورمنال' : 'Orminal ERP',
+    isRTL,
+    summary: [
+      { label: isRTL ? 'إجمالي التحويلات' : 'Total Transfers', value: String(kpis.total) },
+      { label: isRTL ? 'مسودة' : 'Draft', value: String(kpis.draft) },
+      { label: isRTL ? 'قيد النقل' : 'In Transit', value: String(kpis.inTransit) },
+      { label: isRTL ? 'مستلمة' : 'Received', value: String(kpis.received) },
+    ],
+    labels: {
+      generatedAt: isRTL ? 'تاريخ الإنشاء' : 'Generated',
+      totalRecords: isRTL ? 'عدد السجلات' : 'Records',
+      grandTotal: isRTL ? 'الإجمالي' : 'Total',
+    },
+  }
+
+  const handleExportFormat = async (format: ExportFormat) => {
+    if (!transfers.length) {
+      toast.error(isRTL ? 'لا توجد بيانات للتصدير' : 'No data to export')
+      return
+    }
+    try {
+      await exportRows(format, transfers, exportColumns, exportMeta)
+      toast.success(isRTL ? 'تم التصدير بنجاح' : 'Export completed successfully')
+    } catch (e: any) {
+      toast.error(e?.message || (isRTL ? 'حدث خطأ أثناء التصدير' : 'Export failed'))
+    }
+  }
+
+  async function handlePrintVoucher(tr: Transfer) {
+    const parsed: any[] = JSON.parse(tr.itemsJson || '[]')
+    const itemsHtml = parsed.map((it: any) => {
+      const p = products.find(x => x.id === it.productId)
+      return `
+        <tr>
+          <td style="padding:10px; border:1px solid #E2E8F0; font-weight:bold;">${p?.name || it.productId}</td>
+          <td style="padding:10px; border:1px solid #E2E8F0; text-align:center; font-family:monospace;">${p?.sku || '—'}</td>
+          <td style="padding:10px; border:1px solid #E2E8F0; text-align:center; font-weight:bold; color:#2563EB;">${it.quantity}</td>
+        </tr>
+      `
+    }).join('')
+
+    const html = `
+      <div style="padding: 24px; font-family: system-ui, -apple-system, sans-serif; direction: ${isRTL ? 'rtl' : 'ltr'};">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #2563EB; padding-bottom:14px; margin-bottom:20px;">
+          <div>
+            <h1 style="margin:0; font-size:22px; color:#2563EB;">${isRTL ? 'سند تحويل مخزني داخلي' : 'Internal Stock Transfer Voucher'}</h1>
+            <p style="margin:4px 0 0 0; color:#64748B; font-size:12px;">${isRTL ? 'كود التحويل' : 'Transfer Code'}: <strong>${tr.code}</strong></p>
+          </div>
+          <div style="text-align:${isRTL ? 'left' : 'right'}; font-size:12px; color:#475569;">
+            <p style="margin:0;">${isRTL ? 'التاريخ' : 'Date'}: ${formatDate(tr.createdAt)}</p>
+            <p style="margin:4px 0 0 0;">${isRTL ? 'من مستودع' : 'From'}: <strong>${tr.fromStorehouse?.name || '—'}</strong> &rarr; ${isRTL ? 'إلى مستودع' : 'To'}: <strong>${tr.toStorehouse?.name || '—'}</strong></p>
+          </div>
+        </div>
+
+        <table style="width:100%; border-collapse:collapse; margin-top:20px; font-size:13px;">
+          <thead>
+            <tr style="background:#EFF6FF; color:#1E40AF;">
+              <th style="padding:10px; border:1px solid #BFDBFE; text-align:${isRTL ? 'right' : 'left'};">${isRTL ? 'اسم المنتج' : 'Product Name'}</th>
+              <th style="padding:10px; border:1px solid #BFDBFE; text-align:center;">SKU</th>
+              <th style="padding:10px; border:1px solid #BFDBFE; text-align:center;">${isRTL ? 'الكمية المحولة' : 'Transferred Qty'}</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsHtml}
+          </tbody>
+        </table>
+
+        ${tr.note ? `<div style="margin-top:20px; padding:12px; background:#F8FAFC; border:1px solid #E2E8F0; border-radius:6px; font-size:12px;"><strong>${isRTL ? 'ملاحظات التحويل' : 'Notes'}:</strong> ${tr.note}</div>` : ''}
+
+        <div style="display:flex; justify-content:space-between; margin-top:50px; font-size:12px; padding-top:20px; border-top:1px dashed #CBD5E1;">
+          <div>
+            <p style="margin:0 0 35px 0;">${isRTL ? 'توقيع أمين المستودع المصدر:' : 'Source Storekeeper Signature:'}</p>
+            <p style="margin:0;">__________________________</p>
+          </div>
+          <div>
+            <p style="margin:0 0 35px 0;">${isRTL ? 'توقيع أمين مستودع الوجهة:' : 'Destination Storekeeper Signature:'}</p>
+            <p style="margin:0;">__________________________</p>
+          </div>
+        </div>
+      </div>
+    `
+
+    await printHTML(html, isRTL ? `سند-تحويل-${tr.code}` : `Transfer-Voucher-${tr.code}`, { dir: isRTL ? 'rtl' : 'ltr' })
+  }
+
   return (
     <ModuleShell
       title={t('module.inventory-transfers')}
-      description="تحويلات المخزون بين المستودعات"
+      description={isRTL ? "تحويلات المخزون بين المستودعات" : "Manage stock transfers between storehouses"}
       icon={<ArrowLeftRight className="size-5" />}
       onAdd={() => { resetForm(); setDialogOpen(true) }}
-      addLabel="تحويل جديد"
-      onExport={handleExport}
+      addLabel={isRTL ? "تحويل جديد" : "New Transfer"}
+      actions={
+        <DropdownMenu dir={dir as 'rtl' | 'ltr'}>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-1.5 font-medium border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
+              <Download className="size-4 text-emerald-600 dark:text-emerald-400" />
+              <span>{isRTL ? 'التصدير' : 'Export'}</span>
+              <ChevronDown className="size-4 text-slate-400 ms-0.5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align={isRTL ? 'start' : 'end'} sideOffset={6} className="w-30 z-50">
+            <DropdownMenuItem onClick={() => handleExportFormat('excel')} className="gap-2 cursor-pointer text-xs font-medium">
+              <FileSpreadsheet className="size-4 text-emerald-600" />
+              <span>{isRTL ? 'تصدير إكسل' : 'Export Excel'}</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExportFormat('csv')} className="gap-2 cursor-pointer text-xs font-medium">
+              <FileText className="size-4 text-sky-600" />
+              <span>{isRTL ? 'تصدير CSV' : 'Export CSV'}</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExportFormat('pdf')} className="gap-2 cursor-pointer text-xs font-medium">
+              <FileCheck className="size-4 text-rose-600" />
+              <span>{isRTL ? 'تصدير PDF' : 'Export PDF'}</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      }
       filters={
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">كل الحالات</SelectItem>
-            <SelectItem value="draft">مسودة</SelectItem>
-            <SelectItem value="in_transit">قيد النقل</SelectItem>
-            <SelectItem value="received">مستلم</SelectItem>
-            <SelectItem value="cancelled">ملغي</SelectItem>
+          <SelectTrigger dir={dir} className={cn("w-40", isRTL ? "text-right" : "text-left")}><SelectValue /></SelectTrigger>
+          <SelectContent dir={dir}>
+            <SelectItem value="all">{isRTL ? "كل الحالات" : "All Statuses"}</SelectItem>
+            <SelectItem value="draft">{isRTL ? "مسودة" : "Draft"}</SelectItem>
+            <SelectItem value="in_transit">{isRTL ? "قيد النقل" : "In Transit"}</SelectItem>
+            <SelectItem value="received">{isRTL ? "مستلم" : "Received"}</SelectItem>
+            <SelectItem value="cancelled">{isRTL ? "ملغي" : "Cancelled"}</SelectItem>
           </SelectContent>
         </Select>
       }
@@ -214,96 +382,135 @@ export function InventoryTransfersModule() {
           Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />)
         ) : (
           <>
-            <KpiCard title="إجمالي التحويلات" value={String(kpis.total)} icon={<ArrowLeftRight className="size-5" />} accent="blue" />
-            <KpiCard title="مسودة" value={String(kpis.draft)} icon={<Package className="size-5" />} accent="amber" />
-            <KpiCard title="قيد النقل" value={String(kpis.inTransit)} icon={<Truck className="size-5" />} accent="violet" />
-            <KpiCard title="مستلمة" value={String(kpis.received)} icon={<CheckCircle2 className="size-5" />} accent="sky" />
+            <KpiCard title={isRTL ? "إجمالي التحويلات" : "Total Transfers"} value={String(kpis.total)} icon={<ArrowLeftRight className="size-5" />} accent="blue" />
+            <KpiCard title={isRTL ? "مسودة" : "Draft"} value={String(kpis.draft)} icon={<Package className="size-5" />} accent="amber" />
+            <KpiCard title={isRTL ? "قيد النقل" : "In Transit"} value={String(kpis.inTransit)} icon={<Truck className="size-5" />} accent="violet" />
+            <KpiCard title={isRTL ? "مستلمة" : "Received"} value={String(kpis.received)} icon={<CheckCircle2 className="size-5" />} accent="sky" />
           </>
         )}
       </div>
 
-      <div className="rounded-xl border bg-card overflow-hidden">
-        <ScrollArea className="max-h-[60vh]">
-          <Table className="table-sticky">
+      {/* جدول تحويلات المخزون — رأس ثابت + تمرير للصفوف فقط + محاذاة دقيقة بالأعمدة تماشياً مع جدول مرتجعات المشتريات */}
+      <Card className="rounded-xl overflow-hidden border border-border">
+        <div
+          className="w-full overflow-y-auto overflow-x-auto overscroll-contain"
+          style={{ maxHeight: HEADER_HEIGHT + VISIBLE_ROWS * ROW_HEIGHT }}
+        >
+          <table className="w-full caption-bottom text-sm min-w-[960px] table-fixed border-separate border-spacing-0">
+            <colgroup>
+              <col className="w-[12%]" />{/* الرمز */}
+              <col className="w-[12%]" />{/* التاريخ */}
+              <col className="w-[18%]" />{/* من */}
+              <col className="w-[18%]" />{/* إلى */}
+              <col className="w-[12%]" />{/* عدد العناصر */}
+              <col className="w-[12%]" />{/* إجمالي الكمية */}
+              <col className="w-[10%]" />{/* الحالة */}
+              <col className="w-[6%]" />{/* إجراءات */}
+            </colgroup>
+
             <TableHeader>
-              <TableRow>
-                <TableHead>الرمز</TableHead>
-                <TableHead>التاريخ</TableHead>
-                <TableHead>من</TableHead>
-                <TableHead>إلى</TableHead>
-                <TableHead className="num-cell">عدد العناصر</TableHead>
-                <TableHead className="num-cell">إجمالي الكمية</TableHead>
-                <TableHead className="text-end">الحالة</TableHead>
-                <TableHead className="text-end">إجراءات</TableHead>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className={`${stickyHead} ps-4 text-start`}>{isRTL ? "الرمز" : "Code"}</TableHead>
+                <TableHead className={`${stickyHead} text-start`}>{isRTL ? "التاريخ" : "Date"}</TableHead>
+                <TableHead className={`${stickyHead} text-start`}>{isRTL ? "من" : "From"}</TableHead>
+                <TableHead className={`${stickyHead} text-start`}>{isRTL ? "إلى" : "To"}</TableHead>
+                <TableHead className={`${stickyHead} text-center`}>{isRTL ? "عدد العناصر" : "Items Count"}</TableHead>
+                <TableHead className={`${stickyHead} text-center`}>{isRTL ? "إجمالي الكمية" : "Total Qty"}</TableHead>
+                <TableHead className={`${stickyHead} text-end`}>{isRTL ? "الحالة" : "Status"}</TableHead>
+                <TableHead className={`${stickyHead} text-end pe-4`}>{isRTL ? "إجراءات" : "Actions"}</TableHead>
               </TableRow>
             </TableHeader>
+
             <TableBody>
               {isLoading ? (
-                Array.from({ length: 4 }).map((_, i) => (
-                  <TableRow key={i}>
-                    {Array.from({ length: 8 }).map((_, j) => <TableCell key={j}><Skeleton className="h-6" /></TableCell>)}
-                  </TableRow>
-                ))
-              ) : transfers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-16 text-muted-foreground">
-                    <ArrowLeftRight className="size-10 mx-auto mb-2 opacity-50" />
-                    لا توجد تحويلات. ابدأ بإنشاء تحويل جديد.
+                  <TableCell colSpan={8} className="text-center py-10 text-muted-foreground border-b">
+                    {isRTL ? 'جاري التحميل...' : 'Loading...'}
                   </TableCell>
                 </TableRow>
-              ) : transfers.map(tr => {
-                const parsed: any[] = JSON.parse(tr.itemsJson || '[]')
-                const totalQty = parsed.reduce((s, x) => s + Number(x.quantity ?? 0), 0)
-                return (
-                  <TableRow key={tr.id} className="cursor-pointer" onClick={() => setDetailTransfer(tr)}>
-                    <TableCell className="font-mono text-xs font-semibold text-primary">{tr.code}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{formatDate(tr.createdAt)}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1.5">
-                        <Truck className="size-3.5 text-muted-foreground" />
-                        <span className="text-sm">{tr.fromStorehouse.name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1.5">
-                        <Package className="size-3.5 text-muted-foreground" />
-                        <span className="text-sm">{tr.toStorehouse.name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="num-cell text-xs"><span className="num">{parsed.length}</span></TableCell>
-                    <TableCell className="num-cell text-sm font-medium"><span className="num">{totalQty}</span></TableCell>
-                    <TableCell className="text-end"><StatusBadge status={tr.status} /></TableCell>
-                    <TableCell className="text-end" onClick={e => e.stopPropagation()}>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="size-8"><MoreVertical className="size-4" /></Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          {tr.status === 'draft' && (
-                            <DropdownMenuItem onClick={() => updateMutation.mutate({ id: tr.id, body: { status: 'in_transit' } })}>
-                              <Truck className="size-4 ms-2" /> تحويل للنقل
+              ) : transfers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-12 text-muted-foreground border-b">
+                    <ArrowLeftRight className="size-10 mx-auto mb-2 opacity-50" />
+                    {isRTL ? 'لا توجد تحويلات. ابدأ بإنشاء تحويل جديد.' : 'No transfers recorded. Start by creating a new transfer.'}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                transfers.map((tr) => {
+                  const parsed: any[] = JSON.parse(tr.itemsJson || '[]')
+                  const totalQty = parsed.reduce((s, x) => s + Number(x.quantity ?? 0), 0)
+                  return (
+                    <TableRow key={tr.id} className="hover:bg-muted/40 align-middle cursor-pointer" onClick={() => setDetailTransfer(tr)}>
+                      <TableCell className="ps-4 font-mono text-xs font-semibold text-primary border-b truncate">
+                        {tr.code}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap border-b">
+                        {formatDate(tr.createdAt)}
+                      </TableCell>
+                      <TableCell className="border-b truncate">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <Truck className="size-3.5 text-muted-foreground shrink-0" />
+                          <span className="text-sm truncate">{tr.fromStorehouse?.name ?? '—'}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="border-b truncate">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <Package className="size-3.5 text-muted-foreground shrink-0" />
+                          <span className="text-sm truncate">{tr.toStorehouse?.name ?? '—'}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="num-cell text-xs text-center border-b">
+                        <span className="num">{parsed.length}</span>
+                      </TableCell>
+                      <TableCell className="num-cell text-sm font-medium text-center border-b">
+                        <span className="num">{totalQty}</span>
+                      </TableCell>
+                      <TableCell className="text-end border-b">
+                        <StatusBadge status={tr.status} />
+                      </TableCell>
+                      <TableCell className="pe-4 text-end border-b" onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenu dir={dir as 'rtl' | 'ltr'}>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="size-8">
+                              <MoreVertical className="size-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align={isRTL ? 'start' : 'end'} sideOffset={4} collisionPadding={8} className="w-25 z-50">
+                            <DropdownMenuItem onClick={() => setDetailTransfer(tr)} className="gap-2 cursor-pointer text-sm font-medium">
+                              <Eye className="size-4 text-blue-600" />
+                              <span>{isRTL ? 'عرض' : 'View'}</span>
                             </DropdownMenuItem>
-                          )}
-                          {tr.status === 'in_transit' && (
-                            <DropdownMenuItem onClick={() => updateMutation.mutate({ id: tr.id, body: { status: 'received' } })}>
-                              <CheckCircle2 className="size-4 ms-2" /> استلام
+                            <DropdownMenuItem onClick={() => handlePrintVoucher(tr)} className="gap-2 cursor-pointer text-sm font-medium">
+                              <Printer className="size-4 text-slate-700 dark:text-slate-300" />
+                              <span>{isRTL ? 'طباعة' : 'Print'}</span>
                             </DropdownMenuItem>
-                          )}
-                          {(tr.status === 'draft' || tr.status === 'in_transit') && (
-                            <DropdownMenuItem className="text-rose-600" onClick={() => updateMutation.mutate({ id: tr.id, body: { status: 'cancelled' } })}>
-                              <XCircle className="size-4 ms-2" /> إلغاء
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
+
+                            <div className="my-1 h-px bg-slate-100 dark:bg-slate-800" />
+
+                            {tr.status !== 'in_transit' && tr.status !== 'received' && (
+                              <DropdownMenuItem onClick={() => updateMutation.mutate({ id: tr.id, body: { status: 'in_transit' } })} className="gap-2 cursor-pointer text-sm font-medium">
+                                <Truck className="size-4 text-amber-600" />
+                                <span>{isRTL ? 'تحويل' : 'Transfer'}</span>
+                              </DropdownMenuItem>
+                            )}
+
+                            {tr.status !== 'cancelled' && (
+                              <DropdownMenuItem onClick={() => updateMutation.mutate({ id: tr.id, body: { status: 'cancelled' } })} className="gap-2 cursor-pointer text-sm font-medium text-rose-600">
+                                <XCircle className="size-4 text-rose-600" />
+                                <span>{isRTL ? 'إلغاء' : 'Cancel'}</span>
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
+              )}
             </TableBody>
-          </Table>
-        </ScrollArea>
-      </div>
+          </table>
+        </div>
+      </Card>
 
       {/* Create Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -317,7 +524,6 @@ export function InventoryTransfersModule() {
                 <DialogTitle className="text-xl font-bold tracking-tight text-blue-955 dark:text-white">
                   {isRTL ? 'تحويل مخزني جديد' : 'New Stock Transfer'}
                 </DialogTitle>
-
               </div>
             </div>
           </DialogHeader>
@@ -396,45 +602,47 @@ export function InventoryTransfersModule() {
                   </div>
 
                   <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-950 shadow-sm">
-                    <Table className="table-sticky">
-                      <TableHeader className="bg-slate-50 dark:bg-slate-900/50">
-                        <TableRow>
-                          <TableHead className={cn("text-xs font-semibold text-slate-700 dark:text-slate-300", isRTL ? "text-right" : "text-left")}>{isRTL ? 'المنتج' : 'Product'}</TableHead>
-                          <TableHead className={cn("num-cell w-36 text-xs font-semibold text-slate-700 dark:text-slate-300", isRTL ? "text-right" : "text-left")}>{isRTL ? 'الكمية' : 'Qty'}</TableHead>
-                          <TableHead className="w-10"></TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {items.length === 0 ? (
+                    <div className="w-full overflow-x-auto">
+                      <table className="w-full text-sm border-separate border-spacing-0">
+                        <TableHeader className="bg-slate-50 dark:bg-slate-900/50">
                           <TableRow>
-                            <TableCell colSpan={3} className="text-center py-8 text-muted-foreground text-sm">
-                              {isRTL ? 'اضغط "إضافة صنف" لإدخال عناصر التحويل' : 'Click "Add Item" to start adding transfer items'}
-                            </TableCell>
+                            <TableHead className={cn("text-xs font-semibold text-slate-700 dark:text-slate-300", isRTL ? "text-right" : "text-left")}>{isRTL ? 'المنتج' : 'Product'}</TableHead>
+                            <TableHead className={cn("num-cell w-36 text-xs font-semibold text-slate-700 dark:text-slate-300", isRTL ? "text-right" : "text-left")}>{isRTL ? 'الكمية' : 'Qty'}</TableHead>
+                            <TableHead className="w-10"></TableHead>
                           </TableRow>
-                        ) : items.map((it, idx) => (
-                          <TableRow key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/40">
-                            <TableCell className="p-2">
-                              <Select value={it.productId} onValueChange={v => updateItem(idx, 'productId', v)}>
-                                <SelectTrigger dir={dir} className={cn("h-9 border-slate-200 dark:border-slate-800 text-xs bg-white dark:bg-slate-950", isRTL ? "text-right" : "text-left")}>
-                                  <SelectValue placeholder={isRTL ? 'اختر منتج' : 'Select product'} />
-                                </SelectTrigger>
-                                <SelectContent dir={dir}>
-                                  {products.map(p => <SelectItem key={p.id} value={p.id}>{p.name} ({p.sku})</SelectItem>)}
-                                </SelectContent>
-                              </Select>
-                            </TableCell>
-                            <TableCell className="p-2">
-                              <Input type="number" min="1" step="1" value={it.quantity} onChange={e => updateItem(idx, 'quantity', Number(e.target.value))} dir={dir} className={cn("h-9 border-slate-200 dark:border-slate-800 text-xs", isRTL ? "text-right" : "text-left")} />
-                            </TableCell>
-                            <TableCell className="p-2 text-center">
-                              <Button type="button" variant="ghost" size="icon" className="size-8 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg" onClick={() => removeItem(idx)}>
-                                <Trash2 className="size-4" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {items.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={3} className="text-center py-8 text-muted-foreground text-sm">
+                                {isRTL ? 'اضغط "إضافة صنف" لإدخال عناصر التحويل' : 'Click "Add Item" to start adding transfer items'}
+                              </TableCell>
+                            </TableRow>
+                          ) : items.map((it, idx) => (
+                            <TableRow key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/40">
+                              <TableCell className="p-2">
+                                <Select value={it.productId} onValueChange={v => updateItem(idx, 'productId', v)}>
+                                  <SelectTrigger dir={dir} className={cn("h-9 border-slate-200 dark:border-slate-800 text-xs bg-white dark:bg-slate-950", isRTL ? "text-right" : "text-left")}>
+                                    <SelectValue placeholder={isRTL ? 'اختر منتج' : 'Select product'} />
+                                  </SelectTrigger>
+                                  <SelectContent dir={dir}>
+                                    {products.map(p => <SelectItem key={p.id} value={p.id}>{p.name} ({p.sku})</SelectItem>)}
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+                              <TableCell className="p-2">
+                                <Input type="number" min="1" step="1" value={it.quantity} onChange={e => updateItem(idx, 'quantity', Number(e.target.value))} dir={dir} className={cn("h-9 border-slate-200 dark:border-slate-800 text-xs", isRTL ? "text-right" : "text-left")} />
+                              </TableCell>
+                              <TableCell className="p-2 text-center">
+                                <Button type="button" variant="ghost" size="icon" className="size-8 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg" onClick={() => removeItem(idx)}>
+                                  <Trash2 className="size-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </table>
+                    </div>
                   </div>
                 </div>
 
@@ -471,10 +679,10 @@ export function InventoryTransfersModule() {
                   <DialogTitle className="text-xl font-bold tracking-tight text-blue-955 dark:text-white">
                     {isRTL ? `تفاصيل التحويل المخزني ${detailTransfer?.code}` : `Transfer Details ${detailTransfer?.code}`}
                   </DialogTitle>
-                  {detailTransfer && <StatusBadge status={detailTransfer.status} />}
+
                 </div>
                 <DialogDescription className="text-sm text-blue-800/80 dark:text-blue-100/90 font-normal leading-normal">
-                  {detailTransfer?.fromStorehouse.name} &rarr; {detailTransfer?.toStorehouse.name}
+                  {detailTransfer?.fromStorehouse?.name} &rarr; {detailTransfer?.toStorehouse?.name}
                 </DialogDescription>
               </div>
             </div>
@@ -539,9 +747,12 @@ export function InventoryTransfersModule() {
               </DialogBody>
 
               <DialogFooter className="px-6 py-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-end gap-2 shrink-0">
+                <Button variant="outline" className="h-10 px-4 border-slate-400 dark:border-slate-500 text-sm font-semibold gap-1.5" onClick={() => handlePrintVoucher(detailTransfer)}>
+                  <Printer className="size-4" /> {isRTL ? 'طباعة' : 'Print'}
+                </Button>
                 {detailTransfer.status === 'draft' && (
                   <Button variant="outline" className="h-10 px-4 border-slate-200 dark:border-slate-850 hover:bg-slate-100/80 dark:hover:bg-slate-900 text-xs font-semibold flex items-center gap-1.5" onClick={() => updateMutation.mutate({ id: detailTransfer.id, body: { status: 'in_transit' } })}>
-                    <Truck className="size-4" /> {isRTL ? 'تحويل للنقل' : 'Send to Transit'}
+                    <Truck className="size-4" /> {isRTL ? 'تحويل' : 'Transfer'}
                   </Button>
                 )}
                 {detailTransfer.status === 'in_transit' && (
@@ -549,7 +760,7 @@ export function InventoryTransfersModule() {
                     <CheckCircle2 className="size-4" /> {isRTL ? 'استلام التحويل' : 'Confirm Receipt'}
                   </Button>
                 )}
-                <Button variant="outline" onClick={() => setDetailTransfer(null)} className="h-10 px-5 border-slate-200 dark:border-slate-850 hover:bg-slate-100/80 dark:hover:bg-slate-900 text-xs font-semibold">
+                <Button variant="outline" onClick={() => setDetailTransfer(null)} className="h-10 px-5 border-rose-400 dark:border-rose-800 text-sm font-semibold">
                   {isRTL ? 'إغلاق' : 'Close'}
                 </Button>
               </DialogFooter>

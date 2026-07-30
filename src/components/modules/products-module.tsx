@@ -7,7 +7,12 @@ import { KpiCard } from '@/components/erp/kpi-card'
 import { StatusBadge } from '@/components/erp/status-badge'
 import { useT } from '@/lib/i18n/use-t'
 import { formatCurrency, formatInt } from '@/lib/format'
-import { exportToCSV } from '@/lib/export'
+import {
+  exportRows,
+  type ExportColumn,
+  type ExportMeta,
+  type ExportFormat,
+} from '@/lib/export'
 import { toast } from 'sonner'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -24,11 +29,15 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogBody,
 } from '@/components/ui/dialog'
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Package, Boxes, Tag, Pencil, Trash2 } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Package, Boxes, Tag, Pencil, Trash2, Download, FileSpreadsheet, FileText, FileDown } from 'lucide-react'
 
-interface Category { id: string; code: string; nameAr: string }
-interface Uom { id: string; code: string; nameAr: string }
+interface Category { id: string; code: string; nameAr: string; nameEn?: string }
+interface Uom { id: string; code: string; nameAr: string; nameEn?: string }
 interface TaxCode { id: string; code: string; rate: number }
 interface Product {
   id: string
@@ -46,23 +55,33 @@ interface Product {
   taxCode?: TaxCode
 }
 
-const TYPE_LABELS: Record<string, string> = {
-  product: 'منتج',
-  service: 'خدمة',
-  raw_material: 'مادة خام',
-  finished: 'منتج نهائي',
-  consumable: 'مستهلك',
+const TYPE_LABELS: Record<string, { ar: string; en: string }> = {
+  product: { ar: 'منتج', en: 'Product' },
+  service: { ar: 'خدمة', en: 'Service' },
+  raw_material: { ar: 'مادة خام', en: 'Raw Material' },
+  finished: { ar: 'منتج نهائي', en: 'Finished Good' },
+  consumable: { ar: 'مستهلك', en: 'Consumable' },
 }
 
+const HEADER_HEIGHT = 45
+const ROW_HEIGHT = 53
+const VISIBLE_ROWS = 6
+const stickyHead = "sticky top-0 z-10 bg-muted/90 backdrop-blur-sm shadow-[inset_0_-1px_0_0_hsl(var(--border))]"
+
 export function ProductsModule() {
-  const { t } = useT()
+  const { t, isRTL } = useT()
+  const L = (ar: string, en: string) => (isRTL ? ar : en)
   const qc = useQueryClient()
+
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState('all')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<Product | null>(null)
   const [page, setPage] = useState(1)
   const pageSize = 15
+
+  const getTypeLabel = (type: string) =>
+    TYPE_LABELS[type] ? (isRTL ? TYPE_LABELS[type].ar : TYPE_LABELS[type].en) : type
 
   const { data, isLoading } = useQuery<{ data: Product[]; meta: any }>({
     queryKey: ['products', search, filterType, page],
@@ -110,17 +129,17 @@ export function ProductsModule() {
       })
       if (!r.ok) {
         const err = await r.json().catch(() => ({}))
-        throw new Error(err?.error?.message ?? 'فشل حفظ بيانات المنتج')
+        throw new Error(err?.error?.message ?? L('فشل حفظ بيانات المنتج', 'Failed to save product data'))
       }
       return r.json()
     },
     onSuccess: () => {
-      toast.success(editing ? 'تم تحديث بيانات المنتج بنجاح' : 'تم إضافة المنتج بنجاح')
+      toast.success(editing ? L('تم تحديث بيانات المنتج بنجاح', 'Product updated successfully') : L('تم إضافة المنتج بنجاح', 'Product added successfully'))
       qc.invalidateQueries({ queryKey: ['products'] })
       setDialogOpen(false)
       setEditing(null)
     },
-    onError: (e: any) => toast.error(e.message || 'حدث خطأ أثناء حفظ المنتج'),
+    onError: (e: any) => toast.error(e.message || L('حدث خطأ أثناء حفظ المنتج', 'An error occurred while saving product')),
   })
 
   const deleteMutation = useMutation({
@@ -130,10 +149,10 @@ export function ProductsModule() {
       return r.json()
     },
     onSuccess: () => {
-      toast.success('تم حذف المنتج بنجاح')
+      toast.success(L('تم حذف المنتج بنجاح', 'Product deleted successfully'))
       qc.invalidateQueries({ queryKey: ['products'] })
     },
-    onError: () => toast.error('تعذر حذف المنتج'),
+    onError: () => toast.error(L('تعذر حذف المنتج', 'Failed to delete product')),
   })
 
   const handleSave = (formData: FormData) => {
@@ -153,114 +172,201 @@ export function ProductsModule() {
     saveMutation.mutate(payload)
   }
 
-  const handleExport = () => {
-    const rows = products.map((p) => ({
-      'SKU': p.sku,
-      'الباركود': p.barcode ?? '',
-      'الاسم': p.nameAr,
-      'الفئة': p.category?.nameAr ?? '',
-      'النوع': TYPE_LABELS[p.type] ?? p.type,
-      'الوحدة': p.uom?.nameAr ?? '',
-      'سعر التكلفة': p.costPrice,
-      'سعر البيع': p.salePrice,
-      'الحد الأدنى': p.minStock,
-      'الحالة': p.active ? 'نشط' : 'غير نشط',
-    }))
-    exportToCSV('products', rows)
-    toast.success('تم تصدير الملف')
+  const exportColumns: ExportColumn<Product>[] = [
+    { key: 'sku', header: 'SKU', width: 16, align: 'center', type: 'text', value: (p) => p.sku },
+    { key: 'barcode', header: L('الباركود', 'Barcode'), width: 18, align: 'center', type: 'text', value: (p) => p.barcode ?? '' },
+    { key: 'name', header: L('اسم المنتج', 'Product Name'), width: 28, align: 'center', type: 'text', value: (p) => (isRTL ? p.nameAr : (p.nameEn || p.nameAr)) },
+    { key: 'category', header: L('الفئة', 'Category'), width: 20, align: 'center', type: 'text', value: (p) => ((isRTL ? p.category?.nameAr : (p.category?.nameEn || p.category?.nameAr)) ?? '') },
+    { key: 'type', header: L('النوع', 'Type'), width: 16, align: 'center', type: 'text', value: (p) => getTypeLabel(p.type) },
+    { key: 'uom', header: L('الوحدة', 'Unit'), width: 14, align: 'center', type: 'text', value: (p) => ((isRTL ? p.uom?.nameAr : (p.uom?.nameEn || p.uom?.nameAr)) ?? '') },
+    { key: 'costPrice', header: L('سعر التكلفة', 'Cost Price'), width: 18, align: 'center', type: 'currency', summable: true, value: (p) => p.costPrice },
+    { key: 'salePrice', header: L('سعر البيع', 'Sale Price'), width: 18, align: 'center', type: 'currency', summable: true, value: (p) => p.salePrice },
+    { key: 'minStock', header: L('الحد الأدنى', 'Min Stock'), width: 14, align: 'center', type: 'number', summable: true, value: (p) => p.minStock },
+    { key: 'status', header: L('الحالة', 'Status'), width: 14, align: 'center', type: 'text', value: (p) => (p.active ? L('نشط', 'Active') : L('غير نشط', 'Inactive')) },
+  ]
+
+  const exportMeta: ExportMeta = {
+    fileName: L('تقرير-المنتجات', 'products-report'),
+    title: L('تقرير قائمة المنتجات والخدمات', 'Products & Services Report'),
+    subtitle: L('أورمنال', 'Orminal'),
+    isRTL,
+    summary: [
+      { label: L('إجمالي المنتجات', 'Total Products'), value: formatInt(total) },
+      { label: L('المنتجات النشطة', 'Active Products'), value: formatInt(stats.active) },
+      { label: L('إجمالي قيم التكلفة', 'Total Cost Value'), value: formatCurrency(stats.totalValue) },
+      { label: L('متوسط سعر البيع', 'Avg Sale Price'), value: formatCurrency(stats.avgPrice) },
+    ],
+    labels: {
+      generatedAt: L('تاريخ الإنشاء', 'Generated At'),
+      totalRecords: L('إجمالي السجلات', 'Total Records'),
+      grandTotal: L('الإجمالي', 'Total'),
+    },
+  }
+
+  const handleExport = async (format: ExportFormat) => {
+    if (!products.length) {
+      toast.error(L('لا توجد بيانات للتصدير', 'No data to export'))
+      return
+    }
+    try {
+      await exportRows(format, products, exportColumns, exportMeta)
+      toast.success(L('تم تصدير الملف بنجاح', 'File exported successfully'))
+    } catch (e: any) {
+      toast.error(e?.message || L('فشل التصدير', 'Export failed'))
+    }
   }
 
   return (
     <ModuleShell
       title={t('module.products')}
-      description="إدارة المنتجات والخدمات والمواد الخام"
+      description={L('إدارة المنتجات والخدمات والمواد الخام', 'Manage products, services, and raw materials')}
       icon={<Package className="size-5" />}
       searchValue={search}
       onSearch={setSearch}
-      searchPlaceholder="ابحث برمز SKU أو الاسم..."
+      searchPlaceholder={L('ابحث برمز SKU أو الاسم...', 'Search by SKU or name...')}
       onAdd={() => { setEditing(null); setDialogOpen(true) }}
       addLabel={t('action.add')}
-      onExport={handleExport}
+      actions={
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-1.5 border-slate-200 dark:border-slate-800">
+              <Download className="size-4" />
+              <span className="hidden sm:inline">{L('تصدير', 'Export')}</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align={isRTL ? 'start' : 'end'} className="w-48 z-50">
+            <DropdownMenuItem onClick={() => handleExport('excel')} className="gap-2.5 cursor-pointer font-medium">
+              <FileSpreadsheet className="size-4 text-emerald-600 dark:text-emerald-400" />
+              <span>{L('تصدير Excel (.xlsx)', 'Export Excel (.xlsx)')}</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExport('pdf')} className="gap-2.5 cursor-pointer font-medium">
+              <FileDown className="size-4 text-rose-600 dark:text-rose-400" />
+              <span>{L('تصدير PDF', 'Export PDF')}</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExport('csv')} className="gap-2.5 cursor-pointer font-medium">
+              <FileText className="size-4 text-sky-600 dark:text-sky-400" />
+              <span>{L('تصدير CSV', 'Export CSV')}</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      }
       filters={
         <Select value={filterType} onValueChange={setFilterType}>
           <SelectTrigger className="w-40 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
-            <SelectValue placeholder="النوع" />
+            <SelectValue placeholder={L('النوع', 'Type')} />
           </SelectTrigger>
           <SelectContent className="dark:bg-slate-900 dark:border-slate-800 dark:text-white z-50">
-            <SelectItem value="all">الكل</SelectItem>
-            <SelectItem value="product">منتج</SelectItem>
-            <SelectItem value="service">خدمة</SelectItem>
-            <SelectItem value="raw_material">مادة خام</SelectItem>
-            <SelectItem value="finished">منتج نهائي</SelectItem>
+            <SelectItem value="all">{L('الكل', 'All')}</SelectItem>
+            <SelectItem value="product">{L('منتج', 'Product')}</SelectItem>
+            <SelectItem value="service">{L('خدمة', 'Service')}</SelectItem>
+            <SelectItem value="raw_material">{L('مادة خام', 'Raw Material')}</SelectItem>
+            <SelectItem value="finished">{L('منتج نهائي', 'Finished Good')}</SelectItem>
           </SelectContent>
         </Select>
       }
     >
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
-        <KpiCard title="إجمالي المنتجات" value={formatInt(total)} icon={<Package className="size-5" />} accent="blue" />
-        <KpiCard title="المنتجات النشطة" value={formatInt(stats.active)} icon={<Boxes className="size-5" />} accent="sky" />
-        <KpiCard title="قيمة التكلفة" value={formatCurrency(stats.totalValue)} icon={<Tag className="size-5" />} accent="amber" />
-        <KpiCard title="متوسط سعر البيع" value={formatCurrency(stats.avgPrice)} icon={<Tag className="size-5" />} accent="violet" />
+        <KpiCard title={L('إجمالي المنتجات', 'Total Products')} value={formatInt(total)} icon={<Package className="size-5" />} accent="blue" />
+        <KpiCard title={L('المنتجات النشطة', 'Active Products')} value={formatInt(stats.active)} icon={<Boxes className="size-5" />} accent="sky" />
+        <KpiCard title={L('قيمة التكلفة', 'Cost Value')} value={formatCurrency(stats.totalValue)} icon={<Tag className="size-5" />} accent="amber" />
+        <KpiCard title={L('متوسط سعر البيع', 'Avg Sale Price')} value={formatCurrency(stats.avgPrice)} icon={<Tag className="size-5" />} accent="violet" />
       </div>
 
-      <Card className="rounded-xl border border-slate-200 dark:border-slate-800 bg-card overflow-hidden">
-        <ScrollArea className="max-h-[60vh]">
-          <Table className="table-sticky">
-            <TableHeader className="bg-slate-50 dark:bg-slate-900/50">
-              <TableRow>
-                <TableHead className="ps-4">SKU</TableHead>
-                <TableHead>الاسم</TableHead>
-                <TableHead>الفئة</TableHead>
-                <TableHead>النوع</TableHead>
-                <TableHead>الوحدة</TableHead>
-                <TableHead className="text-end num-cell">التكلفة</TableHead>
-                <TableHead className="text-end num-cell">البيع</TableHead>
-                <TableHead className="text-end num-cell">الحد الأدنى</TableHead>
-                <TableHead>الحالة</TableHead>
-                <TableHead className="text-end">إجراءات</TableHead>
+      <Card className="rounded-xl overflow-hidden">
+        <div
+          className="w-full overflow-y-auto overflow-x-auto overscroll-contain"
+          style={{ maxHeight: HEADER_HEIGHT + VISIBLE_ROWS * ROW_HEIGHT }}
+        >
+          <table className="w-full caption-bottom text-sm min-w-[1050px] table-fixed border-separate border-spacing-0">
+            <colgroup>
+              <col className="w-[10%]" />{/* SKU */}
+              <col className="w-[18%]" />{/* الاسم */}
+              <col className="w-[15%]" />{/* الفئة */}
+              <col className="w-[10%]" />{/* النوع */}
+              <col className="w-[8%]" />{/* الوحدة */}
+              <col className="w-[9%]" />{/* التكلفة */}
+              <col className="w-[9%]" />{/* البيع */}
+              <col className="w-[7%]" />{/* الحد الأدنى */}
+              <col className="w-[7%]" />{/* الحالة */}
+              <col className="w-[7%]" />{/* إجراءات */}
+            </colgroup>
+
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className={`${stickyHead} ps-4 text-start`}>SKU</TableHead>
+                <TableHead className={`${stickyHead} text-start`}>{L('الاسم', 'Name')}</TableHead>
+                <TableHead className={`${stickyHead} text-start`}>{L('الفئة', 'Category')}</TableHead>
+                <TableHead className={`${stickyHead} text-start`}>{L('النوع', 'Type')}</TableHead>
+                <TableHead className={`${stickyHead} text-start`}>{L('الوحدة', 'Unit')}</TableHead>
+                <TableHead className={`${stickyHead} text-center num-cell`}>{L('التكلفة', 'Cost')}</TableHead>
+                <TableHead className={`${stickyHead} text-center num-cell`}>{L('البيع', 'Sale')}</TableHead>
+                <TableHead className={`${stickyHead} text-center num-cell`}>{L('الحد الأدنى', 'Min Stock')}</TableHead>
+                <TableHead className={`${stickyHead} text-center`}>{L('الحالة', 'Status')}</TableHead>
+                <TableHead className={`${stickyHead} text-end pe-4`}>{L('إجراءات', 'Actions')}</TableHead>
               </TableRow>
             </TableHeader>
+
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={10} className="text-center py-10 text-muted-foreground">جاري التحميل...</TableCell></TableRow>
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="ps-4"><Skeleton className="h-6 w-full" /></TableCell>
+                    <TableCell><Skeleton className="h-6 w-full" /></TableCell>
+                    <TableCell><Skeleton className="h-6 w-full" /></TableCell>
+                    <TableCell><Skeleton className="h-6 w-full" /></TableCell>
+                    <TableCell><Skeleton className="h-6 w-full" /></TableCell>
+                    <TableCell><Skeleton className="h-6 w-full" /></TableCell>
+                    <TableCell><Skeleton className="h-6 w-full" /></TableCell>
+                    <TableCell><Skeleton className="h-6 w-full" /></TableCell>
+                    <TableCell><Skeleton className="h-6 w-full" /></TableCell>
+                    <TableCell className="pe-4"><Skeleton className="h-6 w-full" /></TableCell>
+                  </TableRow>
+                ))
               ) : products.length === 0 ? (
-                <TableRow><TableCell colSpan={10} className="text-center py-10 text-muted-foreground">لا توجد منتجات. ابدأ بإضافة أول منتج.</TableCell></TableRow>
-              ) : products.map((p) => (
-                <TableRow key={p.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-900/50">
-                  <TableCell className="ps-4 font-mono text-xs font-semibold text-blue-600 dark:text-blue-400" dir="ltr">{p.sku}</TableCell>
-                  <TableCell className="font-medium text-slate-900 dark:text-slate-100">{p.nameAr}</TableCell>
-                  <TableCell className="text-sm text-slate-500 dark:text-slate-400">{p.category?.nameAr ?? '—'}</TableCell>
-                  <TableCell><Badge variant="outline" className="text-[10px] font-normal">{TYPE_LABELS[p.type] ?? p.type}</Badge></TableCell>
-                  <TableCell className="text-sm text-slate-500 dark:text-slate-400">{p.uom?.nameAr ?? '—'}</TableCell>
-                  <TableCell className="text-end num-cell"><span className="num tabular-nums text-slate-600 dark:text-slate-300" dir="ltr">{formatCurrency(p.costPrice)}</span></TableCell>
-                  <TableCell className="text-end num-cell"><span className="num tabular-nums font-semibold text-slate-900 dark:text-white" dir="ltr">{formatCurrency(p.salePrice)}</span></TableCell>
-                  <TableCell className="text-end num-cell"><span className="num tabular-nums text-slate-600 dark:text-slate-300" dir="ltr">{formatInt(p.minStock)}</span></TableCell>
-                  <TableCell><StatusBadge status={p.active ? 'active' : 'inactive'} /></TableCell>
-                  <TableCell className="text-end">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button size="icon" variant="ghost" className="size-8 text-slate-600 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400" onClick={() => { setEditing(p); setDialogOpen(true) }}>
-                        <Pencil className="size-3.5" />
-                      </Button>
-                      <Button size="icon" variant="ghost" className="size-8 text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300" onClick={() => deleteMutation.mutate(p.id)}>
-                        <Trash2 className="size-3.5" />
-                      </Button>
-                    </div>
+                <TableRow>
+                  <TableCell colSpan={10} className="text-center py-16 text-muted-foreground border-b">
+                    <Package className="size-10 mx-auto mb-2 opacity-50" />
+                    {L('لا توجد منتجات. ابدأ بإضافة أول منتج.', 'No products found. Start by adding your first product.')}
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                products.map((p) => (
+                  <TableRow key={p.id} className="hover:bg-muted/40 transition-colors">
+                    <TableCell className="ps-4 font-mono text-xs font-semibold text-blue-600 dark:text-blue-400 truncate" dir="ltr">{p.sku}</TableCell>
+                    <TableCell className="font-medium truncate">{isRTL ? p.nameAr : (p.nameEn || p.nameAr)}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground truncate">{(isRTL ? p.category?.nameAr : (p.category?.nameEn || p.category?.nameAr)) ?? '—'}</TableCell>
+                    <TableCell><Badge variant="outline" className="text-[10px] font-normal">{getTypeLabel(p.type)}</Badge></TableCell>
+                    <TableCell className="text-sm text-muted-foreground truncate">{(isRTL ? p.uom?.nameAr : (p.uom?.nameEn || p.uom?.nameAr)) ?? '—'}</TableCell>
+                    <TableCell className="text-center num-cell"><span className="num tabular-nums text-muted-foreground text-xs" dir="ltr">{formatCurrency(p.costPrice)}</span></TableCell>
+                    <TableCell className="text-center num-cell"><span className="num tabular-nums font-semibold" dir="ltr">{formatCurrency(p.salePrice)}</span></TableCell>
+                    <TableCell className="text-center num-cell"><span className="num tabular-nums text-muted-foreground text-xs" dir="ltr">{formatInt(p.minStock)}</span></TableCell>
+                    <TableCell className="text-center"><StatusBadge status={p.active ? 'active' : 'inactive'} /></TableCell>
+                    <TableCell className="text-end pe-4">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button size="icon" variant="ghost" className="size-8 text-slate-600 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400" onClick={() => { setEditing(p); setDialogOpen(true) }}>
+                          <Pencil className="size-3.5" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="size-8 text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300" onClick={() => deleteMutation.mutate(p.id)}>
+                          <Trash2 className="size-3.5" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
-          </Table>
-        </ScrollArea>
+          </table>
+        </div>
       </Card>
 
       <div className="flex items-center justify-between mt-4 text-sm">
         <p className="text-slate-500 dark:text-slate-400 text-xs">
-          عرض {products.length === 0 ? 0 : (page - 1) * pageSize + 1}–{(page - 1) * pageSize + products.length} من {total}
+          {L('عرض', 'Showing')} {products.length === 0 ? 0 : (page - 1) * pageSize + 1}–{(page - 1) * pageSize + products.length} {L('من', 'of')} {total}
         </p>
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}>السابق</Button>
-          <span className="text-xs text-slate-500 dark:text-slate-400">صفحة {page} من {totalPages}</span>
-          <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>التالي</Button>
+          <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}>{L('السابق', 'Previous')}</Button>
+          <span className="text-xs text-slate-500 dark:text-slate-400">{L('صفحة', 'Page')} {page} {L('من', 'of')} {totalPages}</span>
+          <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>{L('التالي', 'Next')}</Button>
         </div>
       </div>
 
@@ -269,14 +375,13 @@ export function ProductsModule() {
         <DialogContent className="max-w-2xl p-0 overflow-hidden bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 shadow-xl rounded-xl">
           <DialogHeader className="bg-gradient-to-r rtl:bg-gradient-to-l from-blue-50 to-[#E6F0FF] dark:from-blue-700/80 dark:to-blue-800/90 border-b border-blue-100 dark:border-blue-700/40 p-6 shrink-0 relative">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-lg bg-white dark:bg-blue-950/60  dark:text-blue-100 text-white shadow-xs">
+              <div className="p-2.5 rounded-lg bg-white dark:bg-blue-950/60 dark:text-blue-100 text-white shadow-xs">
                 <Package className="size-5" />
               </div>
               <div>
                 <DialogTitle className="text-base font-bold text-slate-900 dark:text-white">
-                  {editing ? 'تعديل بيانات المنتج' : 'إضافة منتج جديد'}
+                  {editing ? L('تعديل بيانات المنتج', 'Edit Product') : L('إضافة منتج جديد', 'Add New Product')}
                 </DialogTitle>
-
               </div>
             </div>
           </DialogHeader>
@@ -288,13 +393,13 @@ export function ProductsModule() {
                   {/* SKU */}
                   <div className="space-y-1.5">
                     <Label htmlFor="sku" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      رمز المنتج (SKU)
+                      {L('رمز المنتج (SKU)', 'Product Code (SKU)')}
                     </Label>
                     <Input
                       id="sku"
                       name="sku"
                       defaultValue={editing?.sku}
-                      placeholder="تلقائي إن تُرك فارغاً"
+                      placeholder={L('تلقائي إن تُرك فارغاً', 'Auto if left empty')}
                       className="h-10 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
                       dir="ltr"
                     />
@@ -303,7 +408,7 @@ export function ProductsModule() {
                   {/* Barcode */}
                   <div className="space-y-1.5">
                     <Label htmlFor="barcode" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      الباركود
+                      {L('الباركود', 'Barcode')}
                     </Label>
                     <Input
                       id="barcode"
@@ -318,14 +423,14 @@ export function ProductsModule() {
                   {/* Arabic Name */}
                   <div className="space-y-1.5">
                     <Label htmlFor="nameAr" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      اسم المنتج (بالعربي) <span className="text-rose-500">*</span>
+                      {L('اسم المنتج (بالعربي)', 'Product Name (Arabic)')} <span className="text-rose-500">*</span>
                     </Label>
                     <Input
                       id="nameAr"
                       name="nameAr"
                       defaultValue={editing?.nameAr}
                       required
-                      placeholder="مثال: جهاز حاسوب محمول"
+                      placeholder={L('مثال: جهاز حاسوب محمول', 'e.g. Laptop Computer')}
                       className="h-10 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
                     />
                   </div>
@@ -333,7 +438,7 @@ export function ProductsModule() {
                   {/* English Name */}
                   <div className="space-y-1.5">
                     <Label htmlFor="nameEn" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      اسم المنتج (بالإنجليزية)
+                      {L('اسم المنتج (بالإنجليزية)', 'Product Name (English)')}
                     </Label>
                     <Input
                       id="nameEn"
@@ -348,16 +453,16 @@ export function ProductsModule() {
                   {/* Category */}
                   <div className="space-y-1.5">
                     <Label htmlFor="categoryId" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      الفئة
+                      {L('الفئة', 'Category')}
                     </Label>
                     <Select name="categoryId" defaultValue={editing?.category?.id}>
                       <SelectTrigger className="h-10 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
-                        <SelectValue placeholder="اختر الفئة..." />
+                        <SelectValue placeholder={L('اختر الفئة...', 'Select category...')} />
                       </SelectTrigger>
                       <SelectContent className="dark:bg-slate-900 dark:border-slate-800 dark:text-white z-50">
                         {categories.map((c) => (
                           <SelectItem key={c.id} value={c.id}>
-                            {c.nameAr}
+                            {isRTL ? c.nameAr : (c.nameEn || c.nameAr)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -367,18 +472,18 @@ export function ProductsModule() {
                   {/* Type */}
                   <div className="space-y-1.5">
                     <Label htmlFor="type" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      نوع المنتج
+                      {L('نوع المنتج', 'Product Type')}
                     </Label>
                     <Select name="type" defaultValue={editing?.type ?? 'product'}>
                       <SelectTrigger className="h-10 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="dark:bg-slate-900 dark:border-slate-800 dark:text-white z-50">
-                        <SelectItem value="product">منتج</SelectItem>
-                        <SelectItem value="service">خدمة</SelectItem>
-                        <SelectItem value="raw_material">مادة خام</SelectItem>
-                        <SelectItem value="finished">منتج نهائي</SelectItem>
-                        <SelectItem value="consumable">مستهلك</SelectItem>
+                        <SelectItem value="product">{L('منتج', 'Product')}</SelectItem>
+                        <SelectItem value="service">{L('خدمة', 'Service')}</SelectItem>
+                        <SelectItem value="raw_material">{L('مادة خام', 'Raw Material')}</SelectItem>
+                        <SelectItem value="finished">{L('منتج نهائي', 'Finished Good')}</SelectItem>
+                        <SelectItem value="consumable">{L('مستهلك', 'Consumable')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -386,7 +491,7 @@ export function ProductsModule() {
                   {/* Cost Price */}
                   <div className="space-y-1.5">
                     <Label htmlFor="costPrice" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      سعر التكلفة
+                      {L('سعر التكلفة', 'Cost Price')}
                     </Label>
                     <Input
                       id="costPrice"
@@ -402,7 +507,7 @@ export function ProductsModule() {
                   {/* Sale Price */}
                   <div className="space-y-1.5">
                     <Label htmlFor="salePrice" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      سعر البيع
+                      {L('سعر البيع', 'Sale Price')}
                     </Label>
                     <Input
                       id="salePrice"
@@ -418,7 +523,7 @@ export function ProductsModule() {
                   {/* Min Stock */}
                   <div className="space-y-1.5">
                     <Label htmlFor="minStock" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      الحد الأدنى للمخزون
+                      {L('الحد الأدنى للمخزون', 'Minimum Stock')}
                     </Label>
                     <Input
                       id="minStock"
@@ -435,7 +540,7 @@ export function ProductsModule() {
                   <div className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 self-end h-10">
                     <Switch id="active" name="active" defaultChecked={editing?.active ?? true} />
                     <Label htmlFor="active" className="text-xs font-semibold cursor-pointer text-slate-900 dark:text-white">
-                      منتج نشط
+                      {L('منتج نشط', 'Active Product')}
                     </Label>
                   </div>
                 </div>
@@ -450,7 +555,7 @@ export function ProductsModule() {
               onClick={() => setDialogOpen(false)}
               className="border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300"
             >
-              إلغاء
+              {L('إلغاء', 'Cancel')}
             </Button>
             <Button
               type="submit"
@@ -458,7 +563,7 @@ export function ProductsModule() {
               disabled={saveMutation.isPending}
               className="bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm px-5"
             >
-              {saveMutation.isPending ? 'جاري الحفظ...' : editing ? 'تحديث المنتج' : 'إنشاء المنتج'}
+              {saveMutation.isPending ? L('جاري الحفظ...', 'Saving...') : editing ? L('تحديث المنتج', 'Update Product') : L('إنشاء المنتج', 'Create Product')}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -364,31 +364,33 @@ export async function exportRowsToExcel<T>(rows: T[], columns: ExportColumn<T>[]
   const colCount = columns.length
   const lastCol = ws.getColumn(colCount).letter
 
+  const fontName = 'Segoe UI'
+
   // عنوان
   ws.mergeCells(`A1:${lastCol}1`)
   const titleCell = ws.getCell('A1')
   titleCell.value = meta.title
-  titleCell.font = { size: 16, bold: true, color: { argb: 'FF0F172A' } }
+  titleCell.font = { name: fontName, size: 16, bold: true, color: { argb: 'FF0F172A' } }
   titleCell.alignment = { vertical: 'middle', horizontal: 'center' }
-  ws.getRow(1).height = 30
+  ws.getRow(1).height = 32
 
   // سطر المعلومات
   ws.mergeCells(`A2:${lastCol}2`)
   const subCell = ws.getCell('A2')
   subCell.value = `${meta.subtitle ?? 'Orminal ERP'}   •   ${meta.labels?.generatedAt ?? 'Generated'}: ${new Date().toLocaleString()}   •   ${meta.labels?.totalRecords ?? 'Records'}: ${rows.length}`
-  subCell.font = { size: 10, color: { argb: 'FF64748B' } }
+  subCell.font = { name: fontName, size: 10, color: { argb: 'FF64748B' } }
   subCell.alignment = { vertical: 'middle', horizontal: 'center' }
-  ws.getRow(2).height = 20
+  ws.getRow(2).height = 22
 
   // شريط الملخص
   if (meta.summary?.length) {
     ws.mergeCells(`A3:${lastCol}3`)
     const s = ws.getCell('A3')
     s.value = meta.summary.map((x) => `${x.label}: ${x.value}`).join('     |     ')
-    s.font = { size: 10, bold: true, color: { argb: 'FF1D4ED8' } }
+    s.font = { name: fontName, size: 10, bold: true, color: { argb: 'FF1D4ED8' } }
     s.alignment = { vertical: 'middle', horizontal: 'center' }
     s.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEFF6FF' } }
-    ws.getRow(3).height = 22
+    ws.getRow(3).height = 24
   }
 
   const hAlign = (a?: ColumnAlign) => (a === 'end' ? 'right' : a === 'start' ? 'left' : 'center')
@@ -398,7 +400,7 @@ export async function exportRowsToExcel<T>(rows: T[], columns: ExportColumn<T>[]
   columns.forEach((c, i) => {
     const cell = headerRow.getCell(i + 1)
     cell.value = c.header
-    cell.font = { bold: true, size: 11, color: { argb: 'FFFFFFFF' } }
+    cell.font = { name: fontName, bold: true, size: 11, color: { argb: 'FFFFFFFF' } }
     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E40AF' } }
     cell.alignment = { vertical: 'middle', horizontal: hAlign(c.align), wrapText: true }
     cell.border = {
@@ -408,7 +410,7 @@ export async function exportRowsToExcel<T>(rows: T[], columns: ExportColumn<T>[]
       right: { style: 'thin', color: { argb: 'FF1E3A8A' } },
     }
   })
-  headerRow.height = 26
+  headerRow.height = 28
 
   // الصفوف
   rows.forEach((row, rIdx) => {
@@ -435,19 +437,19 @@ export async function exportRowsToExcel<T>(rows: T[], columns: ExportColumn<T>[]
         cell.value = (raw as any) ?? ''
       }
 
-      cell.font = { size: 10, color: { argb: 'FF0F172A' } }
+      cell.font = { name: fontName, size: 10, color: { argb: 'FF0F172A' } }
       cell.alignment = { vertical: 'middle', horizontal: hAlign(c.align) }
       cell.border = {
-        top: { style: 'hair', color: { argb: 'FFE2E8F0' } },
-        left: { style: 'hair', color: { argb: 'FFE2E8F0' } },
-        bottom: { style: 'hair', color: { argb: 'FFE2E8F0' } },
-        right: { style: 'hair', color: { argb: 'FFE2E8F0' } },
+        top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+        left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+        bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+        right: { style: 'thin', color: { argb: 'FFE2E8F0' } },
       }
       if (rIdx % 2 === 1) {
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } }
       }
     })
-    r.height = 20
+    r.height = 22
   })
 
   // الإجماليات
@@ -461,20 +463,22 @@ export async function exportRowsToExcel<T>(rows: T[], columns: ExportColumn<T>[]
       } else if (i === 0) {
         cell.value = meta.labels?.grandTotal ?? 'Total'
       }
-      cell.font = { bold: true, size: 11, color: { argb: 'FF0F172A' } }
+      cell.font = { name: fontName, bold: true, size: 11, color: { argb: 'FF0F172A' } }
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDBEAFE' } }
       cell.alignment = { vertical: 'middle', horizontal: hAlign(c.align) }
       cell.border = {
         top: { style: 'double', color: { argb: 'FF1E40AF' } },
         bottom: { style: 'thin', color: { argb: 'FF1E40AF' } },
+        left: { style: 'thin', color: { argb: 'FFBFDBFE' } },
+        right: { style: 'thin', color: { argb: 'FFBFDBFE' } },
       }
     })
-    tr.height = 24
+    tr.height = 26
   }
 
   // عرض الأعمدة + فلترة تلقائية
   columns.forEach((c, i) => {
-    ws.getColumn(i + 1).width = c.width ?? Math.max(14, c.header.length + 6)
+    ws.getColumn(i + 1).width = Math.max(c.width ?? 16, c.header.length + 6)
   })
   ws.autoFilter = {
     from: { row: headerRowIndex, column: 1 },

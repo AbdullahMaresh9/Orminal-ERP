@@ -34,7 +34,7 @@ export const arMessages = {
     products: 'المنتجات', categories: 'الفئات', warehouses: 'المستودعات',
     storehouses: 'المخازن', branches: 'الفروع', activities: 'الأنشطة',
     'stock-locations': 'مواقع المخزون', 'stock-on-hand': 'المخزون الحالي',
-    'stock-transfers': 'تحويلات المخزون', deliveries: 'التسليمات',
+    deliveries: 'التسليمات',
     'inventory-adjustments': 'تسويات المخزون', 'stock-moves': 'حركات المخزون',
     'stock-takes': 'الجرد المخزني', 'inventory-transfers': 'تحويلات المخزون',
     'inventory-incoming': 'إدخالات المخزون', 'inventory-outgoing': 'إخراجات المخزون',

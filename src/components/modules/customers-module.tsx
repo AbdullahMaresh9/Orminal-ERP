@@ -47,7 +47,7 @@ interface Customer {
   createdAt: string
 }
 
-const VISIBLE_ROWS = 6
+const VISIBLE_ROWS = 7
 const ROW_HEIGHT = 44
 const HEADER_HEIGHT = 40
 

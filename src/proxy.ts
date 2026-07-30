@@ -3,7 +3,16 @@ import { NextResponse } from 'next/server'
 
 export default withAuth(
   function middleware(req) {
-    // User is authenticated (withAuth guarantees this for protected routes)
+    const { pathname } = req.nextUrl
+    if (pathname.startsWith('/api/') && !pathname.startsWith('/api/auth')) {
+      const token = req.nextauth?.token
+      if (!token) {
+        return NextResponse.json(
+          { error: 'Unauthorized', message: 'جلسة المستخدم منتهية، يرجى إعادة تسجيل الدخول' },
+          { status: 401 }
+        )
+      }
+    }
     return NextResponse.next()
   },
   {
@@ -20,6 +29,10 @@ export default withAuth(
           pathname === '/logo.svg' ||
           pathname === '/robots.txt'
         ) {
+          return true
+        }
+        // Allow API routes to be handled by middleware function to return 401 JSON instead of 307 HTML redirect
+        if (pathname.startsWith('/api/')) {
           return true
         }
         // All other routes require a valid token
