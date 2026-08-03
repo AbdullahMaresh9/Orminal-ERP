@@ -25,13 +25,7 @@ const handler = NextAuth({
         password: { label: 'كلمة المرور', type: 'password' },
       },
       async authorize(credentials) {
-        if (!credentials?.username || !credentials?.password) {
-          console.error('[v0] authorize: missing credentials')
-          return null
-        }
-
-        console.log('[v0] authorize: attempting login for', credentials.username)
-        console.log('[v0] DB URL set:', !!process.env.DATABASE_URL_UNPOOLED)
+        if (!credentials?.username || !credentials?.password) return null
 
         try {
           const user = await db.user.findFirst({
@@ -61,12 +55,9 @@ const handler = NextAuth({
             },
           })
 
-          console.log('[v0] authorize: user found:', !!user, '| active:', user?.active)
           if (!user) return null
 
-          console.log('[v0] authorize: hash prefix:', user.passwordHash?.substring(0, 7))
           const valid = await verifyPassword(credentials.password, user.passwordHash)
-          console.log('[v0] authorize: password valid:', valid)
           if (!valid) return null
 
           // Update last login timestamp (fire-and-forget)
@@ -87,9 +78,8 @@ const handler = NextAuth({
             defaultCompanyId: user.defaultCompanyId ?? null,
             defaultBranchId: user.defaultBranchId ?? null,
           }
-        } catch (error: any) {
-          console.error('[v0] authorize CATCH error:', error?.message)
-          console.error('[v0] authorize CATCH stack:', error?.stack?.substring(0, 400))
+        } catch (error) {
+          console.error('[NextAuth] authorize error:', error)
           return null
         }
       },
