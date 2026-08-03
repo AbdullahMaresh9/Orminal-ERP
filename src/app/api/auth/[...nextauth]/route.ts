@@ -91,6 +91,8 @@ const handler = NextAuth({
           }
         } catch (error) {
           console.error('[NextAuth] authorize error:', error)
+          console.error('[NextAuth] DATABASE_URL prefix:', process.env.POSTGRES_PRISMA_URL?.substring(0, 60))
+          console.error('[NextAuth] NODE_ENV:', process.env.NODE_ENV)
           return null
         }
       },
