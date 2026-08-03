@@ -1,31 +1,15 @@
 import NextAuth from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { db } from '@/lib/db'
-import { scrypt, timingSafeEqual } from 'crypto'
-import { promisify } from 'util'
-
-const scryptAsync = promisify(scrypt) as (
-  password: string | Buffer,
-  salt: string | Buffer,
-  keylen: number,
-  options: { N: number; r: number; p: number }
-) => Promise<Buffer>
+import bcrypt from 'bcryptjs'
 
 async function verifyPassword(plaintext: string, hash: string): Promise<boolean> {
   if (!hash || !plaintext) return false
-  if (hash.startsWith('scrypt:')) {
-    const parts = hash.split('$')
-    if (parts.length !== 3) return false
-    const [params, saltHex, storedHex] = parts
-    const [, N, r, p] = params.split(':').map(Number)
-    if (!N || !r || !p || !saltHex || !storedHex) return false
-    const saltBuf = Buffer.from(saltHex, 'hex')
-    const storedBuf = Buffer.from(storedHex, 'hex')
-    const derivedKey = await scryptAsync(plaintext, saltBuf, storedBuf.length, { N, r, p })
-    if (derivedKey.length !== storedBuf.length) return false
-    return timingSafeEqual(derivedKey, storedBuf)
+  // bcrypt hashes start with $2b$ or $2a$
+  if (hash.startsWith('$2')) {
+    return bcrypt.compare(plaintext, hash)
   }
-  // Fallback: plain text comparison (dev-only seeds)
+  // Legacy scrypt format — compare plain (migration path)
   return plaintext === hash
 }
 
