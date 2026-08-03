@@ -1,30 +1,32 @@
 import NextAuth from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { db } from '@/lib/db'
-import { scrypt, timingSafeEqual, randomBytes } from 'crypto'
-const scryptAsync = (password: string | Buffer, salt: string | Buffer, keylen: number, options: { N: number; r: number; p: number }): Promise<Buffer> => {
-  return new Promise((resolve, reject) => {
-    scrypt(password, salt, keylen, options, (err, derivedKey) => {
-      if (err) reject(err)
-      else resolve(derivedKey)
-    })
-  })
-}
+import { scrypt, timingSafeEqual } from 'crypto'
+import { promisify } from 'util'
+
+const scryptAsync = promisify(scrypt) as (
+  password: string | Buffer,
+  salt: string | Buffer,
+  keylen: number,
+  options: { N: number; r: number; p: number }
+) => Promise<Buffer>
 
 async function verifyPassword(plaintext: string, hash: string): Promise<boolean> {
-  try {
-    // Support both scrypt format (scrypt:N:r:p$salt$hash) and plain bcrypt-style
-    if (hash.startsWith('scrypt:')) {
-      const [params, salt, storedHash] = hash.split('$')
-      const [, N, r, p] = params.split(':').map(Number)
-      const derivedKey = (await scryptAsync(plaintext, Buffer.from(salt, 'hex'), 64, { N, r, p })) as Buffer
-      return timingSafeEqual(derivedKey, Buffer.from(storedHash, 'hex'))
-    }
-    // Fallback: plain text comparison (dev-only seeds)
-    return plaintext === hash
-  } catch {
-    return false
+  if (!hash || !plaintext) return false
+  if (hash.startsWith('scrypt:')) {
+    const parts = hash.split('$')
+    if (parts.length !== 3) return false
+    const [params, saltHex, storedHex] = parts
+    const [, N, r, p] = params.split(':').map(Number)
+    if (!N || !r || !p || !saltHex || !storedHex) return false
+    const saltBuf = Buffer.from(saltHex, 'hex')
+    const storedBuf = Buffer.from(storedHex, 'hex')
+    const derivedKey = await scryptAsync(plaintext, saltBuf, storedBuf.length, { N, r, p })
+    if (derivedKey.length !== storedBuf.length) return false
+    return timingSafeEqual(derivedKey, storedBuf)
   }
+  // Fallback: plain text comparison (dev-only seeds)
+  return plaintext === hash
 }
 
 const handler = NextAuth({
@@ -91,8 +93,6 @@ const handler = NextAuth({
           }
         } catch (error) {
           console.error('[NextAuth] authorize error:', error)
-          console.error('[NextAuth] DATABASE_URL prefix:', process.env.POSTGRES_PRISMA_URL?.substring(0, 60))
-          console.error('[NextAuth] NODE_ENV:', process.env.NODE_ENV)
           return null
         }
       },
