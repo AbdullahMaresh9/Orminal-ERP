@@ -4,7 +4,11 @@ export const dynamic = 'force-dynamic'
 import NextAuth from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { db } from '@/lib/db'
-import bcrypt from 'bcryptjs'
+import { createRequire } from 'module'
+
+// bcryptjs ships UMD only — must use require(), not ESM import
+const _require = createRequire(import.meta.url)
+const bcrypt = _require('bcryptjs') as typeof import('bcryptjs')
 
 async function verifyPassword(plaintext: string, hash: string): Promise<boolean> {
   if (!hash || !plaintext) return false
@@ -12,7 +16,7 @@ async function verifyPassword(plaintext: string, hash: string): Promise<boolean>
   if (hash.startsWith('$2')) {
     return bcrypt.compare(plaintext, hash)
   }
-  // Legacy scrypt format — compare plain (migration path)
+  // Legacy plain-text fallback (dev seeds only)
   return plaintext === hash
 }
 
