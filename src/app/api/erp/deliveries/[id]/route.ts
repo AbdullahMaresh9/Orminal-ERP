@@ -38,41 +38,51 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     // If transitioning to done: process stock
     if (rest.status === 'done' && exists.status !== 'done') {
       let cogsAmount = 0
-      await db.$transaction(async (tx) => {
-        for (const l of exists.lines) {
-          const product = await tx.product.findUnique({ where: { id: l.productId } })
-          const cost = product?.costPrice ?? 0
-          const lineCost = cost * l.deliveredQty
-          cogsAmount += lineCost
-
-          await tx.stockMove.create({
-            data: {
-              companyId: exists.companyId,
-              documentType: 'delivery',
-              documentId: id,
-              productId: l.productId,
-              sourceWarehouseId: exists.warehouseId,
-              quantity: l.deliveredQty,
-              uomId: l.uomId,
-              state: 'done',
-              valuationAmount: lineCost,
-              costPrice: cost,
-              postingDate: new Date(),
-            },
-          })
-
-          const quant = await tx.stockQuant.findFirst({
-            where: { productId: l.productId, warehouseId: exists.warehouseId, locationId: null, lotId: null },
-          })
-          if (quant) {
-            await tx.stockQuant.update({
-              where: { id: quant.id },
-              data: { quantity: { decrement: l.deliveredQty } },
+      try {
+        await db.$transaction(async (tx) => {
+          for (const l of exists.lines) {
+            const quant = await tx.stockQuant.findFirst({
+              where: { productId: l.productId, warehouseId: exists.warehouseId, locationId: null, lotId: null },
             })
+            const currentQty = quant?.quantity ?? 0
+            if (currentQty < l.deliveredQty) {
+              const product = await tx.product.findUnique({ where: { id: l.productId } })
+              throw new Error(`الكمية المتوفرة في المخزون غير كافية للمنتج ${product?.nameAr || l.productId} (المتاح: ${currentQty}، المطلوب: ${l.deliveredQty})`)
+            }
+
+            const product = await tx.product.findUnique({ where: { id: l.productId } })
+            const cost = product?.costPrice ?? 0
+            const lineCost = cost * l.deliveredQty
+            cogsAmount += lineCost
+
+            await tx.stockMove.create({
+              data: {
+                companyId: exists.companyId,
+                documentType: 'delivery',
+                documentId: id,
+                productId: l.productId,
+                sourceWarehouseId: exists.warehouseId,
+                quantity: l.deliveredQty,
+                uomId: l.uomId,
+                state: 'done',
+                valuationAmount: lineCost,
+                costPrice: cost,
+                postingDate: new Date(),
+              },
+            })
+
+            if (quant) {
+              await tx.stockQuant.update({
+                where: { id: quant.id },
+                data: { quantity: { decrement: l.deliveredQty } },
+              })
+            }
           }
-        }
-        await tx.delivery.update({ where: { id }, data: { status: 'done' } })
-      })
+          await tx.delivery.update({ where: { id }, data: { status: 'done' } })
+        })
+      } catch (err: any) {
+        return badRequest(err.message || 'خطأ في عملية إخراج المخزون')
+      }
 
       if (cogsAmount > 0) {
         const je = await postJournalEntry({

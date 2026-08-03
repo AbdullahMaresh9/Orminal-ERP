@@ -6,21 +6,31 @@ import { ModuleShell } from '@/components/erp/module-shell'
 import { KpiCard } from '@/components/erp/kpi-card'
 import { StatusBadge } from '@/components/erp/status-badge'
 import { useT } from '@/lib/i18n/use-t'
-import { exportToCSV } from '@/lib/export'
+import { exportRows, ExportColumn, ExportMeta, ExportFormat } from '@/lib/export'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Card } from '@/components/ui/card'
+import { TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogBody } from '@/components/ui/dialog'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody } from '@/components/ui/dialog'
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ClipboardCheck, Plus, CheckCircle, Clock, AlertTriangle, Boxes, FileText } from 'lucide-react'
+import {
+  ClipboardCheck, CheckCircle, Clock, AlertTriangle, Boxes, FileText,
+  Download, FileSpreadsheet, FileCheck, ChevronDown
+} from 'lucide-react'
+
+// أبعاد الجدول وحساب الارتفاع الثابت لخمسة صفوف تماشياً مع نمط مرتجعات المشتريات
+const HEADER_HEIGHT = 44
+const VISIBLE_ROWS = 6
+const ROW_HEIGHT = 52
+const stickyHead = 'sticky top-0 z-20 bg-muted whitespace-nowrap shadow-[inset_0_-1px_0_0_hsl(var(--border))]'
 
 export function InventoryAdjustmentsModule() {
-  const { t, isRTL, dir } = useT()
+  const { isRTL, dir } = useT()
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -86,17 +96,98 @@ export function InventoryAdjustmentsModule() {
     onError: () => toast.error(isRTL ? 'حدث خطأ أثناء الترحيل' : 'Error posting adjustment'),
   })
 
-  const handleExport = () =>
-    exportToCSV(
-      'inventory-adjustments',
-      rows.map((r: any) => ({
-        code: r.code,
-        warehouse: r.warehouse?.nameAr || r.warehouse?.name || '',
-        date: r.adjustmentDate,
-        reason: r.reason || '',
-        status: r.status,
-      }))
-    )
+  const statusLabel = (status: string) => {
+    switch (status) {
+      case 'posted':
+        return isRTL ? 'مرحّلة' : 'Posted'
+      case 'draft':
+        return isRTL ? 'مسودة' : 'Draft'
+      case 'counted':
+        return isRTL ? 'قيد العد' : 'Counted'
+      case 'approved':
+        return isRTL ? 'معتمدة' : 'Approved'
+      case 'cancelled':
+        return isRTL ? 'ملغاة' : 'Cancelled'
+      default:
+        return status
+    }
+  }
+
+  // إعدادات التصدير الموحدة عالية الجودة مع محاذاة الخلايا في الوسط لتطابق عناوين الأعمدة
+  const exportColumns: ExportColumn<any>[] = [
+    {
+      key: 'code',
+      header: isRTL ? 'الرمز' : 'Code',
+      width: 18,
+      align: 'center',
+      type: 'text',
+      value: (r) => r.code,
+    },
+    {
+      key: 'warehouse',
+      header: isRTL ? 'المستودع' : 'Warehouse',
+      width: 25,
+      align: 'center',
+      type: 'text',
+      value: (r) => r.warehouse?.nameAr || r.warehouse?.name || r.warehouse?.code || '—',
+    },
+    {
+      key: 'date',
+      header: isRTL ? 'التاريخ' : 'Date',
+      width: 18,
+      align: 'center',
+      type: 'date',
+      value: (r) => (r.adjustmentDate ? new Date(r.adjustmentDate).toLocaleDateString(isRTL ? 'ar-SA' : 'en-US') : '—'),
+      dateValue: (r) => r.adjustmentDate,
+    },
+    {
+      key: 'reason',
+      header: isRTL ? 'السبب' : 'Reason',
+      width: 25,
+      align: 'center',
+      type: 'text',
+      value: (r) => r.reason || r.notes || '—',
+    },
+    {
+      key: 'status',
+      header: isRTL ? 'الحالة' : 'Status',
+      width: 14,
+      align: 'center',
+      type: 'text',
+      value: (r) => statusLabel(r.status),
+    },
+  ]
+
+  const exportMeta: ExportMeta = {
+    fileName: isRTL ? 'تسويات-المخزون' : 'inventory-adjustments',
+    title: isRTL ? 'تقرير تسويات المخزون' : 'Stock Adjustments Report',
+    subtitle: isRTL ? 'أورمنال' : 'Orminal ERP',
+    isRTL,
+    summary: [
+      { label: isRTL ? 'إجمالي التسويات' : 'Total Adjustments', value: String(rows.length) },
+      { label: isRTL ? 'مرحّلة' : 'Posted', value: String(rows.filter((r: any) => r.status === 'posted').length) },
+      { label: isRTL ? 'قيد المراجعة' : 'Pending Review', value: String(rows.filter((r: any) => ['draft', 'counted', 'approved'].includes(r.status)).length) },
+      { label: isRTL ? 'ملغاة' : 'Cancelled', value: String(rows.filter((r: any) => r.status === 'cancelled').length) },
+    ],
+    labels: {
+      generatedAt: isRTL ? 'تاريخ الإنشاء' : 'Generated',
+      totalRecords: isRTL ? 'عدد السجلات' : 'Records',
+      grandTotal: isRTL ? 'الإجمالي' : 'Total',
+    },
+  }
+
+  const handleExport = async (format: ExportFormat) => {
+    if (!rows.length) {
+      toast.error(isRTL ? 'لا توجد بيانات للتصدير' : 'No data to export')
+      return
+    }
+    try {
+      await exportRows(format, rows, exportColumns, exportMeta)
+      toast.success(isRTL ? 'تم التصدير بنجاح' : 'Export completed successfully')
+    } catch (e: any) {
+      toast.error(e?.message || (isRTL ? 'حدث خطأ أثناء التصدير' : 'Export failed'))
+    }
+  }
 
   return (
     <ModuleShell
@@ -107,7 +198,31 @@ export function InventoryAdjustmentsModule() {
       searchValue={search}
       onAdd={() => setDialogOpen(true)}
       addLabel={isRTL ? 'تسوية جديدة' : 'New Adjustment'}
-      onExport={handleExport}
+      actions={
+        <DropdownMenu dir={dir as 'rtl' | 'ltr'}>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-1.5 font-medium border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
+              <Download className="size-4 text-emerald-600 dark:text-emerald-400" />
+              <span>{isRTL ? 'التصدير' : 'Export'}</span>
+              <ChevronDown className="size-4 text-slate-400 ms-0.5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align={isRTL ? 'start' : 'end'} sideOffset={6} className="w-30 z-50">
+            <DropdownMenuItem onClick={() => handleExport('excel')} className="gap-2 cursor-pointer text-xs font-medium">
+              <FileSpreadsheet className="size-4 text-emerald-600" />
+              <span>{isRTL ? 'تصدير إكسل' : 'Export Excel'}</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExport('csv')} className="gap-2 cursor-pointer text-xs font-medium">
+              <FileText className="size-4 text-sky-600" />
+              <span>{isRTL ? 'تصدير CSV' : 'Export CSV'}</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExport('pdf')} className="gap-2 cursor-pointer text-xs font-medium">
+              <FileCheck className="size-4 text-rose-600" />
+              <span>{isRTL ? 'تصدير PDF' : 'Export PDF'}</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      }
     >
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
         {isLoading ? (
@@ -122,48 +237,73 @@ export function InventoryAdjustmentsModule() {
         )}
       </div>
 
-      <div className="rounded-xl border bg-card overflow-hidden">
-        <ScrollArea className="max-h-[60vh]">
-          <Table className="table-sticky">
+      {/* جدول تسويات المخزون — رأس ثابت + تمرير للصفوف فقط + محاذاة دقيقة بالأعمدة تماشياً مع جدول مرتجعات المشتريات */}
+      <Card className="rounded-xl overflow-hidden border border-border">
+        <div
+          className="w-full overflow-y-auto overflow-x-auto overscroll-contain"
+          style={{ maxHeight: HEADER_HEIGHT + VISIBLE_ROWS * ROW_HEIGHT }}
+        >
+          <table className="w-full caption-bottom text-sm min-w-[850px] table-fixed border-separate border-spacing-0">
+            <colgroup>
+              <col className="w-[15%]" />{/* الرمز */}
+              <col className="w-[25%]" />{/* المستودع */}
+              <col className="w-[15%]" />{/* التاريخ */}
+              <col className="w-[23%]" />{/* السبب */}
+              <col className="w-[12%]" />{/* الحالة */}
+              <col className="w-[10%]" />{/* إجراءات */}
+            </colgroup>
+
             <TableHeader>
-              <TableRow>
-                <TableHead>{isRTL ? 'الرمز' : 'Code'}</TableHead>
-                <TableHead>{isRTL ? 'المستودع' : 'Warehouse'}</TableHead>
-                <TableHead>{isRTL ? 'التاريخ' : 'Date'}</TableHead>
-                <TableHead>{isRTL ? 'السبب' : 'Reason'}</TableHead>
-                <TableHead>{isRTL ? 'الحالة' : 'Status'}</TableHead>
-                <TableHead className="text-end">{isRTL ? 'إجراءات' : 'Actions'}</TableHead>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className={`${stickyHead} ps-4 text-start`}>{isRTL ? 'الرمز' : 'Code'}</TableHead>
+                <TableHead className={`${stickyHead} text-start`}>{isRTL ? 'المستودع' : 'Warehouse'}</TableHead>
+                <TableHead className={`${stickyHead} text-center`}>{isRTL ? 'التاريخ' : 'Date'}</TableHead>
+                <TableHead className={`${stickyHead} text-start`}>{isRTL ? 'السبب' : 'Reason'}</TableHead>
+                <TableHead className={`${stickyHead} text-center`}>{isRTL ? 'الحالة' : 'Status'}</TableHead>
+                <TableHead className={`${stickyHead} text-end pe-4`}>{isRTL ? 'إجراءات' : 'Actions'}</TableHead>
               </TableRow>
             </TableHeader>
+
             <TableBody>
               {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>
-                    {Array.from({ length: 6 }).map((_, j) => (
-                      <TableCell key={j}><Skeleton className="h-6" /></TableCell>
-                    ))}
-                  </TableRow>
-                ))
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-10 text-muted-foreground border-b">
+                    {isRTL ? 'جاري التحميل...' : 'Loading...'}
+                  </TableCell>
+                </TableRow>
               ) : !rows.length ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
+                  <TableCell colSpan={6} className="text-center py-10 text-muted-foreground border-b">
                     {isRTL ? 'لا توجد تسويات مخزنية مسجلة' : 'No stock adjustments recorded'}
                   </TableCell>
                 </TableRow>
               ) : (
                 rows.map((r: any) => (
-                  <TableRow key={r.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/40">
-                    <TableCell className="font-mono text-xs font-semibold text-blue-600 dark:text-blue-400">{r.code}</TableCell>
-                    <TableCell className="text-sm">{r.warehouse?.name || r.warehouse?.nameAr || '—'}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
+                  <TableRow key={r.id} className="hover:bg-muted/40 align-middle">
+                    <TableCell className="ps-4 font-mono text-xs font-semibold text-blue-600 dark:text-blue-400 border-b truncate" title={r.code}>
+                      {r.code}
+                    </TableCell>
+                    <TableCell className="text-sm font-medium border-b truncate" title={r.warehouse?.name || r.warehouse?.nameAr || '—'}>
+                      {r.warehouse?.name || r.warehouse?.nameAr || '—'}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground text-center whitespace-nowrap border-b">
                       {isRTL ? new Date(r.adjustmentDate).toLocaleDateString('ar-SA') : new Date(r.adjustmentDate).toLocaleDateString()}
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground truncate max-w-48">{r.reason || r.notes || '—'}</TableCell>
-                    <TableCell><StatusBadge status={r.status} /></TableCell>
-                    <TableCell>
+                    <TableCell className="text-sm text-muted-foreground border-b truncate" title={r.reason || r.notes || '—'}>
+                      {r.reason || r.notes || '—'}
+                    </TableCell>
+                    <TableCell className="text-center border-b">
+                      <StatusBadge status={r.status} />
+                    </TableCell>
+                    <TableCell className="pe-4 text-end border-b">
                       <div className="flex items-center justify-end gap-1">
                         {['draft', 'counted', 'approved'].includes(r.status) && (
-                          <Button size="sm" variant="outline" className="h-8 text-xs hover:bg-blue-50 dark:hover:bg-blue-950/30" onClick={() => postMut.mutate(r.id)}>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 text-xs hover:bg-blue-50 dark:hover:bg-blue-950/30"
+                            onClick={() => postMut.mutate(r.id)}
+                          >
                             {isRTL ? 'ترحيل' : 'Post'}
                           </Button>
                         )}
@@ -173,9 +313,9 @@ export function InventoryAdjustmentsModule() {
                 ))
               )}
             </TableBody>
-          </Table>
-        </ScrollArea>
-      </div>
+          </table>
+        </div>
+      </Card>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-xl p-0 overflow-hidden bg-white dark:bg-slate-950 border-slate-200 dark:border-blue-500/30" dir={dir}>
@@ -188,7 +328,6 @@ export function InventoryAdjustmentsModule() {
                 <DialogTitle className="text-xl font-bold tracking-tight text-blue-955 dark:text-white">
                   {isRTL ? 'إنشاء تسوية مخزنية جديدة' : 'New Stock Adjustment'}
                 </DialogTitle>
-
               </div>
             </div>
           </DialogHeader>
@@ -230,7 +369,7 @@ export function InventoryAdjustmentsModule() {
                       onChange={e => setForm({ ...form, reason: e.target.value })}
                       placeholder={isRTL ? 'مثال: جرد سنوي، بضاعة تالفة، الخ...' : 'e.g. Annual stocktake, damaged items, etc.'}
                       dir={dir}
-                      className={cn("h-10 ps-9border-slate-250 dark:border-blue-500/30 focus-visible:ring-blue-500 text-sm", isRTL ? "text-right" : "text-left")}
+                      className={cn("h-10 ps-9 border-slate-250 dark:border-blue-500/30 focus-visible:ring-blue-500 text-sm", isRTL ? "text-right" : "text-left")}
                     />
                   </div>
                 </div>
@@ -246,7 +385,7 @@ export function InventoryAdjustmentsModule() {
                       onChange={e => setForm({ ...form, notes: e.target.value })}
                       placeholder={isRTL ? 'تفاصيل إضافية حول التعديل...' : 'Any further details...'}
                       dir={dir}
-                      className={cn("h-10 ps-9border-slate-250 dark:border-blue-500/30 focus-visible:ring-blue-500 text-sm", isRTL ? "text-right" : "text-left")}
+                      className={cn("h-10 ps-9 border-slate-250 dark:border-blue-500/30 focus-visible:ring-blue-500 text-sm", isRTL ? "text-right" : "text-left")}
                     />
                   </div>
                 </div>
@@ -254,7 +393,7 @@ export function InventoryAdjustmentsModule() {
             </DialogBody>
 
             <DialogFooter className="px-6 py-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-blue-500/30/80 flex items-center justify-end gap-2 shrink-0">
-              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} className="h-10 px-5border-slate-250 dark:border-slate-850 hover:bg-slate-100/80 dark:hover:bg-slate-900 text-xs font-semibold">
+              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} className="h-10 px-5 border-slate-250 dark:border-slate-850 hover:bg-slate-100/80 dark:hover:bg-slate-900 text-xs font-semibold">
                 {isRTL ? 'إلغاء' : 'Cancel'}
               </Button>
               <Button type="submit" disabled={createMut.isPending || !form.warehouseId} className="h-10 px-5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-xs font-semibold shadow-sm">

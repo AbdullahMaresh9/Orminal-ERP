@@ -7,7 +7,7 @@ import { KpiCard } from '@/components/erp/kpi-card'
 import { StatusBadge } from '@/components/erp/status-badge'
 import { useT } from '@/lib/i18n/use-t'
 import { formatCurrency, formatInt } from '@/lib/format'
-import { exportToCSV } from '@/lib/export'
+import { exportRows, ExportColumn, ExportFormat, ExportMeta } from '@/lib/export'
 import { toast } from 'sonner'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -20,10 +20,12 @@ import { Switch } from '@/components/ui/switch'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogBody,
 } from '@/components/ui/dialog'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 import {
-  Truck, Plus, Pencil, Trash2, Phone, Mail, Building2, MapPin, Hash, Coins
+  Truck, Plus, Pencil, Trash2, Phone, Mail, Building2, MapPin, Hash, Coins, Download, FileSpreadsheet, FileText, FileDown
 } from 'lucide-react'
 
 interface Supplier {
@@ -45,10 +47,15 @@ interface Supplier {
   createdAt: string
 }
 
+const VISIBLE_ROWS = 6
+const ROW_HEIGHT = 44
+const HEADER_HEIGHT = 40
+
 export default function SuppliersModule() {
   const { t, locale } = useT()
   const isRTL = locale === 'ar'
   const dir = isRTL ? 'rtl' : 'ltr'
+  const stickyHead = 'sticky top-0 z-20 bg-muted whitespace-nowrap shadow-[inset_0_-1px_0_0_hsl(var(--border))]'
   const qc = useQueryClient()
 
   const [search, setSearch] = useState('')
@@ -142,20 +149,43 @@ export default function SuppliersModule() {
     saveMutation.mutate(payload)
   }
 
-  const handleExport = () => {
-    const rows = suppliers.map((s) => ({
-      [isRTL ? 'الرمز' : 'Code']: s.code,
-      [isRTL ? 'الاسم' : 'Name']: s.nameAr,
-      [isRTL ? 'جهة الاتصال' : 'Contact Person']: s.contactName ?? '',
-      [isRTL ? 'الهاتف' : 'Phone']: s.phone ?? '',
-      [isRTL ? 'البريد' : 'Email']: s.email ?? '',
-      [isRTL ? 'الرقم الضريبي' : 'Tax Number']: s.taxNumber ?? '',
-      [isRTL ? 'حد الائتمان' : 'Credit Limit']: s.creditLimit,
-      [isRTL ? 'الرصيد الحالي' : 'Current Balance']: s.currentBalance,
-      [isRTL ? 'الحالة' : 'Status']: s.active ? (isRTL ? 'نشط' : 'Active') : (isRTL ? 'غير نشط' : 'Inactive'),
-    }))
-    exportToCSV('suppliers', rows)
-    toast.success(isRTL ? 'تم تصدير الملف' : 'Exported successfully')
+  const exportColumns: ExportColumn<Supplier>[] = [
+    { key: 'code', header: isRTL ? 'الرمز' : 'Code', width: 14, align: 'center', value: (s) => s.code },
+    { key: 'name', header: isRTL ? 'الاسم' : 'Name', width: 24, align: 'center', value: (s) => isRTL ? s.nameAr : (s.nameEn || s.nameAr) },
+    { key: 'contactName', header: isRTL ? 'جهة الاتصال' : 'Contact Person', width: 20, align: 'center', value: (s) => s.contactName ?? '' },
+    { key: 'phone', header: isRTL ? 'الهاتف' : 'Phone', width: 16, align: 'center', type: 'number', numFmt: '0', value: (s) => (s.phone ? Number(String(s.phone).replace(/\D/g, '')) || s.phone : '') },
+    { key: 'currentBalance', header: isRTL ? 'الرصيد' : 'Balance', width: 16, align: 'center', type: 'currency', summable: true, value: (s) => s.currentBalance },
+    { key: 'status', header: isRTL ? 'الحالة' : 'Status', width: 12, align: 'center', value: (s) => s.active ? (isRTL ? 'نشط' : 'Active') : (isRTL ? 'غير نشط' : 'Inactive') },
+  ]
+
+  const exportMeta: ExportMeta = {
+    fileName: isRTL ? 'الموردون' : 'suppliers',
+    title: isRTL ? 'تقرير الموردين' : 'Suppliers Report',
+    subtitle: isRTL ? 'أورمنال' : 'Orminal',
+    isRTL,
+    summary: [
+      { label: isRTL ? 'إجمالي الموردين' : 'Total Suppliers', value: formatInt(total) },
+      { label: isRTL ? 'الموردون النشطون' : 'Active Suppliers', value: formatInt(stats.active) },
+      { label: isRTL ? 'إجمالي الأرصدة' : 'Total Balances', value: formatCurrency(stats.totalBalance) },
+    ],
+    labels: {
+      generatedAt: isRTL ? 'تاريخ الإنشاء' : 'Generated',
+      totalRecords: isRTL ? 'عدد السجلات' : 'Records',
+      grandTotal: isRTL ? 'الإجمالي' : 'Total',
+    },
+  }
+
+  const handleExport = async (format: ExportFormat) => {
+    if (!suppliers.length) {
+      toast.error(isRTL ? 'لا توجد بيانات للتصدير' : 'No data to export')
+      return
+    }
+    try {
+      await exportRows(format, suppliers, exportColumns, exportMeta)
+      toast.success(isRTL ? 'تم تصدير الملف' : 'File exported')
+    } catch (e: any) {
+      toast.error(e?.message || (isRTL ? 'فشل التصدير' : 'Export failed'))
+    }
   }
 
   return (
@@ -168,7 +198,27 @@ export default function SuppliersModule() {
       searchPlaceholder={isRTL ? 'ابحث برمز المورد أو الاسم أو الهاتف...' : 'Search by supplier code, name or phone...'}
       onAdd={() => { setEditing(null); setDialogOpen(true) }}
       addLabel={isRTL ? 'إضافة مورد جديد' : 'Add Supplier'}
-      onExport={handleExport}
+      actions={
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-1.5">
+              <Download className="size-4" />
+              <span className="hidden sm:inline">{isRTL ? 'تصدير' : 'Export'}</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align={isRTL ? 'start' : 'end'} className="w-44">
+            <DropdownMenuItem onClick={() => handleExport('excel')} className="gap-2 cursor-pointer">
+              <FileSpreadsheet className="size-4 text-emerald-600" /> {isRTL ? 'تصدير Excel' : 'Export Excel'}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExport('csv')} className="gap-2 cursor-pointer">
+              <FileText className="size-4 text-sky-600" /> {isRTL ? 'تصدير CSV' : 'Export CSV'}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExport('pdf')} className="gap-2 cursor-pointer">
+              <FileDown className="size-4 text-rose-600" /> {isRTL ? 'تصدير PDF' : 'Export PDF'}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      }
       filters={
         <>
           <Button size="sm" variant={statusFilter === 'all' ? 'default' : 'outline'} onClick={() => { setStatusFilter('all'); setPage(1); }}>
@@ -191,17 +241,29 @@ export default function SuppliersModule() {
       </div>
 
       <Card className="rounded-xl overflow-hidden">
-        <ScrollArea className="max-h-[60vh]">
-          <Table>
+        <div
+          className="w-full overflow-y-auto overflow-x-auto overscroll-contain"
+          style={{ maxHeight: HEADER_HEIGHT + VISIBLE_ROWS * ROW_HEIGHT }}
+        >
+          <table className="w-full caption-bottom text-sm min-w-[900px] table-fixed border-separate border-spacing-0">
+            <colgroup>
+              <col className="w-[12%]" />
+              <col className="w-[22%]" />
+              <col className="w-[18%]" />
+              <col className="w-[14%]" />
+              <col className="w-[14%]" />
+              <col className="w-[10%]" />
+              <col className="w-[10%]" />
+            </colgroup>
             <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead className="ps-4">{isRTL ? 'الرمز' : 'Code'}</TableHead>
-                <TableHead>{isRTL ? 'الاسم' : 'Name'}</TableHead>
-                <TableHead>{isRTL ? 'جهة الاتصال' : 'Contact Person'}</TableHead>
-                <TableHead>{isRTL ? 'الهاتف' : 'Phone'}</TableHead>
-                <TableHead className="text-end num-cell">{isRTL ? 'الرصيد' : 'Balance'}</TableHead>
-                <TableHead>{isRTL ? 'الحالة' : 'Status'}</TableHead>
-                <TableHead className="text-end">{isRTL ? 'إجراءات' : 'Actions'}</TableHead>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className={`${stickyHead} ps-4 text-start`}>{isRTL ? 'الرمز' : 'Code'}</TableHead>
+                <TableHead className={`${stickyHead} text-start`}>{isRTL ? 'الاسم' : 'Name'}</TableHead>
+                <TableHead className={`${stickyHead} text-start`}>{isRTL ? 'جهة الاتصال' : 'Contact Person'}</TableHead>
+                <TableHead className={`${stickyHead} text-center`}>{isRTL ? 'الهاتف' : 'Phone'}</TableHead>
+                <TableHead className={`${stickyHead} text-center`}>{isRTL ? 'الرصيد' : 'Balance'}</TableHead>
+                <TableHead className={`${stickyHead} text-center`}>{isRTL ? 'الحالة' : 'Status'}</TableHead>
+                <TableHead className={`${stickyHead} text-end pe-4`}>{isRTL ? 'إجراءات' : 'Actions'}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -220,29 +282,31 @@ export default function SuppliersModule() {
               ) : (
                 suppliers.map((s) => (
                   <TableRow key={s.id} className="hover:bg-muted/40">
-                    <TableCell className="ps-4 font-mono text-xs" dir="ltr">
+                    <TableCell className="ps-4 font-mono text-xs border-b truncate" dir="ltr">
                       {s.code}
                     </TableCell>
-                    <TableCell className="font-medium">{s.nameAr}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{s.contactName ?? '—'}</TableCell>
-                    <TableCell className="text-sm font-mono" dir="ltr">
+                    <TableCell className="font-medium border-b truncate">
+                      {isRTL ? s.nameAr : (s.nameEn || s.nameAr)}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground border-b truncate">{s.contactName ?? '—'}</TableCell>
+                    <TableCell className="text-sm font-mono text-center border-b whitespace-nowrap" dir="ltr">
                       {s.phone ?? '—'}
                     </TableCell>
-                    <TableCell className="text-end num-cell">
+                    <TableCell className="text-center border-b whitespace-nowrap">
                       <span className="num font-semibold tabular-nums" dir="ltr">
                         {formatCurrency(s.currentBalance)}
                       </span>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-center border-b">
                       <StatusBadge status={s.active ? 'active' : 'inactive'} />
                     </TableCell>
-                    <TableCell className="text-end">
+                    <TableCell className="text-end pe-4 border-b">
                       <div className="flex items-center justify-end gap-1">
                         <Button size="icon" variant="ghost" className="size-8" onClick={() => { setEditing(s); setDialogOpen(true); }}>
-                          <Pencil className="size-3.5" />
+                          <Pencil className="size-4" />
                         </Button>
                         <Button size="icon" variant="ghost" className="size-8 text-rose-500 hover:text-rose-600" onClick={() => deleteMutation.mutate(s.id)}>
-                          <Trash2 className="size-3.5" />
+                          <Trash2 className="size-4.5 ps-1" />
                         </Button>
                       </div>
                     </TableCell>
@@ -250,28 +314,11 @@ export default function SuppliersModule() {
                 ))
               )}
             </TableBody>
-          </Table>
-        </ScrollArea>
+          </table>
+        </div>
       </Card>
 
-      <div className="flex items-center justify-between mt-4 text-sm" dir={dir}>
-        <p className="text-muted-foreground">
-          {isRTL
-            ? `عرض ${suppliers.length === 0 ? 0 : (page - 1) * pageSize + 1}–${(page - 1) * pageSize + suppliers.length} من ${total}`
-            : `Showing ${suppliers.length === 0 ? 0 : (page - 1) * pageSize + 1}–${(page - 1) * pageSize + suppliers.length} of ${total}`}
-        </p>
-        <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-            {isRTL ? 'السابق' : 'Previous'}
-          </Button>
-          <span className="text-xs text-muted-foreground">
-            {isRTL ? `صفحة ${page} من ${totalPages}` : `Page ${page} of ${totalPages}`}
-          </span>
-          <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
-            {isRTL ? 'التالي' : 'Next'}
-          </Button>
-        </div>
-      </div>
+
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-3xl p-0 overflow-hidden bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800" dir={dir}>

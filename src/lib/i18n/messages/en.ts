@@ -34,7 +34,7 @@ export const enMessages = {
     products: 'Products', categories: 'Categories', warehouses: 'Warehouses',
     storehouses: 'Storehouses', branches: 'Branches', activities: 'Activities',
     'stock-locations': 'Stock Locations', 'stock-on-hand': 'Stock on Hand',
-    'stock-transfers': 'Stock Transfers', deliveries: 'Deliveries',
+    deliveries: 'Deliveries',
     'inventory-adjustments': 'Inventory Adjustments', 'stock-moves': 'Stock Moves',
     'stock-takes': 'Stock Takes', 'inventory-transfers': 'Inventory Transfers',
     'inventory-incoming': 'Inventory Incoming', 'inventory-outgoing': 'Inventory Outgoing',

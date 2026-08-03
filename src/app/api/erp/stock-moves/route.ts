@@ -33,8 +33,8 @@ export async function GET(req: Request) {
         take: pageSize,
         include: {
           product: { select: { id: true, sku: true, nameAr: true, nameEn: true } },
-          sourceWarehouse: { select: { id: true, code: true, nameAr: true } },
-          destWarehouse: { select: { id: true, code: true, nameAr: true } },
+          sourceWarehouse: { select: { id: true, code: true, nameAr: true, nameEn: true } },
+          destWarehouse: { select: { id: true, code: true, nameAr: true, nameEn: true } },
           lot: { select: { id: true, lotNumber: true } },
         },
       }),

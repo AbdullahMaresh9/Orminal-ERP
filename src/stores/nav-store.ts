@@ -20,7 +20,7 @@ export type ModuleKey =
   // Procurement
   | 'purchase-requests' | 'purchase-orders' | 'goods-receipts' | 'purchase-invoices' | 'purchase-credit-notes' | 'purchase-returns'
   // Inventory
-  | 'stock-on-hand' | 'stock-transfers' | 'deliveries' | 'inventory-adjustments' | 'stock-moves'
+  | 'stock-on-hand' | 'deliveries' | 'inventory-adjustments' | 'stock-moves'
   | 'stock-takes' | 'inventory-transfers' | 'inventory-incoming' | 'inventory-outgoing' | 'inventory-requisitions'
   // Manufacturing
   | 'boms' | 'work-centers' | 'production-orders'

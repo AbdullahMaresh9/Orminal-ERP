@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useT } from '@/lib/i18n/use-t'
 import { formatNumber, formatDate } from '@/lib/format'
-import { exportToCSV } from '@/lib/export'
+import { exportRows, printHTML, ExportColumn, ExportMeta, ExportFormat } from '@/lib/export'
 import { ModuleShell } from '@/components/erp/module-shell'
 import { KpiCard } from '@/components/erp/kpi-card'
 import { StatusBadge } from '@/components/erp/status-badge'
@@ -12,8 +12,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from '@/components/ui/table'
@@ -28,7 +28,10 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
-import { FileText, Plus, Trash2, CheckCircle2, XCircle, MoreVertical, Package, ClipboardCheck } from 'lucide-react'
+import {
+  FileText, Plus, Trash2, CheckCircle2, XCircle, MoreVertical, Package, ClipboardCheck,
+  Download, FileSpreadsheet, FileCheck, ChevronDown, Eye, Printer, Pencil, RefreshCw
+} from 'lucide-react'
 
 interface Requisition {
   id: string
@@ -42,6 +45,12 @@ interface Requisition {
   updatedAt: string
   storehouse: { id: string; name: string; code: string }
 }
+
+// أبعاد الجدول وحساب الارتفاع الثابت لخمسة/ستة صفوف تماشياً مع نمط مرتجعات المشتريات
+const HEADER_HEIGHT = 44
+const VISIBLE_ROWS = 6
+const ROW_HEIGHT = 52
+const stickyHead = 'sticky top-0 z-20 bg-muted whitespace-nowrap shadow-[inset_0_-1px_0_0_hsl(var(--border))]'
 
 export function InventoryRequisitionsModule() {
   const { t, isRTL, dir } = useT()
@@ -98,12 +107,12 @@ export function InventoryRequisitionsModule() {
       return r.json()
     },
     onSuccess: () => {
-      toast.success('تم إنشاء طلب الصرف بنجاح')
+      toast.success(isRTL ? 'تم إنشاء طلب الصرف بنجاح' : 'Requisition created successfully')
       qc.invalidateQueries({ queryKey: ['inventory-requisitions'] })
       setDialogOpen(false)
       resetForm()
     },
-    onError: (e: any) => toast.error(e.message || 'حدث خطأ'),
+    onError: (e: any) => toast.error(e.message || (isRTL ? 'حدث خطأ' : 'Error occurred')),
   })
 
   const updateMutation = useMutation({
@@ -120,17 +129,35 @@ export function InventoryRequisitionsModule() {
       return r.json()
     },
     onSuccess: () => {
-      toast.success('تم التحديث بنجاح')
+      toast.success(isRTL ? 'تم التحديث بنجاح' : 'Updated successfully')
       qc.invalidateQueries({ queryKey: ['inventory-requisitions'] })
       qc.invalidateQueries({ queryKey: ['products'] })
       setDetailReq(null)
     },
-    onError: (e: any) => toast.error(e.message || 'حدث خطأ'),
+    onError: (e: any) => toast.error(e.message || (isRTL ? 'حدث خطأ' : 'Error occurred')),
   })
+
+  const [editingId, setEditingId] = useState<string | null>(null)
 
   function resetForm() {
     setForm({ storehouseId: '', note: '' })
     setItems([])
+    setEditingId(null)
+  }
+  function handleEdit(r: Requisition) {
+    setForm({ storehouseId: r.storehouseId, note: r.note || '' })
+    try {
+      const parsed = JSON.parse(r.itemsJson || '[]')
+      setItems(parsed.map((it: any) => ({
+        productId: it.productId,
+        quantity: Number(it.quantity || 1),
+        note: it.note || ''
+      })))
+    } catch {
+      setItems([])
+    }
+    setEditingId(r.id)
+    setDialogOpen(true)
   }
   function addItem() {
     setItems([...items, { productId: '', quantity: 1, note: '' }])
@@ -145,30 +172,16 @@ export function InventoryRequisitionsModule() {
   }
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!form.storehouseId) return toast.error('المستودع مطلوب')
+    if (!form.storehouseId) return toast.error(isRTL ? 'المستودع مطلوب' : 'Storehouse is required')
     const validItems = items.filter(i => i.productId && i.quantity > 0)
-    if (!validItems.length) return toast.error('أضف عنصراً واحداً على الأقل')
-    createMutation.mutate({ ...form, items: validItems })
-  }
-  function handleExport() {
-    exportToCSV('inventory-requisitions', reqs.map(r => {
-      const parsed: any[] = JSON.parse(r.itemsJson || '[]')
-      return {
-        code: r.code,
-        date: formatDate(r.createdAt),
-        storehouse: r.storehouse.name,
-        items: parsed.length,
-        totalQty: parsed.reduce((s: number, x: any) => s + Number(x.quantity ?? 0), 0),
-        status: r.status,
-      }
-    }), [
-      { key: 'code', label: 'الرمز' },
-      { key: 'date', label: 'التاريخ' },
-      { key: 'storehouse', label: 'المستودع' },
-      { key: 'items', label: 'عدد العناصر' },
-      { key: 'totalQty', label: 'إجمالي الكمية' },
-      { key: 'status', label: 'الحالة' },
-    ])
+    if (!validItems.length) return toast.error(isRTL ? 'أضف عنصراً واحداً على الأقل' : 'Add at least one item')
+    if (editingId) {
+      updateMutation.mutate({ id: editingId, body: { ...form, items: validItems } })
+      setDialogOpen(false)
+      resetForm()
+    } else {
+      createMutation.mutate({ ...form, items: validItems })
+    }
   }
 
   const kpis = useMemo(() => {
@@ -179,23 +192,198 @@ export function InventoryRequisitionsModule() {
     return { total, draft, approved, fulfilled }
   }, [reqs])
 
+  // إعدادات التصدير الموحدة عالية الجودة مع محاذاة في الوسط لتطابق عناوين الأعمدة
+  const exportColumns: ExportColumn<Requisition>[] = [
+    {
+      key: 'code',
+      header: isRTL ? 'الرمز' : 'Code',
+      width: 14,
+      align: 'center',
+      type: 'text',
+      value: (r) => r.code,
+    },
+    {
+      key: 'createdAt',
+      header: isRTL ? 'التاريخ' : 'Date',
+      width: 16,
+      align: 'center',
+      type: 'date',
+      value: (r) => (r.createdAt ? formatDate(r.createdAt) : '—'),
+      dateValue: (r) => r.createdAt,
+    },
+    {
+      key: 'storehouse',
+      header: isRTL ? 'المستودع' : 'Storehouse',
+      width: 22,
+      align: 'center',
+      type: 'text',
+      value: (r) => r.storehouse?.name ?? '—',
+    },
+    {
+      key: 'itemsCount',
+      header: isRTL ? 'عدد العناصر' : 'Items Count',
+      width: 14,
+      align: 'center',
+      type: 'number',
+      summable: true,
+      value: (r) => {
+        const parsed: any[] = JSON.parse(r.itemsJson || '[]')
+        return parsed.length
+      },
+    },
+    {
+      key: 'totalQty',
+      header: isRTL ? 'إجمالي الكمية' : 'Total Qty',
+      width: 14,
+      align: 'center',
+      type: 'number',
+      summable: true,
+      value: (r) => {
+        const parsed: any[] = JSON.parse(r.itemsJson || '[]')
+        return parsed.reduce((s: number, x: any) => s + Number(x.quantity ?? 0), 0)
+      },
+    },
+    {
+      key: 'status',
+      header: isRTL ? 'الحالة' : 'Status',
+      width: 14,
+      align: 'center',
+      type: 'text',
+      value: (r) => r.status,
+    },
+  ]
+
+  const exportMeta: ExportMeta = {
+    fileName: isRTL ? 'طلبات-المخزون' : 'inventory-requisitions',
+    title: isRTL ? 'تقرير طلبات صرف المخزون' : 'Inventory Requisitions Report',
+    subtitle: isRTL ? 'أورمنال' : 'Orminal ERP',
+    isRTL,
+    summary: [
+      { label: isRTL ? 'إجمالي الطلبات' : 'Total Requisitions', value: String(kpis.total) },
+      { label: isRTL ? 'بانتظار الاعتماد' : 'Pending Approval', value: String(kpis.draft) },
+      { label: isRTL ? 'معتمدة' : 'Approved', value: String(kpis.approved) },
+      { label: isRTL ? 'مُنفّذة' : 'Fulfilled', value: String(kpis.fulfilled) },
+    ],
+    labels: {
+      generatedAt: isRTL ? 'تاريخ الإنشاء' : 'Generated',
+      totalRecords: isRTL ? 'عدد السجلات' : 'Records',
+      grandTotal: isRTL ? 'الإجمالي' : 'Total',
+    },
+  }
+
+  const handleExportFormat = async (format: ExportFormat) => {
+    if (!reqs.length) {
+      toast.error(isRTL ? 'لا توجد بيانات للتصدير' : 'No data to export')
+      return
+    }
+    try {
+      await exportRows(format, reqs, exportColumns, exportMeta)
+      toast.success(isRTL ? 'تم التصدير بنجاح' : 'Export completed successfully')
+    } catch (e: any) {
+      toast.error(e?.message || (isRTL ? 'حدث خطأ أثناء التصدير' : 'Export failed'))
+    }
+  }
+
+  async function handlePrintVoucher(r: Requisition) {
+    const parsed: any[] = JSON.parse(r.itemsJson || '[]')
+    const itemsHtml = parsed.map((it: any) => {
+      const p = products.find(x => x.id === it.productId)
+      return `
+        <tr>
+          <td style="padding:10px; border:1px solid #E2E8F0; font-weight:bold;">${p?.name || it.productId}</td>
+          <td style="padding:10px; border:1px solid #E2E8F0; text-align:center; font-family:monospace;">${p?.sku || '—'}</td>
+          <td style="padding:10px; border:1px solid #E2E8F0; text-align:center; font-weight:bold; color:#2563EB;">${it.quantity}</td>
+          <td style="padding:10px; border:1px solid #E2E8F0;">${it.note || '—'}</td>
+        </tr>
+      `
+    }).join('')
+
+    const html = `
+      <div style="padding: 24px; font-family: system-ui, -apple-system, sans-serif; direction: ${isRTL ? 'rtl' : 'ltr'};">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #2563EB; padding-bottom:14px; margin-bottom:20px;">
+          <div>
+            <h1 style="margin:0; font-size:22px; color:#2563EB;">${isRTL ? 'طلب صرف مخزني' : 'Stock Requisition Voucher'}</h1>
+            <p style="margin:4px 0 0 0; color:#64748B; font-size:12px;">${isRTL ? 'كود الطلب' : 'Requisition Code'}: <strong>${r.code}</strong></p>
+          </div>
+          <div style="text-align:${isRTL ? 'left' : 'right'}; font-size:12px; color:#475569;">
+            <p style="margin:0;">${isRTL ? 'التاريخ' : 'Date'}: ${formatDate(r.createdAt)}</p>
+            <p style="margin:4px 0 0 0;">${isRTL ? 'المستودع المطلوبة منه' : 'Target Storehouse'}: <strong>${r.storehouse?.name || '—'}</strong></p>
+          </div>
+        </div>
+
+        <table style="width:100%; border-collapse:collapse; margin-top:20px; font-size:13px;">
+          <thead>
+            <tr style="background:#EFF6FF; color:#1E40AF;">
+              <th style="padding:10px; border:1px solid #BFDBFE; text-align:${isRTL ? 'right' : 'left'};">${isRTL ? 'اسم المنتج' : 'Product Name'}</th>
+              <th style="padding:10px; border:1px solid #BFDBFE; text-align:center;">SKU</th>
+              <th style="padding:10px; border:1px solid #BFDBFE; text-align:center;">${isRTL ? 'الكمية المطلوبة' : 'Requested Qty'}</th>
+              <th style="padding:10px; border:1px solid #BFDBFE; text-align:${isRTL ? 'right' : 'left'};">${isRTL ? 'ملاحظات' : 'Notes'}</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsHtml}
+          </tbody>
+        </table>
+
+        ${r.note ? `<div style="margin-top:20px; padding:12px; background:#F8FAFC; border:1px solid #E2E8F0; border-radius:6px; font-size:12px;"><strong>${isRTL ? 'ملاحظات الطلب' : 'Requisition Notes'}:</strong> ${r.note}</div>` : ''}
+
+        <div style="display:flex; justify-content:space-between; margin-top:50px; font-size:12px; padding-top:20px; border-top:1px dashed #CBD5E1;">
+          <div>
+            <p style="margin:0 0 35px 0;">${isRTL ? 'توقيع طالب الصرف:' : 'Requester Signature:'}</p>
+            <p style="margin:0;">__________________________</p>
+          </div>
+          <div>
+            <p style="margin:0 0 35px 0;">${isRTL ? 'توقيع الاعتماد المخزني:' : 'Approval Signature:'}</p>
+            <p style="margin:0;">__________________________</p>
+          </div>
+        </div>
+      </div>
+    `
+
+    await printHTML(html, isRTL ? `طلب-صرف-${r.code}` : `Requisition-Voucher-${r.code}`, { dir: isRTL ? 'rtl' : 'ltr' })
+  }
+
   return (
     <ModuleShell
       title={t('module.inventory-requisitions')}
-      description="طلبات صرف المخزون واعتمادها"
+      description={isRTL ? "طلبات صرف المخزون واعتمادها" : "Manage stock requisitions and approvals"}
       icon={<FileText className="size-5" />}
       onAdd={() => { resetForm(); setDialogOpen(true) }}
-      addLabel="طلب صرف جديد"
-      onExport={handleExport}
+      addLabel={isRTL ? "طلب صرف جديد" : "New Requisition"}
+      actions={
+        <DropdownMenu dir={dir as 'rtl' | 'ltr'}>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-1.5 font-medium border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
+              <Download className="size-4 text-emerald-600 dark:text-emerald-400" />
+              <span>{isRTL ? 'التصدير' : 'Export'}</span>
+              <ChevronDown className="size-4 text-slate-400 ms-0.5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align={isRTL ? 'start' : 'end'} sideOffset={6} className="w-30 z-50">
+            <DropdownMenuItem onClick={() => handleExportFormat('excel')} className="gap-2 cursor-pointer text-xs font-medium">
+              <FileSpreadsheet className="size-4 text-emerald-600" />
+              <span>{isRTL ? 'تصدير إكسل' : 'Export Excel'}</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExportFormat('csv')} className="gap-2 cursor-pointer text-xs font-medium">
+              <FileText className="size-4 text-sky-600" />
+              <span>{isRTL ? 'تصدير CSV' : 'Export CSV'}</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExportFormat('pdf')} className="gap-2 cursor-pointer text-xs font-medium">
+              <FileCheck className="size-4 text-rose-600" />
+              <span>{isRTL ? 'تصدير PDF' : 'Export PDF'}</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      }
       filters={
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">كل الحالات</SelectItem>
-            <SelectItem value="draft">مسودة</SelectItem>
-            <SelectItem value="approved">معتمد</SelectItem>
-            <SelectItem value="rejected">مرفوض</SelectItem>
-            <SelectItem value="fulfilled">مُنفّذ</SelectItem>
+          <SelectTrigger dir={dir} className={cn("w-40", isRTL ? "text-right" : "text-left")}><SelectValue /></SelectTrigger>
+          <SelectContent dir={dir}>
+            <SelectItem value="all">{isRTL ? "كل الحالات" : "All Statuses"}</SelectItem>
+            <SelectItem value="draft">{isRTL ? "مسودة" : "Draft"}</SelectItem>
+            <SelectItem value="approved">{isRTL ? "معتمد" : "Approved"}</SelectItem>
+            <SelectItem value="rejected">{isRTL ? "مرفوض" : "Rejected"}</SelectItem>
+            <SelectItem value="fulfilled">{isRTL ? "مُنفّذ" : "Fulfilled"}</SelectItem>
           </SelectContent>
         </Select>
       }
@@ -205,89 +393,143 @@ export function InventoryRequisitionsModule() {
           Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />)
         ) : (
           <>
-            <KpiCard title="إجمالي الطلبات" value={String(kpis.total)} icon={<FileText className="size-5" />} accent="blue" />
-            <KpiCard title="بانتظار الاعتماد" value={String(kpis.draft)} icon={<ClipboardCheck className="size-5" />} accent="amber" />
-            <KpiCard title="معتمدة" value={String(kpis.approved)} icon={<CheckCircle2 className="size-5" />} accent="sky" />
-            <KpiCard title="مُنفّذة" value={String(kpis.fulfilled)} icon={<Package className="size-5" />} accent="violet" />
+            <KpiCard title={isRTL ? "إجمالي الطلبات" : "Total Requisitions"} value={String(kpis.total)} icon={<FileText className="size-5" />} accent="blue" />
+            <KpiCard title={isRTL ? "بانتظار الاعتماد" : "Pending Approval"} value={String(kpis.draft)} icon={<ClipboardCheck className="size-5" />} accent="amber" />
+            <KpiCard title={isRTL ? "معتمدة" : "Approved"} value={String(kpis.approved)} icon={<CheckCircle2 className="size-5" />} accent="sky" />
+            <KpiCard title={isRTL ? "مُنفّذة" : "Fulfilled"} value={String(kpis.fulfilled)} icon={<Package className="size-5" />} accent="violet" />
           </>
         )}
       </div>
 
-      <div className="rounded-xl border bg-card overflow-hidden">
-        <ScrollArea className="max-h-[60vh]">
-          <Table className="table-sticky">
+      {/* جدول طلبات المخزون — رأس ثابت + تمرير للصفوف فقط + محاذاة دقيقة بالأعمدة تماشياً مع جدول مرتجعات المشتريات */}
+      <Card className="rounded-xl overflow-hidden border border-border">
+        <div
+          className="w-full overflow-y-auto overflow-x-auto overscroll-contain"
+          style={{ maxHeight: HEADER_HEIGHT + VISIBLE_ROWS * ROW_HEIGHT }}
+        >
+          <table className="w-full caption-bottom text-sm min-w-[960px] table-fixed border-separate border-spacing-0">
+            <colgroup>
+              <col className="w-[14%]" />{/* الرمز */}
+              <col className="w-[14%]" />{/* التاريخ */}
+              <col className="w-[24%]" />{/* المستودع */}
+              <col className="w-[14%]" />{/* عدد العناصر */}
+              <col className="w-[14%]" />{/* إجمالي الكمية */}
+              <col className="w-[12%]" />{/* الحالة */}
+              <col className="w-[8%]" />{/* إجراءات */}
+            </colgroup>
+
             <TableHeader>
-              <TableRow>
-                <TableHead>الرمز</TableHead>
-                <TableHead>التاريخ</TableHead>
-                <TableHead>المستودع</TableHead>
-                <TableHead className="num-cell">عدد العناصر</TableHead>
-                <TableHead className="num-cell">إجمالي الكمية</TableHead>
-                <TableHead className="text-end">الحالة</TableHead>
-                <TableHead className="text-end">إجراءات</TableHead>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className={`${stickyHead} ps-4 text-start`}>{isRTL ? "الرمز" : "Code"}</TableHead>
+                <TableHead className={`${stickyHead} text-start`}>{isRTL ? "التاريخ" : "Date"}</TableHead>
+                <TableHead className={`${stickyHead} text-start`}>{isRTL ? "المستودع" : "Storehouse"}</TableHead>
+                <TableHead className={`${stickyHead} text-center`}>{isRTL ? "عدد العناصر" : "Items Count"}</TableHead>
+                <TableHead className={`${stickyHead} text-center`}>{isRTL ? "إجمالي الكمية" : "Total Qty"}</TableHead>
+                <TableHead className={`${stickyHead} text-end`}>{isRTL ? "الحالة" : "Status"}</TableHead>
+                <TableHead className={`${stickyHead} text-end pe-4`}>{isRTL ? "إجراءات" : "Actions"}</TableHead>
               </TableRow>
             </TableHeader>
+
             <TableBody>
               {isLoading ? (
-                Array.from({ length: 4 }).map((_, i) => (
-                  <TableRow key={i}>
-                    {Array.from({ length: 7 }).map((_, j) => <TableCell key={j}><Skeleton className="h-6" /></TableCell>)}
-                  </TableRow>
-                ))
-              ) : reqs.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-16 text-muted-foreground">
-                    <FileText className="size-10 mx-auto mb-2 opacity-50" />
-                    لا توجد طلبات صرف. ابدأ بإنشاء طلب جديد.
+                  <TableCell colSpan={7} className="text-center py-10 text-muted-foreground border-b">
+                    {isRTL ? 'جاري التحميل...' : 'Loading...'}
                   </TableCell>
                 </TableRow>
-              ) : reqs.map(r => {
-                const parsed: any[] = JSON.parse(r.itemsJson || '[]')
-                const totalQty = parsed.reduce((s, x) => s + Number(x.quantity ?? 0), 0)
-                return (
-                  <TableRow key={r.id} className="cursor-pointer" onClick={() => setDetailReq(r)}>
-                    <TableCell className="font-mono text-xs font-semibold text-primary">{r.code}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{formatDate(r.createdAt)}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1.5">
-                        <Package className="size-3.5 text-muted-foreground" />
-                        <span className="text-sm">{r.storehouse.name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="num-cell text-xs"><span className="num">{parsed.length}</span></TableCell>
-                    <TableCell className="num-cell text-sm font-medium"><span className="num">{totalQty}</span></TableCell>
-                    <TableCell className="text-end"><StatusBadge status={r.status} /></TableCell>
-                    <TableCell className="text-end" onClick={e => e.stopPropagation()}>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="size-8"><MoreVertical className="size-4" /></Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          {r.status === 'draft' && (
-                            <>
-                              <DropdownMenuItem onClick={() => updateMutation.mutate({ id: r.id, body: { status: 'approved' } })}>
-                                <CheckCircle2 className="size-4 ms-2" /> اعتماد
-                              </DropdownMenuItem>
-                              <DropdownMenuItem className="text-rose-600" onClick={() => updateMutation.mutate({ id: r.id, body: { status: 'rejected' } })}>
-                                <XCircle className="size-4 ms-2" /> رفض
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                          {r.status === 'approved' && (
-                            <DropdownMenuItem onClick={() => updateMutation.mutate({ id: r.id, body: { status: 'fulfilled' } })}>
-                              <Package className="size-4 ms-2" /> تنفيذ (صرف)
+              ) : reqs.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-12 text-muted-foreground border-b">
+                    <FileText className="size-10 mx-auto mb-2 opacity-50" />
+                    {isRTL ? 'لا توجد طلبات صرف. ابدأ بإنشاء طلب جديد.' : 'No requisitions recorded. Start by creating a new requisition.'}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                reqs.map((r) => {
+                  const parsed: any[] = JSON.parse(r.itemsJson || '[]')
+                  const totalQty = parsed.reduce((s, x) => s + Number(x.quantity ?? 0), 0)
+                  return (
+                    <TableRow key={r.id} className="hover:bg-muted/40 align-middle cursor-pointer" onClick={() => setDetailReq(r)}>
+                      <TableCell className="ps-4 font-mono text-xs font-semibold text-primary border-b truncate">
+                        {r.code}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap border-b">
+                        {formatDate(r.createdAt)}
+                      </TableCell>
+                      <TableCell className="border-b truncate">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <Package className="size-3.5 text-muted-foreground shrink-0" />
+                          <span className="text-sm truncate">{r.storehouse?.name ?? '—'}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="num-cell text-xs text-center border-b">
+                        <span className="num">{parsed.length}</span>
+                      </TableCell>
+                      <TableCell className="num-cell text-sm font-medium text-center border-b">
+                        <span className="num">{totalQty}</span>
+                      </TableCell>
+                      <TableCell className="text-end border-b">
+                        <StatusBadge status={r.status} />
+                      </TableCell>
+                      <TableCell className="pe-4 text-end border-b" onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenu dir={dir as 'rtl' | 'ltr'}>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="size-8">
+                              <MoreVertical className="size-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align={isRTL ? 'start' : 'end'} sideOffset={4} collisionPadding={8} className="w-25 z-50 min-w-[140px] shadow-lg">
+                            <DropdownMenuItem onClick={() => setDetailReq(r)} className="gap-2 cursor-pointer text-sm font-medium">
+                              <Eye className="size-4 text-blue-600" />
+                              <span>{isRTL ? 'عرض' : 'View'}</span>
                             </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
+                            <DropdownMenuItem onClick={() => handleEdit(r)} className="gap-2 cursor-pointer text-sm font-medium">
+                              <Pencil className="size-4 text-amber-600" />
+                              <span>{isRTL ? 'تعديل' : 'Edit'}</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handlePrintVoucher(r)} className="gap-2 cursor-pointer text-sm font-medium">
+                              <Printer className="size-4 text-slate-700 dark:text-slate-300" />
+                              <span>{isRTL ? 'طباعة' : 'Print'}</span>
+                            </DropdownMenuItem>
+
+                            <div className="my-1 h-px bg-slate-100 dark:bg-slate-800" />
+
+                            {r.status !== 'approved' && (
+                              <DropdownMenuItem onClick={() => updateMutation.mutate({ id: r.id, body: { status: 'approved' } })} className="gap-2 cursor-pointer text-sm font-medium">
+                                <CheckCircle2 className="size-4 text-emerald-600" />
+                                <span>{isRTL ? 'اعتماد' : 'Approve'}</span>
+                              </DropdownMenuItem>
+                            )}
+                            {r.status !== 'fulfilled' && (
+                              <DropdownMenuItem onClick={() => updateMutation.mutate({ id: r.id, body: { status: 'fulfilled' } })} className="gap-2 cursor-pointer text-sm font-medium">
+                                <Package className="size-4 text-blue-600" />
+                                <span>{isRTL ? 'تنفيذ وصرف' : 'Fulfill'}</span>
+                              </DropdownMenuItem>
+                            )}
+
+                            {r.status !== 'cancelled' && (
+                              <DropdownMenuItem onClick={() => updateMutation.mutate({ id: r.id, body: { status: 'cancelled' } })} className="gap-2 cursor-pointer text-sm font-medium text-rose-600">
+                                <XCircle className="size-4 text-rose-600" />
+                                <span>{isRTL ? 'إلغاء' : 'Cancel'}</span>
+                              </DropdownMenuItem>
+                            )}
+                            {r.status !== 'draft' && (
+                              <DropdownMenuItem onClick={() => updateMutation.mutate({ id: r.id, body: { status: 'draft' } })} className="gap-2 cursor-pointer text-sm font-medium text-slate-400">
+                                <RefreshCw className="size-4 text-slate-400" />
+                                <span>{isRTL ? 'إعادة لمسودة' : 'Reset to Draft'}</span>
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
+              )}
             </TableBody>
-          </Table>
-        </ScrollArea>
-      </div>
+          </table>
+        </div>
+      </Card>
 
       {/* Create Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -301,7 +543,6 @@ export function InventoryRequisitionsModule() {
                 <DialogTitle className="text-xl font-bold tracking-tight text-blue-955 dark:text-white">
                   {isRTL ? 'طلب صرف مخزني جديد' : 'New Stock Requisition'}
                 </DialogTitle>
-
               </div>
             </div>
           </DialogHeader>
@@ -337,49 +578,51 @@ export function InventoryRequisitionsModule() {
                   </div>
 
                   <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-950 shadow-sm">
-                    <Table className="table-sticky">
-                      <TableHeader className="bg-slate-50 dark:bg-slate-900/50">
-                        <TableRow>
-                          <TableHead className={cn("text-xs font-semibold text-slate-700 dark:text-slate-300", isRTL ? "text-right" : "text-left")}>{isRTL ? 'المنتج' : 'Product'}</TableHead>
-                          <TableHead className={cn("num-cell w-32 text-xs font-semibold text-slate-700 dark:text-slate-300", isRTL ? "text-right" : "text-left")}>{isRTL ? 'الكمية المطلوبة' : 'Requested Qty'}</TableHead>
-                          <TableHead className={cn("text-xs font-semibold text-slate-700 dark:text-slate-300", isRTL ? "text-right" : "text-left")}>{isRTL ? 'ملاحظات الصنف' : 'Item Notes'}</TableHead>
-                          <TableHead className="w-10"></TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {items.length === 0 ? (
+                    <div className="w-full overflow-x-auto">
+                      <table className="w-full text-sm border-separate border-spacing-0">
+                        <TableHeader className="bg-slate-50 dark:bg-slate-900/50">
                           <TableRow>
-                            <TableCell colSpan={4} className="text-center py-8 text-muted-foreground text-sm">
-                              {isRTL ? 'اضغط "إضافة صف" لإدخال المنتجات المطلوبة' : 'Click "Add Item" to add products to the request'}
-                            </TableCell>
+                            <TableHead className={cn("text-xs font-semibold text-slate-700 dark:text-slate-300", isRTL ? "text-right" : "text-left")}>{isRTL ? 'المنتج' : 'Product'}</TableHead>
+                            <TableHead className={cn("num-cell w-32 text-xs font-semibold text-slate-700 dark:text-slate-300", isRTL ? "text-right" : "text-left")}>{isRTL ? 'الكمية المطلوبة' : 'Requested Qty'}</TableHead>
+                            <TableHead className={cn("text-xs font-semibold text-slate-700 dark:text-slate-300", isRTL ? "text-right" : "text-left")}>{isRTL ? 'ملاحظات الصنف' : 'Item Notes'}</TableHead>
+                            <TableHead className="w-10"></TableHead>
                           </TableRow>
-                        ) : items.map((it, idx) => (
-                          <TableRow key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/40">
-                            <TableCell className="p-2">
-                              <Select value={it.productId} onValueChange={v => updateItem(idx, 'productId', v)}>
-                                <SelectTrigger dir={dir} className={cn("h-9 border-slate-200 dark:border-slate-800 text-xs bg-white dark:bg-slate-950", isRTL ? "text-right" : "text-left")}>
-                                  <SelectValue placeholder={isRTL ? 'اختر منتج' : 'Select product'} />
-                                </SelectTrigger>
-                                <SelectContent dir={dir}>
-                                  {products.map(p => <SelectItem key={p.id} value={p.id}>{p.name} ({p.sku})</SelectItem>)}
-                                </SelectContent>
-                              </Select>
-                            </TableCell>
-                            <TableCell className="p-2">
-                              <Input type="number" min="1" step="1" value={it.quantity} onChange={e => updateItem(idx, 'quantity', Number(e.target.value))} dir={dir} className={cn("h-9 border-slate-200 dark:border-slate-800 text-xs", isRTL ? "text-right" : "text-left")} />
-                            </TableCell>
-                            <TableCell className="p-2">
-                              <Input value={it.note} onChange={e => updateItem(idx, 'note', e.target.value)} placeholder={isRTL ? 'ملاحظة اختيارية' : 'Optional note'} dir={dir} className={cn("h-9 border-slate-200 dark:border-slate-800 text-xs", isRTL ? "text-right" : "text-left")} />
-                            </TableCell>
-                            <TableCell className="p-2 text-center">
-                              <Button type="button" variant="ghost" size="icon" className="size-8 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg" onClick={() => removeItem(idx)}>
-                                <Trash2 className="size-4" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {items.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={4} className="text-center py-8 text-muted-foreground text-sm">
+                                {isRTL ? 'اضغط "إضافة صف" لإدخال المنتجات المطلوبة' : 'Click "Add Item" to add products to the request'}
+                              </TableCell>
+                            </TableRow>
+                          ) : items.map((it, idx) => (
+                            <TableRow key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/40">
+                              <TableCell className="p-2">
+                                <Select value={it.productId} onValueChange={v => updateItem(idx, 'productId', v)}>
+                                  <SelectTrigger dir={dir} className={cn("h-9 border-slate-200 dark:border-slate-800 text-xs bg-white dark:bg-slate-950", isRTL ? "text-right" : "text-left")}>
+                                    <SelectValue placeholder={isRTL ? 'اختر منتج' : 'Select product'} />
+                                  </SelectTrigger>
+                                  <SelectContent dir={dir}>
+                                    {products.map(p => <SelectItem key={p.id} value={p.id}>{p.name} ({p.sku})</SelectItem>)}
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+                              <TableCell className="p-2">
+                                <Input type="number" min="1" step="1" value={it.quantity} onChange={e => updateItem(idx, 'quantity', Number(e.target.value))} dir={dir} className={cn("h-9 border-slate-200 dark:border-slate-800 text-xs", isRTL ? "text-right" : "text-left")} />
+                              </TableCell>
+                              <TableCell className="p-2">
+                                <Input value={it.note} onChange={e => updateItem(idx, 'note', e.target.value)} placeholder={isRTL ? 'ملاحظة اختيارية' : 'Optional note'} dir={dir} className={cn("h-9 border-slate-200 dark:border-slate-800 text-xs", isRTL ? "text-right" : "text-left")} />
+                              </TableCell>
+                              <TableCell className="p-2 text-center">
+                                <Button type="button" variant="ghost" size="icon" className="size-8 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg" onClick={() => removeItem(idx)}>
+                                  <Trash2 className="size-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </table>
+                    </div>
                   </div>
                 </div>
 
@@ -415,10 +658,10 @@ export function InventoryRequisitionsModule() {
                   <DialogTitle className="text-xl font-bold tracking-tight text-blue-955 dark:text-white">
                     {isRTL ? `تفاصيل طلب الصرف ${detailReq?.code}` : `Requisition Details ${detailReq?.code}`}
                   </DialogTitle>
-                  {detailReq && <StatusBadge status={detailReq.status} />}
+
                 </div>
                 <DialogDescription className="text-sm text-blue-800/80 dark:text-blue-100/90 font-normal leading-normal">
-                  {detailReq?.storehouse.name}
+                  {detailReq?.storehouse?.name}
                 </DialogDescription>
               </div>
             </div>
@@ -427,7 +670,7 @@ export function InventoryRequisitionsModule() {
           {detailReq && (
             <div className="flex-1 flex flex-col min-h-0">
               <DialogBody className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50 dark:bg-slate-900/50 scrollbar-thin">
-                <div className="grid grid-cols-2 gap-4 text-sm bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-850 p-4 rounded-xl shadow-sm">
+                <div className="grid grid-cols-2 gap-4 text-sm bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-855 p-4 rounded-xl shadow-sm">
                   <div>
                     <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold block mb-0.5">{isRTL ? 'تاريخ الطلب' : 'Request Date'}</span>
                     <span className="font-semibold text-slate-800 dark:text-slate-200">{formatDate(detailReq.createdAt)}</span>
@@ -479,29 +722,34 @@ export function InventoryRequisitionsModule() {
                 )}
               </DialogBody>
 
-              <DialogFooter className="px-6 py-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-end gap-2 shrink-0">
+              <DialogFooter className="px-6 py-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2 shrink-0">
+                <Button type="button" variant="outline" onClick={() => setDetailReq(null)} className="h-10  px-5 py-5 border-rose-400 dark:border-rose-800 text-sm font-semibold">
+                  {isRTL ? 'إغلاق' : 'Close'}
+                </Button>
+                <Button type="button" variant="outline" className="h-10 px-5 py-5 border-slate-400 dark:border-slate-500 text-sm font-semibold gap-1.5" onClick={() => handlePrintVoucher(detailReq)}>
+                  <Printer className="size-4" /> {isRTL ? 'طباعة' : 'Print'}
+                </Button>
+
                 {detailReq.status === 'draft' && (
                   <>
                     <Button type="button" variant="outline" className="h-10 px-4 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30" onClick={() => updateMutation.mutate({ id: detailReq.id, body: { status: 'approved' } })}>
                       <CheckCircle2 className="size-4 ms-2" /> {isRTL ? 'اعتماد الطلب' : 'Approve Request'}
                     </Button>
                     <Button type="button" variant="outline" className="h-10 px-4 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30" onClick={() => updateMutation.mutate({ id: detailReq.id, body: { status: 'rejected' } })}>
-                      <XCircle className="size-4 ms-2" /> {isRTL ? 'رفض الطلب' : 'Reject Request'}
+                      <XCircle className="size-4 ms-2" /> {isRTL ? 'الغاء الطلب' : 'Cancel Request'}
                     </Button>
                   </>
                 )}
+
+
                 {detailReq.status === 'approved' && (
                   <Button type="button" onClick={() => updateMutation.mutate({ id: detailReq.id, body: { status: 'fulfilled' } })} className="h-10 px-5 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white text-xs font-semibold shadow-sm">
-                    <Package className="size-4 ms-2" /> {isRTL ? 'تنفيذ الصرف وتحديث المخزون' : 'Fulfill & Dispatch Stock'}
+                    <Package className="size-4 ms-2" /> {isRTL ? 'صرف وتحديث ' : 'Fulfill & update'}
                   </Button>
                 )}
-                <Button type="button" variant="outline" onClick={() => setDetailReq(null)} className="h-10 px-5 border-slate-200 dark:border-slate-855 hover:bg-slate-100/80 dark:hover:bg-slate-900 text-xs font-semibold">
-                  {isRTL ? 'إغلاق' : 'Close'}
-                </Button>
               </DialogFooter>
             </div>
           )}
-
         </DialogContent>
       </Dialog>
     </ModuleShell>

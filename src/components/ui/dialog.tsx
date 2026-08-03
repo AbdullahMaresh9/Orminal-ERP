@@ -138,7 +138,7 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="dialog-header"
       className={cn(
-        "flex flex-col gap-1 px-6 py-4 bg-gradient-to-r rtl:bg-gradient-to-l from-blue-50 to-[#E6F0FF] dark:from-blue-700/80 dark:to-blue-800/90 border-b border-blue-100 dark:border-blue-700/40 text-start shrink-0",
+        "flex flex-col gap-1 px-6 py-6 bg-gradient-to-r rtl:bg-gradient-to-l from-blue-50 to-[#E6F0FF] dark:from-blue-700/80 dark:to-blue-800/90 border-b border-blue-100 dark:border-blue-700/40 text-start shrink-0",
         className
       )}
       {...props}
@@ -176,7 +176,7 @@ function DialogTitle({
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn("text-lg font-bold text-[#1a3a5f] dark:text-white", className)}
+      className={cn("text-xl font-bold text-[#1a3a5f] dark:text-white", className)}
       {...props}
     />
   )

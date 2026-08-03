@@ -45,7 +45,12 @@ export function Topbar() {
   const { data: session } = useSession()
   const mounted = useMounted()
 
-  const userName = session?.user?.nameAr ?? 'مدير النظام'
+  // Bilingual inline helper — safe, independent of the i18n dictionary
+  const L = (ar: string, en: string) => (locale === 'ar' ? ar : en)
+  // Direction-aware drawer side: opens from the correct edge per language
+  const drawerSide = locale === 'ar' ? 'right' : 'left'
+
+  const userName = session?.user?.nameAr ?? L('مدير النظام', 'System Admin')
   const userEmail = session?.user?.email ?? 'admin@ormenal.io'
 
   // Notifications
@@ -66,27 +71,27 @@ export function Topbar() {
       {/* Mobile sidebar toggle */}
       <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
         <SheetTrigger asChild>
-          <Button variant="ghost" size="icon" className="lg:hidden" aria-label="فتح القائمة">
+          <Button variant="ghost" size="icon" className="lg:hidden" aria-label={L('فتح القائمة', 'Open menu')}>
             <Menu className="size-5" />
           </Button>
         </SheetTrigger>
-        <SheetContent side="right" className="p-0 w-72" aria-label="القائمة الجانبية">
-          <SheetTitle className="sr-only">القائمة الجانبية</SheetTitle>
+        <SheetContent side={drawerSide} className="p-0 w-60 max-w-[85vw]" aria-label={L('القائمة الجانبية', 'Sidebar')}>
+          <SheetTitle className="sr-only">{L('القائمة الجانبية', 'Sidebar')}</SheetTitle>
           <SidebarNav />
         </SheetContent>
       </Sheet>
 
       {/* Desktop collapse */}
-      <Button variant="ghost" size="icon" className="hidden lg:inline-flex" onClick={toggleSidebar} aria-label="طي القائمة">
+      <Button variant="ghost" size="icon" className="hidden lg:inline-flex" onClick={toggleSidebar} aria-label={L('طي القائمة', 'Collapse sidebar')}>
         <Menu className="size-5" />
       </Button>
 
       {/* Search */}
-      <div className="relative flex-1 max-w-md hidden sm:block">
-        <Search className="absolute inset-y-0 start-3 my-auto size-4 text-muted-foreground pointer-events-none" />
+      <div className="relative flex-1 border rounded border-muted-400 max-w-md hidden sm:block">
+        <Search className="absolute inset-y-0 start-3 my-auto size-5 text-muted-foreground pointer-events-none" />
         <Input
           placeholder={t('topbar.searchPlaceholder')}
-          className="ps-9 pe-12 bg-muted/40 border-transparent focus-visible:bg-background"
+          className="ps-9 pe-12 bg-muted/40 border-transparent  focus-visible:bg-background"
         />
         <kbd className="absolute inset-y-0 end-2 my-auto hidden md:flex items-center gap-0.5 text-[10px] text-muted-foreground bg-background border rounded px-1.5 h-5">
           <Command className="size-2.5" />K
@@ -103,30 +108,30 @@ export function Topbar() {
             <span className="hidden sm:inline">{t('topbar.quickAdd')}</span>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-52">
+        <DropdownMenuContent align="end" side="bottom" sideOffset={6} collisionPadding={20} className="w-40">
           <DropdownMenuLabel>{t('action.create')}</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => setActiveModule('sales-invoices')}>فاتورة ضريبية</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setActiveModule('sales-orders')}>أمر بيع</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setActiveModule('purchase-invoices')}>فاتورة شراء</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setActiveModule('journal-entries')}>قيد محاسبي</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setActiveModule('sales-payments')}>سند قبض</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setActiveModule('purchase-payments')}>سند صرف</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setActiveModule('sales-invoices')}>{L('فاتورة ضريبية', 'Tax Invoice')}</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setActiveModule('sales-orders')}>{L('أمر بيع', 'Sales Order')}</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setActiveModule('purchase-invoices')}>{L('فاتورة شراء', 'Purchase Invoice')}</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setActiveModule('journal-entries')}>{L('قيد محاسبي', 'Journal Entry')}</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setActiveModule('sales-payments')}>{L('سند قبض', 'Receipt Voucher')}</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setActiveModule('purchase-payments')}>{L('سند صرف', 'Payment Voucher')}</DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => setActiveModule('customers')}>عميل جديد</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setActiveModule('suppliers')}>مورد جديد</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setActiveModule('products')}>منتج جديد</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setActiveModule('customers')}>{L('عميل جديد', 'New Customer')}</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setActiveModule('suppliers')}>{L('مورد جديد', 'New Supplier')}</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setActiveModule('products')}>{L('منتج جديد', 'New Product')}</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
       {/* Language */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" aria-label="اللغة">
+          <Button variant="ghost" size="icon" aria-label={L('اللغة', 'Language')}>
             <Languages className="size-5" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-40">
+        <DropdownMenuContent align="end" side="bottom" sideOffset={6} collisionPadding={8} className="w-25">
           <DropdownMenuLabel>{t('appearance.language.label')}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => setLocale('ar')} className="justify-between">
@@ -143,7 +148,7 @@ export function Topbar() {
       {/* Theme */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" aria-label="السمة">
+          <Button variant="ghost" size="icon" aria-label={L('المظهر', 'Theme')}>
             {mounted ? (
               theme === 'dark' ? <Moon className="size-5" /> : theme === 'system' ? <Monitor className="size-5" /> : <Sun className="size-5" />
             ) : (
@@ -151,7 +156,7 @@ export function Topbar() {
             )}
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="center" className="w-40">
+        <DropdownMenuContent align="end" className="w-25">
           <DropdownMenuLabel>{t('appearance.theme.label')}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => setTheme('light')} className="justify-between">
@@ -172,7 +177,7 @@ export function Topbar() {
       {/* Notifications */}
       <Popover>
         <PopoverTrigger asChild>
-          <Button variant="ghost" size="icon" className="relative" aria-label="الإشعارات">
+          <Button variant="ghost" size="icon" className="relative" aria-label={L('الإشعارات', 'Notifications')}>
             <Bell className="size-5" />
             {unread > 0 && (
               <span className="absolute -top-0.5 -end-0.5 size-4 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-background">
@@ -181,14 +186,14 @@ export function Topbar() {
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent align="end" className="w-80 p-0">
+        <PopoverContent align="end" className="w-60 p-0">
           <div className="flex items-center justify-between p-3 border-b">
             <p className="font-semibold text-sm">{t('topbar.notifications')}</p>
-            <Badge variant="secondary" className="text-[10px]">{unread} جديد</Badge>
+            <Badge variant="secondary" className="text-[10px]">{unread} {L('جديد', 'new')}</Badge>
           </div>
           <div className="max-h-80 overflow-y-auto scrollbar-thin">
             {notifications.length === 0 ? (
-              <p className="p-6 text-center text-sm text-muted-foreground">لا توجد إشعارات</p>
+              <p className="p-6 text-center text-sm text-muted-foreground">{L('لا توجد إشعارات', 'No notifications')}</p>
             ) : (
               notifications.slice(0, 8).map((n: any) => (
                 <button
@@ -219,18 +224,18 @@ export function Topbar() {
       {/* User menu */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button className="flex items-center gap-2 rounded-full hover:bg-muted/60 p-1 pe-2 transition-colors" aria-label="حساب المستخدم">
+          <button className="flex items-center gap-2 rounded-full hover:bg-muted/60 p-1 pe-2 transition-colors" aria-label={L('حساب المستخدم', 'User account')}>
             <span className="size-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold ring-2 ring-background">
               {initials(userName)}
             </span>
             <ChevronDown className="size-3.5 text-muted-foreground hidden sm:block" />
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="center" className="w-56">
+        <DropdownMenuContent align="end" className="w-50">
           <DropdownMenuLabel>
             <div className="flex flex-col">
-              <span className="text-sm font-semibold">{userName}</span>
-              <span className="text-xs text-muted-foreground font-normal">{userEmail}</span>
+              <span className="text-sm  font-semibold">{userName}</span>
+              <span className="text-xs mt-0.5 text-muted-foreground font-normal">{userEmail}</span>
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
