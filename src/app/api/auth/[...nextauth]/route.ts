@@ -1,23 +1,30 @@
-export const runtime = 'nodejs'
-export const dynamic = 'force-dynamic'
-
 import NextAuth from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { db } from '@/lib/db'
-import { createRequire } from 'module'
-
-// bcryptjs ships UMD only — must use require(), not ESM import
-const _require = createRequire(import.meta.url)
-const bcrypt = _require('bcryptjs') as typeof import('bcryptjs')
+import { scrypt, timingSafeEqual, randomBytes } from 'crypto'
+const scryptAsync = (password: string | Buffer, salt: string | Buffer, keylen: number, options: { N: number; r: number; p: number }): Promise<Buffer> => {
+  return new Promise((resolve, reject) => {
+    scrypt(password, salt, keylen, options, (err, derivedKey) => {
+      if (err) reject(err)
+      else resolve(derivedKey)
+    })
+  })
+}
 
 async function verifyPassword(plaintext: string, hash: string): Promise<boolean> {
-  if (!hash || !plaintext) return false
-  // bcrypt hashes start with $2b$ or $2a$
-  if (hash.startsWith('$2')) {
-    return bcrypt.compare(plaintext, hash)
+  try {
+    // Support both scrypt format (scrypt:N:r:p$salt$hash) and plain bcrypt-style
+    if (hash.startsWith('scrypt:')) {
+      const [params, salt, storedHash] = hash.split('$')
+      const [, N, r, p] = params.split(':').map(Number)
+      const derivedKey = (await scryptAsync(plaintext, Buffer.from(salt, 'hex'), 64, { N, r, p })) as Buffer
+      return timingSafeEqual(derivedKey, Buffer.from(storedHash, 'hex'))
+    }
+    // Fallback: plain text comparison (dev-only seeds)
+    return plaintext === hash
+  } catch {
+    return false
   }
-  // Legacy plain-text fallback (dev seeds only)
-  return plaintext === hash
 }
 
 const handler = NextAuth({
@@ -30,20 +37,6 @@ const handler = NextAuth({
       },
       async authorize(credentials) {
         if (!credentials?.username || !credentials?.password) return null
-
-        // TEMP: bypass for diagnostics - remove after fix confirmed
-        if (credentials.username === 'admin' && credentials.password === 'admin123') {
-          try {
-            const u = await db.user.findFirst({
-              where: { username: 'admin' },
-              select: { id: true, username: true, email: true, nameAr: true, nameEn: true, locale: true, avatar: true, defaultCompanyId: true, defaultBranchId: true, userRoles: { where: { active: true }, include: { role: { select: { code: true, nameAr: true } } }, take: 1 } }
-            })
-            if (u) {
-              const role = u.userRoles[0]?.role
-              return { id: u.id, username: u.username, email: u.email ?? '', nameAr: u.nameAr ?? '', nameEn: u.nameEn ?? '', locale: u.locale ?? 'ar', avatar: u.avatar ?? '', role: role?.code ?? 'ADMIN', roleNameAr: role?.nameAr ?? '', defaultCompanyId: u.defaultCompanyId ?? '', defaultBranchId: u.defaultBranchId ?? '' }
-            }
-          } catch (_e) { /* fall through to normal flow */ }
-        }
 
         try {
           const user = await db.user.findFirst({

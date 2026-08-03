@@ -56,5 +56,4 @@ server.log
 # Temporary upload and tool directories
 upload/
 tool-results/
-table-audit-*.png.env
-.env.local
+table-audit-*.png
