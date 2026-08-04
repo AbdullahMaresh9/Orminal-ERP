@@ -45,7 +45,6 @@ const handler = NextAuth({
         if (!credentials?.username || !credentials?.password) return null
 
         try {
-          console.log('[v0 Auth] Attempting login for:', credentials.username)
           const user = await db.user.findFirst({
             where: {
               OR: [
@@ -73,14 +72,9 @@ const handler = NextAuth({
             },
           })
 
-          if (!user) {
-            console.log('[v0 Auth] User not found:', credentials.username)
-            return null
-          }
+          if (!user) return null
 
-          console.log('[v0 Auth] User found:', user.username, '| Hash starts with:', user.passwordHash.substring(0, 5))
           const valid = await verifyPassword(credentials.password, user.passwordHash)
-          console.log('[v0 Auth] Password valid:', valid)
           if (!valid) return null
 
           // Update last login timestamp (fire-and-forget)
