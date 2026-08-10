@@ -89,8 +89,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       return ok(updated)
     }
 
-    // Default: simple field update (only draft)
-    if (exists.status !== 'draft') return badRequest('Only draft returns can be edited')
+    // Default: simple field update (only allowed for draft status)
+    if (exists.status !== 'draft') {
+      return badRequest('لا يمكن تعديل المرتجع المرحّل أو المغلق أو الملغي. التعديل متاح للمسودات فقط.')
+    }
     const { id: _id, lines, createdAt: _c, updatedAt: _u, status: _s, ...rest } = body
 
     // Convert date-only string (YYYY-MM-DD) to full ISO-8601 DateTime for Prisma
@@ -98,9 +100,29 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       rest.date = new Date(rest.date + 'T00:00:00.000Z').toISOString()
     }
 
+    const targetInvoiceId = rest.originalInvoiceId ?? exists.originalInvoiceId
+
+    // Validate quantities if linked to an original invoice
+    const validLines = Array.isArray(lines) ? lines.filter((l: any) => l.productId && Number(l.quantity) > 0) : []
+    if (targetInvoiceId) {
+      const invoiceLines = await db.purchaseInvoiceLine.findMany({
+        where: { invoiceId: targetInvoiceId },
+      })
+      const invQtyMap = new Map<string, number>()
+      for (const il of invoiceLines) {
+        invQtyMap.set(il.productId, (invQtyMap.get(il.productId) ?? 0) + il.quantity)
+      }
+      for (const l of validLines) {
+        const maxQty = invQtyMap.get(l.productId) ?? 0
+        const retQty = Number(l.quantity) || 0
+        if (maxQty > 0 && retQty > maxQty) {
+          return badRequest(`الكمية المرجعة (${retQty}) تتجاوز الكمية المشتراة في الفاتورة الأصلية (${maxQty})`)
+        }
+      }
+    }
+
     // Recalculate totals from lines
     let subtotal = 0, taxTotal = 0
-    const validLines = Array.isArray(lines) ? lines.filter((l: any) => l.productId && Number(l.quantity) > 0) : []
     for (const l of validLines) {
       const lineSub = (Number(l.quantity) || 0) * (Number(l.unitCost) || 0)
       const lineTax = lineSub * ((Number(l.taxRate) || 0) / 100)
@@ -148,14 +170,15 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   }
 }
 
-// DELETE — only draft or cancelled
+// DELETE — only draft (or cancelled if never posted)
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
     const exists = await db.purchaseReturn.findUnique({ where: { id } })
     if (!exists) return notFound('Purchase return not found')
-    if (exists.status !== 'draft' && exists.status !== 'cancelled')
-      return badRequest('Only draft or cancelled returns can be deleted')
+    if (exists.status !== 'draft') {
+      return badRequest('لا يمكن حذف المرتجع المرحّل أو المعالج لحماية القيود المحاسبية ورصيد المخزون وحساب المورد.')
+    }
 
     await db.purchaseReturn.delete({ where: { id } })
     return ok({ success: true })

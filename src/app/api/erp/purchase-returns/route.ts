@@ -55,6 +55,24 @@ export async function POST(req: Request) {
     }
 
     const lines = body.lines ?? []
+    if (body.originalInvoiceId) {
+      const invoiceLines = await db.purchaseInvoiceLine.findMany({
+        where: { invoiceId: body.originalInvoiceId },
+      })
+      const invQtyMap = new Map<string, number>()
+      for (const il of invoiceLines) {
+        invQtyMap.set(il.productId, (invQtyMap.get(il.productId) ?? 0) + il.quantity)
+      }
+      for (const l of lines) {
+        if (!l.productId) continue
+        const maxQty = invQtyMap.get(l.productId) ?? 0
+        const retQty = Number(l.quantity) || 0
+        if (maxQty > 0 && retQty > maxQty) {
+          return badRequest(`الكمية المرجعة (${retQty}) تتجاوز الكمية المشتراة في الفاتورة الأصلية (${maxQty})`)
+        }
+      }
+    }
+
     let subtotal = 0
     let taxTotal = 0
     const processedLines = lines.map((l: any) => {
