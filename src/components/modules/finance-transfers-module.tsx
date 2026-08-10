@@ -23,6 +23,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { DatePicker } from '@/components/ui/date-picker'
 import { ArrowLeftRight, Plus, Printer, Banknote, Wallet, BarChart3, Repeat } from 'lucide-react'
 
 interface BankAccount { id: string; name: string; bankName: string; currency: string; active?: boolean }
@@ -358,7 +359,7 @@ export function FinanceTransfersModule() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5 text-start">
                 <Label htmlFor="trans-date" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'التاريخ' : 'Date'}</Label>
-                <Input id="trans-date" type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="h-10border-slate-250 dark:border-blue-500/30 focus-visible:ring-blue-500" />
+                <DatePicker id="trans-date" value={form.date} onChange={(val) => setForm({ ...form, date: val })} />
               </div>
               <div className="space-y-1.5 text-start">
                 <Label htmlFor="trans-amount" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'المبلغ *' : 'Amount *'}</Label>

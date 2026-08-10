@@ -29,6 +29,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody,
 } from '@/components/ui/dialog'
+import { DatePicker } from '@/components/ui/date-picker'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
@@ -913,13 +914,11 @@ export function PurchaseReturnsModule() {
                 <Label htmlFor="date" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                   {L('تاريخ المرتجع *', 'Return Date *')}
                 </Label>
-                <Input
+                <DatePicker
                   id="date"
-                  type="date"
                   value={date}
-                  onChange={(e) => setDate(e.target.value)}
+                  onChange={setDate}
                   disabled={isReadOnly}
-                  className={cn("h-10 text-xs sm:text-sm bg-white dark:bg-slate-900 font-mono", isReadOnly && "cursor-not-allowed opacity-80")}
                 />
               </div>
             </div>

@@ -20,6 +20,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogBody,
 } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { DatePicker } from '@/components/ui/date-picker'
 import {
   Wallet, Plus, Printer, Calculator, Send, Coins, Eye, CheckCircle2,
 } from 'lucide-react'
@@ -344,11 +345,11 @@ export function PayrollRunsModule() {
               <div className="grid grid-cols-2 gap-3 text-start">
                 <div className="space-y-1.5">
                   <Label htmlFor="startDate" className="text-xs font-semibold text-slate-700 dark:text-slate-300">{isRTL ? 'من تاريخ' : 'Start Date'}</Label>
-                  <Input id="startDate" type="date" value={draft.startDate} onChange={(e) => setDraft({ ...draft, startDate: e.target.value })} className="h-10 bg-slate-50/50 dark:bg-slate-900/50 border-slate-300 dark:border-slate-700 focus-visible:ring-blue-500 focus-visible:border-blue-500 font-mono text-end" dir="ltr" />
+                  <DatePicker id="startDate" value={draft.startDate} onChange={(val) => setDraft({ ...draft, startDate: val })} />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="endDate" className="text-xs font-semibold text-slate-700 dark:text-slate-300">{isRTL ? 'إلى تاريخ' : 'End Date'}</Label>
-                  <Input id="endDate" type="date" value={draft.endDate} onChange={(e) => setDraft({ ...draft, endDate: e.target.value })} className="h-10 bg-slate-50/50 dark:bg-slate-900/50 border-slate-300 dark:border-slate-700 focus-visible:ring-blue-500 focus-visible:border-blue-500 font-mono text-end" dir="ltr" />
+                  <DatePicker id="endDate" value={draft.endDate} onChange={(val) => setDraft({ ...draft, endDate: val })} />
                 </div>
               </div>
 

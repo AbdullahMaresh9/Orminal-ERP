@@ -27,6 +27,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
   DropdownMenuSeparator, DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu'
+import { DatePicker } from '@/components/ui/date-picker'
 import {
   FileText, Plus, Trash2, Printer, FileSignature, CheckCircle2, Clock, Percent,
   Download, FileSpreadsheet, FileDown, MoreHorizontal, Pencil, Eye,
@@ -91,7 +92,7 @@ const STATUS_LABELS: Record<string, { ar: string; en: string }> = {
 // الحالات القابلة للتغيير اليدوي (لا نسمح بتعيين converted يدويًا — يتم عبر التحويل فقط)
 const MANUAL_STATUSES = ['draft', 'sent', 'accepted', 'expired', 'cancelled']
 
-const VISIBLE_ROWS = 6
+const VISIBLE_ROWS = 7
 const ROW_HEIGHT = 44
 const HEADER_HEIGHT = 40
 
@@ -394,7 +395,7 @@ export function SalesQuotationsModule() {
   ]
 
   const exportMeta: ExportMeta = {
-    fileName: L('عروض_الأسعار', 'sales-quotations'),
+    fileName: L('عروض الأسعار', 'sales-quotations'),
     title: L('تقرير عروض الأسعار', 'Sales Quotations Report'),
     subtitle: L('أورمنال', 'Orminal'),
     isRTL,
@@ -687,11 +688,11 @@ export function SalesQuotationsModule() {
                 {/* التاريخان جنبًا إلى جنب على الجوال */}
                 <div className="space-y-1.5 col-span-1">
                   <Label htmlFor="quotationDate">{L('تاريخ العرض', 'Quotation Date')}</Label>
-                  <Input id="quotationDate" type="date" className="w-full min-w-0" value={quotationDate} onChange={(e) => setQuotationDate(e.target.value)} />
+                  <DatePicker id="quotationDate" value={quotationDate} onChange={setQuotationDate} disabled={viewOnly} />
                 </div>
                 <div className="space-y-1.5 col-span-1">
                   <Label htmlFor="validUntil">{L('صالح حتى', 'Valid Until')}</Label>
-                  <Input id="validUntil" type="date" className="w-full min-w-0" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} />
+                  <DatePicker id="validUntil" value={validUntil} onChange={setValidUntil} disabled={viewOnly} />
                 </div>
 
                 {/* ✅ الحالة — نصف العرض فقط على الجوال (أضيق) */}
@@ -879,12 +880,12 @@ export function SalesQuotationsModule() {
             </fieldset>
           </DialogBody>
 
-          <DialogFooter className="flex-col-reverse sm:flex-row gap-2 px-4 sm:px-6 py-3 border-t shrink-0">
-            <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => { setAddOpen(false); resetForm() }}>
+          <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-between gap-2 px-4 sm:px-6 py-3 border-t shrink-0">
+            <Button type="button" variant="outline" className="w-full sm:w-auto sm:min-w-25" onClick={() => { setAddOpen(false); resetForm() }}>
               {viewOnly ? L('إغلاق', 'Close') : L('إلغاء', 'Cancel')}
             </Button>
             {!viewOnly && (
-              <Button type="button" className="w-full sm:w-auto" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
+              <Button type="button" className="w-full sm:w-auto sm:min-w-25" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
                 {saveMutation.isPending
                   ? L('جاري الحفظ...', 'Saving...')
                   : editingId ? L('حفظ التغييرات', 'Save Changes') : L('إنشاء', 'Create')}

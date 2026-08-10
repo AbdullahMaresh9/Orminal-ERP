@@ -19,6 +19,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter,
 } from '@/components/ui/table'
+import { DatePicker } from '@/components/ui/date-picker'
 import {
   BarChart3, FileText, BookOpen, Scale, TrendingUp, TrendingDown,
   Boxes, Coins, Printer, Download, PlayCircle,
@@ -225,11 +226,11 @@ export function ReportsModule() {
           <div className="flex flex-wrap items-end gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="from" className="text-xs">من تاريخ</Label>
-              <Input id="from" type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-40" />
+              <DatePicker id="from" value={from} onChange={(val) => setFrom(val)} placeholder="من تاريخ" className="w-40" />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="to" className="text-xs">إلى تاريخ</Label>
-              <Input id="to" type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-40" />
+              <DatePicker id="to" value={to} onChange={(val) => setTo(val)} placeholder="إلى تاريخ" className="w-40" />
             </div>
           </div>
         </Card>

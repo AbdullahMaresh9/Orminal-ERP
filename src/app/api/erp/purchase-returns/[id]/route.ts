@@ -54,8 +54,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     }
     if (action === 'debit') {
       // Issue actual Debit Note: post balanced accounting journal entry + update supplier balance
-      if (exists.status === 'debited' || exists.status === 'closed')
-        return badRequest('Return already debited')
+      if (exists.status === 'debited' || exists.status === 'closed' || exists.status === 'cancelled') {
+        return badRequest('Return already debited or cancelled')
+      }
 
       let journalEntryId: string | null = null
 
@@ -81,45 +82,48 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         return badRequest(`فشل إصدار قيد الإشعار المدين: ${err.message}`)
       }
 
-      // Create an official PurchaseCreditNote (Debit Note) tracking record in DB
-      try {
-        const pcnCode = await nextNumber('purchase_credit_note', exists.companyId, exists.branchId ?? undefined)
-        await db.purchaseCreditNote.create({
-          data: {
-            companyId: exists.companyId,
-            branchId: exists.branchId,
-            code: pcnCode,
-            partnerId: exists.partnerId,
-            invoiceId: exists.originalInvoiceId ?? null,
-            date: exists.date ? new Date(exists.date) : new Date(),
-            reason: exists.reason || 'إشعار مدين عن مرتجع مشتريات',
-            status: 'posted',
-            subtotal: exists.subtotal,
-            taxTotal: exists.taxTotal,
-            total: exists.total,
-            journalEntryId: journalEntryId ?? null,
-            notes: exists.notes || null,
-          },
+      // Create an official PurchaseCreditNote (Debit Note) tracking record & update balances transactionally
+      const result = await db.$transaction(async (tx) => {
+        try {
+          const pcnCode = await nextNumber('purchase_credit_note', exists.companyId, exists.branchId ?? undefined)
+          await tx.purchaseCreditNote.create({
+            data: {
+              companyId: exists.companyId,
+              branchId: exists.branchId,
+              code: pcnCode,
+              partnerId: exists.partnerId,
+              invoiceId: exists.originalInvoiceId ?? null,
+              date: exists.date ? new Date(exists.date) : new Date(),
+              reason: exists.reason || 'إشعار مدين عن مرتجع مشتريات',
+              status: 'posted',
+              subtotal: exists.subtotal,
+              taxTotal: exists.taxTotal,
+              total: exists.total,
+              journalEntryId: journalEntryId ?? null,
+              notes: exists.notes || null,
+            },
+          })
+        } catch (err: any) {
+          console.error('Failed to create purchase credit note record:', err)
+        }
+
+        await tx.purchaseReturn.update({
+          where: { id },
+          data: { status: 'debited', ...(journalEntryId ? { journalEntryId } : {}) },
         })
-      } catch (err: any) {
-        console.error('Failed to create purchase credit note record:', err)
-      }
 
-      await db.purchaseReturn.update({
-        where: { id },
-        data: { status: 'debited', ...(journalEntryId ? { journalEntryId } : {}) },
+        // Decrease AP (partner balance — supplier is owed less)
+        await tx.partner.update({
+          where: { id: exists.partnerId },
+          data: { currentBalance: { decrement: exists.total } },
+        })
+
+        return tx.purchaseReturn.findUnique({
+          where: { id },
+          include: { partner: true, lines: { include: { product: true } } },
+        })
       })
 
-      // Decrease AP (partner balance — supplier is owed less)
-      await db.partner.update({
-        where: { id: exists.partnerId },
-        data: { currentBalance: { decrement: exists.total } },
-      })
-
-      const result = await db.purchaseReturn.findUnique({
-        where: { id },
-        include: { partner: true, lines: { include: { product: true } } },
-      })
       return ok(result)
     }
     if (action === 'close') {
@@ -128,8 +132,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       return ok(updated)
     }
     if (action === 'cancel') {
-      if (exists.status === 'debited' || exists.status === 'closed')
+      if (exists.status === 'debited' || exists.status === 'closed') {
         return badRequest('Cannot cancel debited/closed returns')
+      }
       const updated = await db.purchaseReturn.update({ where: { id }, data: { status: 'cancelled' } })
       return ok(updated)
     }
@@ -140,15 +145,14 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     }
     const { id: _id, lines, createdAt: _c, updatedAt: _u, status: _s, ...rest } = body
 
-    // Convert date-only string (YYYY-MM-DD) to full ISO-8601 DateTime for Prisma
-    if (rest.date && typeof rest.date === 'string' && rest.date.length === 10) {
-      rest.date = new Date(rest.date + 'T00:00:00.000Z').toISOString()
+    if (rest.date) {
+      rest.date = new Date(rest.date)
     }
 
     const targetInvoiceId = rest.originalInvoiceId ?? exists.originalInvoiceId
+    const validLines = Array.isArray(lines) ? lines.filter((l: any) => l.productId && Number(l.quantity) > 0) : []
 
     // Validate quantities if linked to an original invoice
-    const validLines = Array.isArray(lines) ? lines.filter((l: any) => l.productId && Number(l.quantity) > 0) : []
     if (targetInvoiceId) {
       const invoiceLines = await db.purchaseInvoiceLine.findMany({
         where: { invoiceId: targetInvoiceId },
@@ -158,9 +162,12 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         invQtyMap.set(il.productId, (invQtyMap.get(il.productId) ?? 0) + il.quantity)
       }
       for (const l of validLines) {
+        if (!invQtyMap.has(l.productId)) {
+          return badRequest(`المنتج المحدد غير موجود في الفاتورة الأصلية المرتبطة`)
+        }
         const maxQty = invQtyMap.get(l.productId) ?? 0
         const retQty = Number(l.quantity) || 0
-        if (maxQty > 0 && retQty > maxQty) {
+        if (retQty > maxQty) {
           return badRequest(`الكمية المرجعة (${retQty}) تتجاوز الكمية المشتراة في الفاتورة الأصلية (${maxQty})`)
         }
       }
@@ -183,24 +190,26 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         data: { ...rest, subtotal, taxTotal, total },
       })
 
-      // Replace lines: delete old, create new
-      if (validLines.length > 0) {
+      // Replace lines: delete old lines, create new lines if provided
+      if (Array.isArray(lines)) {
         await tx.purchaseReturnLine.deleteMany({ where: { returnId: id } })
-        await tx.purchaseReturnLine.createMany({
-          data: validLines.map((l: any) => {
-            const qty = Number(l.quantity) || 0
-            const cost = Number(l.unitCost) || 0
-            const tax = Number(l.taxRate) || 0
-            return {
-              returnId: id,
-              productId: l.productId,
-              quantity: qty,
-              unitCost: cost,
-              taxRate: tax,
-              total: qty * cost * (1 + tax / 100),
-            }
-          }),
-        })
+        if (validLines.length > 0) {
+          await tx.purchaseReturnLine.createMany({
+            data: validLines.map((l: any) => {
+              const qty = Number(l.quantity) || 0
+              const cost = Number(l.unitCost) || 0
+              const tax = Number(l.taxRate) || 0
+              return {
+                returnId: id,
+                productId: l.productId,
+                quantity: qty,
+                unitCost: cost,
+                taxRate: tax,
+                total: qty * cost * (1 + tax / 100),
+              }
+            }),
+          })
+        }
       }
 
       return tx.purchaseReturn.findUnique({
@@ -225,9 +234,14 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
       return badRequest('لا يمكن حذف المرتجع المرحّل أو المعالج لحماية القيود المحاسبية ورصيد المخزون وحساب المورد.')
     }
 
-    await db.purchaseReturn.delete({ where: { id } })
+    await db.$transaction(async (tx) => {
+      await tx.purchaseReturnLine.deleteMany({ where: { returnId: id } })
+      await tx.purchaseReturn.delete({ where: { id } })
+    })
+
     return ok({ success: true })
   } catch (e: any) {
     return serverError(e.message)
   }
 }
+

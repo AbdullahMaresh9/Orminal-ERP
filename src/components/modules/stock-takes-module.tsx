@@ -31,6 +31,7 @@ import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu'
 import { toast } from 'sonner'
+import { DatePicker } from '@/components/ui/date-picker'
 import {
   ClipboardList, Plus, CheckCircle2, XCircle, MoreVertical, Package, ClipboardCheck,
   AlertTriangle, Printer, Download, Eye, EyeOff, Search, FileSpreadsheet, FileText,
@@ -1044,11 +1045,9 @@ export function StockTakesModule() {
                 {/* Snapshot Date */}
                 <div className={cn('space-y-1.5', isRTL ? 'text-right' : 'text-left')}>
                   <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{L('تاريخ الرصيد (As Of Snapshot Date)', 'Snapshot Date')}</Label>
-                  <Input
-                    type="date"
+                  <DatePicker
                     value={createForm.countAsOf}
-                    onChange={(e) => setCreateForm({ ...createForm, countAsOf: e.target.value })}
-                    className="h-10 border-slate-200 dark:border-slate-800 text-sm bg-white dark:bg-slate-950"
+                    onChange={(val) => setCreateForm({ ...createForm, countAsOf: val })}
                   />
                 </div>
 

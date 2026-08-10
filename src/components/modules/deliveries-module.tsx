@@ -25,6 +25,7 @@ import {
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { DatePicker } from '@/components/ui/date-picker'
 import {
   Truck, Plus, Trash2, CheckCircle, CheckCircle2, Clock, Package,
   Download, FileSpreadsheet, FileText, FileCheck, ChevronDown,
@@ -624,11 +625,9 @@ export function DeliveriesModule() {
 
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold">{L('تاريخ التسليم', 'Delivery Date')}</Label>
-                <Input
-                  type="date"
+                <DatePicker
                   value={form.deliveryDate}
-                  onChange={(e) => setForm({ ...form, deliveryDate: e.target.value })}
-                  className="h-9 text-xs"
+                  onChange={(val) => setForm({ ...form, deliveryDate: val })}
                 />
               </div>
 

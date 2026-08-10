@@ -24,6 +24,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { DatePicker } from '@/components/ui/date-picker'
 import {
   ReceiptText, Plus, Printer, TrendingDown, CalendarDays, BarChart3, Coins, Banknote, Wallet,
 } from 'lucide-react'
@@ -275,9 +276,9 @@ export function ExpensesModule() {
       onExport={handleExport}
       filters={
         <>
-          <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-auto" placeholder="من تاريخ" />
+          <DatePicker value={from} onChange={setFrom} placeholder="من تاريخ" className="w-36" />
           <span className="text-xs text-muted-foreground">إلى</span>
-          <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-auto" placeholder="إلى تاريخ" />
+          <DatePicker value={to} onChange={setTo} placeholder="إلى تاريخ" className="w-36" />
           {(from || to) && (
             <Button size="sm" variant="ghost" onClick={() => { setFrom(''); setTo('') }}>مسح</Button>
           )}
@@ -413,16 +414,10 @@ export function ExpensesModule() {
                     <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                       {isRTL ? 'التاريخ *' : 'Date *'}
                     </Label>
-                    <div className="relative">
-                      <CalendarDays className="absolute inset-y-0 start-3 my-auto size-4 text-slate-400 pointer-events-none" />
-                      <Input
-                        type="date"
-                        value={form.date}
-                        onChange={(e) => setForm({ ...form, date: e.target.value })}
-                        dir={dir}
-                        className={cn("h-10 ps-9 border-slate-250 dark:border-blue-400/30 focus-visible:ring-blue-500 text-sm", isRTL ? "text-right" : "text-left")}
-                      />
-                    </div>
+                    <DatePicker
+                      value={form.date}
+                      onChange={(val) => setForm({ ...form, date: val })}
+                    />
                   </div>
 
                   {/* Amount */}

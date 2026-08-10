@@ -24,8 +24,9 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { DatePicker } from '@/components/ui/date-picker'
 import {
-  ReceiptText, Plus, Printer, Hash, CalendarDays, Coins, FileMinus, Download, FileSpreadsheet, FileText, FileDown,
+  ReceiptText, Plus, Printer, Hash, CalendarDays, Coins, FileMinus, Download, FileSpreadsheet, FileText, FileDown, Eye,
 } from 'lucide-react'
 
 interface Partner { id: string; code: string; nameAr: string; nameEn?: string }
@@ -60,7 +61,7 @@ const STATUS_LABELS: Record<string, { ar: string; en: string }> = {
   cancelled: { ar: 'ملغي', en: 'Cancelled' },
 }
 
-const VISIBLE_ROWS = 5
+const VISIBLE_ROWS = 7
 const ROW_HEIGHT = 44
 const HEADER_HEIGHT = 40
 
@@ -130,6 +131,8 @@ export function SalesCreditNotesModule() {
   }, [notes])
 
   // Form state
+  const [selectedNote, setSelectedNote] = useState<SalesCreditNote | null>(null)
+  const [viewOnly, setViewOnly] = useState(false)
   const [partnerId, setPartnerId] = useState('')
   const [invoiceId, setInvoiceId] = useState('')
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
@@ -142,8 +145,25 @@ export function SalesCreditNotesModule() {
   const total_ = useMemo(() => (Number(subtotal) || 0) + taxTotal, [subtotal, taxRate, taxTotal])
 
   const resetForm = () => {
+    setSelectedNote(null)
+    setViewOnly(false)
     setPartnerId(''); setInvoiceId(''); setDate(new Date().toISOString().slice(0, 10))
     setReason('returned'); setSubtotal('0'); setTaxRate('15'); setNotes('')
+  }
+
+  const openView = (n: SalesCreditNote) => {
+    setSelectedNote(n)
+    setViewOnly(true)
+    setPartnerId(n.partnerId || n.partner?.id || '')
+    setInvoiceId(n.invoiceId || '')
+    setDate((n.date || '').slice(0, 10) || new Date().toISOString().slice(0, 10))
+    const foundReason = REASON_OPTIONS.find((r) => r.ar === n.reason || r.en === n.reason || r.value === n.reason)
+    setReason(foundReason ? foundReason.value : n.reason || 'returned')
+    setSubtotal(String(n.subtotal ?? 0))
+    const rate = n.subtotal > 0 ? (n.taxTotal / n.subtotal) * 100 : 15
+    setTaxRate(String(Math.round(rate * 100) / 100))
+    setNotes(n.notes || '')
+    setAddOpen(true)
   }
 
   const saveMutation = useMutation({
@@ -358,7 +378,11 @@ export function SalesCreditNotesModule() {
               ) : notes.length === 0 ? (
                 <TableRow><TableCell colSpan={8} className="text-center py-10 text-muted-foreground border-b">{L('لا توجد إشعارات دائنة.', 'No sales credit notes found.')}</TableCell></TableRow>
               ) : notes.map((n) => (
-                <TableRow key={n.id} className="hover:bg-muted/40 align-middle">
+                <TableRow
+                  key={n.id}
+                  className="hover:bg-muted/40 align-middle cursor-pointer"
+                  onClick={() => openView(n)}
+                >
                   <TableCell className="ps-6 font-mono text-xs border-b truncate" dir="ltr" title={n.code}>{n.code}</TableCell>
                   <TableCell className="font-medium border-b truncate" title={partnerName(n.partner)}>{partnerName(n.partner) || '—'}</TableCell>
                   <TableCell className="font-mono text-xs text-center border-b truncate" dir="ltr">{invoices.find((i) => i.id === n.invoiceId)?.code ?? '—'}</TableCell>
@@ -366,10 +390,15 @@ export function SalesCreditNotesModule() {
                   <TableCell className="text-center whitespace-nowrap border-b"><span className="num tabular-nums font-semibold" dir="ltr">{formatCurrency(n.total)}</span></TableCell>
                   <TableCell className="text-center border-b"><div className="flex justify-center"><StatusBadge status={n.status} /></div></TableCell>
                   <TableCell className="text-sm text-center border-b truncate text-muted-foreground" title={n.reason ?? ''}>{n.reason ?? '—'}</TableCell>
-                  <TableCell className="text-end pe-4 border-b">
-                    <Button size="icon" variant="ghost" className="size-8" title={L('طباعة الإشعار الدائن', 'Print Credit Note')} onClick={() => handlePrint(n)}>
-                      <Printer className="size-3.5" />
-                    </Button>
+                  <TableCell className="text-end pe-4 border-b" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center justify-end gap-1">
+                      <Button size="icon" variant="ghost" className="size-8" title={L('عرض الإشعار الدائن', 'View Credit Note')} onClick={() => openView(n)}>
+                        <Eye className="size-4" />
+                      </Button>
+                      <Button size="icon" variant="ghost" className="size-8" title={L('طباعة الإشعار الدائن', 'Print Credit Note')} onClick={() => handlePrint(n)}>
+                        <Printer className="size-3.5" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -378,19 +407,26 @@ export function SalesCreditNotesModule() {
         </div>
       </Card>
 
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="max-w-2xl" dir={isRTL ? 'rtl' : 'ltr'}>
-          <DialogHeader>
-            <DialogTitle>{L('إشعار دائن جديد', 'New Sales Credit Note')}</DialogTitle>
-            <DialogDescription>{L('إنشاء إشعار دائن لعميل — سيتم عكس قيد الفاتورة الأصلية تلقائياً عند الترحيل', 'Create credit note for customer — original invoice entry will be automatically reversed upon posting')}</DialogDescription>
+      <Dialog open={addOpen} onOpenChange={(o) => { setAddOpen(o); if (!o) resetForm() }}>
+        <DialogContent
+          dir={isRTL ? 'rtl' : 'ltr'}
+          className="w-[calc(100vw-1.5rem)] sm:w-[95vw] max-w-2xl max-h-[92vh] p-0 flex flex-col overflow-hidden"
+        >
+          <DialogHeader className="px-4 sm:px-6 py-4 border-b shrink-0">
+            <DialogTitle>
+              {viewOnly ? L('عرض إشعار دائن', 'View Sales Credit Note') : L('إشعار دائن جديد', 'New Sales Credit Note')}
+            </DialogTitle>
+            {!viewOnly && (
+              <DialogDescription>{L('إنشاء إشعار دائن لعميل — سيتم عكس قيد الفاتورة الأصلية تلقائياً عند الترحيل', 'Create credit note for customer — original invoice entry will be automatically reversed upon posting')}</DialogDescription>
+            )}
           </DialogHeader>
-          <DialogBody>
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <DialogBody className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">
+            <fieldset disabled={viewOnly} className="space-y-4 sm:space-y-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-1.5">
                   <Label>{L('العميل *', 'Customer *')}</Label>
                   <Select value={partnerId} onValueChange={setPartnerId}>
-                    <SelectTrigger><SelectValue placeholder={L('اختر العميل', 'Select Customer')} /></SelectTrigger>
+                    <SelectTrigger className="w-full"><SelectValue placeholder={L('اختر العميل', 'Select Customer')} /></SelectTrigger>
                     <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
                       {partners.map((p) => (
                         <SelectItem key={p.id} value={p.id}>
@@ -407,7 +443,7 @@ export function SalesCreditNotesModule() {
                     const inv = invoices.find((i) => i.id === v)
                     if (inv) setSubtotal(String(inv.total))
                   }}>
-                    <SelectTrigger><SelectValue placeholder={L('بدون', 'None')} /></SelectTrigger>
+                    <SelectTrigger className="w-full"><SelectValue placeholder={L('بدون', 'None')} /></SelectTrigger>
                     <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
                       {invoices
                         .filter((i) => !partnerId || i.partnerId === partnerId)
@@ -421,23 +457,23 @@ export function SalesCreditNotesModule() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="space-y-1.5">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                <div className="space-y-1.5 col-span-1">
                   <Label htmlFor="date">{L('التاريخ', 'Date')}</Label>
-                  <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+                  <DatePicker id="date" value={date} onChange={setDate} disabled={viewOnly} />
                 </div>
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 col-span-1">
                   <Label htmlFor="subtotal">{L('المبلغ قبل الضريبة', 'Subtotal')}</Label>
-                  <Input id="subtotal" type="number" step="0.01" dir="ltr" value={subtotal} onChange={(e) => setSubtotal(e.target.value)} />
+                  <Input id="subtotal" type="number" step="0.01" inputMode="decimal" dir="ltr" className="text-start tabular-nums" value={subtotal} onChange={(e) => setSubtotal(e.target.value)} />
                 </div>
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 col-span-1">
                   <Label htmlFor="taxRate">{L('نسبة الضريبة %', 'Tax %')}</Label>
-                  <Input id="taxRate" type="number" step="0.01" dir="ltr" value={taxRate} onChange={(e) => setTaxRate(e.target.value)} />
+                  <Input id="taxRate" type="number" step="0.01" inputMode="decimal" dir="ltr" className="text-start tabular-nums" value={taxRate} onChange={(e) => setTaxRate(e.target.value)} />
                 </div>
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 col-span-1">
                   <Label>{L('السبب', 'Reason')}</Label>
                   <Select value={reason} onValueChange={setReason}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
                     <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
                       {REASON_OPTIONS.map((r) => <SelectItem key={r.value} value={r.value}>{isRTL ? r.ar : r.en}</SelectItem>)}
                     </SelectContent>
@@ -445,16 +481,16 @@ export function SalesCreditNotesModule() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3 text-sm">
-                <div className="p-3 rounded-lg bg-muted/40">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+                <div className="p-3 rounded-lg bg-muted/50 dark:bg-muted-900/30 border border-muted-200 dark:border-muted-900">
                   <p className="text-xs text-muted-foreground">{L('المجموع الفرعي', 'Subtotal')}</p>
                   <p className="font-bold tabular-nums" dir="ltr">{formatCurrency(Number(subtotal) || 0)}</p>
                 </div>
-                <div className="p-3 rounded-lg bg-muted/40">
+                <div className="p-3 rounded-lg bg-muted/50 dark:bg-muted-900/30 border border-muted-200 dark:border-muted-900">
                   <p className="text-xs text-muted-foreground">{L('الضريبة', 'Tax')}</p>
                   <p className="font-bold tabular-nums" dir="ltr">{formatCurrency(taxTotal)}</p>
                 </div>
-                <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900">
+                <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 col-span-2 sm:col-span-1">
                   <p className="text-xs text-blue-700 dark:text-blue-400">{L('الإجمالي', 'Total')}</p>
                   <p className="font-bold tabular-nums text-blue-700 dark:text-blue-400" dir="ltr">{formatCurrency(total_)}</p>
                 </div>
@@ -464,13 +500,23 @@ export function SalesCreditNotesModule() {
                 <Label htmlFor="notes_">{L('ملاحظات', 'Notes')}</Label>
                 <Textarea id="notes_" value={notes_} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder={L('ملاحظات إضافية...', 'Additional notes...')} />
               </div>
-            </div>
+            </fieldset>
           </DialogBody>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>{L('إلغاء', 'Cancel')}</Button>
-            <Button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
-              {saveMutation.isPending ? L('جاري الحفظ...', 'Saving...') : L('إنشاء وترحيل', 'Create & Post')}
+          <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-between gap-2 px-4 sm:px-6 py-3 border-t shrink-0">
+            <Button type="button" variant="outline" className="w-full sm:w-auto sm:min-w-25" onClick={() => { setAddOpen(false); resetForm() }}>
+              {viewOnly ? L('إغلاق', 'Close') : L('إلغاء', 'Cancel')}
             </Button>
+            {viewOnly && selectedNote && (
+              <Button type="button" variant="secondary" className="w-full border sm:w-auto sm:min-w-25 gap-1.5" onClick={() => handlePrint(selectedNote)}>
+                <Printer className="size-4" />
+                {L('طباعة', 'Print')}
+              </Button>
+            )}
+            {!viewOnly && (
+              <Button type="button" className="w-full sm:w-auto sm:min-w-30" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
+                {saveMutation.isPending ? L('جاري الحفظ...', 'Saving...') : L('إنشاء وترحيل', 'Create & Post')}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

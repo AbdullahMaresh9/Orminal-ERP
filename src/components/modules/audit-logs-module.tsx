@@ -23,6 +23,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogBody,
 } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { DatePicker } from '@/components/ui/date-picker'
 import {
   ScrollText, CalendarClock, Activity, FileEdit, Eye,
 } from 'lucide-react'
@@ -242,8 +243,18 @@ export function AuditLogsModule() {
               ))}
             </SelectContent>
           </Select>
-          <Input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(1) }} className="w-36" />
-          <Input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(1) }} className="w-36" />
+          <DatePicker
+            value={dateFrom}
+            onChange={(val) => { setDateFrom(val); setPage(1) }}
+            placeholder="من تاريخ"
+            className="w-36"
+          />
+          <DatePicker
+            value={dateTo}
+            onChange={(val) => { setDateTo(val); setPage(1) }}
+            placeholder="إلى تاريخ"
+            className="w-36"
+          />
         </>
       }
     >

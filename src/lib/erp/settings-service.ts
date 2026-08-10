@@ -26,12 +26,12 @@ async function getCache(): Promise<Map<string, string>> {
   if (!cache || Date.now() > (cache as any)._expires) {
     const settings = await loadAllSettings()
     const newCache = new Map<string, { value: string; expires: number }>()
-    ;(newCache as any)._expires = Date.now() + CACHE_TTL
+      ; (newCache as any)._expires = Date.now() + CACHE_TTL
     for (const [key, value] of settings) {
       newCache.set(key, { value, expires: Date.now() + CACHE_TTL })
     }
     cache = newCache
-    ;(cache as any)._expires = Date.now() + CACHE_TTL
+      ; (cache as any)._expires = Date.now() + CACHE_TTL
   }
 
   // Convert to flat map

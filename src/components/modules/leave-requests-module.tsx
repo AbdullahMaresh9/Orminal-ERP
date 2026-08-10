@@ -25,6 +25,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogBody,
 } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { DatePicker } from '@/components/ui/date-picker'
 import {
   CalendarOff, Plus, Trash2, CheckCircle2, XCircle, Clock, FileClock, Send,
 } from 'lucide-react'
@@ -368,11 +369,11 @@ export function LeaveRequestsModule() {
                 </div>
                 <div className="space-y-1.5 text-start">
                   <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{isRTL ? 'من تاريخ *' : 'Start Date *'}</Label>
-                  <Input type="date" value={draft.startDate} onChange={(e) => setDraft({ ...draft, startDate: e.target.value })} className="h-10 bg-slate-50/50 dark:bg-slate-900/50 border-slate-300 dark:border-slate-700 focus-visible:ring-blue-500 font-mono text-end" dir="ltr" />
+                  <DatePicker value={draft.startDate} onChange={(val) => setDraft({ ...draft, startDate: val })} />
                 </div>
                 <div className="space-y-1.5 text-start">
                   <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{isRTL ? 'إلى تاريخ *' : 'End Date *'}</Label>
-                  <Input type="date" value={draft.endDate} onChange={(e) => setDraft({ ...draft, endDate: e.target.value })} className="h-10 bg-slate-50/50 dark:bg-slate-900/50 border-slate-300 dark:border-slate-700 focus-visible:ring-blue-500 font-mono text-end" dir="ltr" />
+                  <DatePicker value={draft.endDate} onChange={(val) => setDraft({ ...draft, endDate: val })} />
                 </div>
                 <div className="space-y-1.5 text-start md:col-span-2">
                   <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{isRTL ? 'السبب' : 'Reason'}</Label>

@@ -24,6 +24,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogBody,
 } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { DatePicker } from '@/components/ui/date-picker'
 import {
   FileMinus, Plus, Printer, Hash, CalendarDays, Coins,
 } from 'lucide-react'
@@ -45,7 +46,7 @@ interface PurchaseCreditNote {
   partner?: Partner
 }
 
-const VISIBLE_ROWS = 5
+const VISIBLE_ROWS = 7
 const ROW_HEIGHT = 44
 const HEADER_HEIGHT = 40
 
@@ -323,21 +324,6 @@ export function PurchaseCreditNotesModule() {
         </div>
       </Card>
 
-      <div className="flex items-center justify-between mt-4 text-sm">
-        <p className="text-muted-foreground">
-          {isRTL
-            ? `عرض ${notes.length === 0 ? 0 : (page - 1) * pageSize + 1}–${(page - 1) * pageSize + notes.length} من ${total}`
-            : `Showing ${notes.length === 0 ? 0 : (page - 1) * pageSize + 1}–${(page - 1) * pageSize + notes.length} of ${total}`}
-        </p>
-        <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}>{L('السابق', 'Previous')}</Button>
-          <span className="text-xs text-muted-foreground">
-            {isRTL ? `صفحة ${page} من ${totalPages}` : `Page ${page} of ${totalPages}`}
-          </span>
-          <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>{L('التالي', 'Next')}</Button>
-        </div>
-      </div>
-
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -384,7 +370,7 @@ export function PurchaseCreditNotesModule() {
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 <div className="space-y-1.5">
                   <Label htmlFor="date">{L('التاريخ', 'Date')}</Label>
-                  <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+                  <DatePicker id="date" value={date} onChange={setDate} />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="amount">{L('المبلغ *', 'Amount *')}</Label>

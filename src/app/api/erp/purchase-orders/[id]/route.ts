@@ -21,13 +21,96 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
-    const body = await req.json()
-    const exists = await db.purchaseOrder.findUnique({ where: { id } })
-    if (!exists) return notFound('Purchase order not found')
+    const body = await req.json().catch(() => ({}))
 
-    const { id: _id, lines, createdAt: _c, updatedAt: _u, ...rest } = body
-    const updated = await db.purchaseOrder.update({ where: { id }, data: rest })
-    return ok(updated)
+    const exists = await db.purchaseOrder.findUnique({
+      where: { id },
+      include: { lines: true },
+    })
+    if (!exists) return notFound('أمر الشراء غير موجود')
+
+    // Prevent modifying orders that are already processed or finalized
+    if (exists.status === 'received' || exists.status === 'paid' || exists.status === 'cancelled') {
+      if (body.status && Object.keys(body).filter((k) => k !== 'status' && k !== 'action').length === 0) {
+        const updatedStatus = await db.purchaseOrder.update({
+          where: { id },
+          data: { status: body.status },
+          include: { partner: true, lines: { include: { product: true } } },
+        })
+        return ok(updatedStatus)
+      }
+      return badRequest('لا يمكن تعديل بنود أو إجماليات أمر شراء مستلم أو مدفوع أو ملغي.')
+    }
+
+    const { id: _id, lines, createdAt: _c, updatedAt: _u, orderDate, expectedDate, ...rest } = body
+
+    const updateData: any = {
+      ...rest,
+    }
+
+    if (orderDate) {
+      updateData.orderDate = new Date(orderDate)
+    }
+    if (expectedDate !== undefined) {
+      updateData.expectedDate = expectedDate ? new Date(expectedDate) : null
+    }
+
+    const result = await db.$transaction(async (tx) => {
+      if (lines && Array.isArray(lines)) {
+        const validLines = lines.filter((l: any) => l.productId && Number(l.quantity) > 0)
+        await tx.purchaseOrderLine.deleteMany({ where: { orderId: id } })
+
+        let subtotal = 0
+        let taxTotal = 0
+        const processedLines = validLines.map((l: any) => {
+          const qty = Math.max(0, Number(l.quantity) || 0)
+          const cost = Math.max(0, Number(l.unitCost) || 0)
+          const discPercent = Math.max(0, Number(l.discountPercent) || 0)
+          const discAmount = Math.max(0, Number(l.discountAmount) || 0)
+          const taxRate = Math.max(0, Number(l.taxRate) || 0)
+
+          const lineSubtotal = Math.max(0, qty * cost * (1 - discPercent / 100) - discAmount)
+          const lineTax = lineSubtotal * (taxRate / 100)
+          const lineTotal = lineSubtotal + lineTax
+
+          subtotal += lineSubtotal
+          taxTotal += lineTax
+
+          return {
+            productId: l.productId,
+            description: l.description || null,
+            quantity: qty,
+            uomId: l.uomId || null,
+            unitCost: cost,
+            discountPercent: discPercent,
+            discountAmount: discAmount,
+            taxCodeId: l.taxCodeId || null,
+            taxRate: taxRate,
+            total: lineTotal,
+          }
+        })
+
+        const overallDiscount = Math.max(0, Number(body.discount ?? exists.discount) || 0)
+        const total = Math.max(0, subtotal + taxTotal - overallDiscount)
+
+        updateData.subtotal = subtotal
+        updateData.taxTotal = taxTotal
+        updateData.discount = overallDiscount
+        updateData.total = total
+        updateData.lines = { create: processedLines }
+      }
+
+      return tx.purchaseOrder.update({
+        where: { id },
+        data: updateData,
+        include: {
+          partner: true,
+          lines: { include: { product: true } },
+        },
+      })
+    })
+
+    return ok(result)
   } catch (e: any) {
     return serverError(e.message)
   }
@@ -37,14 +120,20 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   try {
     const { id } = await params
     const exists = await db.purchaseOrder.findUnique({ where: { id } })
-    if (!exists) return notFound('Purchase order not found')
+    if (!exists) return notFound('أمر الشراء غير موجود')
+
     if (exists.status === 'received' || exists.status === 'paid') {
-      return badRequest('Cannot delete received/paid order')
+      return badRequest('لا يمكن حذف أمر شراء مستلم أو مدفوع.')
     }
-    await db.purchaseOrderLine.deleteMany({ where: { orderId: id } })
-    await db.purchaseOrder.delete({ where: { id } })
+
+    await db.$transaction(async (tx) => {
+      await tx.purchaseOrderLine.deleteMany({ where: { orderId: id } })
+      await tx.purchaseOrder.delete({ where: { id } })
+    })
+
     return ok({ success: true })
   } catch (e: any) {
     return serverError(e.message)
   }
 }
+

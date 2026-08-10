@@ -24,6 +24,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogBody,
 } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { DatePicker } from '@/components/ui/date-picker'
 import {
   CalendarClock, Plus, Pencil, Trash2, UserCheck, UserX, Clock, CalendarOff,
 } from 'lucide-react'
@@ -217,12 +218,11 @@ export function AttendanceModule() {
       onExport={handleExport}
       filters={
         <>
-          <Input
-            type="date"
+          <DatePicker
             value={filterDate}
-            onChange={(e) => setFilterDate(e.target.value)}
+            onChange={(val) => setFilterDate(val)}
+            placeholder="فلترة باليوم"
             className="w-40"
-            dir="ltr"
           />
           <Select value={filterStatus} onValueChange={setFilterStatus}>
             <SelectTrigger className="w-36"><SelectValue placeholder="الحالة" /></SelectTrigger>
@@ -330,7 +330,7 @@ export function AttendanceModule() {
 
               <div className="space-y-1.5 text-start">
                 <Label htmlFor="date" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'التاريخ *' : 'Date *'}</Label>
-                <Input id="date" type="date" value={draft.date} onChange={(e) => setDraft({ ...draft, date: e.target.value })} className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-end font-mono" dir="ltr" required />
+                <DatePicker id="date" value={draft.date} onChange={(val) => setDraft({ ...draft, date: val })} />
               </div>
 
               <div className="space-y-1.5 text-start">

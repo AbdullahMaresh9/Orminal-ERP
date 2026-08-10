@@ -24,8 +24,9 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogBody,
 } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { DatePicker } from '@/components/ui/date-picker'
 import {
-  PackageCheck, Plus, Trash2, Printer, CheckCircle2, Clock, Coins, Warehouse as WhIcon,
+  PackageCheck, Plus, Trash2, Printer, CheckCircle2, Clock, Coins, Warehouse as WhIcon, Eye, RotateCcw,
 } from 'lucide-react'
 
 interface Partner { id: string; code: string; nameAr: string; nameEn?: string }
@@ -68,14 +69,14 @@ interface LineDraft {
   unitCost: string
 }
 
-const VISIBLE_ROWS = 5
+const VISIBLE_ROWS = 7
 const ROW_HEIGHT = 44
 const HEADER_HEIGHT = 40
 
 const STATUS_LABELS: Record<string, { ar: string; en: string }> = {
   draft: { ar: 'مسودة', en: 'Draft' },
   received: { ar: 'مستلم', en: 'Received' },
-  validated: { ar: 'مُتحقَّق', en: 'Validated' },
+  validated: { ar: 'مُرحّل', en: 'Posted' },
   cancelled: { ar: 'ملغي', en: 'Cancelled' },
 }
 
@@ -91,6 +92,8 @@ export function GoodsReceiptsModule() {
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
   const [addOpen, setAddOpen] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [viewOnly, setViewOnly] = useState(false)
   const [page, setPage] = useState(1)
   const pageSize = 15
 
@@ -145,8 +148,6 @@ export function GoodsReceiptsModule() {
   })
 
   const receipts = data?.data ?? []
-  const total = data?.meta?.pagination?.total ?? 0
-  const totalPages = data?.meta?.pagination?.totalPages ?? 1
   const partners = partnersData?.data ?? []
   const warehouses = warehousesData?.data ?? []
   const products = productsData?.data ?? []
@@ -155,7 +156,7 @@ export function GoodsReceiptsModule() {
   const stats = useMemo(() => ({
     total: receipts.length,
     pending: receipts.filter((r) => r.status === 'draft' || r.status === 'received').length,
-    validated: receipts.filter((r) => r.status === 'validated').length,
+    validated: receipts.filter((r) => r.status === 'posted' || r.status === 'validated').length,
     totalValue: receipts.reduce((s, r) => s + r.lines.reduce((a, l) => a + l.total, 0), 0),
   }), [receipts])
 
@@ -168,6 +169,50 @@ export function GoodsReceiptsModule() {
   const [lines, setLines] = useState<LineDraft[]>([
     { key: '1', productId: '', orderedQty: '0', receivedQty: '1', lotNumber: '', expiryDate: '', unitCost: '0' },
   ])
+
+  const isReadOnlyStatus = (s: string) => s === 'posted' || s === 'validated' || s === 'received'
+  const isCancelledStatus = (s: string) => s === 'cancelled'
+
+  const openEdit = (grn: GoodsReceipt, explicitViewMode?: boolean) => {
+    if (isCancelledStatus(grn.status)) {
+      toast.error(L('سند الاستلام ملغي، ولا يجوز التعديل عليه', 'Goods receipt is cancelled, editing is not allowed'))
+      return
+    }
+
+    setEditingId(grn.id)
+    const viewMode = explicitViewMode ?? isReadOnlyStatus(grn.status)
+    setViewOnly(viewMode)
+    setPartnerId(grn.partnerId || grn.partner?.id || '')
+    setWarehouseId(grn.warehouseId || grn.warehouse?.id || '')
+    setPurchaseOrderId(grn.purchaseOrderId || '')
+    setReceiptDate(grn.receiptDate ? grn.receiptDate.slice(0, 10) : new Date().toISOString().slice(0, 10))
+    setNotes(grn.notes || '')
+    setLines(
+      grn.lines.length > 0
+        ? grn.lines.map((l, i) => ({
+          key: String(i + 1),
+          productId: l.productId || l.product?.id || '',
+          orderedQty: String(l.orderedQty),
+          receivedQty: String(l.receivedQty),
+          lotNumber: l.lotNumber || '',
+          expiryDate: l.expiryDate ? l.expiryDate.slice(0, 10) : '',
+          unitCost: String(l.unitCost),
+        }))
+        : [{ key: '1', productId: '', orderedQty: '0', receivedQty: '1', lotNumber: '', expiryDate: '', unitCost: '0' }]
+    )
+    setAddOpen(true)
+  }
+
+  const resetForm = () => {
+    setEditingId(null)
+    setViewOnly(false)
+    setPartnerId('')
+    setWarehouseId('')
+    setPurchaseOrderId('')
+    setReceiptDate(new Date().toISOString().slice(0, 10))
+    setNotes('')
+    setLines([{ key: '1', productId: '', orderedQty: '0', receivedQty: '1', lotNumber: '', expiryDate: '', unitCost: '0' }])
+  }
 
   const computedTotal = useMemo(() => {
     return lines.reduce((s, l) => s + (Number(l.receivedQty) || 0) * (Number(l.unitCost) || 0), 0)
@@ -190,12 +235,6 @@ export function GoodsReceiptsModule() {
     setLines((p) => p.filter((l) => l.key !== key))
   }
 
-  const resetForm = () => {
-    setPartnerId(''); setWarehouseId(''); setPurchaseOrderId('')
-    setReceiptDate(new Date().toISOString().slice(0, 10)); setNotes('')
-    setLines([{ key: '1', productId: '', orderedQty: '0', receivedQty: '1', lotNumber: '', expiryDate: '', unitCost: '0' }])
-  }
-
   const saveMutation = useMutation({
     mutationFn: async (validate: boolean) => {
       if (!partnerId) throw new Error(L('اختر المورد', 'Select supplier'))
@@ -207,7 +246,7 @@ export function GoodsReceiptsModule() {
         warehouseId,
         purchaseOrderId: purchaseOrderId || undefined,
         receiptDate,
-        status: validate ? 'validated' : 'draft',
+        status: validate ? 'posted' : 'draft',
         notes,
         lines: validLines.map((l) => ({
           productId: l.productId,
@@ -218,8 +257,10 @@ export function GoodsReceiptsModule() {
           unitCost: Number(l.unitCost) || 0,
         })),
       }
-      const r = await fetch('/api/erp/goods-receipts', {
-        method: 'POST',
+      const url = editingId ? `/api/erp/goods-receipts/${editingId}` : '/api/erp/goods-receipts'
+      const method = editingId ? 'PUT' : 'POST'
+      const r = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
@@ -230,10 +271,14 @@ export function GoodsReceiptsModule() {
       return r.json()
     },
     onSuccess: (_data, validate) => {
-      toast.success(validate ? L('تم إنشاء سند الاستلام والتحقق منه', 'Goods receipt created and validated') : L('تم إنشاء سند الاستلام', 'Goods receipt created'))
+      const msg = editingId
+        ? (validate ? L('تم تحديث وترحيل سند الاستلام بنجاح', 'Goods receipt updated and posted successfully') : L('تم تحديث سند الاستلام بنجاح', 'Goods receipt updated successfully'))
+        : (validate ? L('تم إنشاء وترحيل سند الاستلام بنجاح', 'Goods receipt created and posted successfully') : L('تم إنشاء سند الاستلام بنجاح', 'Goods receipt created successfully'))
+      toast.success(msg)
       qc.invalidateQueries({ queryKey: ['goods-receipts'] })
       qc.invalidateQueries({ queryKey: ['stock-on-hand'] })
-      setAddOpen(false); resetForm()
+      setAddOpen(false)
+      resetForm()
     },
     onError: (e: any) => toast.error(e.message || L('حدث خطأ', 'An error occurred')),
   })
@@ -243,20 +288,59 @@ export function GoodsReceiptsModule() {
       const r = await fetch(`/api/erp/goods-receipts/${grn.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'validated' }),
+        body: JSON.stringify({ status: 'posted' }),
       })
       if (!r.ok) {
         const err = await r.json().catch(() => ({}))
-        throw new Error(err?.error?.message ?? L('فشل التحقق', 'Validation failed'))
+        throw new Error(err?.error?.message ?? L('فشل الترحيل', 'Posting failed'))
       }
       return r.json()
     },
     onSuccess: () => {
-      toast.success(L('تم التحقق من سند الاستلام', 'Goods receipt validated'))
+      toast.success(L('تم ترحيل سند الاستلام بنجاح', 'Goods receipt posted successfully'))
       qc.invalidateQueries({ queryKey: ['goods-receipts'] })
       qc.invalidateQueries({ queryKey: ['stock-on-hand'] })
     },
     onError: (e: any) => toast.error(e.message || L('حدث خطأ', 'An error occurred')),
+  })
+
+  const cancelMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const r = await fetch(`/api/erp/goods-receipts/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'cancelled' }),
+      })
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({}))
+        throw new Error(err?.error?.message ?? L('فشل الإلغاء/الإرجاع', 'Cancellation failed'))
+      }
+      return r.json()
+    },
+    onSuccess: () => {
+      toast.success(L('تم إلغاء/إرجاع سند الاستلام بنجاح', 'Goods receipt cancelled/reversed successfully'))
+      qc.invalidateQueries({ queryKey: ['goods-receipts'] })
+      qc.invalidateQueries({ queryKey: ['stock-on-hand'] })
+      setAddOpen(false)
+      resetForm()
+    },
+    onError: (e: any) => toast.error(e.message || L('حدث خطأ أثناء الإلغاء/الإرجاع', 'An error occurred during cancellation')),
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const r = await fetch(`/api/erp/goods-receipts/${id}`, { method: 'DELETE' })
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({}))
+        throw new Error(err?.error?.message ?? L('فشل الحذف', 'Delete failed'))
+      }
+      return r.json()
+    },
+    onSuccess: () => {
+      toast.success(L('تم حذف سند الاستلام الملغي بنجاح', 'Cancelled goods receipt deleted successfully'))
+      qc.invalidateQueries({ queryKey: ['goods-receipts'] })
+    },
+    onError: (e: any) => toast.error(e.message || L('حدث خطأ أثناء الحذف', 'An error occurred during deletion')),
   })
 
   const handleExport = () => {
@@ -352,7 +436,7 @@ export function GoodsReceiptsModule() {
             <SelectItem value="all">{L('الكل', 'All')}</SelectItem>
             <SelectItem value="draft">{L('مسودة', 'Draft')}</SelectItem>
             <SelectItem value="received">{L('مستلم', 'Received')}</SelectItem>
-            <SelectItem value="validated">{L('مُتحقَّق', 'Validated')}</SelectItem>
+            <SelectItem value="validated">{L('مُرحّل', 'Posted')}</SelectItem>
             <SelectItem value="cancelled">{L('ملغي', 'Cancelled')}</SelectItem>
           </SelectContent>
         </Select>
@@ -361,7 +445,7 @@ export function GoodsReceiptsModule() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
         <KpiCard title={L('إجمالي السندات', 'Total Receipts')} value={formatInt(stats.total)} icon={<PackageCheck className="size-5" />} accent="blue" />
         <KpiCard title={L('قيد المعالجة', 'Pending')} value={formatInt(stats.pending)} icon={<Clock className="size-5" />} accent="amber" />
-        <KpiCard title={L('مُتحقَّق', 'Validated')} value={formatInt(stats.validated)} icon={<CheckCircle2 className="size-5" />} accent="sky" />
+        <KpiCard title={L('مُرحّل', 'Posted')} value={formatInt(stats.validated)} icon={<CheckCircle2 className="size-5" />} accent="sky" />
         <KpiCard title={L('إجمالي القيمة', 'Total Value')} value={formatCurrency(stats.totalValue)} icon={<Coins className="size-5" />} accent="violet" />
       </div>
 
@@ -397,7 +481,7 @@ export function GoodsReceiptsModule() {
               ) : receipts.length === 0 ? (
                 <TableRow><TableCell colSpan={7} className="text-center py-10 text-muted-foreground">{L('لا توجد سندات استلام.', 'No goods receipts found.')}</TableCell></TableRow>
               ) : receipts.map((r) => (
-                <TableRow key={r.id} className="hover:bg-muted/40">
+                <TableRow key={r.id} className="hover:bg-muted/40 align-middle cursor-pointer" onClick={() => openEdit(r)}>
                   <TableCell className="ps-4 font-mono text-xs border-b truncate" dir="ltr">{r.code}</TableCell>
                   <TableCell className="font-medium border-b truncate">{partnerName(r.partner)}</TableCell>
                   <TableCell className="font-mono text-xs text-center border-b truncate" dir="ltr">{r.purchaseOrder?.code ?? '—'}</TableCell>
@@ -407,16 +491,34 @@ export function GoodsReceiptsModule() {
                   </TableCell>
                   <TableCell className="text-sm text-center border-b whitespace-nowrap">{formatDate(r.receiptDate)}</TableCell>
                   <TableCell className="text-center border-b"><StatusBadge status={r.status} /></TableCell>
-                  <TableCell className="text-end pe-4 border-b">
+                  <TableCell className="text-end pe-4 border-b" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-1">
-                      {r.status === 'draft' && (
-                        <Button size="sm" variant="ghost" className="h-8 text-xs gap-1.5 text-blue-600" disabled={validateMutation.isPending} onClick={() => validateMutation.mutate(r)}>
-                          <CheckCircle2 className="size-3.5" /> {L('تحقق', 'Validate')}
+                      {isCancelledStatus(r.status) ? (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="size-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+                          title={L('حذف سند الاستلام الملغي', 'Delete Cancelled Receipt')}
+                          disabled={deleteMutation.isPending}
+                          onClick={() => deleteMutation.mutate(r.id)}
+                        >
+                          <Trash2 className="size-4" />
                         </Button>
+                      ) : (
+                        <>
+                          {r.status === 'draft' && (
+                            <Button size="sm" variant="ghost" className="h-8 text-xs gap-1.5 text-blue-600" disabled={validateMutation.isPending} onClick={() => validateMutation.mutate(r)}>
+                              <CheckCircle2 className="size-3.5" /> {L('ترحيل', 'Post')}
+                            </Button>
+                          )}
+                          <Button size="icon" variant="ghost" className="size-8" onClick={() => openEdit(r, true)} title={L('عرض سند الاستلام', 'View Goods Receipt')}>
+                            <Eye className="size-4" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="size-8" onClick={() => handlePrint(r)} title={L('طباعة', 'Print')}>
+                            <Printer className="size-3.5" />
+                          </Button>
+                        </>
                       )}
-                      <Button size="icon" variant="ghost" className="size-8" onClick={() => handlePrint(r)} title={L('طباعة', 'Print')}>
-                        <Printer className="size-4.5" />
-                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -426,162 +528,317 @@ export function GoodsReceiptsModule() {
         </div>
       </Card>
 
-      <div className="flex items-center justify-between mt-4 text-sm">
-        <p className="text-muted-foreground">
-          {isRTL
-            ? `عرض ${receipts.length === 0 ? 0 : (page - 1) * pageSize + 1}–${(page - 1) * pageSize + receipts.length} من ${total}`
-            : `Showing ${receipts.length === 0 ? 0 : (page - 1) * pageSize + 1}–${(page - 1) * pageSize + receipts.length} of ${total}`}
-        </p>
-        <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}>{L('السابق', 'Previous')}</Button>
-          <span className="text-xs text-muted-foreground">
-            {isRTL ? `صفحة ${page} من ${totalPages}` : `Page ${page} of ${totalPages}`}
-          </span>
-          <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>{L('التالي', 'Next')}</Button>
-        </div>
-      </div>
-
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="max-w-4xl">
+      <Dialog open={addOpen} onOpenChange={(open) => { setAddOpen(open); if (!open) resetForm() }}>
+        <DialogContent
+          dir={isRTL ? 'rtl' : 'ltr'}
+          className="w-[calc(100vw-1rem)] sm:w-[95vw] max-w-4xl max-h-[92vh] p-0 flex flex-col overflow-hidden bg-background border-border shadow-xl rounded-xl"
+        >
           <DialogHeader>
-            <DialogTitle>{L('سند استلام بضاعة جديد', 'New Goods Receipt')}</DialogTitle>
+            <div className="flex items-center justify-between gap-2">
+              <DialogTitle>
+                {viewOnly
+                  ? L('عرض سند استلام بضاعة', 'View Goods Receipt')
+                  : editingId
+                    ? L('تعديل سند استلام بضاعة', 'Edit Goods Receipt')
+                    : L('سند استلام بضاعة جديد', 'New Goods Receipt')}
+              </DialogTitle>
+
+            </div>
           </DialogHeader>
 
-          <DialogBody>
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="space-y-1.5">
-                  <Label>{L('المورد *', 'Supplier *')}</Label>
+          <DialogBody className="flex-1 overflow-y-auto px-3 sm:px-6 py-4">
+            <fieldset
+              disabled={viewOnly}
+              className={viewOnly ? 'space-y-4 cursor-not-allowed [&_input]:cursor-not-allowed [&_button]:cursor-not-allowed [&_select]:cursor-not-allowed [&_textarea]:cursor-not-allowed' : 'space-y-4'}
+            >
+              {/* Main Fields Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                {/* Supplier */}
+                <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                  <Label className="text-xs sm:text-sm font-medium">{L('المورد *', 'Supplier *')}</Label>
                   <Select value={partnerId} onValueChange={setPartnerId}>
-                    <SelectTrigger><SelectValue placeholder={L('اختر المورد', 'Select Supplier')} /></SelectTrigger>
-                    <SelectContent>
+                    <SelectTrigger className={`h-9 sm:h-10 w-full text-xs sm:text-sm ${viewOnly ? 'cursor-not-allowed' : ''}`}>
+                      <SelectValue placeholder={L('اختر المورد', 'Select Supplier')} />
+                    </SelectTrigger>
+                    <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
                       {partners.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          <span dir="ltr" className="font-mono text-xs">{p.code}</span> — {partnerName(p)}
+                        <SelectItem key={p.id} value={p.id} className="text-xs sm:text-sm">
+                          {partnerName(p)}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-1.5">
-                  <Label>{L('أمر الشراء (اختياري)', 'Purchase Order (Optional)')}</Label>
+
+                {/* Purchase Order (Optional) */}
+                <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                  <Label className="text-xs sm:text-sm font-medium">{L('أمر الشراء (اختياري)', 'Purchase Order (Optional)')}</Label>
                   <Select value={purchaseOrderId} onValueChange={setPurchaseOrderId}>
-                    <SelectTrigger><SelectValue placeholder={L('بدون', 'None')} /></SelectTrigger>
-                    <SelectContent>
+                    <SelectTrigger className={`h-9 sm:h-10 w-full text-xs sm:text-sm ${viewOnly ? 'cursor-not-allowed' : ''}`}>
+                      <SelectValue placeholder={L('بدون أمر شراء', 'No Purchase Order')} />
+                    </SelectTrigger>
+                    <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
                       {purchaseOrders
                         .filter((p) => !partnerId || p.partnerId === partnerId)
                         .map((p) => (
-                          <SelectItem key={p.id} value={p.id}>
-                            <span dir="ltr" className="font-mono text-xs">{p.code}</span>
+                          <SelectItem key={p.id} value={p.id} className="text-xs sm:text-sm">
+                            <span dir="ltr" className="font-mono text-xs me-1">{p.code}</span>
                           </SelectItem>
                         ))}
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-1.5">
-                  <Label>{L('المستودع *', 'Warehouse *')}</Label>
+
+                {/* Warehouse */}
+                <div className="space-y-1.5 col-span-1">
+                  <Label className="text-xs sm:text-sm font-medium">{L('المستودع *', 'Warehouse *')}</Label>
                   <Select value={warehouseId} onValueChange={setWarehouseId}>
-                    <SelectTrigger><SelectValue placeholder={L('اختر المستودع', 'Select Warehouse')} /></SelectTrigger>
-                    <SelectContent>
+                    <SelectTrigger className={`h-9 sm:h-10 w-full text-xs sm:text-sm ${viewOnly ? 'cursor-not-allowed' : ''}`}>
+                      <SelectValue placeholder={L('اختر المستودع', 'Select Warehouse')} />
+                    </SelectTrigger>
+                    <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
                       {warehouses.map((w) => (
-                        <SelectItem key={w.id} value={w.id}>
-                          <span dir="ltr" className="font-mono text-xs">{w.code}</span> — {warehouseName(w)}
+                        <SelectItem key={w.id} value={w.id} className="text-xs sm:text-sm">
+                          {warehouseName(w)}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Receipt Date */}
+                <div className="space-y-1.5 col-span-1">
+                  <Label htmlFor="receiptDate" className="text-xs sm:text-sm font-medium">{L('تاريخ الاستلام *', 'Receipt Date *')}</Label>
+                  <DatePicker
+                    id="receiptDate"
+                    value={receiptDate}
+                    onChange={setReceiptDate}
+                    disabled={viewOnly}
+                  />
+                </div>
               </div>
 
-              <Card className="rounded-lg overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/50">
-                      <TableHead className="ps-3">{L('المنتج', 'Product')}</TableHead>
-                      <TableHead className="text-end num-cell w-24">{L('مطلوب', 'Ordered')}</TableHead>
-                      <TableHead className="text-end num-cell w-24">{L('مستلم', 'Received')}</TableHead>
-                      <TableHead className="w-26">{L('رقم التشغيلة', 'Lot No.')}</TableHead>
-                      <TableHead className="w-32">{L('تاريخ الانتهاء', 'Expiry Date')}</TableHead>
-                      <TableHead className="text-end num-cell w-28">{L('التكلفة', 'Cost')}</TableHead>
-                      <TableHead className="text-end num-cell w-28">{L('الإجمالي', 'Total')}</TableHead>
-                      <TableHead className="w-12"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {lines.map((l) => {
-                      const lineTotal = (Number(l.receivedQty) || 0) * (Number(l.unitCost) || 0)
-                      return (
-                        <TableRow key={l.key}>
-                          <TableCell className="ps-3">
-                            <Select value={l.productId} onValueChange={(v) => updateLine(l.key, 'productId', v)}>
-                              <SelectTrigger className="h-9 min-w-[200px]"><SelectValue placeholder={L('اختر المنتج', 'Select Product')} /></SelectTrigger>
-                              <SelectContent>
-                                {products.map((p) => (
-                                  <SelectItem key={p.id} value={p.id}>
-                                    <span dir="ltr" className="font-mono text-xs">{p.sku}</span> — {productName(p)}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
-                          <TableCell className="text-start num-cell">
-                            <Input className="h-9 text-start tabular-nums" type="number" step="1" dir="ltr" value={l.orderedQty} onChange={(e) => updateLine(l.key, 'orderedQty', e.target.value)} />
-                          </TableCell>
-                          <TableCell className="text-start num-cell">
-                            <Input className="h-9 text-start tabular-nums" type="number" step="1" dir="ltr" value={l.receivedQty} onChange={(e) => updateLine(l.key, 'receivedQty', e.target.value)} />
-                          </TableCell>
-                          <TableCell>
-                            <Input className="h-9" value={l.lotNumber} onChange={(e) => updateLine(l.key, 'lotNumber', e.target.value)} placeholder="—" />
-                          </TableCell>
-                          <TableCell>
-                            <Input className="h-9" type="date" value={l.expiryDate} onChange={(e) => updateLine(l.key, 'expiryDate', e.target.value)} />
-                          </TableCell>
-                          <TableCell className="text-start num-cell">
-                            <Input className="h-9 text-start tabular-nums" type="number" step="0.01" dir="ltr" value={l.unitCost} onChange={(e) => updateLine(l.key, 'unitCost', e.target.value)} />
-                          </TableCell>
-                          <TableCell className="text-start num-cell">
-                            <span className="num font-semibold tabular-nums" dir="ltr">{formatCurrency(lineTotal)}</span>
-                          </TableCell>
-                          <TableCell>
-                            <Button type="button" size="icon" variant="ghost" className="size-8 text-rose-500" onClick={() => removeLine(l.key)}>
-                              <Trash2 className="size-3.5" />
+              {/* Line items: cards on mobile (< md) */}
+              <div className="space-y-3 md:hidden">
+                <div className="flex items-center justify-between border-b pb-2">
+                  <span className="text-xs sm:text-sm font-semibold">{L('بنود المستند', 'Document Line Items')}</span>
+                  <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full font-medium">{lines.length} {L('بند', 'items')}</span>
+                </div>
+
+                {lines.map((l, idx) => {
+                  const lineTotal = (Number(l.receivedQty) || 0) * (Number(l.unitCost) || 0)
+                  return (
+                    <Card key={l.key} className="p-3 space-y-3 rounded-lg border shadow-xs">
+                      <div className="flex items-center justify-between gap-2 border-b pb-2">
+                        <span className="text-xs font-bold text-muted-foreground">{L('بند', 'Item')} #{idx + 1}</span>
+                        {!viewOnly && (
+                          <Button type="button" size="icon" variant="ghost" className="size-7 text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 shrink-0" onClick={() => removeLine(l.key)}>
+                            <Trash2 className="size-3.5" />
+                          </Button>
+                        )}
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label className="text-xs font-medium">{L('المنتج', 'Product')}</Label>
+                        <Select value={l.productId} onValueChange={(v) => updateLine(l.key, 'productId', v)}>
+                          <SelectTrigger className={`h-9 w-full text-xs ${viewOnly ? 'cursor-not-allowed' : ''}`}>
+                            <SelectValue placeholder={L('اختر المنتج', 'Select Product')} />
+                          </SelectTrigger>
+                          <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
+                            {products.map((p) => (
+                              <SelectItem key={p.id} value={p.id} className="text-xs">
+                                {productName(p)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-[11px] font-medium">{L('مطلوب', 'Ordered')}</Label>
+                          <Input className={`h-8.5 text-xs text-start tabular-nums ${viewOnly ? 'cursor-not-allowed' : ''}`} type="number" step="1" inputMode="decimal" dir="ltr" value={l.orderedQty} onChange={(e) => updateLine(l.key, 'orderedQty', e.target.value)} />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[11px] font-medium">{L('مستلم', 'Received')}</Label>
+                          <Input className={`h-8.5 text-xs text-start tabular-nums ${viewOnly ? 'cursor-not-allowed' : ''}`} type="number" step="1" inputMode="decimal" dir="ltr" value={l.receivedQty} onChange={(e) => updateLine(l.key, 'receivedQty', e.target.value)} />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[11px] font-medium">{L('رقم التشغيلة', 'Lot No.')}</Label>
+                          <Input className={`h-8.5 text-xs ${viewOnly ? 'cursor-not-allowed' : ''}`} value={l.lotNumber} onChange={(e) => updateLine(l.key, 'lotNumber', e.target.value)} placeholder="—" />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[11px] font-medium">{L('تاريخ الانتهاء', 'Expiry Date')}</Label>
+                          <DatePicker value={l.expiryDate} onChange={(v) => updateLine(l.key, 'expiryDate', v)} disabled={viewOnly} className="h-8.5 text-xs" />
+
+                        </div>
+                        <div className="space-y-1 col-span-2">
+                          <Label className="text-[11px] font-medium">{L('التكلفة', 'Cost')}</Label>
+                          <Input className={`h-8.5 text-xs text-start tabular-nums ${viewOnly ? 'cursor-not-allowed' : ''}`} type="number" step="0.01" inputMode="decimal" dir="ltr" value={l.unitCost} onChange={(e) => updateLine(l.key, 'unitCost', e.target.value)} />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between border-t pt-2 bg-muted/20 px-2 py-1.5 rounded">
+                        <span className="text-xs text-muted-foreground font-medium">{L('إجمالي البند', 'Line Total')}</span>
+                        <span className="num font-semibold text-xs tabular-nums" dir="ltr">{formatCurrency(lineTotal)}</span>
+                      </div>
+                    </Card>
+                  )
+                })}
+
+                {!viewOnly && (
+                  <Button type="button" size="sm" variant="outline" onClick={addLine} className="w-full gap-1.5 text-xs h-9">
+                    <Plus className="size-3.5" /> {L('إضافة بند', 'Add Line')}
+                  </Button>
+                )}
+              </div>
+
+              {/* Line items: table on desktop (md+) */}
+              <Card className="rounded-lg overflow-hidden hidden md:block border shadow-xs">
+                <div className="w-full overflow-x-auto">
+                  <table className="w-full text-xs caption-bottom border-collapse table-fixed min-w-[700px]">
+                    <colgroup>
+                      <col className="w-[25%]" />
+                      <col className="w-[9%]" />
+                      <col className="w-[9%]" />
+                      <col className="w-[13%]" />
+                      <col className="w-[17%]" />
+                      <col className="w-[11%]" />
+                      <col className="w-[10%]" />
+                      <col className="w-[6%]" />
+                    </colgroup>
+                    <thead>
+                      <tr className="bg-muted/60 border-b">
+                        <th className="py-2.5 px-3 text-start font-semibold text-muted-foreground">{L('المنتج', 'Product')}</th>
+                        <th className="py-2.5 px-2 text-center font-semibold text-muted-foreground">{L('مطلوب', 'Ordered')}</th>
+                        <th className="py-2.5 px-2 text-center font-semibold text-muted-foreground">{L('مستلم', 'Received')}</th>
+                        <th className="py-2.5 px-2 text-center font-semibold text-muted-foreground">{L('رقم التشغيلة', 'Lot No.')}</th>
+                        <th className="py-2.5 px-2 text-center font-semibold text-muted-foreground">{L('تاريخ الانتهاء', 'Expiry Date')}</th>
+                        <th className="py-2.5 px-2 text-center font-semibold text-muted-foreground">{L('التكلفة', 'Cost')}</th>
+                        <th className="py-2.5 px-2 text-center font-semibold text-muted-foreground">{L('الإجمالي', 'Total')}</th>
+                        <th className="py-2.5 px-1 text-center font-semibold text-muted-foreground"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {lines.map((l) => {
+                        const lineTotal = (Number(l.receivedQty) || 0) * (Number(l.unitCost) || 0)
+                        return (
+                          <tr key={l.key} className="hover:bg-muted/30 align-middle">
+                            <td className="p-2">
+                              <Select value={l.productId} onValueChange={(v) => updateLine(l.key, 'productId', v)}>
+                                <SelectTrigger className={`h-8.5 w-full text-xs ${viewOnly ? 'cursor-not-allowed' : ''}`}>
+                                  <SelectValue placeholder={L('اختر المنتج', 'Select Product')} />
+                                </SelectTrigger>
+                                <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
+                                  {products.map((p) => (
+                                    <SelectItem key={p.id} value={p.id} className="text-xs">
+                                      {productName(p)}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </td>
+                            <td className="p-2">
+                              <Input className={`h-8.5 text-xs text-start tabular-nums px-1 ${viewOnly ? 'cursor-not-allowed' : ''}`} type="number" step="1" inputMode="decimal" dir="ltr" value={l.orderedQty} onChange={(e) => updateLine(l.key, 'orderedQty', e.target.value)} />
+                            </td>
+                            <td className="p-2">
+                              <Input className={`h-8.5 text-xs text-start tabular-nums px-1 ${viewOnly ? 'cursor-not-allowed' : ''}`} type="number" step="1" inputMode="decimal" dir="ltr" value={l.receivedQty} onChange={(e) => updateLine(l.key, 'receivedQty', e.target.value)} />
+                            </td>
+                            <td className="p-2">
+                              <Input className={`h-8.5 text-xs text-center px-1 ${viewOnly ? 'cursor-not-allowed' : ''}`} value={l.lotNumber} onChange={(e) => updateLine(l.key, 'lotNumber', e.target.value)} placeholder="—" />
+                            </td>
+                            <td className="p-2">
+                              <DatePicker value={l.expiryDate} onChange={(v) => updateLine(l.key, 'expiryDate', v)} disabled={viewOnly} className="h-8.5 text-xs text-start px-1" />
+                            </td>
+                            <td className="p-2">
+                              <Input className={`h-8.5  text-xs text-center tabular-nums px-1 ${viewOnly ? 'cursor-not-allowed' : ''}`} type="number" step="0.01" inputMode="decimal" dir="ltr" value={l.unitCost} onChange={(e) => updateLine(l.key, 'unitCost', e.target.value)} />
+                            </td>
+                            <td className="p-2 text-center whitespace-nowrap">
+                              <span className="num font-semibold text-xs tabular-nums" dir="ltr">{formatCurrency(lineTotal)}</span>
+                            </td>
+                            <td className="p-1 text-center">
+                              {!viewOnly && (
+                                <Button type="button" size="icon" variant="ghost" className="size-7 text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30" onClick={() => removeLine(l.key)}>
+                                  <Trash2 className="size-4.5" />
+                                </Button>
+                              )}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                    <tfoot>
+                      <tr className="bg-muted/40 border-t font-medium">
+                        <td colSpan={6} className="p-2.5 ps-3">
+                          {!viewOnly && (
+                            <Button type="button" size="sm" variant="outline" onClick={addLine} className="gap-1.5 text-xs h-8">
+                              <Plus className="size-3.5" /> {L('إضافة بند', 'Add Line')}
                             </Button>
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                  <TableFooter>
-                    <TableRow>
-                      <TableCell colSpan={6}>
-                        <Button type="button" size="sm" variant="outline" onClick={addLine} className="gap-1.5">
-                          <Plus className="size-3.5" /> {L('إضافة بند', 'Add Line')}
-                        </Button>
-                      </TableCell>
-                      <TableCell className="text-end num-cell">
-                        <span className="num font-bold tabular-nums" dir="ltr">{formatCurrency(computedTotal)}</span>
-                      </TableCell>
-                      <TableCell></TableCell>
-                    </TableRow>
-                  </TableFooter>
-                </Table>
+                          )}
+                        </td>
+                        <td className="p-2.5 text-center whitespace-nowrap">
+                          <span className="num font-bold text-xs tabular-nums" dir="ltr">{formatCurrency(computedTotal)}</span>
+                        </td>
+                        <td></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
               </Card>
 
+              {/* Notes */}
               <div className="space-y-1.5">
-                <Label htmlFor="notes">{L('ملاحظات', 'Notes')}</Label>
-                <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder={L('ملاحظات إضافية...', 'Additional notes...')} />
+                <Label htmlFor="notes" className="text-xs sm:text-sm font-medium">{L('ملاحظات', 'Notes')}</Label>
+                <Textarea id="notes" className={`text-xs sm:text-sm min-h-[60px] ${viewOnly ? 'cursor-not-allowed' : ''}`} value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder={L('ملاحظات إضافية على سند الاستلام...', 'Additional notes...')} />
               </div>
-            </div>
+            </fieldset>
           </DialogBody>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>{L('إلغاء', 'Cancel')}</Button>
-            <Button type="button" variant="secondary" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate(false)}>
-              {saveMutation.isPending ? L('جاري الحفظ...', 'Saving...') : L('حفظ كمسودة', 'Save as Draft')}
+          <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-between gap-2 px-4 sm:px-6 py-3.5 border-t bg-muted/20 shrink-0">
+            <Button type="button" variant="outline" className="w-full sm:w-auto sm:min-w-24 text-xs sm:text-sm h-9" onClick={() => { setAddOpen(false); resetForm() }}>
+              {viewOnly ? L('إغلاق', 'Close') : L('إلغاء', 'Cancel')}
             </Button>
-            <Button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate(true)}>
-              {saveMutation.isPending ? L('جاري الحفظ...', 'Saving...') : L('حفظ وتحقق', 'Save & Validate')}
-            </Button>
+
+            {viewOnly ? (
+              <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+                <Button
+                  type="button"
+                  variant="destructive"
+                  className="w-full sm:w-auto gap-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs sm:text-sm h-9"
+                  disabled={cancelMutation.isPending}
+                  onClick={() => {
+                    if (editingId) cancelMutation.mutate(editingId)
+                  }}
+                >
+                  <RotateCcw className="size-3.5" />
+                  {L('إلغاء/إرجاع استلام', 'Cancel/Reverse Receipt')}
+                </Button>
+                <Button
+                  type="button"
+                  className="w-full sm:w-auto sm:min-w-24 bg-sky-600 hover:bg-sky-700 text-white gap-1.5 text-xs sm:text-sm h-9"
+                  onClick={() => {
+                    const currentRec = receipts.find((r) => r.id === editingId)
+                    if (currentRec) handlePrint(currentRec)
+                  }}
+                >
+                  <Printer className="size-3.5" />
+                  {L('طباعة', 'Print')}
+                </Button>
+              </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+                <Button type="button" variant="secondary" className="w-full sm:w-auto sm:min-w-24 text-xs sm:text-sm h-9" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate(false)}>
+                  {saveMutation.isPending
+                    ? L('جاري الحفظ...', 'Saving...')
+                    : editingId ? L('تحديث', 'Update') : L('حفظ', 'Save')}
+                </Button>
+                <Button type="button" className="w-full sm:w-auto sm:min-w-24 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm h-9" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate(true)}>
+                  {saveMutation.isPending
+                    ? L('جاري الحفظ...', 'Saving...')
+                    : editingId ? L('تحديث وترحيل', 'Update & Post') : L('حفظ وترحيل', 'Save & Post')}
+                </Button>
+              </div>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

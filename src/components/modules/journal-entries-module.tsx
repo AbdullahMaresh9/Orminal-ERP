@@ -25,6 +25,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogBody,
 } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { DatePicker } from '@/components/ui/date-picker'
 import {
   FileText, Plus, Trash2, Eye, Printer, CheckCircle2, XCircle, Send,
   BookOpen, CalendarDays, Coins,
@@ -468,7 +469,7 @@ export function JournalEntriesModule() {
               </div>
               <div className="space-y-1.5 text-start">
                 <Label htmlFor="postingDate" className="text-xs font-semibold text-slate-600 dark:text-slate-400">{isRTL ? 'تاريخ الترحيل' : 'Posting Date'}</Label>
-                <Input id="postingDate" type="date" value={postingDate} onChange={(e) => setPostingDate(e.target.value)} className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500" />
+                <DatePicker id="postingDate" value={postingDate} onChange={setPostingDate} />
               </div>
             </div>
 
