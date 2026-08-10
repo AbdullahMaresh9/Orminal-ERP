@@ -2,6 +2,8 @@ import NextAuth from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { db } from '@/lib/db'
 import { scrypt, timingSafeEqual, randomBytes } from 'crypto'
+import bcryptjs from 'bcryptjs'
+
 const scryptAsync = (password: string | Buffer, salt: string | Buffer, keylen: number, options: { N: number; r: number; p: number }): Promise<Buffer> => {
   return new Promise((resolve, reject) => {
     scrypt(password, salt, keylen, options, (err, derivedKey) => {
@@ -13,7 +15,11 @@ const scryptAsync = (password: string | Buffer, salt: string | Buffer, keylen: n
 
 async function verifyPassword(plaintext: string, hash: string): Promise<boolean> {
   try {
-    // Support both scrypt format (scrypt:N:r:p$salt$hash) and plain bcrypt-style
+    // Support bcrypt format ($2a$, $2b$, $2x$, $2y$)
+    if (hash.startsWith('$2a$') || hash.startsWith('$2b$') || hash.startsWith('$2x$') || hash.startsWith('$2y$')) {
+      return await bcryptjs.compare(plaintext, hash)
+    }
+    // Support scrypt format (scrypt:N:r:p$salt$hash)
     if (hash.startsWith('scrypt:')) {
       const [params, salt, storedHash] = hash.split('$')
       const [, N, r, p] = params.split(':').map(Number)
