@@ -277,6 +277,22 @@ export function purchaseInvoicePosting(args: {
   ]
 }
 
+// Purchase Return / Debit Note: Dr AP / Cr Purchases + Cr Input VAT
+export function purchaseReturnPosting(args: {
+  total: number; subtotal: number; taxTotal: number; partnerId: string
+}): JournalLineInput[] {
+  const lines: JournalLineInput[] = [
+    { accountCode: SYSTEM_ACCOUNTS.AP, debit: args.total, credit: 0, description: 'تسوية ذمم دائنة — إشعار مدين / مرتجع مشتريات', partnerId: args.partnerId },
+  ]
+  if (args.subtotal > 0) {
+    lines.push({ accountCode: SYSTEM_ACCOUNTS.PURCHASES, debit: 0, credit: args.subtotal, description: 'مردودات ومسموحات المشتريات' })
+  }
+  if (args.taxTotal > 0) {
+    lines.push({ accountCode: SYSTEM_ACCOUNTS.INPUT_VAT, debit: 0, credit: args.taxTotal, description: 'تخفيض ضريبة القيمة المضافة المدخلات' })
+  }
+  return lines
+}
+
 // Purchase Cash: Dr Purchases + Dr Input VAT / Cr Cash
 export function purchaseCashPosting(args: {
   total: number; subtotal: number; taxTotal: number

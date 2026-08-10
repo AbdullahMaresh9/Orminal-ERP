@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { ok, notFound, badRequest, serverError } from '@/lib/erp/api-response'
-import { reverseJournalEntry } from '@/lib/erp/accounting-engine'
+import { postJournalEntry, purchaseReturnPosting } from '@/lib/erp/accounting-engine'
+import { nextNumber } from '@/lib/erp/number-sequence'
 
 // GET /api/erp/purchase-returns/[id]
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -14,7 +15,18 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       },
     })
     if (!item) return notFound('Purchase return not found')
-    return ok(item)
+
+    let journalEntry: any = null
+    if (item.journalEntryId) {
+      journalEntry = await db.journalEntry.findUnique({
+        where: { id: item.journalEntryId },
+        include: {
+          lines: { include: { account: { select: { code: true, nameAr: true, nameEn: true } } } },
+        },
+      })
+    }
+
+    return ok({ ...item, journalEntry })
   } catch (e: any) {
     return serverError(e.message)
   }
@@ -41,23 +53,56 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       return ok(updated)
     }
     if (action === 'debit') {
-      // Issue debit note: optionally reverse the original invoice journal, update partner balance
+      // Issue actual Debit Note: post balanced accounting journal entry + update supplier balance
       if (exists.status === 'debited' || exists.status === 'closed')
         return badRequest('Return already debited')
 
       let journalEntryId: string | null = null
 
-      // If an original invoice is linked, try to reverse its journal entry
-      if (exists.originalInvoiceId) {
-        const origInvoice = await db.purchaseInvoice.findUnique({ where: { id: exists.originalInvoiceId } })
-        if (origInvoice?.journalEntryId) {
-          const reversal = await reverseJournalEntry(
-            origInvoice.journalEntryId,
-            body.userId,
-            `مرتجع مشتريات ${exists.code}`
-          )
-          journalEntryId = reversal.id
-        }
+      try {
+        const je = await postJournalEntry({
+          companyId: exists.companyId,
+          branchId: exists.branchId ?? undefined,
+          journalType: 'purchase',
+          postingDate: exists.date ? new Date(exists.date) : new Date(),
+          description: `إشعار مدين — مرتجع مشتريات ${exists.code}`,
+          refType: 'purchase_return',
+          refId: exists.id,
+          lines: purchaseReturnPosting({
+            total: exists.total,
+            subtotal: exists.subtotal,
+            taxTotal: exists.taxTotal,
+            partnerId: exists.partnerId,
+          }),
+          userId: body.userId,
+        })
+        journalEntryId = je.id
+      } catch (err: any) {
+        return badRequest(`فشل إصدار قيد الإشعار المدين: ${err.message}`)
+      }
+
+      // Create an official PurchaseCreditNote (Debit Note) tracking record in DB
+      try {
+        const pcnCode = await nextNumber('purchase_credit_note', exists.companyId, exists.branchId ?? undefined)
+        await db.purchaseCreditNote.create({
+          data: {
+            companyId: exists.companyId,
+            branchId: exists.branchId,
+            code: pcnCode,
+            partnerId: exists.partnerId,
+            invoiceId: exists.originalInvoiceId ?? null,
+            date: exists.date ? new Date(exists.date) : new Date(),
+            reason: exists.reason || 'إشعار مدين عن مرتجع مشتريات',
+            status: 'posted',
+            subtotal: exists.subtotal,
+            taxTotal: exists.taxTotal,
+            total: exists.total,
+            journalEntryId: journalEntryId ?? null,
+            notes: exists.notes || null,
+          },
+        })
+      } catch (err: any) {
+        console.error('Failed to create purchase credit note record:', err)
       }
 
       await db.purchaseReturn.update({

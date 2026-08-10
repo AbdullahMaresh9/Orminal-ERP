@@ -44,6 +44,23 @@ interface InvoiceLine { id: string; productId: string; quantity: number; unitCos
 interface Invoice { id: string; code: string; total: number; partnerId: string; lines?: InvoiceLine[] }
 interface Product { id: string; sku: string; nameAr: string; nameEn?: string; costPrice: number }
 
+interface JournalLine {
+  id?: string
+  accountCode?: string
+  debit: number
+  credit: number
+  description?: string
+  account?: { code: string; nameAr: string; nameEn?: string }
+}
+
+interface JournalEntry {
+  id: string
+  entryNumber: string
+  postingDate: string
+  description?: string
+  lines: JournalLine[]
+}
+
 interface PurchaseReturnLine {
   id?: string
   productId?: string
@@ -67,6 +84,7 @@ interface PurchaseReturn {
   total: number
   notes?: string
   journalEntryId?: string | null
+  journalEntry?: JournalEntry | null
   partner?: Partner
   lines: PurchaseReturnLine[]
 }
@@ -166,6 +184,19 @@ export function PurchaseReturnsModule() {
       return r.json()
     },
   })
+
+  const { data: detailedReturnData } = useQuery<{ data: PurchaseReturn }>({
+    queryKey: ['purchase-return-detail', debitNoteReturn?.id],
+    queryFn: async () => {
+      if (!debitNoteReturn?.id) return null
+      const r = await fetch(`/api/erp/purchase-returns/${debitNoteReturn.id}`)
+      if (!r.ok) return null
+      return r.json()
+    },
+    enabled: !!debitNoteReturn?.id,
+  })
+
+  const fullDebitNoteReturn = detailedReturnData?.data ?? debitNoteReturn
 
   const returns = data?.data ?? []
   const partners = partnersData?.data ?? []
@@ -493,6 +524,94 @@ export function PurchaseReturnsModule() {
       </div>
     `
     printHTML(html, `${L('مرتجع مشتريات', 'Purchase Return')} ${r.code}`, { dir: isRTL ? 'rtl' : 'ltr' })
+  }
+
+  const handlePrintDebitNote = (r: PurchaseReturn, je?: JournalEntry | null) => {
+    const origInv = invoices.find((i) => i.id === r.originalInvoiceId)
+    const html = `
+      <div class="doc-header">
+        <div class="company">
+          <img src="/logo.png" class="logo" style="width:56px;height:56px;object-fit:contain;border-radius:8px;" />
+          <div class="info">
+            <h2>${L('أورمنال', 'Orminal')}</h2>
+            <p>${L('نظام إدارة موارد المؤسسات ERP', 'Enterprise Resource Planning (ERP)')}</p>
+          </div>
+        </div>
+        <div class="doc-meta">
+          <div class="type" style="color:#059669; font-weight:bold;">${L('إشعار مدين رسمي', 'OFFICIAL DEBIT NOTE')}</div>
+          <div class="code">${r.code}</div>
+          <div class="date">${formatDate(r.date)}</div>
+          ${r.journalEntryId ? `<div class="sub" style="font-weight:bold; color:#0284c7;">${L('رقم القيد المحاسبي:', 'JE Code:')} ${je?.entryNumber || r.journalEntryId}</div>` : ''}
+        </div>
+      </div>
+      <div class="party">
+        <div class="label">${L('صادر لصالح المورد', 'Issued To Supplier')}</div>
+        <div class="name">${partnerName(r.partner)}</div>
+        <div class="sub">${L('رمز المورد', 'Supplier Code')}: ${r.partner?.code ?? ''}</div>
+        ${origInv ? `<div class="sub">${L('مرتبط بالفاتورة الأصلية', 'Linked Invoice')}: ${origInv.code}</div>` : ''}
+        ${r.reason ? `<div class="sub">${L('سبب الإصدار', 'Reason')}: ${r.reason}</div>` : ''}
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>SKU</th>
+            <th>${L('المنتج المرجع', 'Returned Product')}</th>
+            <th>${L('الكمية', 'Qty')}</th>
+            <th>${L('التكلفة', 'Cost')}</th>
+            <th>${L('الضريبة', 'Tax')}</th>
+            <th>${L('الإجمالي', 'Total')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${r.lines.map((l) => `
+            <tr>
+              <td>${l.product?.sku ?? ''}</td>
+              <td>${productName(l.product)}</td>
+              <td>${l.quantity}</td>
+              <td>${formatCurrency(l.unitCost)}</td>
+              <td>${l.taxRate}%</td>
+              <td>${formatCurrency(l.total)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      ${je && je.lines && je.lines.length > 0 ? `
+        <div style="margin-top:20px; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; background: #f8fafc;">
+          <h4 style="margin: 0 0 8px 0; font-size: 13px; color: #1e293b;">${L('بيانات القيد المحاسبي والأثر المالي (General Ledger Journal Entry)', 'General Ledger Journal Entry')}</h4>
+          <table style="margin:0; font-size: 11px; border-collapse: collapse; width:100%;">
+            <thead>
+              <tr style="background:#e2e8f0;">
+                <th style="padding:6px; border:1px solid #cbd5e1; text-align:start;">${L('رمز الحساب', 'Account Code')}</th>
+                <th style="padding:6px; border:1px solid #cbd5e1; text-align:start;">${L('اسم الحساب / البيان', 'Account Name / Line Description')}</th>
+                <th style="padding:6px; border:1px solid #cbd5e1; text-align:center;">${L('مدين (Debit)', 'Debit')}</th>
+                <th style="padding:6px; border:1px solid #cbd5e1; text-align:center;">${L('دائن (Credit)', 'Credit')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${je.lines.map((line) => `
+                <tr>
+                  <td style="padding:6px; border:1px solid #cbd5e1; font-family:monospace;">${line.accountCode || line.account?.code || '—'}</td>
+                  <td style="padding:6px; border:1px solid #cbd5e1;">${isRTL ? (line.account?.nameAr || line.description) : (line.account?.nameEn || line.account?.nameAr || line.description)}</td>
+                  <td style="padding:6px; border:1px solid #cbd5e1; text-align:center; font-weight:bold; color:${line.debit > 0 ? '#0284c7' : 'inherit'};">${line.debit > 0 ? formatCurrency(line.debit) : '—'}</td>
+                  <td style="padding:6px; border:1px solid #cbd5e1; text-align:center; font-weight:bold; color:${line.credit > 0 ? '#059669' : 'inherit'};">${line.credit > 0 ? formatCurrency(line.credit) : '—'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      ` : ''}
+      <div class="totals">
+        <div class="row"><span>${L('المجموع الفرعي:', 'Subtotal:')}</span><span>${formatCurrency(r.subtotal)}</span></div>
+        <div class="row"><span>${L('ضريبة القيمة المضافة:', 'VAT Total:')}</span><span>${formatCurrency(r.taxTotal)}</span></div>
+        <div class="row grand" style="background:#ecfdf5; color:#065f46;"><span>${L('إجمالي قيمة الإشعار المدين:', 'Debit Note Total:')}</span><span>${formatCurrency(r.total)}</span></div>
+      </div>
+      <div class="signatures">
+        <div class="sig"><div class="line"></div><div class="label">${L('المحاسب المسؤول', 'Accountant')}</div></div>
+        <div class="sig"><div class="line"></div><div class="label">${L('المدير المالي', 'Financial Controller')}</div></div>
+        <div class="sig"><div class="line"></div><div class="label">${L('توقيع واستلام المورد', 'Supplier Signature')}</div></div>
+      </div>
+    `
+    printHTML(html, `${L('إشعار مدين', 'Debit Note')} ${r.code}`, { dir: isRTL ? 'rtl' : 'ltr' })
   }
 
   const stickyHead = 'sticky top-0 z-20 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold whitespace-nowrap shadow-[inset_0_-1px_0_0_hsl(var(--border))]'
@@ -1046,49 +1165,90 @@ export function PurchaseReturnsModule() {
 
       {/* نافذة عرض تفاصيل الإشعار المدين/الدائن المرتبط */}
       <Dialog open={debitNoteReturn !== null} onOpenChange={(open) => { if (!open) setDebitNoteReturn(null) }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg">
           <DialogHeader className="border-b pb-3">
             <DialogTitle className="text-base font-bold flex items-center gap-2 text-slate-900 dark:text-slate-100">
               <Receipt className="size-5 text-emerald-600" />
-              {L('تفاصيل الإشعار المدين المرتبط', 'Associated Debit Note Details')}
+              {L('إشعار مدين رسمي للمشتريات', 'Official Purchase Debit Note')}
             </DialogTitle>
           </DialogHeader>
           <DialogBody className="space-y-4 py-4 text-xs">
-            {debitNoteReturn && (
+            {fullDebitNoteReturn && (
               <div className="space-y-3">
                 <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 dark:border-emerald-900/60 dark:bg-emerald-950/40 p-3 text-emerald-900 dark:text-emerald-300 flex items-center justify-between">
                   <div>
-                    <div className="font-bold">{L('الحالة: مرحّل بالكامل', 'Status: Fully Debited & Posted')}</div>
-                    <div className="text-[11px] opacity-80">{L('تم تخصيص الأثر المالي لحساب المورد', 'Financial effect applied to supplier account')}</div>
+                    <div className="font-bold">{L('الحالة: مُصدَر ومُرحّل بالكامل', 'Status: Debited & Fully Posted')}</div>
+                    <div className="text-[11px] opacity-80">{L('تم خصم المبلغ من حساب المورد في الذمم الدائنة', 'Amount debited from supplier AP balance')}</div>
                   </div>
-                  <CheckCircle2 className="size-6 text-emerald-600 dark:text-emerald-400" />
+                  <CheckCircle2 className="size-6 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 </div>
 
                 <div className="space-y-2 border-b pb-3 border-slate-200 dark:border-slate-800">
                   <div className="flex justify-between">
-                    <span className="text-slate-500">{L('رمز المرتجع:', 'Return Code:')}</span>
-                    <span className="font-mono font-bold">{debitNoteReturn.code}</span>
+                    <span className="text-slate-500">{L('رمز المرتجع / الإشعار:', 'Return / Debit Note Code:')}</span>
+                    <span className="font-mono font-bold text-blue-600 dark:text-blue-400">{fullDebitNoteReturn.code}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">{L('المورد:', 'Supplier:')}</span>
-                    <span className="font-bold">{partnerName(debitNoteReturn.partner)}</span>
+                    <span className="font-bold">{partnerName(fullDebitNoteReturn.partner)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">{L('التاريخ:', 'Date:')}</span>
-                    <span className="font-mono">{formatDate(debitNoteReturn.date)}</span>
+                    <span className="font-mono">{formatDate(fullDebitNoteReturn.date)}</span>
                   </div>
-                  {debitNoteReturn.journalEntryId && (
+                  {fullDebitNoteReturn.journalEntryId && (
                     <div className="flex justify-between">
-                      <span className="text-slate-500">{L('رقم القيد اليومي:', 'Journal Entry ID:')}</span>
-                      <span className="font-mono text-blue-600 dark:text-blue-400 font-semibold">{debitNoteReturn.journalEntryId}</span>
+                      <span className="text-slate-500">{L('معرّف القيد المحاسبي:', 'Journal Entry ID:')}</span>
+                      <span className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
+                        {fullDebitNoteReturn.journalEntry?.entryNumber || fullDebitNoteReturn.journalEntryId}
+                      </span>
                     </div>
                   )}
                 </div>
 
-                <div className="space-y-1.5 pt-1">
-                  <div className="flex justify-between font-bold text-sm">
-                    <span>{L('إجمالي قيمة الإشعار:', 'Debit Note Total:')}</span>
-                    <span className="font-mono text-emerald-600 dark:text-emerald-400">{formatCurrency(debitNoteReturn.total)}</span>
+                {/* تفاصيل القيد اليومي المالي */}
+                {fullDebitNoteReturn.journalEntry && fullDebitNoteReturn.journalEntry.lines && (
+                  <div className="space-y-2 pt-1">
+                    <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between">
+                      <span>{L('توزيع القيد اليومي (الأثر المالي):', 'Journal Entry Lines:')}</span>
+                      <span className="text-[10px] font-mono text-slate-500">
+                        {fullDebitNoteReturn.journalEntry.entryNumber}
+                      </span>
+                    </div>
+                    <div className="rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
+                      <Table className="text-[11px]">
+                        <TableHeader className="bg-slate-100 dark:bg-slate-800">
+                          <TableRow>
+                            <TableHead className="py-1.5 ps-2">{L('الحساب', 'Account')}</TableHead>
+                            <TableHead className="py-1.5 text-center">{L('مدين', 'Debit')}</TableHead>
+                            <TableHead className="py-1.5 text-center">{L('دائن', 'Credit')}</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {fullDebitNoteReturn.journalEntry.lines.map((l: any, idx: number) => (
+                            <TableRow key={l.id || idx} className="border-b border-slate-100 dark:border-slate-800">
+                              <TableCell className="py-1.5 ps-2 font-medium">
+                                <div className="font-mono text-[10px] text-slate-500">{l.accountCode || l.account?.code}</div>
+                                <div>{isRTL ? (l.account?.nameAr || l.description) : (l.account?.nameEn || l.account?.nameAr || l.description)}</div>
+                              </TableCell>
+                              <TableCell className="py-1.5 text-center font-bold text-blue-600 dark:text-blue-400">
+                                {l.debit > 0 ? formatCurrency(l.debit) : '—'}
+                              </TableCell>
+                              <TableCell className="py-1.5 text-center font-bold text-emerald-600 dark:text-emerald-400">
+                                {l.credit > 0 ? formatCurrency(l.credit) : '—'}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-1.5 pt-2 border-t border-slate-200 dark:border-slate-800">
+                  <div className="flex justify-between font-extrabold text-sm text-slate-900 dark:text-slate-100">
+                    <span>{L('إجمالي قيمة الإشعار المدين:', 'Debit Note Total:')}</span>
+                    <span className="font-mono text-emerald-600 dark:text-emerald-400">{formatCurrency(fullDebitNoteReturn.total)}</span>
                   </div>
                 </div>
               </div>
@@ -1098,9 +1258,9 @@ export function PurchaseReturnsModule() {
             <Button variant="outline" size="sm" onClick={() => setDebitNoteReturn(null)}>
               {L('إغلاق', 'Close')}
             </Button>
-            {debitNoteReturn && (
-              <Button size="sm" variant="default" className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => handlePrint(debitNoteReturn)}>
-                <Printer className="size-4" /> {L('طباعة الإشعار', 'Print Debit Note')}
+            {fullDebitNoteReturn && (
+              <Button size="sm" variant="default" className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold" onClick={() => handlePrintDebitNote(fullDebitNoteReturn, fullDebitNoteReturn.journalEntry)}>
+                <Printer className="size-4" /> {L('طباعة الإشعار المدين', 'Print Debit Note')}
               </Button>
             )}
           </DialogFooter>
