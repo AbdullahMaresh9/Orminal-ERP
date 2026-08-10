@@ -374,6 +374,7 @@ export default function CustomersModule() {
             </DialogHeader>
 
             <DialogBody className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 sm:space-y-6 bg-slate-50/50 dark:bg-slate-900/50 scrollbar-thin">
+              {/* Basic Information */}
               <div className="space-y-3.5 sm:space-y-4">
                 <div className="flex items-center gap-2 border-b pb-2 border-slate-200/60 dark:border-slate-800/60">
                   <Building2 className="size-4 text-blue-600 dark:text-blue-400" />
@@ -381,69 +382,77 @@ export default function CustomersModule() {
                     {isRTL ? 'البيانات الأساسية' : 'Basic Information'}
                   </h3>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
-                  <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
-                    <Label htmlFor="code" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      {isRTL ? 'رمز العميل (تلقائي)' : 'Customer Code (Auto)'}
-                    </Label>
-                    <Input
-                      id="code"
-                      name="code"
-                      defaultValue={editing?.code}
-                      placeholder="C-00001"
-                      dir={dir}
-                      className={cn("h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 font-mono text-sm bg-slate-50 dark:bg-slate-900/50", isRTL ? "text-right" : "text-left")}
-                    />
-                  </div>
 
-                  <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
-                    <Label htmlFor="nameAr" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      {isRTL ? 'الاسم بالكامل (عربي) *' : 'Full Name (Arabic) *'}
-                    </Label>
-                    <Input
-                      id="nameAr"
-                      name="nameAr"
-                      defaultValue={editing?.nameAr}
-                      placeholder={isRTL ? 'مثال: شركة الحلول المتقدمة' : 'e.g. Advanced Solutions Co.'}
-                      required
-                      dir={dir}
-                      className={cn("h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-sm", isRTL ? "text-right" : "text-left")}
-                    />
-                  </div>
-
-                  <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
-                    <Label htmlFor="nameEn" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      {isRTL ? 'الاسم بالكامل (إنجليزي)' : 'Full Name (English)'}
-                    </Label>
-                    <Input
-                      id="nameEn"
-                      name="nameEn"
-                      defaultValue={editing?.nameEn}
-                      placeholder="e.g. Advanced Solutions Co."
-                      dir={dir}
-                      className={cn("h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-sm", isRTL ? "text-right" : "text-left")}
-                    />
-                  </div>
-
-                  <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
-                    <Label htmlFor="taxNumber" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      {isRTL ? 'الرقم الضريبي (TIN)' : 'Tax Identification Number (TIN)'}
-                    </Label>
-                    <div className="relative">
-                      <Hash className="absolute inset-y-0 start-3 my-auto size-4 text-slate-400 pointer-events-none" />
+                <div className="space-y-3.5 sm:space-y-4">
+                  {/* Code and Tax Number side-by-side on mobile */}
+                  <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                    <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                      <Label htmlFor="code" className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate block">
+                        {isRTL ? 'رمز العميل (تلقائي)' : 'Customer Code (Auto)'}
+                      </Label>
                       <Input
-                        id="taxNumber"
-                        name="taxNumber"
-                        defaultValue={editing?.taxNumber}
-                        placeholder="300000000000003"
+                        id="code"
+                        name="code"
+                        defaultValue={editing?.code}
+                        placeholder="C-00001"
                         dir={dir}
-                        className={cn("h-10 ps-9 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-sm font-mono", isRTL ? "text-right" : "text-left")}
+                        className={cn("h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 font-mono text-xs sm:text-sm bg-slate-50 dark:bg-slate-900/50 px-2.5 sm:px-3", isRTL ? "text-right" : "text-left")}
+                      />
+                    </div>
+
+                    <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                      <Label htmlFor="taxNumber" className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate block">
+                        {isRTL ? 'الرقم الضريبي (TIN)' : 'Tax Number (TIN)'}
+                      </Label>
+                      <div className="relative">
+                        <Hash className="absolute inset-y-0 start-2.5 my-auto size-3.5 sm:size-4 text-slate-400 pointer-events-none" />
+                        <Input
+                          id="taxNumber"
+                          name="taxNumber"
+                          defaultValue={editing?.taxNumber}
+                          placeholder="3000000000"
+                          dir={dir}
+                          className={cn("h-10 ps-8 sm:ps-9 pe-2.5 sm:pe-3 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-xs sm:text-sm font-mono", isRTL ? "text-right" : "text-left")}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Names */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
+                    <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                      <Label htmlFor="nameAr" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        {isRTL ? 'الاسم بالكامل (عربي) *' : 'Full Name (Arabic) *'}
+                      </Label>
+                      <Input
+                        id="nameAr"
+                        name="nameAr"
+                        defaultValue={editing?.nameAr}
+                        placeholder={isRTL ? 'مثال: شركة الحلول المتقدمة' : 'e.g. Advanced Solutions Co.'}
+                        required
+                        dir={dir}
+                        className={cn("h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-sm", isRTL ? "text-right" : "text-left")}
+                      />
+                    </div>
+
+                    <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                      <Label htmlFor="nameEn" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        {isRTL ? 'الاسم بالكامل (إنجليزي)' : 'Full Name (English)'}
+                      </Label>
+                      <Input
+                        id="nameEn"
+                        name="nameEn"
+                        defaultValue={editing?.nameEn}
+                        placeholder="e.g. Advanced Solutions Co."
+                        dir={dir}
+                        className={cn("h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-sm", isRTL ? "text-right" : "text-left")}
                       />
                     </div>
                   </div>
                 </div>
               </div>
 
+              {/* Contact Information */}
               <div className="space-y-3.5 sm:space-y-4">
                 <div className="flex items-center gap-2 border-b pb-2 border-slate-200/60 dark:border-slate-800/60">
                   <Phone className="size-4 text-blue-600 dark:text-blue-400" />
@@ -451,7 +460,8 @@ export default function CustomersModule() {
                     {isRTL ? 'بيانات المسؤول والاتصال' : 'Contact Information'}
                   </h3>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
+
+                <div className="space-y-3.5 sm:space-y-4">
                   <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
                     <Label htmlFor="contactName" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                       {isRTL ? 'اسم جهة الاتصال / المسؤول' : 'Contact Person / Representative'}
@@ -466,42 +476,45 @@ export default function CustomersModule() {
                     />
                   </div>
 
-                  <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
-                    <Label htmlFor="phone" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      {isRTL ? 'رقم الهاتف' : 'Phone Number'}
-                    </Label>
-                    <div className="relative">
-                      <Phone className="absolute inset-y-0 start-3 my-auto size-4 text-slate-400 pointer-events-none" />
-                      <Input
-                        id="phone"
-                        name="phone"
-                        defaultValue={editing?.phone}
-                        placeholder="+966 50 000 0000"
-                        dir={dir}
-                        className={cn("h-10 ps-9 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-sm font-mono", isRTL ? "text-right" : "text-left")}
-                      />
+                  {/* Phone and Email side-by-side on mobile */}
+                  <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                    <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                      <Label htmlFor="phone" className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate block">
+                        {isRTL ? 'رقم الهاتف' : 'Phone Number'}
+                      </Label>
+                      <div className="relative">
+                        <Phone className="absolute inset-y-0 start-2.5 my-auto size-3.5 sm:size-4 text-slate-400 pointer-events-none" />
+                        <Input
+                          id="phone"
+                          name="phone"
+                          defaultValue={editing?.phone}
+                          placeholder="+966 50 000 0000"
+                          dir={dir}
+                          className={cn("h-10 ps-8 sm:ps-9 pe-2.5 sm:pe-3 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-xs sm:text-sm font-mono", isRTL ? "text-right" : "text-left")}
+                        />
+                      </div>
+                    </div>
+
+                    <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                      <Label htmlFor="email" className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate block">
+                        {isRTL ? 'البريد الإلكتروني' : 'Email Address'}
+                      </Label>
+                      <div className="relative">
+                        <Mail className="absolute inset-y-0 start-2.5 my-auto size-3.5 sm:size-4 text-slate-400 pointer-events-none" />
+                        <Input
+                          id="email"
+                          name="email"
+                          type="email"
+                          defaultValue={editing?.email}
+                          placeholder="customer@example.com"
+                          dir={dir}
+                          className={cn("h-10 ps-8 sm:ps-9 pe-2.5 sm:pe-3 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-xs sm:text-sm font-mono", isRTL ? "text-right" : "text-left")}
+                        />
+                      </div>
                     </div>
                   </div>
 
                   <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
-                    <Label htmlFor="email" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      {isRTL ? 'البريد الإلكتروني' : 'Email Address'}
-                    </Label>
-                    <div className="relative">
-                      <Mail className="absolute inset-y-0 start-3 my-auto size-4 text-slate-400 pointer-events-none" />
-                      <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        defaultValue={editing?.email}
-                        placeholder="customer@example.com"
-                        dir={dir}
-                        className={cn("h-10 ps-9 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-sm font-mono", isRTL ? "text-right" : "text-left")}
-                      />
-                    </div>
-                  </div>
-
-                  <div className={cn("space-y-1.5 sm:col-span-2", isRTL ? "text-right" : "text-left")}>
                     <Label htmlFor="address" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                       {isRTL ? 'العنوان' : 'Address'}
                     </Label>
@@ -520,6 +533,7 @@ export default function CustomersModule() {
                 </div>
               </div>
 
+              {/* Financial Information */}
               <div className="space-y-3.5 sm:space-y-4">
                 <div className="flex items-center gap-2 border-b pb-2 border-slate-200/60 dark:border-slate-800/60">
                   <Coins className="size-4 text-blue-600 dark:text-blue-400" />
@@ -527,9 +541,10 @@ export default function CustomersModule() {
                     {isRTL ? 'البيانات المالية والأرصدة' : 'Financial & Credit Configuration'}
                   </h3>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
+                {/* Credit Limit and Opening Balance side-by-side on mobile */}
+                <div className="grid grid-cols-2 gap-2 sm:gap-4">
                   <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
-                    <Label htmlFor="creditLimit" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    <Label htmlFor="creditLimit" className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate block">
                       {isRTL ? 'حد الائتمان' : 'Credit Limit'}
                     </Label>
                     <Input
@@ -540,12 +555,12 @@ export default function CustomersModule() {
                       defaultValue={editing?.creditLimit ?? 0}
                       placeholder="0.00"
                       dir={dir}
-                      className={cn("h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-sm font-semibold tabular-nums", isRTL ? "text-right" : "text-left")}
+                      className={cn("h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-xs sm:text-sm font-semibold tabular-nums px-2.5 sm:px-3", isRTL ? "text-right" : "text-left")}
                     />
                   </div>
 
                   <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
-                    <Label htmlFor="openingBalance" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    <Label htmlFor="openingBalance" className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate block">
                       {isRTL ? 'الرصيد الافتتاحي' : 'Opening Balance'}
                     </Label>
                     <Input
@@ -556,7 +571,7 @@ export default function CustomersModule() {
                       defaultValue={editing?.openingBalance ?? 0}
                       placeholder="0.00"
                       dir={dir}
-                      className={cn("h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-sm font-semibold tabular-nums", isRTL ? "text-right" : "text-left")}
+                      className={cn("h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-xs sm:text-sm font-semibold tabular-nums px-2.5 sm:px-3", isRTL ? "text-right" : "text-left")}
                     />
                   </div>
                 </div>
