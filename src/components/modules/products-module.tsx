@@ -376,7 +376,6 @@ export function ProductsModule() {
                     </TableCell>
                     <TableCell className="text-end pe-4 border-b" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1">
-
                         <Button
                           size="icon"
                           variant="ghost"
