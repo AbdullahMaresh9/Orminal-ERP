@@ -19,8 +19,8 @@ import {
 import { toast } from 'sonner'
 import { ArrowLeftRight, Download, Activity, TrendingUp, Layers, FileSpreadsheet, FileText, FileCheck, ChevronDown } from 'lucide-react'
 
-const HEADER_HEIGHT = 44
-const ROW_HEIGHT = 52
+const HEADER_HEIGHT = 42
+const ROW_HEIGHT = 50
 const VISIBLE_ROWS = 6
 
 const stickyHead = 'sticky top-0 z-20 bg-slate-100 dark:bg-slate-800/90 backdrop-blur-sm whitespace-nowrap shadow-[inset_0_-1px_0_0_hsl(var(--border))]'

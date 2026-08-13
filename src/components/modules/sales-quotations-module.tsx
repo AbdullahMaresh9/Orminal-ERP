@@ -36,6 +36,7 @@ import {
 
 interface Partner { id: string; code: string; nameAr: string; nameEn?: string }
 interface Product { id: string; sku: string; nameAr: string; nameEn?: string; salePrice: number }
+
 interface SalesQuotationLine {
   id?: string
   productId?: string

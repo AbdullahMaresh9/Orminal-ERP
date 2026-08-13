@@ -522,7 +522,7 @@ export function CategoriesModule() {
               </div>
             </div>
 
-            {/* Parent Category */}
+            {/*  Parent Category */}
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                 {L('الفئة الأم (الهيكل الشجري)', 'Parent Category (Tree Structure)')}

@@ -29,7 +29,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     })
     if (!exists) return notFound('أمر الشراء غير موجود')
 
-    // Prevent modifying orders that are already processed or finalized
+    //// Prevent modifying orders that are already processed or finalized
     if (exists.status === 'received' || exists.status === 'paid' || exists.status === 'cancelled') {
       if (body.status && Object.keys(body).filter((k) => k !== 'status' && k !== 'action').length === 0) {
         const updatedStatus = await db.purchaseOrder.update({

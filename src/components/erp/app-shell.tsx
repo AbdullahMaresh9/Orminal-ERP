@@ -19,7 +19,7 @@ export function AppShell() {
     setYear(new Date().getFullYear())
   }, [])
 
-  // Sync document dir/lang with locale
+  // Sync document dir/lang with locale 
   useEffect(() => {
     if (typeof document === 'undefined') return
     const dir = locale === 'ar' ? 'rtl' : 'ltr'

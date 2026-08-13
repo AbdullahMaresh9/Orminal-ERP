@@ -615,7 +615,7 @@ export function BranchesModule() {
           <AlertDialogHeader>
             <AlertDialogTitle className="text-slate-900 dark:text-white">{L('تأكيد حذف الفرع', 'Confirm Branch Deletion')}</AlertDialogTitle>
             <AlertDialogDescription className="text-slate-600 dark:text-slate-400">
-              {L('هل أنت تأكد من رغبتك في حذف هذا الفرع؟ لا يمكن التراجع عن هذا الإجراء.', 'Are you sure you want to delete this branch? This action cannot be undone.')}
+              {L('هل أنت تأكد من حذف هذا الفرع؟ لا يمكن التراجع عن هذا الإجراء.', 'Are you sure you want to delete this branch? This action cannot be undone.')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

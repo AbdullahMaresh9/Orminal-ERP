@@ -2,7 +2,6 @@
 
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-
 export type Locale = 'ar' | 'en'
 
 interface I18nState {

@@ -299,7 +299,7 @@ export function RevenuesModule() {
         )}
       </div>
 
-      {/* Category breakdown */}
+      {/*  Category breakdown */}
       {byCategory.size > 0 && (
         <Card className="p-4">
           <div className="flex flex-wrap items-center gap-3">

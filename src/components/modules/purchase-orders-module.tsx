@@ -251,8 +251,7 @@ export function PurchaseOrdersModule() {
       toast.error(L('أمر الشراء ملغي، يلزم حذفه أو مراجعته', 'Purchase order is cancelled, must be deleted or reviewed'))
       return
     }
-
-    setEditingId(order.id)
+    ////////////////////////////////////    setEditingId(order.id)
     const viewMode = explicitViewMode ?? isReadOnlyStatus(order.status)
     setViewOnly(viewMode)
     setPartnerId(order.partnerId || order.partner?.id || '')

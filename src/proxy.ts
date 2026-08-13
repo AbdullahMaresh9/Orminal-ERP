@@ -8,7 +8,7 @@ export default withAuth(
       const token = req.nextauth?.token
       if (!token) {
         return NextResponse.json(
-          { error: 'Unauthorized', message: 'جلسة المستخدم منتهية، يرجى إعادة تسجيل الدخول' },
+          { error: 'Unauthorized', message: 'جلسة المستخدم انتهت، يرجى إعادة تسجيل الدخول' },
           { status: 401 }
         )
       }

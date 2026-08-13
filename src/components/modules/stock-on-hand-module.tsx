@@ -38,10 +38,11 @@ import {
 } from 'lucide-react'
 
 // ────────────────────────────────────────────────────────────────────────────
-// Types & Constants
+//  Types & Constants
 // ────────────────────────────────────────────────────────────────────────────
 interface Warehouse { id: string; code: string; nameAr: string; nameEn?: string }
 interface Category { id: string; nameAr: string; nameEn?: string }
+
 interface Product {
   id: string
   sku: string
@@ -52,6 +53,7 @@ interface Product {
   uom?: { id: string; nameAr: string; nameEn?: string; code: string }
   category?: { id: string; nameAr: string; nameEn?: string }
 }
+
 interface StockQuant {
   id: string
   productId: string
@@ -65,6 +67,7 @@ interface StockQuant {
   value: number
   isLowStock: boolean
 }
+
 interface ServerStats {
   totalItems?: number
   totalQuantity?: number
@@ -73,6 +76,7 @@ interface ServerStats {
   outOfStockCount?: number
   negativeCount?: number
 }
+
 interface StockResponse {
   data: StockQuant[]
   meta?: { pagination?: { total?: number; totalPages?: number }; stats?: ServerStats }

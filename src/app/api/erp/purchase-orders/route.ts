@@ -43,6 +43,8 @@ export async function POST(req: Request) {
     if (!body.lines || !Array.isArray(body.lines) || body.lines.length === 0) {
       return badRequest('يجب إدخال بنود في أمر الشراء')
     }
+    // Validate partner exists and is active
+
 
     const company = await db.company.findFirst()
     if (!company) return badRequest('لم يتم العثور على شركة في النظام')

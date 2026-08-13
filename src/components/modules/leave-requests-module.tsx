@@ -129,7 +129,6 @@ export function LeaveRequestsModule() {
     approved: items.filter((i) => i.status === 'approved').length,
     rejected: items.filter((i) => i.status === 'rejected').length,
   }
-
   // Auto-calc days
   const days = useMemo(() => {
     if (!draft.startDate || !draft.endDate) return 0

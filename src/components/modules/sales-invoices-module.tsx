@@ -87,7 +87,6 @@ export function SalesInvoicesModule() {
   const L = (ar: string, en: string) => (isRTL ? ar : en)
   const partnerName = (p?: Partner) => (p ? (isRTL ? p.nameAr : p.nameEn || p.nameAr) : '')
   const productName = (p?: Product) => (p ? (isRTL ? p.nameAr : p.nameEn || p.nameAr) : '')
-
   const stickyHead = 'sticky top-0 z-20 bg-muted whitespace-nowrap shadow-[inset_0_-1px_0_0_hsl(var(--border))]'
   const qc = useQueryClient()
   const [search, setSearch] = useState('')

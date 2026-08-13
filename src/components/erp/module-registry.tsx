@@ -41,7 +41,7 @@ function stub(titleKey: string, description?: string) {
 }
 
 // ============================================================
-// MASTER DATA
+//  MASTER DATA 
 // ============================================================
 const CustomersModule = lazy(() => import('@/components/modules/customers-module'))
 const SuppliersModule = lazy(() => import('@/components/modules/suppliers-module'))
@@ -86,7 +86,7 @@ const InventoryIncomingModule = lazy(() => import('@/components/modules/inventor
 const InventoryOutgoingModule = lazy(() => import('@/components/modules/inventory-outgoing-module'))
 const InventoryRequisitionsModule = lazy(() => import('@/components/modules/inventory-requisitions-module'))
 
-// ============================================================
+// =============================================================
 // FINANCE
 // ============================================================
 const ChartOfAccountsModule = lazy(() => import('@/components/modules/chart-of-accounts-module'))

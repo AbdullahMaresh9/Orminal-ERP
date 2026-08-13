@@ -63,7 +63,7 @@ const STATUS_LABELS: Record<string, { ar: string; en: string }> = {
 
 const VISIBLE_ROWS = 7
 const ROW_HEIGHT = 44
-const HEADER_HEIGHT = 40
+const HEADER_HEIGHT = 42
 
 export function SalesCreditNotesModule() {
   const { t, isRTL } = useT()
@@ -130,7 +130,7 @@ export function SalesCreditNotesModule() {
     }
   }, [notes])
 
-  // Form state
+  // Form state 
   const [selectedNote, setSelectedNote] = useState<SalesCreditNote | null>(null)
   const [viewOnly, setViewOnly] = useState(false)
   const [partnerId, setPartnerId] = useState('')

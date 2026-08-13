@@ -210,7 +210,7 @@ export function PurchaseInvoicesModule() {
     setDueDate(''); setNotes('')
     setLines([{ key: '1', productId: '', quantity: '1', unitCost: '0', discountAmount: '0', taxRate: '15' }])
   }
-
+  // open view
   const openView = (i: PurchaseInvoice) => {
     setSelectedInvoice(i)
     setPartnerId(i.partnerId)
@@ -745,6 +745,7 @@ export function PurchaseInvoicesModule() {
                       )
                     })}
                   </TableBody>
+
                   <TableFooter>
                     <TableRow>
                       <TableCell colSpan={5}>

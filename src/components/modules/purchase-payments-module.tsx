@@ -68,7 +68,7 @@ const STATUS_LABELS: Record<string, { ar: string; en: string }> = {
   reversed: { ar: 'معكوس', en: 'Reversed' },
 }
 
-const VISIBLE_ROWS = 5
+const VISIBLE_ROWS = 7
 const ROW_HEIGHT = 52
 const HEADER_HEIGHT = 44
 

@@ -180,7 +180,7 @@ export function AuditLogsModule() {
   const byAction = extras?.byAction ?? { create: 0, update: 0, delete: 0, post: 0 }
   const byModule = extras?.byModule ?? {}
 
-  // Pick the largest action count for "by action" KPI
+  // Pick the largest action count for "by action " KPI
   const topActionEntry = Object.entries(byAction).sort((a, b) => b[1] - a[1])[0]
   const topActionLabel = topActionEntry && topActionEntry[1] > 0
     ? `${ACTIONS.find((a) => a.value === topActionEntry[0])?.label ?? topActionEntry[0]} (${topActionEntry[1]})`

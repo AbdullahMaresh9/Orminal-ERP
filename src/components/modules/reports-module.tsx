@@ -315,6 +315,7 @@ export function ReportsModule() {
   )
 }
 
+
 function ReportCard({ report, onGenerate, active }: { report: any; onGenerate: () => void; active: boolean }) {
   const Icon = report.icon
   return (

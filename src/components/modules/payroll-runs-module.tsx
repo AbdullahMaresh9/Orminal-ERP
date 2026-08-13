@@ -319,7 +319,7 @@ export function PayrollRunsModule() {
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-md p-0 overflow-hidden bg-white dark:bg-slate-950 border-slate-350 dark:border-slate-700 shadow-2xl" dir={dir}>
-          <DialogHeader className="bg-gradient-to-r rtl:bg-gradient-to-l from-blue-50 to-[#E6F0FF] dark:from-blue-700/80 dark:to-blue-800/90 border-b border-blue-100 dark:border-blue-700/40 p-6 shrink-0 relative">
+          <DialogHeader>
             <div className="flex items-start gap-4 text-start">
               <div className="size-12 rounded-xl bg-white dark:bg-slate-900/80 border border-blue-100 dark:border-blue-500/30 text-blue-600 dark:text-blue-300 flex items-center justify-center shadow-sm shadow-blue-100/40 dark:shadow-none shrink-0">
                 <Calculator className="size-6 animate-pulse" />

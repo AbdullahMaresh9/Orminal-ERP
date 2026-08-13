@@ -34,7 +34,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Package, Boxes, Tag, Pencil, Trash2, Download, FileSpreadsheet, FileText, FileCheck } from 'lucide-react'
+import { Package, Boxes, Tag, Pencil, Trash2, Download, FileSpreadsheet, FileText, FileCheck, Eye } from 'lucide-react'
 
 interface Category { id: string; code: string; nameAr: string; nameEn?: string }
 interface Uom { id: string; code: string; nameAr: string; nameEn?: string }
@@ -65,7 +65,7 @@ const TYPE_LABELS: Record<string, { ar: string; en: string }> = {
 
 const HEADER_HEIGHT = 44
 const ROW_HEIGHT = 52
-const VISIBLE_ROWS = 6
+const VISIBLE_ROWS = 7
 
 const stickyHead = 'sticky top-0 z-20 bg-slate-100 dark:bg-slate-800/90 backdrop-blur-sm whitespace-nowrap shadow-[inset_0_-1px_0_0_hsl(var(--border))]'
 
@@ -288,16 +288,16 @@ export function ProductsModule() {
         >
           <table className="w-full caption-bottom text-sm min-w-[1050px] table-fixed border-separate border-spacing-0">
             <colgroup>
-              <col className="w-[10%]" />{/* SKU */}
+              <col className="w-[8%]" />{/* SKU */}
               <col className="w-[18%]" />{/* الاسم */}
-              <col className="w-[15%]" />{/* الفئة */}
-              <col className="w-[10%]" />{/* النوع */}
-              <col className="w-[8%]" />{/* الوحدة */}
+              <col className="w-[12%]" />{/* الفئة */}
+              <col className="w-[7%]" />{/* النوع */}
+              <col className="w-[6%]" />{/* الوحدة */}
               <col className="w-[9%]" />{/* التكلفة */}
-              <col className="w-[9%]" />{/* البيع */}
-              <col className="w-[7%]" />{/* الحد الأدنى */}
-              <col className="w-[7%]" />{/* الحالة */}
-              <col className="w-[7%]" />{/* إجراءات */}
+              <col className="w-[10%]" />{/* البيع */}
+              <col className="w-[8%]" />{/* الحد الأدنى */}
+              <col className="w-[9%]" />{/* الحالة */}
+              <col className="w-[11%]" />{/* إجراءات */}
             </colgroup>
 
             <TableHeader>
@@ -340,7 +340,11 @@ export function ProductsModule() {
                 </TableRow>
               ) : (
                 products.map((p) => (
-                  <TableRow key={p.id} className="h-[52px] hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors align-middle">
+                  <TableRow
+                    key={p.id}
+                    className="h-[52px] hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors align-middle cursor-pointer"
+                    onClick={() => { setEditing(p); setDialogOpen(true) }}
+                  >
                     <TableCell className="ps-4 font-mono text-xs font-semibold text-blue-600 dark:text-blue-400 border-b truncate" dir="ltr" title={p.sku}>
                       {p.sku}
                     </TableCell>
@@ -370,8 +374,17 @@ export function ProductsModule() {
                     <TableCell className="text-center border-b">
                       <StatusBadge status={p.active ? 'active' : 'inactive'} />
                     </TableCell>
-                    <TableCell className="text-end pe-4 border-b">
+                    <TableCell className="text-end pe-4 border-b" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="size-8 text-slate-600 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400"
+                          onClick={() => { setEditing(p); setDialogOpen(true) }}
+                          title={L('عرض أو تعديل المنتج', 'View or edit product')}
+                        >
+                          <Eye className="size-4" />
+                        </Button>
                         <Button
                           size="icon"
                           variant="ghost"
@@ -402,24 +415,25 @@ export function ProductsModule() {
 
       {/* Add / Edit Product Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent dir={dir as 'rtl' | 'ltr'} className="max-w-2xl p-0 overflow-hidden bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 shadow-xl rounded-xl">
-          <DialogHeader className="bg-gradient-to-r rtl:bg-gradient-to-l from-blue-50 to-[#E6F0FF] dark:from-blue-700/80 dark:to-blue-800/90 border-b border-blue-100 dark:border-blue-700/40 p-6 shrink-0 relative">
+        <DialogContent dir={dir as 'rtl' | 'ltr'} className="w-[calc(100vw-1.5rem)] sm:w-[95vw] max-w-2xl max-h-[92vh] p-0 flex flex-col overflow-hidden bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 shadow-xl rounded-xl">
+          <DialogHeader className="bg-gradient-to-r rtl:bg-gradient-to-l from-blue-50 to-[#E6F0FF] dark:from-blue-700/80 dark:to-blue-800/90 border-b border-blue-100 dark:border-blue-700/40 p-4 sm:p-6 shrink-0 relative">
             <div className="flex items-center gap-3">
-              <div className="size-12 rounded-xl bg-white dark:bg-slate-900/80 border border-blue-100 dark:border-blue-500/30 text-blue-600 dark:text-blue-300 flex items-center justify-center shadow-sm shadow-blue-100/40 dark:shadow-none shrink-0">
+              <div className="size-10 sm:size-12 rounded-xl bg-white dark:bg-slate-900/80 border border-blue-100 dark:border-blue-500/30 text-blue-600 dark:text-blue-300 flex items-center justify-center shadow-sm shadow-blue-100/40 dark:shadow-none shrink-0">
                 <Package className="size-5" />
               </div>
               <div>
                 <DialogTitle className="text-base font-bold text-slate-900 dark:text-white rtl:text-right ltr:text-left">
-                  {editing ? L('تعديل بيانات المنتج', 'Edit Product') : L('إضافة منتج جديد', 'Add New Product')}
+                  {editing ? L('تعديل / عرض بيانات المنتج', 'Edit / View Product Information') : L('إضافة منتج جديد', 'Add New Product')}
                 </DialogTitle>
               </div>
             </div>
           </DialogHeader>
 
-          <DialogBody className="p-5 bg-white dark:bg-slate-950 rtl:text-right ltr:text-left">
+          <DialogBody className="flex-1 overflow-y-auto p-4 sm:p-6 bg-white dark:bg-slate-950 rtl:text-right ltr:text-left">
             <form id="product-form" dir={dir as 'rtl' | 'ltr'} onSubmit={(e) => { e.preventDefault(); handleSave(new FormData(e.currentTarget)) }}>
-              <ScrollArea className="max-h-[60vh] pe-2">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-1 rtl:text-right ltr:text-left">
+              <div className="space-y-3 sm:space-y-4 rtl:text-right ltr:text-left">
+                {/* 1. رمز المنتج (SKU) والباركود جنب بعض للجوال */}
+                <div className="grid grid-cols-2 gap-2.5 sm:gap-4 rtl:text-right ltr:text-left">
                   {/* SKU */}
                   <div className="space-y-1.5 rtl:text-right ltr:text-left">
                     <Label htmlFor="sku" className="text-xs font-semibold text-slate-700 dark:text-slate-300 block rtl:text-right ltr:text-left">
@@ -429,7 +443,7 @@ export function ProductsModule() {
                       id="sku"
                       name="sku"
                       defaultValue={editing?.sku}
-                      placeholder={L('تلقائي إن تُرك فارغاً', 'Auto if left empty')}
+                      placeholder={L('تلقائي', 'Auto')}
                       className="h-10 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rtl:text-right ltr:text-left"
                       dir={dir as 'rtl' | 'ltr'}
                     />
@@ -449,7 +463,10 @@ export function ProductsModule() {
                       dir={dir as 'rtl' | 'ltr'}
                     />
                   </div>
+                </div>
 
+                {/* الاسم بالعربي والاسم بالإنجليزي */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-4 rtl:text-right ltr:text-left">
                   {/* Arabic Name */}
                   <div className="space-y-1.5 rtl:text-right ltr:text-left">
                     <Label htmlFor="nameAr" className="text-xs font-semibold text-slate-700 dark:text-slate-300 block rtl:text-right ltr:text-left">
@@ -480,7 +497,10 @@ export function ProductsModule() {
                       dir={dir as 'rtl' | 'ltr'}
                     />
                   </div>
+                </div>
 
+                {/* 2. الفئة ونوع المنتج جنب بعض للجوال */}
+                <div className="grid grid-cols-2 gap-2.5 sm:gap-4 rtl:text-right ltr:text-left">
                   {/* Category */}
                   <div className="space-y-1.5 rtl:text-right ltr:text-left">
                     <Label htmlFor="categoryId" className="text-xs font-semibold text-slate-700 dark:text-slate-300 block rtl:text-right ltr:text-left">
@@ -518,7 +538,10 @@ export function ProductsModule() {
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
 
+                {/* 3. سعر التكلفة وسعر البيع جنب بعض للجوال */}
+                <div className="grid grid-cols-2 gap-2.5 sm:gap-4 rtl:text-right ltr:text-left">
                   {/* Cost Price */}
                   <div className="space-y-1.5 rtl:text-right ltr:text-left">
                     <Label htmlFor="costPrice" className="text-xs font-semibold text-slate-700 dark:text-slate-300 block rtl:text-right ltr:text-left">
@@ -550,7 +573,10 @@ export function ProductsModule() {
                       dir={dir as 'rtl' | 'ltr'}
                     />
                   </div>
+                </div>
 
+                {/* 4. الحد الأدنى للمخزون وحالة المنتج جنب بعض للجوال */}
+                <div className="grid grid-cols-2 gap-2.5 sm:gap-4 items-end rtl:text-right ltr:text-left">
                   {/* Min Stock */}
                   <div className="space-y-1.5 rtl:text-right ltr:text-left">
                     <Label htmlFor="minStock" className="text-xs font-semibold text-slate-700 dark:text-slate-300 block rtl:text-right ltr:text-left">
@@ -568,23 +594,24 @@ export function ProductsModule() {
                   </div>
 
                   {/* Active Switch */}
-                  <div className="flex items-center justify-between p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 self-end h-10">
+                  <div className="flex items-center justify-between p-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 h-10">
                     <Label htmlFor="active" className="text-xs font-semibold cursor-pointer text-slate-900 dark:text-white">
                       {L('منتج نشط', 'Active Product')}
                     </Label>
                     <Switch id="active" name="active" defaultChecked={editing?.active ?? true} />
                   </div>
                 </div>
-              </ScrollArea>
+              </div>
             </form>
           </DialogBody>
 
-          <DialogFooter className="p-4 border-t bg-slate-50 dark:bg-slate-900/80 border-slate-200 dark:border-slate-800 flex flex-row items-center justify-between sm:justify-between w-full shrink-0">
+          {/* Footer Buttons — Styled matching Category modal */}
+          <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-between gap-2 px-4 sm:px-6 py-3 border-t shrink-0 bg-slate-50 dark:bg-slate-900/80 border-slate-200 dark:border-slate-800">
             <Button
               type="button"
               variant="outline"
               onClick={() => setDialogOpen(false)}
-              className="border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300"
+              className="w-full sm:w-auto sm:min-w-25 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300"
             >
               {L('إلغاء', 'Cancel')}
             </Button>
@@ -592,13 +619,13 @@ export function ProductsModule() {
               type="submit"
               form="product-form"
               disabled={saveMutation.isPending}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm px-5"
+              className="w-full sm:w-auto sm:min-w-30 bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm px-5"
             >
               {saveMutation.isPending
                 ? L('جاري الحفظ...', 'Saving...')
                 : editing
-                  ? L('تحديث', 'Update')
-                  : L('إنشاء', 'Create')}
+                  ? L('تحديث المنتج', 'Update Product')
+                  : L('إنشاء المنتج', 'Create Product')}
             </Button>
           </DialogFooter>
         </DialogContent>

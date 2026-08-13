@@ -786,7 +786,7 @@ export function GoodsReceiptsModule() {
                 </div>
               </Card>
 
-              {/* Notes */}
+              {/* Notes  */}
               <div className="space-y-1.5">
                 <Label htmlFor="notes" className="text-xs sm:text-sm font-medium">{L('ملاحظات', 'Notes')}</Label>
                 <Textarea id="notes" className={`text-xs sm:text-sm min-h-[60px] ${viewOnly ? 'cursor-not-allowed' : ''}`} value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder={L('ملاحظات إضافية على سند الاستلام...', 'Additional notes...')} />

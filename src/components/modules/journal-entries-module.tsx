@@ -41,6 +41,7 @@ interface JournalLine {
   credit: number
   description?: string
 }
+
 interface JournalEntry {
   id: string
   code: string

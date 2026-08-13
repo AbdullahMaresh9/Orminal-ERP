@@ -33,6 +33,7 @@ import {
 
 interface Partner { id: string; code: string; nameAr: string; nameEn?: string }
 interface Invoice { id: string; code: string; total: number; paid: number; partnerId: string }
+
 interface SalesPayment {
   id: string
   code: string

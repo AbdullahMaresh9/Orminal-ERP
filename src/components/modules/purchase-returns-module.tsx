@@ -111,7 +111,7 @@ const STATUS_LABELS: Record<string, { ar: string; en: string }> = {
 }
 
 // عدد الصفوف الظاهرة قبل ظهور الاسكرول
-const VISIBLE_ROWS = 5
+const VISIBLE_ROWS = 7
 const ROW_HEIGHT = 52    // ارتفاع الصف التقريبي بالبكسل
 const HEADER_HEIGHT = 44 // ارتفاع رأس الجدول
 

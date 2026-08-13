@@ -528,7 +528,7 @@ export function SalesOrdersModule() {
                 </div>
               </div>
 
-              {/* ===== البنود: بطاقات على الجوال (< md) ===== */}
+              {/* ==== البنود: بطاقات على الجوال (< md) ===== */}
               <div className="space-y-3 md:hidden">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">{L('البنود', 'Line Items')}</span>

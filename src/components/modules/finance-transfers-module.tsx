@@ -248,7 +248,7 @@ export function FinanceTransfersModule() {
   return (
     <ModuleShell
       title={t('module.finance-transfers')}
-      description="تحويل الأموال بين الخزائن والحسابات البنكية"
+      description="تحويل الأرصدة بين الخزائن والحسابات البنكية"
       icon={<ArrowLeftRight className="size-5" />}
       searchValue={search}
       onSearch={setSearch}
@@ -257,6 +257,7 @@ export function FinanceTransfersModule() {
       addLabel="تحويل جديد"
       onExport={handleExport}
     >
+
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
         {isLoading ? (

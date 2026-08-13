@@ -580,7 +580,6 @@ export function EmployeesModule() {
                 <DialogTitle className="text-xl font-bold tracking-tight text-blue-955 dark:text-white">
                   {editing ? (isRTL ? 'تعديل بيانات الموظف' : 'Edit Employee Details') : (isRTL ? 'إضافة موظف جديد' : 'Add New Employee')}
                 </DialogTitle>
-
               </div>
             </div>
           </DialogHeader>

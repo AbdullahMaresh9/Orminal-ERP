@@ -13,7 +13,7 @@ const scryptAsync = (password: string | Buffer, salt: string | Buffer, keylen: n
 
 async function verifyPassword(plaintext: string, hash: string): Promise<boolean> {
   try {
-    // Support both scrypt format (scrypt:N:r:p$salt$hash) and plain bcrypt-style
+    // Support both scrypt format (scrypt:N:r:p$salt$hash) and plain bcrypt-style 
     if (hash.startsWith('scrypt:')) {
       const [params, salt, storedHash] = hash.split('$')
       const [, N, r, p] = params.split(':').map(Number)

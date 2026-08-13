@@ -42,6 +42,7 @@ interface SalesReturnLine {
   taxRate: number
   total: number
 }
+
 interface SalesReturn {
   id: string
   code: string

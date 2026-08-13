@@ -49,7 +49,7 @@ interface Transfer {
 
 // أبعاد الجدول وحساب الارتفاع الثابت لخمسة/ستة صفوف تماشياً مع نمط مرتجعات المشتريات
 const HEADER_HEIGHT = 44
-const VISIBLE_ROWS = 6
+const VISIBLE_ROWS = 7
 const ROW_HEIGHT = 52
 const stickyHead = 'sticky top-0 z-20 bg-muted whitespace-nowrap shadow-[inset_0_-1px_0_0_hsl(var(--border))]'
 

@@ -330,6 +330,7 @@ export function PurchaseCreditNotesModule() {
             <DialogTitle>{L('إشعار دائن مشتريات جديد', 'New Purchase Credit Note')}</DialogTitle>
 
           </DialogHeader>
+
           <DialogBody>
             <div className="space-y-3">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

@@ -74,7 +74,7 @@ const STATUS_LABELS: Record<string, { ar: string; en: string }> = {
   converted: { ar: 'تم تحويلها', en: 'Converted' },
 }
 
-const VISIBLE_ROWS = 6
+const VISIBLE_ROWS = 7
 const ROW_HEIGHT = 52
 const HEADER_HEIGHT = 44
 

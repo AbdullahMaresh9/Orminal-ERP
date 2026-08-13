@@ -61,7 +61,7 @@ export function AnalyticAccountsModule() {
 
   const all = data?.data ?? []
 
-  // Build tree: roots = no parent
+  // Build tree: roots = no parent 
   const { roots, childrenMap, filteredList } = useMemo(() => {
     const filtered = all.filter((a) => {
       if (!search) return true

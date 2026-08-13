@@ -247,7 +247,7 @@ export function DeliveriesModule() {
     })
   }
 
-  // Print Delivery Voucher
+  //    Print Delivery Voucher
   async function handlePrintVoucher(del: Delivery) {
     const linesHtml = (del.lines || []).map((l, idx) => `
       <tr>

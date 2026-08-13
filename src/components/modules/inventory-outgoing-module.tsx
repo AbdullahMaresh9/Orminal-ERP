@@ -44,7 +44,7 @@ interface Movement {
   storehouse: { id: string; name: string; code: string }
 }
 
-// أبعاد الجدول وحساب الارتفاع الثابت لخمسة/ستة صفوف تماشياً مع نمط مرتجعات المشتريات
+//  أبعاد الجدول وحساب الارتفاع الثابت لخمسة/ستة صفوف تماشياً مع نمط مرتجعات المشتريات
 const HEADER_HEIGHT = 44
 const VISIBLE_ROWS = 6
 const ROW_HEIGHT = 52
@@ -132,7 +132,7 @@ export function InventoryOutgoingModule() {
           </div>
           <div>
             <p style="margin:0 0 35px 0;">${isRTL ? 'توقيع أمين المستودع:' : 'Storekeeper Signature:'}</p>
-            <p style="margin:0;">__________________________</p>
+            <p style="margin:0;">___________________________</p>
           </div>
         </div>
       </div>
