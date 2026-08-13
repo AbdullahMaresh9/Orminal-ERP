@@ -616,7 +616,7 @@ export default function SuppliersModule() {
                 >
                   {saveMutation.isPending
                     ? (isRTL ? 'جاري الحفظ...' : 'Saving...')
-                    : (isRTL ? 'حفظ البيانات' : 'Save Details')}
+                    : (isRTL ? 'حفظ التغيرات' : 'Save changes')}
                 </Button>
               </div>
             </DialogFooter>
