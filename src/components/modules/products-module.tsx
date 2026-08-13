@@ -376,15 +376,7 @@ export function ProductsModule() {
                     </TableCell>
                     <TableCell className="text-end pe-4 border-b" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="size-8 text-slate-600 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400"
-                          onClick={() => { setEditing(p); setDialogOpen(true) }}
-                          title={L('عرض أو تعديل المنتج', 'View or edit product')}
-                        >
-                          <Eye className="size-4" />
-                        </Button>
+
                         <Button
                           size="icon"
                           variant="ghost"
@@ -423,7 +415,7 @@ export function ProductsModule() {
               </div>
               <div>
                 <DialogTitle className="text-base font-bold text-slate-900 dark:text-white rtl:text-right ltr:text-left">
-                  {editing ? L('تعديل / عرض بيانات المنتج', 'Edit / View Product Information') : L('إضافة منتج جديد', 'Add New Product')}
+                  {editing ? L('تعديل بيانات المنتج', 'Edit Product') : L('إضافة منتج جديد', 'Add New Product')}
                 </DialogTitle>
               </div>
             </div>

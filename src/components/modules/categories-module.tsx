@@ -325,12 +325,12 @@ export function CategoriesModule() {
           <table className="w-full caption-bottom text-sm min-w-[960px] table-fixed border-separate border-spacing-0">
             <colgroup>
               <col className="w-[12%]" />{/* الرمز */}
-              <col className="w-[24%]" />{/* الاسم (عربي) */}
+              <col className="w-[20%]" />{/* الاسم (عربي) */}
               <col className="w-[20%]" />{/* الاسم (إنجليزي) */}
-              <col className="w-[20%]" />{/* الفئة الأم */}
+              <col className="w-[16%]" />{/* الفئة الأم */}
               <col className="w-[10%]" />{/* النوع */}
-              <col className="w-[8%]" />{/* الحالة */}
-              <col className="w-[6%]" />{/* إجراءات */}
+              <col className="w-[12%]" />{/* الحالة */}
+              <col className="w-[10%]" />{/* إجراءات */}
             </colgroup>
 
             <TableHeader>
