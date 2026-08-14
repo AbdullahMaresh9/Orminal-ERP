@@ -114,7 +114,6 @@ export function SalesQuotationsModule() {
     const t = setTimeout(() => { setSearch(searchInput); setPage(1) }, 300)
     return () => clearTimeout(t)
   }, [searchInput])
-  useEffect(() => { setPage(1) }, [filterStatus])
 
   const { data, isLoading } = useQuery<{ data: SalesQuotation[]; meta: any }>({
     queryKey: ['sales-quotations', search, filterStatus, page],
@@ -658,7 +657,7 @@ export function SalesQuotationsModule() {
               {viewOnly
                 ? L('عرض عرض السعر', 'View Sales Quotation')
                 : editingId
-                  ? L('تعديل عرض السعر', 'Edit Sales Quotation')
+                  ? L('تعديل عرض ��لسعر', 'Edit Sales Quotation')
                   : L('عرض سعر جديد', 'New Sales Quotation')}
             </DialogTitle>
 

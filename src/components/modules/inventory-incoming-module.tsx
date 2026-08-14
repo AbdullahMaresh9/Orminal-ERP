@@ -180,12 +180,6 @@ export function InventoryIncomingModule() {
   const products = productsData?.data ?? []
   const suppliers = suppliersData?.data ?? []
 
-  useEffect(() => {
-    if (storehouses.length > 0 && !form.storehouseId) {
-      setForm(prev => ({ ...prev, storehouseId: storehouses[0].id }))
-    }
-  }, [storehouses, form.storehouseId])
-
   const saveMutation = useMutation({
     mutationFn: async (payload: any) => {
       const r = await fetch('/api/erp/inventory-incoming', {
@@ -238,10 +232,11 @@ export function InventoryIncomingModule() {
   }
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!form.storehouseId) return toast.error(isRTL ? 'المستودع مطلوب' : 'Storehouse is required')
+    const storehouseId = form.storehouseId || storehouses[0]?.id
+    if (!storehouseId) return toast.error(isRTL ? 'المستودع مطلوب' : 'Storehouse is required')
     const validItems = items.filter(i => i.productId && i.quantity > 0)
     if (!validItems.length) return toast.error(isRTL ? 'أضف عنصراً واحداً على الأقل' : 'Add at least one valid item')
-    saveMutation.mutate({ ...form, items: validItems })
+    saveMutation.mutate({ ...form, storehouseId, items: validItems })
   }
 
   const kpis = useMemo(() => {
