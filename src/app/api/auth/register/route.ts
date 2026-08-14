@@ -1,25 +1,6 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { scrypt, randomBytes } from 'crypto'
-
-function scryptAsync(password: string, salt: Buffer, keylen: number, options: { N: number; r: number; p: number }): Promise<Buffer> {
-    return new Promise((resolve, reject) => {
-        scrypt(password, salt, keylen, options, (err, derivedKey) => {
-            if (err) reject(err)
-            else resolve(derivedKey)
-        })
-    })
-}
-
-async function hashPassword(password: string): Promise<string> {
-    const salt = randomBytes(16)
-    const N = 16384
-    const r = 8
-    const p = 1
-    const keylen = 64
-    const derivedKey = await scryptAsync(password, salt, keylen, { N, r, p })
-    return `scrypt:${N}:${r}:${p}$${salt.toString('hex')}$${derivedKey.toString('hex')}`
-}
+import { hashPassword } from '@/lib/auth/password'
 
 export async function POST(req: Request) {
     try {
