@@ -1,7 +1,7 @@
 import { db } from '@/lib/db'
 import { created, badRequest, serverError, unauthorized, conflict } from '@/lib/erp/api-response'
 import { nextNumber } from '@/lib/erp/number-sequence'
-import { postJournalEntry, salesCashPosting, receiptPosting, cogsPosting } from '@/lib/erp/accounting-engine'
+import { postJournalEntry, salesCashPosting, cogsPosting } from '@/lib/erp/accounting-engine'
 import { getRequestContext } from '@/lib/erp/context'
 
 // Round money to 2 decimals to avoid float drift in journal balance checks

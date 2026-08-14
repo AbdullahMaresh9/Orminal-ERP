@@ -160,9 +160,10 @@ export function PosModule() {
       })
       if (!r.ok) {
         const e = await r.json().catch(() => ({}))
-        throw new Error(e.error || L('فشلت عملية البيع', 'Checkout failed'))
+        throw new Error(e.error?.message || e.error || L('فشلت عملية البيع', 'Checkout failed'))
       }
-      return r.json()
+      const json = await r.json()
+      return json.data ?? json
     },
     onSuccess: (data) => {
       toast.success(L('تمت عملية البيع بنجاح', 'Sale completed successfully'))
@@ -337,7 +338,7 @@ export function PosModule() {
             <div className="h-full flex flex-col items-center justify-center text-center p-8 text-muted-foreground">
               <ShoppingCart className="size-12 opacity-30 mb-2" />
               <p className="text-sm">{L('السلة فارغة', 'Cart is empty')}</p>
-              <p className="text-xs mt-1">{L('اضغط على المنتجات لإضافتها', 'Click products to add them')}</p>
+              <p className="text-xs mt-1">{L('اضغط على المنتجات ل��ضافتها', 'Click products to add them')}</p>
             </div>
           ) : (
             <div className="divide-y">
