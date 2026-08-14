@@ -44,8 +44,29 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       return ok(updated)
     }
 
-    const { id: _id, createdAt: _c, updatedAt: _u, isSystem: _s, ...rest } = body
-    const updated = await db.account.update({ where: { id }, data: rest })
+    // If the account already carries journal lines, its code/type/normal-side is
+    // frozen — changing them would silently corrupt the trial balance.
+    const lineCount = await db.journalLine.count({ where: { accountId: id } })
+    const locked = lineCount > 0
+
+    const data: any = {
+      nameAr: body.nameAr ?? exists.nameAr,
+      nameEn: body.nameEn ?? exists.nameEn,
+      active: body.active ?? exists.active,
+    }
+    if (!locked) {
+      if (body.code !== undefined) data.code = body.code
+      if (body.type !== undefined) data.type = body.type
+      if (body.subtype !== undefined) data.subtype = body.subtype
+      if (body.parentId !== undefined) data.parentId = body.parentId
+    } else if (
+      (body.code !== undefined && body.code !== exists.code) ||
+      (body.type !== undefined && body.type !== exists.type)
+    ) {
+      return badRequest('Cannot change code or type of an account that already has journal entries')
+    }
+
+    const updated = await db.account.update({ where: { id }, data })
     return ok(updated)
   } catch (e: any) {
     return serverError(e.message)
