@@ -1,16 +1,19 @@
 import { db } from '@/lib/db'
-import { ok, created, list, badRequest, serverError, parsePagination, parseSearch } from '@/lib/erp/api-response'
+import { created, list, badRequest, serverError, unauthorized, parsePagination, parseSearch } from '@/lib/erp/api-response'
+import { getRequestContext } from '@/lib/erp/context'
 
 // GET /api/erp/sales-returns
 export async function GET(req: Request) {
   try {
+    const context = await getRequestContext()
+    if (!context) return unauthorized()
     const { page, pageSize, skip } = parsePagination(req)
     const q = parseSearch(req)
     const url = new URL(req.url)
     const status = url.searchParams.get('status')
     const partnerId = url.searchParams.get('partnerId')
 
-    const where: any = {}
+    const where: any = { companyId: context.companyId }
     if (q) where.OR = [{ code: { contains: q } }, { reason: { contains: q } }, { notes: { contains: q } }]
     if (status) where.status = status
     if (partnerId) where.partnerId = partnerId
@@ -37,12 +40,24 @@ export async function GET(req: Request) {
 // POST /api/erp/sales-returns — create (draft by default; no posting yet)
 export async function POST(req: Request) {
   try {
+    const context = await getRequestContext()
+    if (!context) return unauthorized()
     const body = await req.json()
     if (!body.partnerId) return badRequest('partnerId is required')
 
-    const company = await db.company.findFirst()
-    if (!company) return badRequest('no company in db')
-    const branch = await db.branch.findFirst({ where: { companyId: company.id } })
+    const branchId = body.branchId ?? context.branchId
+    const [company, partner] = await Promise.all([
+      db.company.findUnique({ where: { id: context.companyId } }),
+      db.partner.findFirst({ where: { id: body.partnerId, companyId: context.companyId } }),
+    ])
+    if (!company) return badRequest('company not found')
+    if (!partner) return badRequest('partner not found')
+    const branch = branchId ? await db.branch.findFirst({ where: { id: branchId, companyId: context.companyId } }) : null
+
+    if (body.originalInvoiceId) {
+      const inv = await db.salesInvoice.findFirst({ where: { id: body.originalInvoiceId, companyId: context.companyId } })
+      if (!inv) return badRequest('original invoice not found')
+    }
 
     // Generate code SR-YYYY-NNNNN
     const year = new Date().getFullYear()
@@ -91,7 +106,7 @@ export async function POST(req: Request) {
         taxTotal,
         total,
         notes: body.notes,
-        createdBy: body.createdBy,
+        createdBy: context.userId,
         lines: { create: processedLines },
       },
       include: {

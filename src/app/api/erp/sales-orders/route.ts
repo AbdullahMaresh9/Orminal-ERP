@@ -1,15 +1,7 @@
-import { getServerSession } from 'next-auth'
 import { db } from '@/lib/db'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { created, list, badRequest, serverError, unauthorized, parsePagination, parseSearch } from '@/lib/erp/api-response'
 import { nextNumber } from '@/lib/erp/number-sequence'
-
-async function getRequestContext() {
-  const session = await getServerSession(authOptions)
-  const user = session?.user as { id?: string; defaultCompanyId?: string | null; defaultBranchId?: string | null } | undefined
-  if (!user?.id || !user.defaultCompanyId) return null
-  return { userId: user.id, companyId: user.defaultCompanyId, branchId: user.defaultBranchId ?? undefined }
-}
+import { getRequestContext } from '@/lib/erp/context'
 
 // GET /api/erp/sales-orders
 export async function GET(req: Request) {
@@ -98,52 +90,53 @@ export async function POST(req: Request) {
     const status = body.status ?? 'draft'
     if (!['draft', 'confirmed'].includes(status)) return badRequest('Only draft and confirmed orders can be created')
 
-    const order = await db.salesOrder.create({
-      data: {
-        companyId: company.id,
-        branchId: branch?.id,
-        code,
-        partnerId: body.partnerId,
-        quotationId: body.quotationId,
-        orderDate: body.orderDate ? new Date(body.orderDate) : new Date(),
-        requiredDate: body.requiredDate ? new Date(body.requiredDate) : undefined,
-        priceListId: body.priceListId,
-        currencyId: body.currencyId,
-        paymentTermId: body.paymentTermId,
-        warehouseId: body.warehouseId,
-        salespersonId: body.salespersonId,
-        status,
-        subtotal,
-        taxTotal,
-        discount: body.discount ?? 0,
-        total,
-        notes: body.notes,
-        createdBy: context.userId,
-        lines: { create: processedLines },
-      },
-      include: {
-        partner: true,
-        lines: { include: { product: true } },
-      },
-    })
+    const order = await db.$transaction(async (tx) => {
+      const newOrder = await tx.salesOrder.create({
+        data: {
+          companyId: company.id,
+          branchId: branch?.id,
+          code,
+          partnerId: body.partnerId,
+          quotationId: body.quotationId,
+          orderDate: body.orderDate ? new Date(body.orderDate) : new Date(),
+          requiredDate: body.requiredDate ? new Date(body.requiredDate) : undefined,
+          priceListId: body.priceListId,
+          currencyId: body.currencyId,
+          paymentTermId: body.paymentTermId,
+          warehouseId: body.warehouseId,
+          salespersonId: body.salespersonId,
+          status,
+          subtotal,
+          taxTotal,
+          discount: body.discount ?? 0,
+          total,
+          notes: body.notes,
+          createdBy: context.userId,
+          lines: { create: processedLines },
+        },
+        include: {
+          partner: true,
+          lines: { include: { product: true } },
+        },
+      })
 
-    // On confirmed: reserve stock (create StockReservation). No accounting posting yet.
-    if (status === 'confirmed' && body.warehouseId) {
-      await Promise.all(
-        body.lines.map((l: any) =>
-          db.stockReservation.create({
+      // On confirmed: reserve stock (create StockReservation). No accounting posting yet.
+      if (status === 'confirmed' && body.warehouseId) {
+        for (const l of body.lines) {
+          await tx.stockReservation.create({
             data: {
               productId: l.productId,
               warehouseId: body.warehouseId,
               documentType: 'sales_order',
-              documentId: order.id,
+              documentId: newOrder.id,
               quantity: l.quantity,
               state: 'active',
             },
           })
-        )
-      )
-    }
+        }
+      }
+      return newOrder
+    })
     return created(order)
   } catch (e: any) {
     return serverError(e.message)

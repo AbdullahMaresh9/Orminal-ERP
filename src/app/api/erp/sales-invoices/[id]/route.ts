@@ -24,9 +24,20 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     const body = await req.json()
     const exists = await db.salesInvoice.findUnique({ where: { id } })
     if (!exists) return notFound('Sales invoice not found')
+    // Posted invoices are immutable — corrections must go through a credit note.
+    if (exists.status !== 'draft') return badRequest('Only draft invoices can be edited; use a credit note to correct a posted invoice')
 
-    const { id: _id, lines, createdAt: _c, updatedAt: _u, ...rest } = body
-    const updated = await db.salesInvoice.update({ where: { id }, data: rest })
+    // Whitelist editable fields only — never allow totals, status, paid, journal, or scope to be overwritten here.
+    const { notes, dueDate, paymentTermId, currencyId } = body
+    const updated = await db.salesInvoice.update({
+      where: { id },
+      data: {
+        notes,
+        dueDate: dueDate ? new Date(dueDate) : undefined,
+        paymentTermId,
+        currencyId,
+      },
+    })
     return ok(updated)
   } catch (e: any) {
     return serverError(e.message)

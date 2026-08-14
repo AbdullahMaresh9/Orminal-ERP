@@ -6,8 +6,12 @@
 // All accounting postings MUST go through this engine. No module posts directly.
 // Posted journal entries are IMMUTABLE. Corrections use reversal only.
 
+import type { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
 import { nextNumber } from './number-sequence'
+
+// Prisma client usable both standalone and inside a $transaction
+type DbClient = typeof db | Prisma.TransactionClient
 
 // System account codes (must match seed)
 export const SYSTEM_ACCOUNTS = {
@@ -74,14 +78,15 @@ export function validateBalanced(lines: JournalLineInput[]): boolean {
 }
 
 // Resolve account codes to account IDs
-async function resolveAccounts(lines: JournalLineInput[]): Promise<Map<string, string>> {
+async function resolveAccounts(client: DbClient, lines: JournalLineInput[]): Promise<Map<string, string>> {
   const codes = [...new Set(lines.map((l) => l.accountCode))]
-  const accounts = await db.account.findMany({ where: { code: { in: codes } } })
+  const accounts = await client.account.findMany({ where: { code: { in: codes } } })
   return new Map(accounts.map((a) => [a.code, a.id]))
 }
 
 // === Central post function — creates a posted journal entry atomically ===
-export async function postJournalEntry(input: PostEntryInput): Promise<{ id: string; code: string }> {
+// Pass a transaction client to make posting atomic with the caller's writes.
+export async function postJournalEntry(input: PostEntryInput, client: DbClient = db): Promise<{ id: string; code: string }> {
   // BR-FIN-001: Validate balanced
   if (!validateBalanced(input.lines)) {
     throw new Error('UNBALANCED_JOURNAL: debit != credit')
@@ -91,7 +96,7 @@ export async function postJournalEntry(input: PostEntryInput): Promise<{ id: str
   }
 
   // Resolve account codes → IDs
-  const accountMap = await resolveAccounts(input.lines)
+  const accountMap = await resolveAccounts(client, input.lines)
   for (const line of input.lines) {
     if (!accountMap.has(line.accountCode)) {
       throw new Error(`ACCOUNT_NOT_FOUND: ${line.accountCode}`)
@@ -104,12 +109,12 @@ export async function postJournalEntry(input: PostEntryInput): Promise<{ id: str
     const journalMap: Record<string, string> = {
       sale: 'SJ', purchase: 'PJ', cash: 'CJ', bank: 'BJ', general: 'GJ', opening: 'OJ', closing: 'CLJ',
     }
-    journal = await db.journal.findUnique({ where: { code: journalMap[input.journalType] || 'GJ' } })
+    journal = await client.journal.findUnique({ where: { code: journalMap[input.journalType] || 'GJ' } })
   }
 
   // Find fiscal period for posting date
   const postingDate = input.postingDate ?? new Date()
-  const fiscalPeriod = await db.fiscalPeriod.findFirst({
+  const fiscalPeriod = await client.fiscalPeriod.findFirst({
     where: {
       startDate: { lte: postingDate },
       endDate: { gte: postingDate },
@@ -128,7 +133,7 @@ export async function postJournalEntry(input: PostEntryInput): Promise<{ id: str
   const totalCredit = input.lines.reduce((s, l) => s + l.credit, 0)
 
   // Create the posted journal entry with lines
-  const entry = await db.journalEntry.create({
+  const entry = await client.journalEntry.create({
     data: {
       companyId: input.companyId,
       branchId: input.branchId,
@@ -163,13 +168,13 @@ export async function postJournalEntry(input: PostEntryInput): Promise<{ id: str
   // Update account balances
   for (const line of input.lines) {
     const accountId = accountMap.get(line.accountCode)!
-    const account = await db.account.findUnique({ where: { id: accountId } })
+    const account = await client.account.findUnique({ where: { id: accountId } })
     if (account) {
       // Assets & Expenses: debit increases, credit decreases
       // Liabilities, Equity, Income: credit increases, debit decreases
       const isDebitNormal = account.type === 'asset' || account.type === 'expense'
       const delta = isDebitNormal ? (line.debit - line.credit) : (line.credit - line.debit)
-      await db.account.update({
+      await client.account.update({
         where: { id: accountId },
         data: { balance: { increment: delta } },
       })
@@ -178,7 +183,7 @@ export async function postJournalEntry(input: PostEntryInput): Promise<{ id: str
 
   // Audit log
   if (input.userId) {
-    await db.auditLog.create({
+    await client.auditLog.create({
       data: {
         userId: input.userId,
         companyId: input.companyId,
@@ -196,8 +201,8 @@ export async function postJournalEntry(input: PostEntryInput): Promise<{ id: str
 }
 
 // === Reversal — creates a mirror entry that reverses the original ===
-export async function reverseJournalEntry(entryId: string, userId?: string, reason?: string): Promise<{ id: string; code: string }> {
-  const original = await db.journalEntry.findUnique({
+export async function reverseJournalEntry(entryId: string, userId?: string, reason?: string, client: DbClient = db): Promise<{ id: string; code: string }> {
+  const original = await client.journalEntry.findUnique({
     where: { id: entryId },
     include: { lines: true },
   })
@@ -216,7 +221,7 @@ export async function reverseJournalEntry(entryId: string, userId?: string, reas
 
   // Get account codes
   const accountIds = original.lines.map((l) => l.accountId)
-  const accounts = await db.account.findMany({ where: { id: { in: accountIds } } })
+  const accounts = await client.account.findMany({ where: { id: { in: accountIds } } })
   const accountMap = new Map(accounts.map((a) => [a.id, a.code]))
   reversalLines.forEach((l, i) => {
     l.accountCode = accountMap.get(original.lines[i].accountId) || ''
@@ -231,10 +236,10 @@ export async function reverseJournalEntry(entryId: string, userId?: string, reas
     refId: original.id,
     lines: reversalLines,
     userId,
-  })
+  }, client)
 
   // Mark original as reversed
-  await db.journalEntry.update({
+  await client.journalEntry.update({
     where: { id: entryId },
     data: { state: 'reversed' },
   })
