@@ -1,17 +1,20 @@
 import { db } from '@/lib/db'
-import { ok, created, list, badRequest, serverError, parsePagination, parseSearch } from '@/lib/erp/api-response'
+import { created, list, badRequest, serverError, unauthorized, parsePagination, parseSearch } from '@/lib/erp/api-response'
 import { nextNumber } from '@/lib/erp/number-sequence'
+import { getRequestContext } from '@/lib/erp/context'
 
 // GET /api/erp/purchase-orders
 export async function GET(req: Request) {
   try {
+    const context = await getRequestContext()
+    if (!context) return unauthorized()
     const { page, pageSize, skip } = parsePagination(req)
     const q = parseSearch(req)
     const url = new URL(req.url)
     const status = url.searchParams.get('status')
     const partnerId = url.searchParams.get('partnerId')
 
-    const where: any = {}
+    const where: any = { companyId: context.companyId }
     if (q) where.OR = [{ code: { contains: q } }, { notes: { contains: q } }]
     if (status) where.status = status
     if (partnerId) where.partnerId = partnerId
@@ -38,13 +41,26 @@ export async function GET(req: Request) {
 // POST /api/erp/purchase-orders — create. On confirm: optional budget check. No posting yet.
 export async function POST(req: Request) {
   try {
+    const context = await getRequestContext()
+    if (!context) return unauthorized()
     const body = await req.json()
     if (!body.partnerId) return badRequest('partnerId is required')
-    if (!body.lines || body.lines.length === 0) return badRequest('lines are required')
+    if (!Array.isArray(body.lines) || body.lines.length === 0) return badRequest('lines are required')
+    if (body.lines.some((l: any) => !l.productId || !Number.isFinite(Number(l.quantity)) || Number(l.quantity) <= 0 || !Number.isFinite(Number(l.unitCost)) || Number(l.unitCost) < 0)) {
+      return badRequest('Each line must have a product, positive quantity, and non-negative unit cost')
+    }
 
-    const company = await db.company.findFirst()
-    if (!company) return badRequest('no company in db')
-    const branch = await db.branch.findFirst({ where: { companyId: company.id } })
+    const branchId = body.branchId ?? context.branchId
+    const [company, partner] = await Promise.all([
+      db.company.findUnique({ where: { id: context.companyId } }),
+      db.partner.findFirst({ where: { id: body.partnerId, companyId: context.companyId } }),
+    ])
+    if (!company) return badRequest('company not found')
+    if (!partner) return badRequest('partner not found')
+    const branch = branchId ? await db.branch.findFirst({ where: { id: branchId, companyId: context.companyId } }) : null
+    if (branchId && !branch) return badRequest('branch not found')
+
+    const status = body.status === 'confirmed' ? 'confirmed' : 'draft'
 
     const code = await nextNumber('purchase_order', company.id, branch?.id)
 
@@ -83,13 +99,13 @@ export async function POST(req: Request) {
         paymentTermId: body.paymentTermId,
         warehouseId: body.warehouseId,
         incoterms: body.incoterms,
-        status: body.status ?? 'draft',
+        status,
         subtotal,
         taxTotal,
         discount: body.discount ?? 0,
         total,
         notes: body.notes,
-        createdBy: body.createdBy,
+        createdBy: context.userId,
         lines: { create: processedLines },
       },
       include: {

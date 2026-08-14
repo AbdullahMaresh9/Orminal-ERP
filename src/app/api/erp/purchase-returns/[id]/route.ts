@@ -45,30 +45,33 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       if (exists.status === 'debited' || exists.status === 'closed')
         return badRequest('Return already debited')
 
-      let journalEntryId: string | null = null
+      // Reversal + status + partner balance must be atomic to avoid half-applied debit notes
+      await db.$transaction(async (tx) => {
+        let journalEntryId: string | null = null
 
-      // If an original invoice is linked, try to reverse its journal entry
-      if (exists.originalInvoiceId) {
-        const origInvoice = await db.purchaseInvoice.findUnique({ where: { id: exists.originalInvoiceId } })
-        if (origInvoice?.journalEntryId) {
-          const reversal = await reverseJournalEntry(
-            origInvoice.journalEntryId,
-            body.userId,
-            `مرتجع مشتريات ${exists.code}`
-          )
-          journalEntryId = reversal.id
+        if (exists.originalInvoiceId) {
+          const origInvoice = await tx.purchaseInvoice.findUnique({ where: { id: exists.originalInvoiceId } })
+          if (origInvoice?.journalEntryId) {
+            const reversal = await reverseJournalEntry(
+              origInvoice.journalEntryId,
+              body.userId,
+              `مرتجع مشتريات ${exists.code}`,
+              tx
+            )
+            journalEntryId = reversal.id
+          }
         }
-      }
 
-      await db.purchaseReturn.update({
-        where: { id },
-        data: { status: 'debited', ...(journalEntryId ? { journalEntryId } : {}) },
-      })
+        await tx.purchaseReturn.update({
+          where: { id },
+          data: { status: 'debited', ...(journalEntryId ? { journalEntryId } : {}) },
+        })
 
-      // Decrease AP (partner balance — supplier is owed less)
-      await db.partner.update({
-        where: { id: exists.partnerId },
-        data: { currentBalance: { decrement: exists.total } },
+        // Decrease AP (partner balance — supplier is owed less)
+        await tx.partner.update({
+          where: { id: exists.partnerId },
+          data: { currentBalance: { decrement: exists.total } },
+        })
       })
 
       const result = await db.purchaseReturn.findUnique({

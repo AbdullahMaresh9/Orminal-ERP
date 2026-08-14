@@ -24,9 +24,26 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     const body = await req.json()
     const exists = await db.purchaseOrder.findUnique({ where: { id } })
     if (!exists) return notFound('Purchase order not found')
+    // Once a PO has been received/billed/paid it is locked against edits.
+    if (['received', 'billed', 'paid'].includes(exists.status)) {
+      return badRequest('Cannot edit an order that has been received, billed, or paid')
+    }
 
-    const { id: _id, lines, createdAt: _c, updatedAt: _u, ...rest } = body
-    const updated = await db.purchaseOrder.update({ where: { id }, data: rest })
+    // Whitelist safe editable fields only — never let totals or scope be overwritten here.
+    const { notes, expectedDate, paymentTermId, currencyId, warehouseId, incoterms, status } = body
+    const updated = await db.purchaseOrder.update({
+      where: { id },
+      data: {
+        notes,
+        expectedDate: expectedDate ? new Date(expectedDate) : undefined,
+        paymentTermId,
+        currencyId,
+        warehouseId,
+        incoterms,
+        // Only allow moving between draft/confirmed/cancelled here
+        status: ['draft', 'confirmed', 'cancelled'].includes(status) ? status : undefined,
+      },
+    })
     return ok(updated)
   } catch (e: any) {
     return serverError(e.message)

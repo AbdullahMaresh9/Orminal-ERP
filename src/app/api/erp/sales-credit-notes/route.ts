@@ -61,11 +61,10 @@ export async function POST(req: Request) {
     const branch = branchId ? await db.branch.findFirst({ where: { id: branchId, companyId: context.companyId } }) : null
 
     // Validate linked invoice (required for posting a reversal)
-    let origInvoice = null
-    if (body.invoiceId) {
-      origInvoice = await db.salesInvoice.findFirst({ where: { id: body.invoiceId, companyId: context.companyId } })
-      if (!origInvoice) return badRequest('invoice not found')
-    }
+    const origInvoice = body.invoiceId
+      ? await db.salesInvoice.findFirst({ where: { id: body.invoiceId, companyId: context.companyId } })
+      : null
+    if (body.invoiceId && !origInvoice) return badRequest('invoice not found')
 
     const status = body.status === 'posted' ? 'posted' : 'draft'
     if (status === 'posted') {
