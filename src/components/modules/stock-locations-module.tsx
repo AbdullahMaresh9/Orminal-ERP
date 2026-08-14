@@ -30,6 +30,7 @@ export function StockLocationsModule() {
     queryKey: ['stock-locations', search],
     queryFn: async () => { const r = await fetch(`/api/erp/stock-locations?q=${encodeURIComponent(search)}`); if (!r.ok) throw new Error(); return r.json() },
   })
+
   const rows = data?.data ?? []
 
   const saveMut = useMutation({
@@ -42,6 +43,7 @@ export function StockLocationsModule() {
     onSuccess: () => { toast.success('تم الحفظ'); qc.invalidateQueries({ queryKey: ['stock-locations'] }); setDialogOpen(false); setEditId(null) },
     onError: (e: any) => toast.error(e.message || 'حدث خطأ'),
   })
+
   const delMut = useMutation({
     mutationFn: async (id: string) => { const r = await fetch(`/api/erp/stock-locations/${id}`, { method: 'DELETE' }); if (!r.ok) throw new Error(); return r.json() },
     onSuccess: () => { toast.success('تم الحذف'); qc.invalidateQueries({ queryKey: ['stock-locations'] }) },

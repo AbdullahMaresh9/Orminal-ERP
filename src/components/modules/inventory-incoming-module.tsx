@@ -26,6 +26,7 @@ import {
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { DatePicker } from '@/components/ui/date-picker'
 import {
   ArrowDownToLine, Plus, Trash2, Package, Boxes,
   Download, FileSpreadsheet, FileText, FileCheck, ChevronDown,
@@ -53,7 +54,7 @@ interface LineItem {
   cost: number
 }
 
-// أبعاد الجدول وحساب الارتفاع الثابت لخمسة صفوف تماشياً مع نمط مرتجعات المشتريات
+//  أبعاد الجدول وحساب الارتفاع الثابت لخمسة صفوف تماشياً مع نمط مرتجعات المشتريات
 const HEADER_HEIGHT = 44
 const VISIBLE_ROWS = 6
 const ROW_HEIGHT = 52
@@ -655,7 +656,7 @@ export function InventoryIncomingModule() {
                                 <Input value={it.batch} onChange={e => updateItem(idx, 'batch', e.target.value)} placeholder="—" dir={dir} className={cn("h-9 border-slate-250 dark:border-blue-500/30 text-xs", isRTL ? "text-right" : "text-left")} />
                               </TableCell>
                               <TableCell className="p-2">
-                                <Input type="date" value={it.expiry} onChange={e => updateItem(idx, 'expiry', e.target.value)} dir={dir} className={cn("h-9 border-slate-250 dark:border-blue-500/30 text-xs text-center", isRTL ? "text-right" : "text-left")} />
+                                <DatePicker value={it.expiry} onChange={(val) => updateItem(idx, 'expiry', val)} placeholder="تاريخ الانتهاء" className="h-9" />
                               </TableCell>
                               <TableCell className="p-2">
                                 <Input type="number" step="0.01" value={it.cost} onChange={e => updateItem(idx, 'cost', Number(e.target.value))} dir={dir} className={cn("h-9 border-slate-250 dark:border-blue-500/30 text-xs", isRTL ? "text-right" : "text-left")} />

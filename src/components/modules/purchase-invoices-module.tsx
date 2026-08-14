@@ -25,8 +25,9 @@ import {
 } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
-  Plus, Trash2, Printer, Hash, Wallet, Coins, Receipt,
+  Plus, Trash2, Printer, Hash, Wallet, Coins, Receipt, Eye, FileMinus,
 } from 'lucide-react'
+import { DatePicker } from '../ui/date-picker'
 
 interface Partner { id: string; code: string; nameAr: string; nameEn?: string }
 interface Product { id: string; sku: string; nameAr: string; nameEn?: string; costPrice: number }
@@ -69,7 +70,7 @@ interface LineDraft {
   taxRate: string
 }
 
-const VISIBLE_ROWS = 5
+const VISIBLE_ROWS = 7
 const ROW_HEIGHT = 44
 const HEADER_HEIGHT = 40
 
@@ -80,6 +81,7 @@ const STATUS_LABELS: Record<string, { ar: string; en: string }> = {
   paid: { ar: 'مدفوع', en: 'Paid' },
   reversed: { ar: 'معكوس', en: 'Reversed' },
   cancelled: { ar: 'ملغي', en: 'Cancelled' },
+  credited: { ar: 'تم عمل إشعار دائن', en: 'Credited' },
 }
 
 export function PurchaseInvoicesModule() {
@@ -93,6 +95,8 @@ export function PurchaseInvoicesModule() {
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
   const [addOpen, setAddOpen] = useState(false)
+  const [viewOnly, setViewOnly] = useState(false)
+  const [selectedInvoice, setSelectedInvoice] = useState<PurchaseInvoice | null>(null)
   const [page, setPage] = useState(1)
   const pageSize = 15
 
@@ -151,7 +155,7 @@ export function PurchaseInvoicesModule() {
     count: invoices.length,
   }), [invoices])
 
-  // Form
+  // Form state
   const [partnerId, setPartnerId] = useState('')
   const [purchaseOrderId, setPurchaseOrderId] = useState('')
   const [vendorBillNo, setVendorBillNo] = useState('')
@@ -198,11 +202,46 @@ export function PurchaseInvoicesModule() {
   }
 
   const resetForm = () => {
+    setSelectedInvoice(null)
+    setViewOnly(false)
     setPartnerId(''); setPurchaseOrderId(''); setVendorBillNo('')
     setBillDate(new Date().toISOString().slice(0, 10))
     setAccountingDate(new Date().toISOString().slice(0, 10))
     setDueDate(''); setNotes('')
     setLines([{ key: '1', productId: '', quantity: '1', unitCost: '0', discountAmount: '0', taxRate: '15' }])
+  }
+  // open view
+  const openView = (i: PurchaseInvoice) => {
+    setSelectedInvoice(i)
+    setPartnerId(i.partnerId)
+    setPurchaseOrderId(i.purchaseOrderId ?? '')
+    setVendorBillNo(i.vendorBillNo ?? '')
+    setBillDate(i.billDate ? new Date(i.billDate).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10))
+    setAccountingDate(i.accountingDate ? new Date(i.accountingDate).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10))
+    setDueDate(i.dueDate ? new Date(i.dueDate).toISOString().slice(0, 10) : '')
+    setNotes(i.notes ?? '')
+    if (i.lines && i.lines.length > 0) {
+      setLines(i.lines.map((l, idx) => ({
+        key: String(idx + 1),
+        productId: l.productId ?? '',
+        quantity: String(l.quantity),
+        unitCost: String(l.unitCost),
+        discountAmount: String(l.discountAmount ?? 0),
+        taxRate: String(l.taxRate ?? 15),
+      })))
+    } else {
+      setLines([])
+    }
+    setViewOnly(true)
+    setAddOpen(true)
+  }
+
+  const handleRowClick = (i: PurchaseInvoice) => {
+    if (['cancelled', 'credited', 'reversed'].includes(i.status)) {
+      toast.info(L('هذه الفاتورة ملغاة/معكوسة بإشعار دائن ولا يمكن التعديل عليها', 'This invoice is cancelled/credited and cannot be modified'))
+      return
+    }
+    openView(i)
   }
 
   const saveMutation = useMutation({
@@ -242,6 +281,55 @@ export function PurchaseInvoicesModule() {
       toast.success(L('تم إنشاء فاتورة المشتريات وترحيلها', 'Purchase invoice created and posted'))
       qc.invalidateQueries({ queryKey: ['purchase-invoices'] })
       setAddOpen(false); resetForm()
+    },
+    onError: (e: any) => toast.error(e.message || L('حدث خطأ', 'An error occurred')),
+  })
+
+  const createCreditNoteMutation = useMutation({
+    mutationFn: async (invoice: PurchaseInvoice) => {
+      const payload = {
+        partnerId: invoice.partnerId,
+        invoiceId: invoice.id,
+        date: new Date().toISOString().slice(0, 10),
+        reason: L('مرتجع / إلغاء فاتورة مشتريات', 'Invoice Cancellation / Return'),
+        subtotal: invoice.subtotal,
+        taxTotal: invoice.taxTotal,
+        total: invoice.total,
+        notes: L(`إشعار دائن للفاتورة رقم ${invoice.code}`, `Credit note for invoice ${invoice.code}`),
+      }
+      const r = await fetch('/api/erp/purchase-credit-notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({}))
+        throw new Error(err?.error?.message ?? L('فشل إنشاء الإشعار الدائن', 'Failed to create credit note'))
+      }
+      return r.json()
+    },
+    onSuccess: () => {
+      toast.success(L('تم إنشاء الإشعار الدائن بنجاح وتحديث حالة الفاتورة', 'Credit note created successfully and invoice status updated'))
+      qc.invalidateQueries({ queryKey: ['purchase-invoices'] })
+      qc.invalidateQueries({ queryKey: ['purchase-credit-notes'] })
+      setAddOpen(false)
+      resetForm()
+    },
+    onError: (e: any) => toast.error(e.message || L('حدث خطأ', 'An error occurred')),
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const r = await fetch(`/api/erp/purchase-invoices/${id}`, { method: 'DELETE' })
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({}))
+        throw new Error(err?.error?.message ?? L('فشل الحذف', 'Delete failed'))
+      }
+      return r.json()
+    },
+    onSuccess: () => {
+      toast.success(L('تم حذف الفاتورة', 'Invoice deleted'))
+      qc.invalidateQueries({ queryKey: ['purchase-invoices'] })
     },
     onError: (e: any) => toast.error(e.message || L('حدث خطأ', 'An error occurred')),
   })
@@ -400,7 +488,7 @@ export function PurchaseInvoicesModule() {
               ) : invoices.length === 0 ? (
                 <TableRow><TableCell colSpan={9} className="text-center py-10 text-muted-foreground border-b">{L('لا توجد فواتير مشتريات.', 'No purchase invoices found.')}</TableCell></TableRow>
               ) : invoices.map((i) => (
-                <TableRow key={i.id} className="hover:bg-muted/40">
+                <TableRow key={i.id} className="hover:bg-muted/40 cursor-pointer" onClick={() => handleRowClick(i)}>
                   <TableCell className="ps-4 font-mono text-xs border-b truncate" dir="ltr">{i.code}</TableCell>
                   <TableCell className="font-medium border-b truncate">{partnerName(i.partner)}</TableCell>
                   <TableCell className="font-mono text-xs text-center border-b truncate" dir="ltr">{purchaseOrders.find((p) => p.id === i.purchaseOrderId)?.code ?? '—'}</TableCell>
@@ -409,10 +497,30 @@ export function PurchaseInvoicesModule() {
                   <TableCell className="text-center border-b whitespace-nowrap"><span className="num tabular-nums font-semibold" dir="ltr">{formatCurrency(i.total)}</span></TableCell>
                   <TableCell className="text-center border-b whitespace-nowrap"><span className="num tabular-nums" dir="ltr">{formatCurrency(i.paid)}</span></TableCell>
                   <TableCell className="text-center border-b"><StatusBadge status={i.status} /></TableCell>
-                  <TableCell className="text-end pe-4 border-b">
-                    <Button size="icon" variant="ghost" className="size-8" onClick={() => handlePrint(i)} title={L('طباعة', 'Print')}>
-                      <Printer className="size-4.5" />
-                    </Button>
+                  <TableCell className="text-end pe-4 border-b" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center justify-end gap-1">
+                      {['cancelled', 'credited', 'reversed'].includes(i.status) ? (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="size-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+                          title={L('حذف الفاتورة', 'Delete Invoice')}
+                          disabled={deleteMutation.isPending}
+                          onClick={() => deleteMutation.mutate(i.id)}
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      ) : (
+                        <>
+                          <Button size="icon" variant="ghost" className="size-8" onClick={() => openView(i)} title={L('عرض الفاتورة', 'View Invoice')}>
+                            <Eye className="size-4" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="size-8" onClick={() => handlePrint(i)} title={L('طباعة', 'Print')}>
+                            <Printer className="size-4.5" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -421,48 +529,43 @@ export function PurchaseInvoicesModule() {
         </div>
       </Card>
 
-      <div className="flex items-center justify-between mt-4 text-sm">
-        <p className="text-muted-foreground">
-          {isRTL
-            ? `عرض ${invoices.length === 0 ? 0 : (page - 1) * pageSize + 1}–${(page - 1) * pageSize + invoices.length} من ${total}`
-            : `Showing ${invoices.length === 0 ? 0 : (page - 1) * pageSize + 1}–${(page - 1) * pageSize + invoices.length} of ${total}`}
-        </p>
-        <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}>{L('السابق', 'Previous')}</Button>
-          <span className="text-xs text-muted-foreground">
-            {isRTL ? `صفحة ${page} من ${totalPages}` : `Page ${page} of ${totalPages}`}
-          </span>
-          <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>{L('التالي', 'Next')}</Button>
-        </div>
-      </div>
-
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="max-w-4xl">
+      <Dialog open={addOpen} onOpenChange={(open) => { setAddOpen(open); if (!open) resetForm() }}>
+        <DialogContent
+          dir={isRTL ? 'rtl' : 'ltr'}
+          className="w-[calc(100vw-1.5rem)] sm:w-[95vw] max-w-4xl max-h-[92vh] p-0 flex flex-col overflow-hidden bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 shadow-xl rounded-xl"
+        >
           <DialogHeader>
-            <DialogTitle>{L('إضافة فاتورة مشتريات', 'New Purchase Invoice')}</DialogTitle>
+            <DialogTitle>
+              {viewOnly
+                ? L('عرض فاتورة المشتريات', 'View Purchase Invoice')
+                : L('إضافة فاتورة مشتريات', 'New Purchase Invoice')}
+            </DialogTitle>
           </DialogHeader>
 
-          <DialogBody>
-            <div className="space-y-3">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="space-y-1.5">
+          <DialogBody className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">
+            <fieldset
+              disabled={viewOnly}
+              className={viewOnly ? 'space-y-4 sm:space-y-5 cursor-not-allowed [&_input]:cursor-not-allowed [&_button]:cursor-not-allowed [&_select]:cursor-not-allowed [&_textarea]:cursor-not-allowed [&_div]:cursor-not-allowed' : 'space-y-4 sm:space-y-5'}
+            >
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+                <div className="space-y-1.5 col-span-2 lg:col-span-1">
                   <Label>{L('المورد *', 'Supplier *')}</Label>
                   <Select value={partnerId} onValueChange={setPartnerId}>
-                    <SelectTrigger><SelectValue placeholder={L('اختر المورد', 'Select Supplier')} /></SelectTrigger>
-                    <SelectContent>
+                    <SelectTrigger className={`w-full ${viewOnly ? 'cursor-not-allowed' : ''}`}><SelectValue placeholder={L('اختر المورد', 'Select Supplier')} /></SelectTrigger>
+                    <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
                       {partners.map((p) => (
                         <SelectItem key={p.id} value={p.id}>
-                          <span dir="ltr" className="font-mono text-xs">{p.code}</span> — {partnerName(p)}
+                          {partnerName(p)}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 col-span-1">
                   <Label>{L('أمر الشراء (اختياري)', 'Purchase Order (Optional)')}</Label>
                   <Select value={purchaseOrderId} onValueChange={setPurchaseOrderId}>
-                    <SelectTrigger><SelectValue placeholder={L('بدون', 'None')} /></SelectTrigger>
-                    <SelectContent>
+                    <SelectTrigger className={`w-full ${viewOnly ? 'cursor-not-allowed' : ''}`}><SelectValue placeholder={L('بدون', 'None')} /></SelectTrigger>
+                    <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
                       {purchaseOrders
                         .filter((p) => !partnerId || p.partnerId === partnerId)
                         .map((p) => (
@@ -473,28 +576,116 @@ export function PurchaseInvoicesModule() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 col-span-1">
                   <Label htmlFor="vendorBillNo">{L('رقم فاتورة المورد', 'Vendor Bill No.')}</Label>
-                  <Input id="vendorBillNo" value={vendorBillNo} onChange={(e) => setVendorBillNo(e.target.value)} placeholder="—" />
+                  <Input id="vendorBillNo" className={viewOnly ? 'cursor-not-allowed' : ''} value={vendorBillNo} onChange={(e) => setVendorBillNo(e.target.value)} placeholder="—" />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                <div className="space-y-1.5">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+                <div className="space-y-1.5 col-span-1">
                   <Label htmlFor="billDate">{L('تاريخ الفاتورة', 'Bill Date')}</Label>
-                  <Input id="billDate" type="date" value={billDate} onChange={(e) => setBillDate(e.target.value)} />
+                  <DatePicker
+                    id="billDate"
+                    value={billDate}
+                    onChange={setBillDate}
+                    disabled={viewOnly}
+                  />
                 </div>
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 col-span-1">
                   <Label htmlFor="accountingDate">{L('تاريخ القيد', 'Accounting Date')}</Label>
-                  <Input id="accountingDate" type="date" value={accountingDate} onChange={(e) => setAccountingDate(e.target.value)} />
+                  <DatePicker
+                    id="accountingDate"
+                    value={accountingDate}
+                    onChange={setAccountingDate}
+                    disabled={viewOnly}
+                  />
                 </div>
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 col-span-2 lg:col-span-1">
                   <Label htmlFor="dueDate">{L('تاريخ الاستحقاق', 'Due Date')}</Label>
-                  <Input id="dueDate" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+                  <DatePicker
+                    id="dueDate"
+                    value={dueDate}
+                    onChange={setDueDate}
+                    disabled={viewOnly}
+                  />
                 </div>
               </div>
 
-              <Card className="rounded-lg overflow-hidden">
+              {/* Line items: cards on mobile (< md) */}
+              <div className="space-y-3 md:hidden">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">{L('البنود', 'Line Items')}</span>
+                  <span className="text-xs text-muted-foreground px-2">{lines.length} {L('بند', 'items')}</span>
+                </div>
+
+                {lines.map((l, idx) => {
+                  const qty = Number(l.quantity) || 0
+                  const cost = Number(l.unitCost) || 0
+                  const disc = Number(l.discountAmount) || 0
+                  const taxRate = Number(l.taxRate) || 0
+                  const lineTotal = (qty * cost - disc) * (1 + taxRate / 100)
+                  return (
+                    <Card key={l.key} className="p-3 space-y-3 rounded-lg">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-medium text-muted-foreground">{L('بند', 'Item')} #{idx + 1}</span>
+                        {!viewOnly && (
+                          <Button type="button" size="icon" variant="ghost" className="size-8 text-rose-500 hover:text-rose-600 shrink-0" onClick={() => removeLine(l.key)}>
+                            <Trash2 className="size-4" />
+                          </Button>
+                        )}
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">{L('المنتج', 'Product')}</Label>
+                        <Select value={l.productId} onValueChange={(v) => updateLine(l.key, 'productId', v)}>
+                          <SelectTrigger className={`h-9 w-full ${viewOnly ? 'cursor-not-allowed' : ''}`}><SelectValue placeholder={L('اختر المنتج', 'Select Product')} /></SelectTrigger>
+                          <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
+                            {products.map((p) => (
+                              <SelectItem key={p.id} value={p.id}>
+                                {productName(p)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-xs">{L('الكمية', 'Qty')}</Label>
+                          <Input className={`h-9 text-start tabular-nums ${viewOnly ? 'cursor-not-allowed' : ''}`} type="number" step="1" inputMode="decimal" dir="ltr" value={l.quantity} onChange={(e) => updateLine(l.key, 'quantity', e.target.value)} />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">{L('التكلفة', 'Cost')}</Label>
+                          <Input className={`h-9 text-start tabular-nums ${viewOnly ? 'cursor-not-allowed' : ''}`} type="number" step="0.01" inputMode="decimal" dir="ltr" value={l.unitCost} onChange={(e) => updateLine(l.key, 'unitCost', e.target.value)} />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">{L('الخصم', 'Discount')}</Label>
+                          <Input className={`h-9 text-start tabular-nums ${viewOnly ? 'cursor-not-allowed' : ''}`} type="number" step="0.1" inputMode="decimal" dir="ltr" value={l.discountAmount} onChange={(e) => updateLine(l.key, 'discountAmount', e.target.value)} />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">{L('الضريبة %', 'Tax %')}</Label>
+                          <Input className={`h-9 text-start tabular-nums ${viewOnly ? 'cursor-not-allowed' : ''}`} type="number" step="0.1" inputMode="decimal" dir="ltr" value={l.taxRate} onChange={(e) => updateLine(l.key, 'taxRate', e.target.value)} />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between border-t pt-2">
+                        <span className="text-xs text-muted-foreground">{L('إجمالي البند', 'Line Total')}</span>
+                        <span className="num font-semibold tabular-nums" dir="ltr">{formatCurrency(lineTotal)}</span>
+                      </div>
+                    </Card>
+                  )
+                })}
+
+                {!viewOnly && (
+                  <Button type="button" size="sm" variant="outline" onClick={addLine} className="w-full gap-1.5">
+                    <Plus className="size-3.5" /> {L('إضافة بند', 'Add Line')}
+                  </Button>
+                )}
+              </div>
+
+              {/* Line items: table on desktop (md+) */}
+              <Card className="rounded-lg overflow-hidden hidden md:block">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/50">
@@ -518,46 +709,51 @@ export function PurchaseInvoicesModule() {
                         <TableRow key={l.key}>
                           <TableCell className="ps-3">
                             <Select value={l.productId} onValueChange={(v) => updateLine(l.key, 'productId', v)}>
-                              <SelectTrigger className="h-9 min-w-[220px]"><SelectValue placeholder={L('اختر المنتج', 'Select Product')} /></SelectTrigger>
-                              <SelectContent>
+                              <SelectTrigger className={`h-9 min-w-[220px] ${viewOnly ? 'cursor-not-allowed' : ''}`}><SelectValue placeholder={L('اختر المنتج', 'Select Product')} /></SelectTrigger>
+                              <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
                                 {products.map((p) => (
                                   <SelectItem key={p.id} value={p.id}>
-                                    <span dir="ltr" className="font-mono text-xs">{p.sku}</span> — {productName(p)}
+                                    {productName(p)}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
                           </TableCell>
                           <TableCell className="text-start num-cell">
-                            <Input className="h-9 text-start tabular-nums" type="number" step="1" dir="ltr" value={l.quantity} onChange={(e) => updateLine(l.key, 'quantity', e.target.value)} />
+                            <Input className={`h-9 text-start tabular-nums ${viewOnly ? 'cursor-not-allowed' : ''}`} type="number" step="1" inputMode="decimal" dir="ltr" value={l.quantity} onChange={(e) => updateLine(l.key, 'quantity', e.target.value)} />
                           </TableCell>
                           <TableCell className="text-start num-cell">
-                            <Input className="h-9 text-start tabular-nums" type="number" step="0.01" dir="ltr" value={l.unitCost} onChange={(e) => updateLine(l.key, 'unitCost', e.target.value)} />
+                            <Input className={`h-9 text-start tabular-nums ${viewOnly ? 'cursor-not-allowed' : ''}`} type="number" step="0.01" inputMode="decimal" dir="ltr" value={l.unitCost} onChange={(e) => updateLine(l.key, 'unitCost', e.target.value)} />
                           </TableCell>
                           <TableCell className="text-start num-cell">
-                            <Input className="h-9 text-start tabular-nums" type="number" step="0.1" dir="ltr" value={l.discountAmount} onChange={(e) => updateLine(l.key, 'discountAmount', e.target.value)} />
+                            <Input className={`h-9 text-start tabular-nums ${viewOnly ? 'cursor-not-allowed' : ''}`} type="number" step="0.1" inputMode="decimal" dir="ltr" value={l.discountAmount} onChange={(e) => updateLine(l.key, 'discountAmount', e.target.value)} />
                           </TableCell>
                           <TableCell className="text-start num-cell">
-                            <Input className="h-9 text-start tabular-nums" type="number" step="0.1" dir="ltr" value={l.taxRate} onChange={(e) => updateLine(l.key, 'taxRate', e.target.value)} />
+                            <Input className={`h-9 text-start tabular-nums ${viewOnly ? 'cursor-not-allowed' : ''}`} type="number" step="0.1" inputMode="decimal" dir="ltr" value={l.taxRate} onChange={(e) => updateLine(l.key, 'taxRate', e.target.value)} />
                           </TableCell>
                           <TableCell className="text-end num-cell">
                             <span className="num font-semibold tabular-nums" dir="ltr">{formatCurrency(lineTotal)}</span>
                           </TableCell>
                           <TableCell>
-                            <Button type="button" size="icon" variant="ghost" className="size-8 text-rose-500" onClick={() => removeLine(l.key)}>
-                              <Trash2 className="size-4.5" />
-                            </Button>
+                            {!viewOnly && (
+                              <Button type="button" size="icon" variant="ghost" className="size-8 text-rose-500 hover:text-rose-600" onClick={() => removeLine(l.key)}>
+                                <Trash2 className="size-4.5" />
+                              </Button>
+                            )}
                           </TableCell>
                         </TableRow>
                       )
                     })}
                   </TableBody>
+
                   <TableFooter>
                     <TableRow>
                       <TableCell colSpan={5}>
-                        <Button type="button" size="sm" variant="outline" onClick={addLine} className="gap-1.5">
-                          <Plus className="size-3.5" /> {L('إضافة بند', 'Add Line')}
-                        </Button>
+                        {!viewOnly && (
+                          <Button type="button" size="sm" variant="outline" onClick={addLine} className="gap-1.5">
+                            <Plus className="size-3.5" /> {L('إضافة بند', 'Add Line')}
+                          </Button>
+                        )}
                       </TableCell>
                       <TableCell className="text-end num-cell">
                         <span className="num font-bold tabular-nums" dir="ltr">{formatCurrency(computed.total)}</span>
@@ -585,16 +781,47 @@ export function PurchaseInvoicesModule() {
 
               <div className="space-y-1.5">
                 <Label htmlFor="notes">{L('ملاحظات', 'Notes')}</Label>
-                <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder={L('ملاحظات إضافية...', 'Additional notes...')} />
+                <Textarea id="notes" className={viewOnly ? 'cursor-not-allowed' : ''} value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder={L('ملاحظات إضافية...', 'Additional notes...')} />
               </div>
-            </div>
+            </fieldset>
           </DialogBody>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>{L('إلغاء', 'Cancel')}</Button>
-            <Button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
-              {saveMutation.isPending ? L('جاري الحفظ...', 'Saving...') : L('إنشاء وترحيل', 'Create & Post')}
+          <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-between gap-2 px-4 sm:px-6 py-4 border-t shrink-0">
+            <Button type="button" variant="outline" className="w-full sm:w-auto sm:min-w-25" onClick={() => { setAddOpen(false); resetForm() }}>
+              {viewOnly ? L('إغلاق', 'Close') : L('إلغاء', 'Cancel')}
             </Button>
+
+            {viewOnly ? (
+              <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+                {selectedInvoice && (
+                  <Button
+                    type="button"
+                    className="w-full sm:w-auto gap-1.5 bg-green-600 hover:bg-green-700 text-white"
+                    disabled={createCreditNoteMutation.isPending}
+                    onClick={() => {
+                      if (selectedInvoice) createCreditNoteMutation.mutate(selectedInvoice)
+                    }}
+                  >
+                    <FileMinus className="size-4" />
+                    {createCreditNoteMutation.isPending ? L('جاري الإنشاء...', 'Creating...') : L('إنشاء إشعار دائن', 'Create Credit Note')}
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  className="w-full sm:w-auto sm:min-w-25 bg-sky-600 hover:bg-sky-700 text-white gap-1.5"
+                  onClick={() => {
+                    if (selectedInvoice) handlePrint(selectedInvoice)
+                  }}
+                >
+                  <Printer className="size-4" />
+                  {L('طباعة', 'Print')}
+                </Button>
+              </div>
+            ) : (
+              <Button type="button" className="w-full sm:w-auto sm:min-w-25 bg-blue-600 hover:bg-blue-700 text-white" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
+                {saveMutation.isPending ? L('جاري الحفظ...', 'Saving...') : L('إنشاء وترحيل', 'Create & Post')}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

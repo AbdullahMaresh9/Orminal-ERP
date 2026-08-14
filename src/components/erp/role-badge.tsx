@@ -23,7 +23,7 @@ export function RoleBadge() {
   const name = session?.user?.nameAr ?? 'مدير النظام'
   const roleKey = `role.${session?.user?.roleCode ?? 'admin'}` as any
 
-  return (
+  return ( // role.admin, role.manager, etc.
     <div className="flex items-center gap-2.5 rounded-lg bg-sidebar-accent/60 p-2.5 ring-1 ring-sidebar-border">
       <Avatar className="size-9 ring-2 ring-background">
         {session?.user?.avatar && <AvatarImage src={session.user.avatar} alt={name} />}

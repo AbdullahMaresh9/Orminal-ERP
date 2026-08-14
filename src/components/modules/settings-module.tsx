@@ -26,7 +26,7 @@ import { useTheme } from 'next-themes'
 import { useI18n } from '@/stores/i18n-store'
 import { clearPrintSettingsCache } from '@/lib/export'
 
-// === Types ===
+// ==== Types ===
 interface SettingMeta {
   value: string
   category: string
@@ -376,7 +376,7 @@ export function SettingsModule() {
       description="إعدادات النظام الشاملة — شركة، محاسبة، مخزون، مبيعات، مشتريات، ترقيم، طباعة، إشعارات، ZATCA، بريد، ونظام"
       icon={<SettingsIcon className="size-5" />}
     >
-      {/* Search input — sticky at top */}
+      {/* Search input  — sticky at top */}
       <div className="relative mb-4 sm:max-w-md">
         <Search className="absolute inset-y-0 start-3 my-auto size-4 text-muted-foreground pointer-events-none" />
         <Input
@@ -737,8 +737,8 @@ export function SettingsModule() {
                 className="gap-1.5"
               >
                 <Save className="size-4" />
-                {saveMutation.isPending 
-                  ? (locale === 'ar' ? 'جاري الحفظ...' : 'Saving...') 
+                {saveMutation.isPending
+                  ? (locale === 'ar' ? 'جاري الحفظ...' : 'Saving...')
                   : (locale === 'ar' ? 'حفظ التغييرات' : 'Save Changes')}
               </Button>
             </div>
@@ -807,9 +807,8 @@ function FieldRow({
   if (isBool) {
     return (
       <div
-        className={`flex items-center justify-between gap-3 p-3 rounded-lg border transition-colors ${
-          isChanged ? 'border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/10' : ''
-        }`}
+        className={`flex items-center justify-between gap-3 p-3 rounded-lg border transition-colors ${isChanged ? 'border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/10' : ''
+          }`}
       >
         <div className="min-w-0 flex-1">
           <Label className="cursor-pointer text-sm font-medium block whitespace-normal">{labelToShow}</Label>
@@ -834,9 +833,8 @@ function FieldRow({
 
   return (
     <div
-      className={`space-y-1.5 p-3 rounded-lg border transition-colors ${
-        isChanged ? 'border-amber-500/50 bg-amber-50/40 dark:bg-amber-950/10' : ''
-      }`}
+      className={`space-y-1.5 p-3 rounded-lg border transition-colors ${isChanged ? 'border-amber-500/50 bg-amber-50/40 dark:bg-amber-950/10' : ''
+        }`}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">

@@ -1,0 +1,63 @@
+[33m31f1dd5[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m HEAD@{0}: reset: moving to 31f1dd5
+[33m4294f60[m HEAD@{1}: commit: chore: restore local SQLite database provider
+[33m81b788c[m HEAD@{2}: commit: feat(purchase-returns): implement full accounting Debit Note issuance with GL journal entry and official print view
+[33m4c3e329[m HEAD@{3}: commit: feat(purchase-returns): enforce accounting control, read-only posted state, invoice quantity validation, and responsive modal view
+[33m11d7aa0[m HEAD@{4}: commit: style: arrange code/tax, phone/email, and credit/balance side-by-side on mobile screens
+[33me7d8bc1[m HEAD@{5}: commit: feat: enable supplier row click and optimize supplier & customer modals for mobile responsiveness
+[33mfeca9b5[m HEAD@{6}: commit: feat: enhance journal entries module with responsive table layout and mobile dialog UX
+[33m33eed37[m HEAD@{7}: commit: updat
+[33ma0c8e6a[m HEAD@{8}: commit (merge): Merge remote-tracking branch 'origin/main'
+[33m31f1dd5[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m HEAD@{9}: commit: wip: save local work before pull
+[33m00b9b1e[m HEAD@{10}: commit: improve the desgin and logic business
+[33me42da19[m HEAD@{11}: commit: update whidth of the dropdown
+[33m38b476d[m HEAD@{12}: commit: update and add business logic new
+[33m96f0c1a[m HEAD@{13}: commit: Complet the desgin screen
+[33m9675848[m HEAD@{14}: commit: setup the screen login and splash
+[33md429a16[m HEAD@{15}: commit: feat: update ERP modules, localization, authentication, and UI enhancements
+[33m3a80909[m[33m ([m[1;31morigin/feature/update-login-screen[m[33m)[m HEAD@{16}: checkout: moving from main to main
+[33m3a80909[m[33m ([m[1;31morigin/feature/update-login-screen[m[33m)[m HEAD@{17}: checkout: moving from main to main
+[33m3a80909[m[33m ([m[1;31morigin/feature/update-login-screen[m[33m)[m HEAD@{18}: commit: update login screen
+[33mca14b51[m HEAD@{19}: pull origin main --no-rebase: Merge made by the 'ort' strategy.
+[33m6802f88[m HEAD@{20}: commit: docs: sync readme
+[33m1331c4e[m HEAD@{21}: commit: feat: update official logo and enterprise login/signup auth UI
+[33m417a9a4[m HEAD@{22}: commit: docs: update enterprise README.md for Orminal ERP
+[33mb17c364[m HEAD@{23}: commit: feat: complete enterprise Orminal ERP system implementation and professional README documentation
+[33mdec59dc[m HEAD@{24}: checkout: moving from dec59dc803ce93cc820c068867e0907f403edf53 to main
+[33mdec59dc[m HEAD@{25}: checkout: moving from main to dec59dc803ce93cc820c068867e0907f403edf53
+[33mdec59dc[m HEAD@{26}: commit (amend): 10de6e78-6a7d-4004-b06b-ca74b2ad404a
+[33m687d959[m HEAD@{27}: commit: 10de6e78-6a7d-4004-b06b-ca74b2ad404a
+[33mb0ebddb[m HEAD@{28}: commit (amend): 92fdc477-a74d-485b-a7b4-0a16d13003bc
+[33m01e475a[m HEAD@{29}: commit: 92fdc477-a74d-485b-a7b4-0a16d13003bc
+[33m71219f2[m HEAD@{30}: checkout: moving from 71219f2946ac704126ef9821636556fa008108ae to main
+[33m71219f2[m HEAD@{31}: checkout: moving from main to 71219f2946ac704126ef9821636556fa008108ae
+[33m71219f2[m HEAD@{32}: commit (amend): 76e98807-05e4-492c-b748-764bf2d86ae8
+[33m75d5e2c[m HEAD@{33}: commit (amend): 76e98807-05e4-492c-b748-764bf2d86ae8
+[33mce4e415[m HEAD@{34}: commit: 76e98807-05e4-492c-b748-764bf2d86ae8
+[33mb779704[m HEAD@{35}: commit: 46cfd5e9-474f-4657-9d0d-a97dcdc06f74
+[33m508314e[m HEAD@{36}: commit: 4663ea5b-ae87-4684-a27e-fc7e47867549
+[33m1aa476a[m HEAD@{37}: commit: 87f18e6a-eb85-484e-b8b8-29657944edde
+[33m78db85c[m HEAD@{38}: commit: c1166e61-1724-4654-b352-0e954ed7c06b
+[33md68002b[m HEAD@{39}: commit: b9615c00-57af-4ec5-9d40-a21fec2439eb
+[33medb20ff[m HEAD@{40}: commit: fc10d3a6-3ea2-4d6f-9916-5a0fa6b4b4d1
+[33mc1b7348[m HEAD@{41}: commit: 775de99f-cb91-4eae-8ebf-679258bb3565
+[33m79aa231[m HEAD@{42}: commit: 63526229-58e6-42d3-88da-d5e49625c0f9
+[33me39e23c[m HEAD@{43}: commit: cd5dc002-43a3-4f65-8bc4-7d9cf43ddc9f
+[33m2562e76[m HEAD@{44}: commit (amend): b514c50b-f2b4-4989-9019-85d5131fb2b3
+[33m943d6d5[m HEAD@{45}: commit (amend): b514c50b-f2b4-4989-9019-85d5131fb2b3
+[33me60f6a1[m HEAD@{46}: commit (amend): b514c50b-f2b4-4989-9019-85d5131fb2b3
+[33md7423b3[m HEAD@{47}: commit (amend): b514c50b-f2b4-4989-9019-85d5131fb2b3
+[33m98e67c4[m HEAD@{48}: commit: b514c50b-f2b4-4989-9019-85d5131fb2b3
+[33m1a96460[m HEAD@{49}: commit: 9ea6f957-df6c-411f-918f-f73a0e0ee5ab
+[33me353019[m HEAD@{50}: commit: 5b8e8c76-0daa-43bd-b676-9e4a95793375
+[33m9b5f6f5[m HEAD@{51}: commit: 2c985fcc-2055-418d-acaa-f7fd97cc83f3
+[33m6b3a541[m HEAD@{52}: commit: 61330f2c-8244-428a-b50c-386b367cc746
+[33m0a13e43[m HEAD@{53}: commit: 190bc9de-bf94-4423-94c9-97479af6539a
+[33m76d1c89[m HEAD@{54}: commit: 6d6faac9-a9c3-40c7-869f-eb75a01e6227
+[33m35899b4[m HEAD@{55}: commit: c732ff4c-34d2-4406-b7c1-c139884b72f0
+[33m1208b84[m HEAD@{56}: commit: fe8d7ba6-e8cd-4db0-bb13-64e1a579123b
+[33m1cce460[m HEAD@{57}: commit: e6f218f7-e966-4fed-b88f-156b6b21e3f0
+[33m0606163[m HEAD@{58}: commit: 62b56a1a-c687-4a49-9342-f1837f3036a2
+[33m5598429[m HEAD@{59}: commit (amend): 72ea9fe5-1c4b-4f66-9b25-9e344f3229fc
+[33mcb3ceff[m HEAD@{60}: commit (amend): 72ea9fe5-1c4b-4f66-9b25-9e344f3229fc
+[33ma8c1fb2[m HEAD@{61}: commit: 72ea9fe5-1c4b-4f66-9b25-9e344f3229fc
+[33m7e10b6d[m HEAD@{62}: commit (initial): Initial commit

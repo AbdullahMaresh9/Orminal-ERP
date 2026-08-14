@@ -42,6 +42,7 @@ export function SafesModule() {
     onSuccess: () => { toast.success('تم الحفظ'); qc.invalidateQueries({ queryKey: ['safes'] }); setDialogOpen(false); setEditId(null) },
     onError: (e: any) => toast.error(e.message || 'حدث خطأ'),
   })
+
   const delMut = useMutation({
     mutationFn: async (id: string) => { const r = await fetch(`/api/erp/safes/${id}`, { method: 'DELETE' }); if (!r.ok) throw new Error(); return r.json() },
     onSuccess: () => { toast.success('تم الحذف'); qc.invalidateQueries({ queryKey: ['safes'] }) },

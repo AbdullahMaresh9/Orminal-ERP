@@ -26,12 +26,14 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { DatePicker } from '@/components/ui/date-picker'
 import {
-  Receipt, Wallet, Hash, TrendingUp, Plus, Printer, CreditCard, Download, FileSpreadsheet, FileText, FileDown,
+  Receipt, Hash, TrendingUp, CreditCard, Download, FileSpreadsheet, FileText, FileDown, Eye, Pencil, Printer, RotateCcw, AlertTriangle, History, ShieldAlert, ArrowLeftRight,
 } from 'lucide-react'
 
 interface Partner { id: string; code: string; nameAr: string; nameEn?: string }
 interface Invoice { id: string; code: string; total: number; paid: number; partnerId: string }
+
 interface SalesPayment {
   id: string
   code: string
@@ -53,14 +55,15 @@ const METHOD_OPTIONS = [
   { value: 'check', ar: 'شيك', en: 'Check' },
 ]
 
-const STATUS_FLOW = ['draft', 'posted', 'cancelled']
+const STATUS_FLOW = ['draft', 'posted', 'reversed', 'cancelled']
 const STATUS_LABELS: Record<string, { ar: string; en: string }> = {
   draft: { ar: 'مسودة', en: 'Draft' },
   posted: { ar: 'مُرحّل', en: 'Posted' },
+  reversed: { ar: 'معكوس', en: 'Reversed' },
   cancelled: { ar: 'ملغي', en: 'Cancelled' },
 }
 
-const VISIBLE_ROWS = 5
+const VISIBLE_ROWS = 7
 const ROW_HEIGHT = 44
 const HEADER_HEIGHT = 40
 
@@ -111,8 +114,6 @@ export function SalesPaymentsModule() {
   })
 
   const payments = (data?.data ?? []).filter((p) => filterMethod === 'all' || p.method === filterMethod)
-  const total = data?.meta?.pagination?.total ?? 0
-  const totalPages = data?.meta?.pagination?.totalPages ?? 1
   const partners = partnersData?.data ?? []
   const invoices = invoicesData?.data ?? []
 
@@ -125,7 +126,7 @@ export function SalesPaymentsModule() {
     const now = new Date()
     const thisMonth = payments.filter((p) => {
       const d = new Date(p.paymentDate)
-      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear() && p.status === 'posted'
     })
     const byMethod: Record<string, number> = {}
     for (const p of thisMonth) byMethod[p.method] = (byMethod[p.method] || 0) + p.amount
@@ -138,7 +139,9 @@ export function SalesPaymentsModule() {
     }
   }, [payments, isRTL])
 
-  // Form
+  // Main Form State
+  const [selectedPayment, setSelectedPayment] = useState<SalesPayment | null>(null)
+  const [viewOnly, setViewOnly] = useState(false)
   const [partnerId, setPartnerId] = useState('')
   const [invoiceId, setInvoiceId] = useState('')
   const [amount, setAmount] = useState('0')
@@ -147,17 +150,68 @@ export function SalesPaymentsModule() {
   const [reference, setReference] = useState('')
   const [notes, setNotes] = useState('')
 
+  // Reversal Modal State
+  const [reverseTarget, setReverseTarget] = useState<SalesPayment | null>(null)
+  const [reverseReason, setReverseReason] = useState('')
+
   const resetForm = () => {
+    setSelectedPayment(null)
+    setViewOnly(false)
     setPartnerId(''); setInvoiceId(''); setAmount('0')
     setPaymentDate(new Date().toISOString().slice(0, 10)); setMethod('cash')
     setReference(''); setNotes('')
   }
 
+  // Open voucher modal based on status
+  const openVoucherModal = (p: SalesPayment) => {
+    setSelectedPayment(p)
+    setPartnerId(p.partnerId || p.partner?.id || '')
+    setInvoiceId(p.invoiceId || '')
+    setAmount(String(p.amount ?? 0))
+    setPaymentDate((p.paymentDate || '').slice(0, 10) || new Date().toISOString().slice(0, 10))
+    setMethod(p.method || 'cash')
+    setReference(p.reference || '')
+    setNotes(p.notes || '')
+
+    if (p.status === 'draft') {
+      setViewOnly(false) // Draft allows full editing
+    } else {
+      setViewOnly(true) // Posted, reversed, or cancelled strictly read-only
+    }
+    setAddOpen(true)
+  }
+
+  // Open Reversal Confirmation Modal
+  const openReverseModal = (p: SalesPayment) => {
+    setReverseTarget(p)
+    setReverseReason(L('عكس سند قبض بناءً على طلب محاسبي وتعديل حركة النقدية', 'Reversal of receipt voucher as requested'))
+  }
+
+  // Calculate invoice max allowed payment amount
+  const maxInvoiceAmount = useMemo(() => {
+    if (!invoiceId) return null
+    const inv = invoices.find((i) => i.id === invoiceId)
+    if (!inv) return null
+    const alreadyPaidWithoutCurrent = inv.paid - (selectedPayment?.invoiceId === invoiceId ? (selectedPayment?.amount || 0) : 0)
+    return Math.max(0, inv.total - alreadyPaidWithoutCurrent)
+  }, [invoiceId, invoices, selectedPayment])
+
+  // Save new payment (Draft or Posted)
   const saveMutation = useMutation({
-    mutationFn: async () => {
-      if (!partnerId) throw new Error(L('اختر العميل', 'Select a customer'))
+    mutationFn: async (targetStatus: 'draft' | 'posted') => {
+      if (!partnerId) throw new Error(L('اختر العميل/الحساب *', 'Select a customer/account *'))
       const amt = Number(amount) || 0
-      if (amt <= 0) throw new Error(L('المبلغ يجب أن يكون أكبر من صفر', 'Amount must be greater than zero'))
+      if (amt <= 0) throw new Error(L('المبلغ يجب أن يكون أكبر من صفر *', 'Amount must be greater than zero *'))
+
+      if (maxInvoiceAmount !== null && amt > maxInvoiceAmount + 0.001) {
+        throw new Error(
+          L(
+            `المبلغ المحدد (${amt}) يتجاوز المبلغ المستحق على الفاتورة المختارة (${maxInvoiceAmount})`,
+            `Amount (${amt}) exceeds remaining due amount on selected invoice (${maxInvoiceAmount})`
+          )
+        )
+      }
+
       const payload = {
         partnerId,
         invoiceId: invoiceId || undefined,
@@ -166,8 +220,9 @@ export function SalesPaymentsModule() {
         method,
         reference,
         notes,
-        status: 'posted',
+        status: targetStatus,
       }
+
       const r = await fetch('/api/erp/sales-payments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -175,15 +230,97 @@ export function SalesPaymentsModule() {
       })
       if (!r.ok) {
         const err = await r.json().catch(() => ({}))
-        throw new Error(err?.error?.message ?? L('فشل الحفظ', 'Failed to save'))
+        throw new Error(err?.error?.message ?? L('فشل حفظ سند القبض', 'Failed to save receipt voucher'))
+      }
+      return r.json()
+    },
+    onSuccess: (_, targetStatus) => {
+      toast.success(
+        targetStatus === 'posted'
+          ? L('تم إنشاء وترحيل سند القبض بنجاح', 'Receipt created & posted successfully')
+          : L('تم حفظ مسودة سند القبض بنجاح', 'Receipt draft saved successfully')
+      )
+      qc.invalidateQueries({ queryKey: ['sales-payments'] })
+      qc.invalidateQueries({ queryKey: ['sales-invoices'] })
+      setAddOpen(false); resetForm()
+    },
+    onError: (e: any) => toast.error(e.message || L('حدث خطأ', 'An error occurred')),
+  })
+
+  // Update existing draft payment (Save Draft or Save & Post)
+  const updateMutation = useMutation({
+    mutationFn: async (targetStatus: 'draft' | 'posted') => {
+      if (!selectedPayment) return
+      if (!partnerId) throw new Error(L('اختر العميل/الحساب *', 'Select a customer/account *'))
+      const amt = Number(amount) || 0
+      if (amt <= 0) throw new Error(L('المبلغ يجب أن يكون أكبر من صفر *', 'Amount must be greater than zero *'))
+
+      if (maxInvoiceAmount !== null && amt > maxInvoiceAmount + 0.001) {
+        throw new Error(
+          L(
+            `المبلغ المحدد (${amt}) يتجاوز المبلغ المستحق على الفاتورة المختارة (${maxInvoiceAmount})`,
+            `Amount (${amt}) exceeds remaining due amount on selected invoice (${maxInvoiceAmount})`
+          )
+        )
+      }
+
+      const payload = {
+        partnerId,
+        invoiceId: invoiceId || undefined,
+        amount: amt,
+        paymentDate,
+        method,
+        reference,
+        notes,
+        status: targetStatus,
+      }
+
+      const r = await fetch(`/api/erp/sales-payments/${selectedPayment.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({}))
+        throw new Error(err?.error?.message ?? L('فشل تحديث سند القبض', 'Failed to update receipt voucher'))
+      }
+      return r.json()
+    },
+    onSuccess: (_, targetStatus) => {
+      toast.success(
+        targetStatus === 'posted'
+          ? L('تم تحديث وترحيل سند القبض بنجاح', 'Receipt updated & posted successfully')
+          : L('تم تحديث سند القبض بنجاح', 'Receipt updated successfully')
+      )
+      qc.invalidateQueries({ queryKey: ['sales-payments'] })
+      qc.invalidateQueries({ queryKey: ['sales-invoices'] })
+      setAddOpen(false); resetForm()
+    },
+    onError: (e: any) => toast.error(e.message || L('حدث خطأ', 'An error occurred')),
+  })
+
+  // Reverse posted payment (Reversal Entry)
+  const reverseMutation = useMutation({
+    mutationFn: async ({ paymentId, reason }: { paymentId: string; reason: string }) => {
+      const r = await fetch(`/api/erp/sales-payments/${paymentId}/reverse`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason }),
+      })
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({}))
+        throw new Error(err?.error?.message ?? L('فشل عكس سند القبض', 'Failed to reverse receipt voucher'))
       }
       return r.json()
     },
     onSuccess: () => {
-      toast.success(L('تم إنشاء سند القبض بنجاح', 'Receipt created successfully'))
+      toast.success(L('تم عكس سند القبض وإنشاء القيد العكسي بنجاح', 'Receipt reversed & reversal entry created successfully'))
       qc.invalidateQueries({ queryKey: ['sales-payments'] })
       qc.invalidateQueries({ queryKey: ['sales-invoices'] })
-      setAddOpen(false); resetForm()
+      qc.invalidateQueries({ queryKey: ['journal-entries'] })
+      setAddOpen(false)
+      setReverseTarget(null)
+      resetForm()
     },
     onError: (e: any) => toast.error(e.message || L('حدث خطأ', 'An error occurred')),
   })
@@ -232,6 +369,7 @@ export function SalesPaymentsModule() {
 
   const handlePrint = (p: SalesPayment) => {
     const inv = invoices.find((i) => i.id === p.invoiceId)
+    const statusText = STATUS_LABELS[p.status]?.[isRTL ? 'ar' : 'en'] ?? p.status
     const html = `
       <div class="doc-header">
         <div class="company">
@@ -245,13 +383,14 @@ export function SalesPaymentsModule() {
           <div class="type">${L('سند قبض', 'Receipt')}</div>
           <div class="code">${p.code}</div>
           <div class="date">${formatDate(p.paymentDate)}</div>
+          <div class="status" style="font-weight:bold;margin-top:4px;">[ ${statusText} ]</div>
         </div>
       </div>
       <div class="party">
-        <div class="label">${L('استلمنا من', 'Received From')}</div>
+        <div class="label">${L('استلمنا من السيد/السادة', 'Received From')}</div>
         <div class="name">${partnerName(p.partner)}</div>
-        <div class="sub">${L('رمز', 'Code')}: ${p.partner?.code ?? ''}</div>
-        ${inv ? `<div class="sub">${L('فاتورة', 'Invoice')}: ${inv.code}</div>` : ''}
+        <div class="sub">${L('كود العميل', 'Code')}: ${p.partner?.code ?? ''}</div>
+        ${inv ? `<div class="sub">${L('مقابل الفاتورة', 'Invoice')}: ${inv.code}</div>` : ''}
       </div>
       <table>
         <thead>
@@ -263,26 +402,33 @@ export function SalesPaymentsModule() {
         <tbody>
           <tr><td>${L('المبلغ المستلم', 'Received Amount')}</td><td>${formatCurrency(p.amount)}</td></tr>
           <tr><td>${L('طريقة الدفع', 'Payment Method')}</td><td>${methodLabel(p.method)}</td></tr>
-          ${p.reference ? `<tr><td>${L('المرجع', 'Reference')}</td><td>${p.reference}</td></tr>` : ''}
+          ${p.reference ? `<tr><td>${L('المرجع (رقم الشيك / التحويل)', 'Reference')}</td><td>${p.reference}</td></tr>` : ''}
         </tbody>
       </table>
       <div class="totals">
         <div class="row grand"><span>${L('الإجمالي:', 'Total:')}</span><span>${formatCurrency(p.amount)}</span></div>
       </div>
-      ${p.notes ? `<div class="notes">${p.notes}</div>` : ''}
+      ${p.notes ? `<div class="notes"><strong>${L('ملاحظات:', 'Notes:')}</strong> ${p.notes}</div>` : ''}
       <div class="signatures">
         <div class="sig"><div class="line"></div><div class="label">${L('المحاسب', 'Accountant')}</div></div>
-        <div class="sig"><div class="line"></div><div class="label">${L('العامل', 'Cashier')}</div></div>
-        <div class="sig"><div class="line"></div><div class="label">${L('العميل', 'Customer')}</div></div>
+        <div class="sig"><div class="line"></div><div class="label">${L('أمين الصندوق', 'Cashier')}</div></div>
+        <div class="sig"><div class="line"></div><div class="label">${L('المستلم / العميل', 'Customer')}</div></div>
       </div>
     `
     printHTML(html, `${L('سند قبض', 'Receipt')} ${p.code}`)
   }
 
+  // Header Title Helper
+  const getModalTitle = () => {
+    if (!selectedPayment) return L('سند قبض جديد', 'New Receipt Voucher')
+    if (selectedPayment.status === 'draft') return L('تعديل سند قبض', 'Edit Receipt Voucher')
+    return L('عرض سند قبض', 'View Receipt Voucher')
+  }
+
   return (
     <ModuleShell
       title={L('سندات القبض - المبيعات', 'Sales Receipts')}
-      description={L('سندات قبض العملاء وإيصالات الاستلام', 'Customer receipts and payment collection vouchers')}
+      description={L('إدارة وتحرير سندات قبض العملاء ومراجعتها وفق الضوابط المحاسبية', 'Manage and audit customer receipt vouchers under strict accounting controls')}
       icon={<Receipt className="size-5" />}
       searchValue={search}
       onSearch={setSearch}
@@ -333,7 +479,7 @@ export function SalesPaymentsModule() {
     >
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
         <KpiCard title={L('قبوض هذا الشهر', 'This Month Total')} value={formatCurrency(stats.monthTotal)} icon={<Receipt className="size-5" />} accent="blue" />
-        <KpiCard title={L('عدد السندات', 'Total Count')} value={formatInt(stats.count)} icon={<Hash className="size-5" />} accent="sky" />
+        <KpiCard title={L('عدد السندات المرحّلة', 'Posted Count')} value={formatInt(stats.count)} icon={<Hash className="size-5" />} accent="sky" />
         <KpiCard title={L('متوسط السند', 'Average Amount')} value={formatCurrency(stats.avg)} icon={<TrendingUp className="size-5" />} accent="violet" />
         <KpiCard title={L('أعلى طريقة', 'Top Method')} value={stats.topMethod} icon={<CreditCard className="size-5" />} accent="amber" />
       </div>
@@ -372,7 +518,11 @@ export function SalesPaymentsModule() {
               ) : payments.length === 0 ? (
                 <TableRow><TableCell colSpan={8} className="text-center py-10 text-muted-foreground border-b">{L('لا توجد سندات قبض.', 'No receipts found.')}</TableCell></TableRow>
               ) : payments.map((p) => (
-                <TableRow key={p.id} className="hover:bg-muted/40 align-middle">
+                <TableRow
+                  key={p.id}
+                  className="hover:bg-muted/40 align-middle cursor-pointer"
+                  onClick={() => openVoucherModal(p)}
+                >
                   <TableCell className="ps-6 font-mono text-xs border-b truncate" dir="ltr" title={p.code}>{p.code}</TableCell>
                   <TableCell className="font-medium border-b truncate" title={partnerName(p.partner)}>{partnerName(p.partner) || '—'}</TableCell>
                   <TableCell className="font-mono text-xs text-center border-b truncate" dir="ltr">{invoices.find((i) => i.id === p.invoiceId)?.code ?? '—'}</TableCell>
@@ -380,10 +530,38 @@ export function SalesPaymentsModule() {
                   <TableCell className="text-center whitespace-nowrap border-b"><span className="num tabular-nums font-semibold" dir="ltr">{formatCurrency(p.amount)}</span></TableCell>
                   <TableCell className="text-center whitespace-nowrap border-b"><span className="text-xs">{methodLabel(p.method)}</span></TableCell>
                   <TableCell className="text-center border-b"><div className="flex justify-center"><StatusBadge status={p.status} /></div></TableCell>
-                  <TableCell className="text-end pe-4 border-b">
-                    <Button size="icon" variant="ghost" className="size-8" title={L('طباعة سند القبض', 'Print Receipt')} onClick={() => handlePrint(p)}>
-                      <Printer className="size-3.5" />
-                    </Button>
+                  <TableCell className="text-end pe-4 border-b" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center justify-end gap-1">
+                      {p.status === 'draft' ? (
+                        <Button size="icon" variant="ghost" className="size-8 text-sky-600 hover:text-sky-700" title={L('تعديل سند القبض', 'Edit Receipt')} onClick={() => openVoucherModal(p)}>
+                          <Pencil className="size-4" />
+                        </Button>
+                      ) : p.status === 'reversed' || p.status === 'cancelled' ? (
+                        <Button size="icon" variant="ghost" className="size-8 text-amber-600 hover:text-amber-700" title={L('عرض السجل والسند', 'View Audit & Record')} onClick={() => openVoucherModal(p)}>
+                          <History className="size-4" />
+                        </Button>
+                      ) : (
+                        <Button size="icon" variant="ghost" className="size-8" title={L('عرض سند القبض', 'View Receipt')} onClick={() => openVoucherModal(p)}>
+                          <Eye className="size-4" />
+                        </Button>
+                      )}
+
+                      <Button size="icon" variant="ghost" className="size-8" title={L('طباعة سند القبض', 'Print Receipt')} onClick={() => handlePrint(p)}>
+                        <Printer className="size-3.5" />
+                      </Button>
+
+                      {p.status === 'posted' && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="size-8 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+                          title={L('عكس السند (قيد عكسي)', 'Reverse Voucher')}
+                          onClick={() => openReverseModal(p)}
+                        >
+                          <RotateCcw className="size-3.5" />
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -392,19 +570,51 @@ export function SalesPaymentsModule() {
         </div>
       </Card>
 
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="max-w-2xl" dir={isRTL ? 'rtl' : 'ltr'}>
+      {/* Main Voucher View / Edit / Create Dialog */}
+      <Dialog open={addOpen} onOpenChange={(o) => { setAddOpen(o); if (!o) resetForm() }}>
+        <DialogContent
+          dir={isRTL ? 'rtl' : 'ltr'}
+          className="w-[calc(100vw-1.5rem)] sm:w-[95vw] max-w-2xl max-h-[92vh] p-0 flex flex-col overflow-hidden"
+        >
           <DialogHeader>
-            <DialogTitle>{L('سند قبض جديد', 'New Receipt')}</DialogTitle>
-            <DialogDescription>{L('إنشاء سند قبض من عميل — سيُرحّل القيد المحاسبي تلقائياً (من ح/ النقدية إلى ح/ الذمم المدينة)', 'Create customer receipt — entry will be automatically posted (Cash/Bank to Accounts Receivable)')}</DialogDescription>
+            <DialogTitle>
+              <span>{getModalTitle()}</span>
+              {selectedPayment && (
+                <span className="font-mono text-xs text-muted-foreground dir-ltr ms-2">
+                  ({selectedPayment.code})
+                </span>
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              {viewOnly
+                ? L('عرض بيانات وتفاصيل سند القبض', 'Read-only view of receipt voucher to preserve financial records')
+                : L('إدخال وتعديل حقول سند القبض — يمكنك الحفظ كمسودة أو الترحيل المباشر للصندوق/البنك', 'Fill in receipt voucher details — save as draft or post directly to cash/bank')}
+            </DialogDescription>
           </DialogHeader>
-          <DialogBody>
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+
+          <DialogBody className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">
+            {/* Red Alert Banner for Cancelled / Reversed Vouchers */}
+            {selectedPayment && (selectedPayment.status === 'reversed' || selectedPayment.status === 'cancelled') && (
+              <div className="flex items-center gap-2.5 p-3 rounded-lg border border-rose-200 bg-rose-50 dark:bg-rose-950/40 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-sm font-medium mb-4">
+                <ShieldAlert className="size-5 shrink-0 text-rose-600 dark:text-rose-400" />
+                <div className="flex flex-col gap-0.5">
+                  <span className="font-bold">{L('سند قبض معكوس / ملغي', 'Reversed / Cancelled Receipt Voucher')}</span>
+
+                </div>
+              </div>
+            )}
+
+            <fieldset
+              disabled={viewOnly}
+              className={`space-y-4 sm:space-y-5 ${viewOnly ? 'cursor-not-allowed select-none' : ''}`}
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-1.5">
-                  <Label>{L('العميل *', 'Customer *')}</Label>
-                  <Select value={partnerId} onValueChange={setPartnerId}>
-                    <SelectTrigger><SelectValue placeholder={L('اختر العميل', 'Select Customer')} /></SelectTrigger>
+                  <Label>{L('العميل / الحساب *', 'Customer / Account *')}</Label>
+                  <Select value={partnerId} onValueChange={setPartnerId} disabled={viewOnly}>
+                    <SelectTrigger className={`w-full ${viewOnly ? 'cursor-not-allowed bg-muted/60 text-muted-foreground opacity-90' : ''}`}>
+                      <SelectValue placeholder={L('اختر العميل', 'Select Customer')} />
+                    </SelectTrigger>
                     <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
                       {partners.map((p) => (
                         <SelectItem key={p.id} value={p.id}>
@@ -414,61 +624,364 @@ export function SalesPaymentsModule() {
                     </SelectContent>
                   </Select>
                 </div>
+
                 <div className="space-y-1.5">
-                  <Label>{L('الفاتورة (اختياري)', 'Linked Invoice (Optional)')}</Label>
-                  <Select value={invoiceId} onValueChange={(v) => {
-                    setInvoiceId(v)
-                    const inv = invoices.find((i) => i.id === v)
-                    if (inv) setAmount(String(Math.max(0, inv.total - inv.paid)))
-                  }}>
-                    <SelectTrigger><SelectValue placeholder={L('بدون', 'None')} /></SelectTrigger>
+                  <Label>{L('الفاتورة المرتبطة (اختياري)', 'Linked Invoice (Optional)')}</Label>
+                  <Select
+                    value={invoiceId}
+                    disabled={viewOnly}
+                    onValueChange={(v) => {
+                      setInvoiceId(v)
+                      const inv = invoices.find((i) => i.id === v)
+                      if (inv) {
+                        const due = Math.max(0, inv.total - inv.paid)
+                        setAmount(String(due))
+                      }
+                    }}
+                  >
+                    <SelectTrigger className={`w-full ${viewOnly ? 'cursor-not-allowed bg-muted/60 text-muted-foreground opacity-90' : ''}`}>
+                      <SelectValue placeholder={L('بدون ربط بفاتورة', 'None')} />
+                    </SelectTrigger>
                     <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
                       {invoices
                         .filter((i) => !partnerId || i.partnerId === partnerId)
-                        .map((i) => (
-                          <SelectItem key={i.id} value={i.id}>
-                            <span dir="ltr" className="font-mono text-xs">{i.code}</span> — {L('متبقي', 'Remaining')} {formatCurrency(i.total - i.paid)}
-                          </SelectItem>
-                        ))}
+                        .map((i) => {
+                          const due = Math.max(0, i.total - i.paid)
+                          return (
+                            <SelectItem key={i.id} value={i.id}>
+                              <span dir="ltr" className="font-mono text-xs">{i.code}</span> — {L('المستحق:', 'Due:')} {formatCurrency(due)}
+                            </SelectItem>
+                          )
+                        })}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="space-y-1.5">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                <div className="space-y-1.5 col-span-1">
                   <Label htmlFor="amount">{L('المبلغ *', 'Amount *')}</Label>
-                  <Input id="amount" type="number" step="0.01" dir="ltr" value={amount} onChange={(e) => setAmount(e.target.value)} />
+                  <Input
+                    id="amount"
+                    type="number"
+                    step="0.01"
+                    inputMode="decimal"
+                    dir="ltr"
+                    disabled={viewOnly}
+                    className={`text-start tabular-nums ${viewOnly ? 'cursor-not-allowed bg-muted/60 text-muted-foreground opacity-90' : ''}`}
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                  />
+                  {maxInvoiceAmount !== null && !viewOnly && (
+                    <span className="text-[11px] text-muted-foreground block truncate">
+                      {L('الحد الأقصى للمستحق:', 'Max Invoice Due:')} {formatCurrency(maxInvoiceAmount)}
+                    </span>
+                  )}
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="paymentDate">{L('التاريخ', 'Date')}</Label>
-                  <Input id="paymentDate" type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} />
+
+                <div className="space-y-1.5 col-span-1">
+                  <Label htmlFor="paymentDate">{L('التاريخ *', 'Date *')}</Label>
+                  <DatePicker
+                    id="paymentDate"
+                    value={paymentDate}
+                    onChange={setPaymentDate}
+                    disabled={viewOnly}
+                  />
                 </div>
-                <div className="space-y-1.5">
+
+                <div className="space-y-1.5 col-span-1">
                   <Label>{L('طريقة الدفع', 'Payment Method')}</Label>
-                  <Select value={method} onValueChange={setMethod}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                  <Select value={method} onValueChange={setMethod} disabled={viewOnly}>
+                    <SelectTrigger className={`w-full ${viewOnly ? 'cursor-not-allowed bg-muted/60 text-muted-foreground opacity-90' : ''}`}>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
-                      {METHOD_OPTIONS.map((m) => <SelectItem key={m.value} value={m.value}>{isRTL ? m.ar : m.en}</SelectItem>)}
+                      {METHOD_OPTIONS.map((m) => (
+                        <SelectItem key={m.value} value={m.value}>{isRTL ? m.ar : m.en}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-1.5">
+
+                <div className="space-y-1.5 col-span-1">
                   <Label htmlFor="reference">{L('المرجع', 'Reference')}</Label>
-                  <Input id="reference" value={reference} onChange={(e) => setReference(e.target.value)} placeholder={L('رقم شيك / مرجع تحويل', 'Check # / Transfer Ref')} />
+                  <Input
+                    id="reference"
+                    disabled={viewOnly}
+                    className={viewOnly ? 'cursor-not-allowed bg-muted/60 text-muted-foreground opacity-90' : ''}
+                    value={reference}
+                    onChange={(e) => setReference(e.target.value)}
+                    placeholder={L('رقم شيك / مرجع تحويل', 'Check # / Transfer Ref')}
+                  />
                 </div>
               </div>
 
               <div className="space-y-1.5">
                 <Label htmlFor="notes">{L('ملاحظات', 'Notes')}</Label>
-                <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder={L('ملاحظات إضافية...', 'Additional notes...')} />
+                <Textarea
+                  id="notes"
+                  disabled={viewOnly}
+                  className={viewOnly ? 'cursor-not-allowed bg-muted/60 text-muted-foreground opacity-90' : ''}
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={2}
+                  placeholder={L('ملاحظات إضافية...', 'Additional notes...')}
+                />
+              </div>
+            </fieldset>
+          </DialogBody>
+
+          <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-between gap-2 px-4 sm:px-6 py-3 border-t shrink-0">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full sm:w-auto sm:min-w-25"
+              onClick={() => { setAddOpen(false); resetForm() }}
+            >
+              {viewOnly ? L('إغلاق', 'Close') : L('إلغاء', 'Cancel')}
+            </Button>
+
+            <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto justify-end">
+              {/* Posted Voucher Actions */}
+              {selectedPayment && selectedPayment.status === 'posted' && (
+                <>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="w-full sm:w-auto gap-1.5 border"
+                    onClick={() => handlePrint(selectedPayment)}
+                  >
+                    <Printer className="size-4" />
+                    {L('طباعة السند', 'Print Voucher')}
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    className="w-full sm:w-auto gap-1.5"
+                    disabled={reverseMutation.isPending}
+                    onClick={() => openReverseModal(selectedPayment)}
+                  >
+                    <RotateCcw className="size-4" />
+                    {L('عكس السند (قيد عكسي)', 'Reverse Voucher')}
+                  </Button>
+                </>
+              )}
+
+              {/* Reversed / Cancelled Voucher Actions */}
+              {selectedPayment && (selectedPayment.status === 'reversed' || selectedPayment.status === 'cancelled') && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="w-full sm:w-auto gap-1.5 border"
+                  onClick={() => handlePrint(selectedPayment)}
+                >
+                  <Printer className="size-4" />
+                  {L('طباعة السند', 'Print Voucher')}
+                </Button>
+              )}
+
+              {/* Draft Voucher Actions */}
+              {selectedPayment && selectedPayment.status === 'draft' && (
+                <>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="w-full sm:w-auto min-w-28 border"
+                    disabled={updateMutation.isPending}
+                    onClick={() => updateMutation.mutate('draft')}
+                  >
+                    {updateMutation.isPending ? L('جاري التحديث...', 'Updating...') : L('تحديث', 'Update')}
+                  </Button>
+
+                  <Button
+                    type="button"
+                    className="w-full sm:w-auto min-w-32 bg-emerald-600 hover:bg-emerald-700 text-white"
+                    disabled={updateMutation.isPending}
+                    onClick={() => updateMutation.mutate('posted')}
+                  >
+                    {updateMutation.isPending ? L('جاري الترحيل...', 'Posting...') : L('تحديث وترحيل', 'Update & Post')}
+                  </Button>
+                </>
+              )}
+
+              {/* New Voucher Actions */}
+              {!selectedPayment && (
+                <>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="w-full sm:w-auto min-w-28 border"
+                    disabled={saveMutation.isPending}
+                    onClick={() => saveMutation.mutate('draft')}
+                  >
+                    {saveMutation.isPending ? L('جاري الحفظ...', 'Saving...') : L('حفظ مسودة', 'Save Draft')}
+                  </Button>
+
+                  <Button
+                    type="button"
+                    className="w-full sm:w-auto min-w-32 bg-emerald-600 hover:bg-emerald-700 text-white"
+                    disabled={saveMutation.isPending}
+                    onClick={() => saveMutation.mutate('posted')}
+                  >
+                    {saveMutation.isPending ? L('جاري الترحيل...', 'Posting...') : L('حفظ وترحيل', 'Save & Post')}
+                  </Button>
+                </>
+              )}
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Professional High-Fidelity Reversal Confirmation Dialog */}
+      <Dialog open={!!reverseTarget} onOpenChange={(o) => { if (!o) setReverseTarget(null) }}>
+        <DialogContent
+          dir={isRTL ? 'rtl' : 'ltr'}
+          className="w-[calc(100vw-1.5rem)] sm:w-[95vw] max-w-lg max-h-[92vh] p-0 flex flex-col overflow-hidden bg-background text-foreground dark:bg-zinc-950 dark:border-zinc-800"
+        >
+          <DialogHeader>
+            <div className="flex items-start gap-3">
+              <div className="size-10 rounded-full bg-rose-100 dark:bg-rose-950/80 border border-rose-200 dark:border-rose-900/60 flex items-center justify-center text-rose-600 dark:text-rose-400 shrink-0">
+                <RotateCcw className="size-5" />
+              </div>
+              <div className="flex flex-col gap-1 text-start">
+                <DialogTitle>
+                  <span>{L('تأكيد عكس سند القبض وتوليد قيد عكسي آلي', 'Confirm Receipt Voucher Reversal & Auto Entry')}</span>
+                </DialogTitle>
+
+                {reverseTarget && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+                    <span>{L('رمز السند:', 'Voucher Code:')}</span>
+                    <span className="font-mono font-semibold text-foreground dir-ltr">{reverseTarget.code}</span>
+                    <span>•</span>
+                    <span>{L('المبلغ:', 'Amount:')}</span>
+                    <span className="font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums dir-ltr">{formatCurrency(reverseTarget.amount)}</span>
+                  </div>
+                )}
               </div>
             </div>
+          </DialogHeader>
+
+          <DialogBody className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4 text-xs sm:text-sm">
+            {/* Red Alert Notice */}
+
+
+            {/* Reversal Entry Journal Line Preview */}
+            {reverseTarget && (
+              <div className="rounded-xl border bg-muted/20 dark:bg-zinc-900/50 p-3 sm:p-4 space-y-3">
+                <div className="flex items-center justify-between border-b pb-2">
+                  <span className="font-semibold text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                    <ArrowLeftRight className="size-3.5 text-primary" />
+                    {L('تفاصيل حركة القيد المحاسبي العكسي الآلي', 'Automated Reversal Journal Entry Lines')}
+                  </span>
+                  <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-muted text-muted-foreground">
+                    {L('نوع القيد: عكسي', 'Entry: Reversal')}
+                  </span>
+                </div>
+
+                <div className="space-y-2 font-mono text-xs">
+                  {/* Debit Line */}
+                  <div className="flex items-center justify-between p-2 rounded bg-rose-500/10 border border-rose-500/20 text-rose-900 dark:text-rose-200">
+                    <div className="flex items-center gap-2">
+                      <span className="px-1.5 py-0.5 rounded bg-rose-600 text-white text-[10px] font-sans font-bold">
+                        {L('مدين (Dr)', 'Dr')}
+                      </span>
+                      <span className="font-sans font-medium">
+                        {L('حـ/ الذمم المدينة - العميل', 'Accounts Receivable - Customer')}
+                      </span>
+                      <span className="text-muted-foreground font-sans text-[11px]">
+                        ({partnerName(reverseTarget.partner)})
+                      </span>
+                    </div>
+                    <span className="font-bold tabular-nums dir-ltr text-rose-700 dark:text-rose-300">
+                      +{formatCurrency(reverseTarget.amount)}
+                    </span>
+                  </div>
+
+                  {/* Credit Line */}
+                  <div className="flex items-center justify-between p-2 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-900 dark:text-emerald-200">
+                    <div className="flex items-center gap-2">
+                      <span className="px-1.5 py-0.5 rounded bg-emerald-600 text-white text-[10px] font-sans font-bold">
+                        {L('دائن (Cr)', 'Cr')}
+                      </span>
+                      <span className="font-sans font-medium">
+                        {L('حـ/ النقدية والصندوق / البنك', 'Cash & Bank / Safe')}
+                      </span>
+                      <span className="text-muted-foreground font-sans text-[11px]">
+                        ({methodLabel(reverseTarget.method)})
+                      </span>
+                    </div>
+                    <span className="font-bold tabular-nums dir-ltr text-emerald-700 dark:text-emerald-300">
+                      -{formatCurrency(reverseTarget.amount)}
+                    </span>
+                  </div>
+                </div>
+
+              </div>
+            )}
+
+            {/* Financial Impact Breakdown Grid */}
+            {reverseTarget && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                <div className="p-2.5 rounded-lg border bg-card flex flex-col gap-1">
+                  <span className="text-muted-foreground">{L('تأثير رصيد العميل:', 'Customer Balance Impact:')}</span>
+                  <span className="font-semibold text-rose-600 dark:text-rose-400 dir-ltr text-start">
+                    +{formatCurrency(reverseTarget.amount)} ({L('زيادة المديونية', 'Increased Debt')})
+                  </span>
+                </div>
+
+                <div className="p-2.5 rounded-lg border bg-card flex flex-col gap-1">
+                  <span className="text-muted-foreground">{L('الفاتورة المرتبطة:', 'Linked Invoice Impact:')}</span>
+                  <span className="font-semibold text-amber-600 dark:text-amber-400 truncate">
+                    {reverseTarget.invoiceId
+                      ? (invoices.find((i) => i.id === reverseTarget.invoiceId)?.code ?? 'مرتبطة') + ` (${L('إلغاء التحصيل', 'Cancel Payment')})`
+                      : L('غير مرتبطة بفاتورة', 'Unlinked')}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Reason Input */}
+            <div className="space-y-1.5 pt-1">
+              <Label htmlFor="reverseReason" className="text-xs font-semibold">
+                {L('سبب عكس سند القبض *', 'Reason for reversal *')}
+              </Label>
+              <Textarea
+                id="reverseReason"
+                rows={2}
+                value={reverseReason}
+                onChange={(e) => setReverseReason(e.target.value)}
+                placeholder={L('أدخل سبب إلغاء وعكس السند المحاسبي...', 'Enter reason for voucher reversal...')}
+                className="text-xs sm:text-sm"
+              />
+            </div>
           </DialogBody>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>{L('إلغاء', 'Cancel')}</Button>
-            <Button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
-              {saveMutation.isPending ? L('جاري الحفظ...', 'Saving...') : L('إنشاء وترحيل', 'Create & Post')}
+
+          <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-between gap-2 px-4 sm:px-6 py-3 border-t bg-muted/20 shrink-0">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full sm:w-auto min-w-28"
+              onClick={() => setReverseTarget(null)}
+            >
+              {L('إلغاء الإجراء', 'Cancel Action')}
+            </Button>
+
+            <Button
+              type="button"
+              variant="destructive"
+              className="w-full sm:w-auto min-w-36 gap-2 bg-rose-600 hover:bg-rose-700 text-white"
+              disabled={reverseMutation.isPending || !reverseReason.trim()}
+              onClick={() => {
+                if (reverseTarget) {
+                  reverseMutation.mutate({ paymentId: reverseTarget.id, reason: reverseReason })
+                }
+              }}
+            >
+              <RotateCcw className="size-4" />
+              {reverseMutation.isPending
+                ? L('جاري العكس والتوليد...', 'Reversing...')
+                : L('تأكيد العكس وتوليد القيد', 'Confirm Reversal')}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -473,13 +473,13 @@ export function ClientsModule() {
             </div>
           </div>
           </DialogBody>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>{t('action.cancel')}</Button>
-            <Button onClick={handleSubmit} disabled={createMut.isPending || updateMut.isPending} className="gap-1.5">
-              {editId ? <>{t('action.save')}</> : <><Plus className="size-4" /> {t('action.create')}</>}
-            </Button>
-          </DialogFooter>
-        </DialogBody>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDialogOpen(false)}>{t('action.cancel')}</Button>
+              <Button onClick={handleSubmit} disabled={createMut.isPending || updateMut.isPending} className="gap-1.5">
+                {editId ? <>{t('action.save')}</> : <><Plus className="size-4" /> {t('action.create')}</>}
+              </Button>
+            </DialogFooter>
+          </DialogBody>
         </DialogContent>
       </Dialog>
 
@@ -515,80 +515,80 @@ export function ClientsModule() {
             </DialogDescription>
           </DialogHeader>
           <DialogBody>          <DialogBody>
-          {statementLoading ? (
-            <div className="space-y-2 py-4">
-              {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-8" />)}
-            </div>
-          ) : statementData ? (
-            <div className="space-y-4">
-              {/* Summary */}
-              <div className="grid grid-cols-3 gap-3">
-                <Card className="p-3">
-                  <p className="text-xs text-muted-foreground">الرصيد الحالي</p>
-                  <p className={`text-lg font-bold ${statementData.balance > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400'}`}>
-                    <span className="num">{formatCurrency(statementData.balance)}</span>
-                  </p>
-                </Card>
-                <Card className="p-3">
-                  <p className="text-xs text-muted-foreground">فواتير</p>
-                  <p className="text-lg font-bold tabular-nums">{statementData.salesInvoices.length}</p>
-                </Card>
-                <Card className="p-3">
-                  <p className="text-xs text-muted-foreground">مدفوعات</p>
-                  <p className="text-lg font-bold tabular-nums">{statementData.salesPayments.length}</p>
-                </Card>
+            {statementLoading ? (
+              <div className="space-y-2 py-4">
+                {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-8" />)}
               </div>
+            ) : statementData ? (
+              <div className="space-y-4">
+                {/* Summary */}
+                <div className="grid grid-cols-3 gap-3">
+                  <Card className="p-3">
+                    <p className="text-xs text-muted-foreground">الرصيد الحالي</p>
+                    <p className={`text-lg font-bold ${statementData.balance > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400'}`}>
+                      <span className="num">{formatCurrency(statementData.balance)}</span>
+                    </p>
+                  </Card>
+                  <Card className="p-3">
+                    <p className="text-xs text-muted-foreground">فواتير</p>
+                    <p className="text-lg font-bold tabular-nums">{statementData.salesInvoices.length}</p>
+                  </Card>
+                  <Card className="p-3">
+                    <p className="text-xs text-muted-foreground">مدفوعات</p>
+                    <p className="text-lg font-bold tabular-nums">{statementData.salesPayments.length}</p>
+                  </Card>
+                </div>
 
-              {/* Movements */}
-              <div className="rounded-lg border max-h-[40vh] overflow-y-auto">
-                <Table className="table-sticky">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>التاريخ</TableHead>
-                      <TableHead>النوع</TableHead>
-                      <TableHead>الرمز</TableHead>
-                      <TableHead className="num-cell">مدين</TableHead>
-                      <TableHead className="num-cell">دائن</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {[
-                      ...statementData.salesInvoices.map((i: any) => ({ date: i.issueDate, type: 'فاتورة', code: i.code, debit: i.total, credit: 0 })),
-                      ...statementData.salesOrders.map((o: any) => ({ date: o.createdAt, type: 'أمر بيع', code: o.code, debit: o.total, credit: 0 })),
-                      ...statementData.salesPayments.map((p: any) => ({ date: p.date, type: 'سند قبض', code: p.code, debit: 0, credit: p.amount })),
-                      ...statementData.salesCreditNotes.map((c: any) => ({ date: c.createdAt, type: 'إشعار دائن', code: c.code, debit: 0, credit: c.total })),
-                    ].sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((m: any, i: number) => (
-                      <TableRow key={i}>
-                        <TableCell className="text-xs">{formatDate(m.date)}</TableCell>
-                        <TableCell className="text-xs">{m.type}</TableCell>
-                        <TableCell className="text-xs font-mono">{m.code}</TableCell>
-                        <TableCell className="num-cell">
-                          <span className="num">{m.debit ? formatCurrency(m.debit) : '—'}</span>
-                        </TableCell>
-                        <TableCell className="num-cell">
-                          <span className="num">{m.credit ? formatCurrency(m.credit) : '—'}</span>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {!statementData.salesInvoices.length && !statementData.salesOrders.length && !statementData.salesPayments.length && !statementData.salesCreditNotes.length && (
+                {/* Movements */}
+                <div className="rounded-lg border max-h-[40vh] overflow-y-auto">
+                  <Table className="table-sticky">
+                    <TableHeader>
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center text-muted-foreground py-8">{t('empty.noData')}</TableCell>
+                        <TableHead>التاريخ</TableHead>
+                        <TableHead>النوع</TableHead>
+                        <TableHead>الرمز</TableHead>
+                        <TableHead className="num-cell">مدين</TableHead>
+                        <TableHead className="num-cell">دائن</TableHead>
                       </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {[
+                        ...statementData.salesInvoices.map((i: any) => ({ date: i.issueDate, type: 'فاتورة', code: i.code, debit: i.total, credit: 0 })),
+                        ...statementData.salesOrders.map((o: any) => ({ date: o.createdAt, type: 'أمر بيع', code: o.code, debit: o.total, credit: 0 })),
+                        ...statementData.salesPayments.map((p: any) => ({ date: p.date, type: 'سند قبض', code: p.code, debit: 0, credit: p.amount })),
+                        ...statementData.salesCreditNotes.map((c: any) => ({ date: c.createdAt, type: 'إشعار دائن', code: c.code, debit: 0, credit: c.total })),
+                      ].sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((m: any, i: number) => (
+                        <TableRow key={i}>
+                          <TableCell className="text-xs">{formatDate(m.date)}</TableCell>
+                          <TableCell className="text-xs">{m.type}</TableCell>
+                          <TableCell className="text-xs font-mono">{m.code}</TableCell>
+                          <TableCell className="num-cell">
+                            <span className="num">{m.debit ? formatCurrency(m.debit) : '—'}</span>
+                          </TableCell>
+                          <TableCell className="num-cell">
+                            <span className="num">{m.credit ? formatCurrency(m.credit) : '—'}</span>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {!statementData.salesInvoices.length && !statementData.salesOrders.length && !statementData.salesPayments.length && !statementData.salesCreditNotes.length && (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center text-muted-foreground py-8">{t('empty.noData')}</TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
               </div>
-            </div>
-          ) : null}
+            ) : null}
 
           </DialogBody>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setStatementId(null)}>{t('action.close')}</Button>
-            <Button onClick={handlePrintStatement} disabled={!statementData} className="gap-1.5">
-              <FileText className="size-4" /> طباعة الكشف
-            </Button>
-          </DialogFooter>
-        </DialogBody>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setStatementId(null)}>{t('action.close')}</Button>
+              <Button onClick={handlePrintStatement} disabled={!statementData} className="gap-1.5">
+                <FileText className="size-4" /> طباعة الكشف
+              </Button>
+            </DialogFooter>
+          </DialogBody>
         </DialogContent>
       </Dialog>
     </ModuleShell>

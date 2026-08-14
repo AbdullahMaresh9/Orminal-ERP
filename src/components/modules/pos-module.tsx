@@ -459,7 +459,7 @@ export function PosModule() {
       {/* Receipt dialog */}
       <Dialog open={!!receipt} onOpenChange={(o) => !o && setReceipt(null)}>
         <DialogContent className="sm:max-w-sm" dir={isRTL ? 'rtl' : 'ltr'}>
-          <DialogHeader>
+          <DialogHeader >
             <DialogTitle className="flex items-center gap-2 justify-center text-blue-600">
               <CheckCircle2 className="size-6" />
               {L('تمت العملية بنجاح', 'Transaction Completed Successfully')}

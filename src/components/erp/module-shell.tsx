@@ -43,7 +43,7 @@ export function ModuleShell({
   const { isRTL } = useT()
   const L = (ar: string, en: string) => (isRTL ? ar : en)
 
-  // القيم الافتراضية أصبحت ثنائية اللغة (تُحسب داخل المكوّن لا في توقيع الدالة)
+  // القيم الافتراضية ثنائية اللغة (تُحسب داخل المكوّن لا في توقيع الدالة)
   const searchPlaceholderText = searchPlaceholder ?? L('بحث...', 'Search...')
   const addLabelText = addLabel ?? L('إضافة', 'Add')
 

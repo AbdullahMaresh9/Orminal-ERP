@@ -23,6 +23,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogBody,
 } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { DatePicker } from '@/components/ui/date-picker'
 import {
   ScrollText, CalendarClock, Activity, FileEdit, Eye,
 } from 'lucide-react'
@@ -179,7 +180,7 @@ export function AuditLogsModule() {
   const byAction = extras?.byAction ?? { create: 0, update: 0, delete: 0, post: 0 }
   const byModule = extras?.byModule ?? {}
 
-  // Pick the largest action count for "by action" KPI
+  // Pick the largest action count for "by action " KPI
   const topActionEntry = Object.entries(byAction).sort((a, b) => b[1] - a[1])[0]
   const topActionLabel = topActionEntry && topActionEntry[1] > 0
     ? `${ACTIONS.find((a) => a.value === topActionEntry[0])?.label ?? topActionEntry[0]} (${topActionEntry[1]})`
@@ -242,8 +243,18 @@ export function AuditLogsModule() {
               ))}
             </SelectContent>
           </Select>
-          <Input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(1) }} className="w-36" />
-          <Input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(1) }} className="w-36" />
+          <DatePicker
+            value={dateFrom}
+            onChange={(val) => { setDateFrom(val); setPage(1) }}
+            placeholder="من تاريخ"
+            className="w-36"
+          />
+          <DatePicker
+            value={dateTo}
+            onChange={(val) => { setDateTo(val); setPage(1) }}
+            placeholder="إلى تاريخ"
+            className="w-36"
+          />
         </>
       }
     >

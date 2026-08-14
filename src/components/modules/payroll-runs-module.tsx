@@ -20,6 +20,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogBody,
 } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { DatePicker } from '@/components/ui/date-picker'
 import {
   Wallet, Plus, Printer, Calculator, Send, Coins, Eye, CheckCircle2,
 } from 'lucide-react'
@@ -318,7 +319,7 @@ export function PayrollRunsModule() {
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-md p-0 overflow-hidden bg-white dark:bg-slate-950 border-slate-350 dark:border-slate-700 shadow-2xl" dir={dir}>
-          <DialogHeader className="bg-gradient-to-r rtl:bg-gradient-to-l from-blue-50 to-[#E6F0FF] dark:from-blue-700/80 dark:to-blue-800/90 border-b border-blue-100 dark:border-blue-700/40 p-6 shrink-0 relative">
+          <DialogHeader>
             <div className="flex items-start gap-4 text-start">
               <div className="size-12 rounded-xl bg-white dark:bg-slate-900/80 border border-blue-100 dark:border-blue-500/30 text-blue-600 dark:text-blue-300 flex items-center justify-center shadow-sm shadow-blue-100/40 dark:shadow-none shrink-0">
                 <Calculator className="size-6 animate-pulse" />
@@ -344,11 +345,11 @@ export function PayrollRunsModule() {
               <div className="grid grid-cols-2 gap-3 text-start">
                 <div className="space-y-1.5">
                   <Label htmlFor="startDate" className="text-xs font-semibold text-slate-700 dark:text-slate-300">{isRTL ? 'من تاريخ' : 'Start Date'}</Label>
-                  <Input id="startDate" type="date" value={draft.startDate} onChange={(e) => setDraft({ ...draft, startDate: e.target.value })} className="h-10 bg-slate-50/50 dark:bg-slate-900/50 border-slate-300 dark:border-slate-700 focus-visible:ring-blue-500 focus-visible:border-blue-500 font-mono text-end" dir="ltr" />
+                  <DatePicker id="startDate" value={draft.startDate} onChange={(val) => setDraft({ ...draft, startDate: val })} />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="endDate" className="text-xs font-semibold text-slate-700 dark:text-slate-300">{isRTL ? 'إلى تاريخ' : 'End Date'}</Label>
-                  <Input id="endDate" type="date" value={draft.endDate} onChange={(e) => setDraft({ ...draft, endDate: e.target.value })} className="h-10 bg-slate-50/50 dark:bg-slate-900/50 border-slate-300 dark:border-slate-700 focus-visible:ring-blue-500 focus-visible:border-blue-500 font-mono text-end" dir="ltr" />
+                  <DatePicker id="endDate" value={draft.endDate} onChange={(val) => setDraft({ ...draft, endDate: val })} />
                 </div>
               </div>
 

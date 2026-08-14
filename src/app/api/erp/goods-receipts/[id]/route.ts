@@ -27,13 +27,49 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     const body = await req.json()
     const exists = await db.goodsReceipt.findUnique({ where: { id } })
     if (!exists) return notFound('Goods receipt not found')
-    if (exists.status === 'validated' || exists.status === 'cancelled')
-      return badRequest('Cannot edit validated or cancelled goods receipt')
 
     const { id: _id, lines, createdAt: _c, updatedAt: _u, ...rest } = body
 
+    // If cancelling a receipt
+    if (rest.status === 'cancelled') {
+      const updated = await db.goodsReceipt.update({
+        where: { id },
+        data: { status: 'cancelled' },
+        include: { lines: { include: { product: true } } },
+      })
+      return ok(updated)
+    }
+
+    if (exists.status === 'validated' || exists.status === 'posted' || exists.status === 'cancelled') {
+      return badRequest('Cannot edit validated or cancelled goods receipt')
+    }
+
+    // Update lines if provided (for draft)
+    if (lines && Array.isArray(lines)) {
+      await db.goodsReceiptLine.deleteMany({ where: { receiptId: id } })
+      if (lines.length > 0) {
+        await db.goodsReceiptLine.createMany({
+          data: lines.map((l: any) => ({
+            receiptId: id,
+            productId: l.productId,
+            orderedQty: Number(l.orderedQty) || 0,
+            receivedQty: Number(l.receivedQty) || 0,
+            lotNumber: l.lotNumber || undefined,
+            expiryDate: l.expiryDate ? new Date(l.expiryDate) : undefined,
+            unitCost: Number(l.unitCost) || 0,
+            total: (Number(l.receivedQty) || 0) * (Number(l.unitCost) || 0),
+          })),
+        })
+      }
+    }
+
     // If transitioning to validated/received
     if ((rest.status === 'validated' || rest.status === 'received') && exists.status !== 'validated' && exists.status !== 'received') {
+      // First update base fields if any
+      if (Object.keys(rest).length > 0) {
+        await db.goodsReceipt.update({ where: { id }, data: rest })
+      }
+
       const fullGrn = await db.goodsReceipt.findUnique({
         where: { id },
         include: { lines: true },
@@ -108,7 +144,11 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       return ok(updated)
     }
 
-    const updated = await db.goodsReceipt.update({ where: { id }, data: rest })
+    const updated = await db.goodsReceipt.update({
+      where: { id },
+      data: rest,
+      include: { lines: { include: { product: true } } },
+    })
     return ok(updated)
   } catch (e: any) {
     return serverError(e.message)
@@ -120,8 +160,11 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     const { id } = await params
     const exists = await db.goodsReceipt.findUnique({ where: { id } })
     if (!exists) return notFound('Goods receipt not found')
-    if (exists.status !== 'draft') return badRequest('Only draft goods receipts can be deleted')
+    if (exists.status !== 'draft' && exists.status !== 'cancelled') {
+      return badRequest('Only draft or cancelled goods receipts can be deleted')
+    }
 
+    await db.goodsReceiptLine.deleteMany({ where: { receiptId: id } })
     await db.goodsReceipt.delete({ where: { id } })
     return ok({ success: true })
   } catch (e: any) {

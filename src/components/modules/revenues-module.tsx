@@ -23,6 +23,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { DatePicker } from '@/components/ui/date-picker'
 import {
   TrendingUp, Plus, Printer, BarChart3, Coins, Banknote, Wallet, CircleDollarSign,
 } from 'lucide-react'
@@ -272,9 +273,9 @@ export function RevenuesModule() {
       onExport={handleExport}
       filters={
         <>
-          <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-auto" />
+          <DatePicker value={from} onChange={setFrom} placeholder="من تاريخ" className="w-36" />
           <span className="text-xs text-muted-foreground">إلى</span>
-          <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-auto" />
+          <DatePicker value={to} onChange={setTo} placeholder="إلى تاريخ" className="w-36" />
           {(from || to) && <Button size="sm" variant="ghost" onClick={() => { setFrom(''); setTo('') }}>مسح</Button>}
         </>
       }
@@ -298,7 +299,7 @@ export function RevenuesModule() {
         )}
       </div>
 
-      {/* Category breakdown */}
+      {/*  Category breakdown */}
       {byCategory.size > 0 && (
         <Card className="p-4">
           <div className="flex flex-wrap items-center gap-3">
@@ -395,7 +396,7 @@ export function RevenuesModule() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5 text-start">
                 <Label htmlFor="rev-date" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'التاريخ' : 'Date'}</Label>
-                <Input id="rev-date" type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500" />
+                <DatePicker id="rev-date" value={form.date} onChange={(val) => setForm({ ...form, date: val })} />
               </div>
               <div className="space-y-1.5 text-start">
                 <Label htmlFor="rev-amount" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'المبلغ *' : 'Amount *'}</Label>

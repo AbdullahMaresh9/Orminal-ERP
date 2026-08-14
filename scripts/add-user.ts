@@ -25,7 +25,7 @@ async function main() {
       process.exit(1)
     }
 
-    // Check if user already exists
+    //  Check if user already exists
     const existingUser = await db.user.findFirst({
       where: {
         OR: [

@@ -281,8 +281,12 @@ export default function CustomersModule() {
                 </TableRow>
               ) : (
                 customers.map((c) => (
-                  <TableRow key={c.id} className=" hover:bg-muted/40 ">
-                    <TableCell className="ps-4  font-mono text-xs border-b truncate" dir="ltr" title={c.code}>
+                  <TableRow
+                    key={c.id}
+                    className="hover:bg-muted/60 cursor-pointer transition-colors"
+                    onClick={() => { setEditing(c); setDialogOpen(true); }}
+                  >
+                    <TableCell className="ps-4 font-mono text-xs border-b truncate" dir="ltr" title={c.code}>
                       {c.code}
                     </TableCell>
                     <TableCell className="font-medium border-b truncate" title={isRTL ? c.nameAr : (c.nameEn || c.nameAr)}>
@@ -304,12 +308,29 @@ export default function CustomersModule() {
                         <StatusBadge status={c.active ? 'active' : 'inactive'} />
                       </div>
                     </TableCell>
-                    <TableCell className="text-end pe-4 border-b">
+                    <TableCell className="text-end pe-4 border-b" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1">
-                        <Button size="icon" variant="ghost" className="size-8" onClick={() => { setEditing(c); setDialogOpen(true); }}>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="size-8"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setEditing(c)
+                            setDialogOpen(true)
+                          }}
+                        >
                           <Pencil className="size-4" />
                         </Button>
-                        <Button size="icon" variant="ghost" className="size-8 text-rose-500 hover:text-rose-600" onClick={() => deleteMutation.mutate(c.id)}>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="size-8 text-rose-500 hover:text-rose-600"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            deleteMutation.mutate(c.id)
+                          }}
+                        >
                           <Trash2 className="size-4.5 ps-1" />
                         </Button>
                       </div>
@@ -323,109 +344,124 @@ export default function CustomersModule() {
       </Card>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-3xl p-0 overflow-hidden bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800" dir={dir}>
+        <DialogContent className="w-[calc(100vw-1.5rem)] sm:max-w-3xl p-0 overflow-hidden bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl" dir={dir}>
           <form
+            key={editing ? editing.id : 'new'}
             onSubmit={(e) => {
               e.preventDefault()
               handleSave(new FormData(e.currentTarget))
             }}
-            className="flex flex-col max-h-[90vh] h-full overflow-hidden"
+            className="flex flex-col max-h-[85vh] sm:max-h-[90vh] h-full overflow-hidden"
           >
-            <DialogHeader className="bg-gradient-to-r from-blue-50 to-[#E6F0FF] rtl:bg-gradient-to-l dark:bg-none dark:bg-blue-700/80 border-b border-blue-100 dark:border-blue-800 p-6 shrink-0 relative">
+            <DialogHeader className="bg-gradient-to-r from-blue-50 to-[#E6F0FF] rtl:bg-gradient-to-l dark:bg-none dark:bg-blue-700/80 border-b border-blue-100 dark:border-blue-800 p-4 sm:p-6 shrink-0 relative">
               <div className="flex items-center gap-3">
-                <div className="size-11 rounded-xl bg-blue-600 dark:bg-blue-500 text-white flex items-center justify-center shadow-md dark:shadow-blue-900/30 shrink-0">
+                <div className="size-10 sm:size-11 rounded-xl bg-blue-600 dark:bg-blue-500 text-white flex items-center justify-center shadow-md dark:shadow-blue-900/30 shrink-0">
                   <Users className="size-5" />
                 </div>
                 <div className="space-y-0.5">
-                  <DialogTitle className="text-xl font-bold tracking-tight text-blue-900 dark:text-white">
+                  <DialogTitle className="text-lg sm:text-xl font-bold tracking-tight text-blue-900 dark:text-white">
                     {editing
                       ? (isRTL ? 'تعديل بيانات العميل' : 'Edit Customer Details')
                       : (isRTL ? 'إضافة عميل جديد' : 'Add New Customer')}
                   </DialogTitle>
-
+                  <p className="text-xs text-blue-700/70 dark:text-blue-200/70">
+                    {editing
+                      ? (isRTL ? `حـساب العميل: ${editing.code}` : `Customer Account: ${editing.code}`)
+                      : (isRTL ? 'قم بملء البيانات التالية لتسجيل عميل جديد في النظام' : 'Fill in the details below to register a new customer')}
+                  </p>
                 </div>
               </div>
             </DialogHeader>
 
-            <DialogBody className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50 dark:bg-slate-900/50 scrollbar-thin">
-              <div className="space-y-4">
+            <DialogBody className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 sm:space-y-6 bg-slate-50/50 dark:bg-slate-900/50 scrollbar-thin">
+              {/* Basic Information */}
+              <div className="space-y-3.5 sm:space-y-4">
                 <div className="flex items-center gap-2 border-b pb-2 border-slate-200/60 dark:border-slate-800/60">
                   <Building2 className="size-4 text-blue-600 dark:text-blue-400" />
                   <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200">
                     {isRTL ? 'البيانات الأساسية' : 'Basic Information'}
                   </h3>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
-                    <Label htmlFor="code" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      {isRTL ? 'رمز العميل (تلقائي)' : 'Customer Code (Auto)'}
-                    </Label>
-                    <Input
-                      id="code"
-                      name="code"
-                      defaultValue={editing?.code}
-                      placeholder="C-00001"
-                      dir={dir}
-                      className={cn("h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 font-mono text-sm bg-slate-50 dark:bg-slate-900/50", isRTL ? "text-right" : "text-left")}
-                    />
-                  </div>
 
-                  <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
-                    <Label htmlFor="nameAr" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      {isRTL ? 'الاسم بالكامل (عربي) *' : 'Full Name (Arabic) *'}
-                    </Label>
-                    <Input
-                      id="nameAr"
-                      name="nameAr"
-                      defaultValue={editing?.nameAr}
-                      placeholder={isRTL ? 'مثال: شركة الحلول المتقدمة' : 'e.g. Advanced Solutions Co.'}
-                      required
-                      dir={dir}
-                      className={cn("h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-sm", isRTL ? "text-right" : "text-left")}
-                    />
-                  </div>
-
-                  <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
-                    <Label htmlFor="nameEn" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      {isRTL ? 'الاسم بالكامل (إنجليزي)' : 'Full Name (English)'}
-                    </Label>
-                    <Input
-                      id="nameEn"
-                      name="nameEn"
-                      defaultValue={editing?.nameEn}
-                      placeholder="e.g. Advanced Solutions Co."
-                      dir={dir}
-                      className={cn("h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-sm", isRTL ? "text-right" : "text-left")}
-                    />
-                  </div>
-
-                  <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
-                    <Label htmlFor="taxNumber" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      {isRTL ? 'الرقم الضريبي (TIN)' : 'Tax Identification Number (TIN)'}
-                    </Label>
-                    <div className="relative">
-                      <Hash className="absolute inset-y-0 start-3 my-auto size-4 text-slate-400 pointer-events-none" />
+                <div className="space-y-3.5 sm:space-y-4">
+                  {/* Code and Tax Number side-by-side on mobile */}
+                  <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                    <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                      <Label htmlFor="code" className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate block">
+                        {isRTL ? 'رمز العميل (تلقائي)' : 'Customer Code (Auto)'}
+                      </Label>
                       <Input
-                        id="taxNumber"
-                        name="taxNumber"
-                        defaultValue={editing?.taxNumber}
-                        placeholder="300000000000003"
+                        id="code"
+                        name="code"
+                        defaultValue={editing?.code}
+                        placeholder="C-00001"
                         dir={dir}
-                        className={cn("h-10 ps-9 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-sm font-mono", isRTL ? "text-right" : "text-left")}
+                        className={cn("h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 font-mono text-xs sm:text-sm bg-slate-50 dark:bg-slate-900/50 px-2.5 sm:px-3", isRTL ? "text-right" : "text-left")}
+                      />
+                    </div>
+
+                    <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                      <Label htmlFor="taxNumber" className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate block">
+                        {isRTL ? 'الرقم الضريبي (TIN)' : 'Tax Number (TIN)'}
+                      </Label>
+                      <div className="relative">
+                        <Hash className="absolute inset-y-0 start-2.5 my-auto size-3.5 sm:size-4 text-slate-400 pointer-events-none" />
+                        <Input
+                          id="taxNumber"
+                          name="taxNumber"
+                          defaultValue={editing?.taxNumber}
+                          placeholder="3000000000"
+                          dir={dir}
+                          className={cn("h-10 ps-8 sm:ps-9 pe-2.5 sm:pe-3 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-xs sm:text-sm font-mono", isRTL ? "text-right" : "text-left")}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Names */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
+                    <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                      <Label htmlFor="nameAr" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        {isRTL ? 'الاسم بالكامل (عربي) *' : 'Full Name (Arabic) *'}
+                      </Label>
+                      <Input
+                        id="nameAr"
+                        name="nameAr"
+                        defaultValue={editing?.nameAr}
+                        placeholder={isRTL ? 'مثال: شركة الحلول المتقدمة' : 'e.g. Advanced Solutions Co.'}
+                        required
+                        dir={dir}
+                        className={cn("h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-sm", isRTL ? "text-right" : "text-left")}
+                      />
+                    </div>
+
+                    <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                      <Label htmlFor="nameEn" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        {isRTL ? 'الاسم بالكامل (إنجليزي)' : 'Full Name (English)'}
+                      </Label>
+                      <Input
+                        id="nameEn"
+                        name="nameEn"
+                        defaultValue={editing?.nameEn}
+                        placeholder="e.g. Advanced Solutions Co."
+                        dir={dir}
+                        className={cn("h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-sm", isRTL ? "text-right" : "text-left")}
                       />
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-4">
+              {/* Contact Information */}
+              <div className="space-y-3.5 sm:space-y-4">
                 <div className="flex items-center gap-2 border-b pb-2 border-slate-200/60 dark:border-slate-800/60">
                   <Phone className="size-4 text-blue-600 dark:text-blue-400" />
                   <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200">
                     {isRTL ? 'بيانات المسؤول والاتصال' : 'Contact Information'}
                   </h3>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                <div className="space-y-3.5 sm:space-y-4">
                   <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
                     <Label htmlFor="contactName" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                       {isRTL ? 'اسم جهة الاتصال / المسؤول' : 'Contact Person / Representative'}
@@ -440,42 +476,45 @@ export default function CustomersModule() {
                     />
                   </div>
 
-                  <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
-                    <Label htmlFor="phone" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      {isRTL ? 'رقم الهاتف' : 'Phone Number'}
-                    </Label>
-                    <div className="relative">
-                      <Phone className="absolute inset-y-0 start-3 my-auto size-4 text-slate-400 pointer-events-none" />
-                      <Input
-                        id="phone"
-                        name="phone"
-                        defaultValue={editing?.phone}
-                        placeholder="+966 50 000 0000"
-                        dir={dir}
-                        className={cn("h-10 ps-9 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-sm font-mono", isRTL ? "text-right" : "text-left")}
-                      />
+                  {/* Phone and Email side-by-side on mobile */}
+                  <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                    <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                      <Label htmlFor="phone" className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate block">
+                        {isRTL ? 'رقم الهاتف' : 'Phone Number'}
+                      </Label>
+                      <div className="relative">
+                        <Phone className="absolute inset-y-0 start-2.5 my-auto size-3.5 sm:size-4 text-slate-400 pointer-events-none" />
+                        <Input
+                          id="phone"
+                          name="phone"
+                          defaultValue={editing?.phone}
+                          placeholder="+966 50 000 0000"
+                          dir={dir}
+                          className={cn("h-10 ps-8 sm:ps-9 pe-2.5 sm:pe-3 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-xs sm:text-sm font-mono", isRTL ? "text-right" : "text-left")}
+                        />
+                      </div>
+                    </div>
+
+                    <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
+                      <Label htmlFor="email" className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate block">
+                        {isRTL ? 'البريد الإلكتروني' : 'Email Address'}
+                      </Label>
+                      <div className="relative">
+                        <Mail className="absolute inset-y-0 start-2.5 my-auto size-3.5 sm:size-4 text-slate-400 pointer-events-none" />
+                        <Input
+                          id="email"
+                          name="email"
+                          type="email"
+                          defaultValue={editing?.email}
+                          placeholder="customer@example.com"
+                          dir={dir}
+                          className={cn("h-10 ps-8 sm:ps-9 pe-2.5 sm:pe-3 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-xs sm:text-sm font-mono", isRTL ? "text-right" : "text-left")}
+                        />
+                      </div>
                     </div>
                   </div>
 
                   <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
-                    <Label htmlFor="email" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      {isRTL ? 'البريد الإلكتروني' : 'Email Address'}
-                    </Label>
-                    <div className="relative">
-                      <Mail className="absolute inset-y-0 start-3 my-auto size-4 text-slate-400 pointer-events-none" />
-                      <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        defaultValue={editing?.email}
-                        placeholder="customer@example.com"
-                        dir={dir}
-                        className={cn("h-10 ps-9 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-sm font-mono", isRTL ? "text-right" : "text-left")}
-                      />
-                    </div>
-                  </div>
-
-                  <div className={cn("space-y-1.5 md:col-span-2", isRTL ? "text-right" : "text-left")}>
                     <Label htmlFor="address" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                       {isRTL ? 'العنوان' : 'Address'}
                     </Label>
@@ -494,16 +533,18 @@ export default function CustomersModule() {
                 </div>
               </div>
 
-              <div className="space-y-4">
+              {/* Financial Information */}
+              <div className="space-y-3.5 sm:space-y-4">
                 <div className="flex items-center gap-2 border-b pb-2 border-slate-200/60 dark:border-slate-800/60">
                   <Coins className="size-4 text-blue-600 dark:text-blue-400" />
                   <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200">
                     {isRTL ? 'البيانات المالية والأرصدة' : 'Financial & Credit Configuration'}
                   </h3>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Credit Limit and Opening Balance side-by-side on mobile */}
+                <div className="grid grid-cols-2 gap-2 sm:gap-4">
                   <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
-                    <Label htmlFor="creditLimit" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    <Label htmlFor="creditLimit" className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate block">
                       {isRTL ? 'حد الائتمان' : 'Credit Limit'}
                     </Label>
                     <Input
@@ -514,12 +555,12 @@ export default function CustomersModule() {
                       defaultValue={editing?.creditLimit ?? 0}
                       placeholder="0.00"
                       dir={dir}
-                      className={cn("h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-sm font-semibold tabular-nums", isRTL ? "text-right" : "text-left")}
+                      className={cn("h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-xs sm:text-sm font-semibold tabular-nums px-2.5 sm:px-3", isRTL ? "text-right" : "text-left")}
                     />
                   </div>
 
                   <div className={cn("space-y-1.5", isRTL ? "text-right" : "text-left")}>
-                    <Label htmlFor="openingBalance" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    <Label htmlFor="openingBalance" className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate block">
                       {isRTL ? 'الرصيد الافتتاحي' : 'Opening Balance'}
                     </Label>
                     <Input
@@ -530,13 +571,13 @@ export default function CustomersModule() {
                       defaultValue={editing?.openingBalance ?? 0}
                       placeholder="0.00"
                       dir={dir}
-                      className={cn("h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-sm font-semibold tabular-nums", isRTL ? "text-right" : "text-left")}
+                      className={cn("h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-xs sm:text-sm font-semibold tabular-nums px-2.5 sm:px-3", isRTL ? "text-right" : "text-left")}
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-3.5 sm:space-y-4">
                 <div className="flex items-center gap-2 border-b pb-2 border-slate-200/60 dark:border-slate-800/60">
                   <Building2 className="size-4 text-blue-600 dark:text-blue-400" />
                   <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200">
@@ -544,14 +585,14 @@ export default function CustomersModule() {
                   </h3>
                 </div>
 
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 sm:p-4">
                   <div className="flex items-center justify-between py-1">
                     <div className="space-y-0.5">
                       <Label htmlFor="active" className="text-sm font-semibold text-slate-800 dark:text-slate-200 cursor-pointer">
                         {isRTL ? 'نشط' : 'Active Status'}
                       </Label>
                       <p className="text-xs text-muted-foreground">
-                        {isRTL ? 'تفعيل الحساب' : 'Activate the account'}
+                        {isRTL ? 'تفعيل الحساب في التعاملات بالفواتير والسندات' : 'Activate the account for transactions'}
                       </p>
                     </div>
                     <Switch id="active" name="active" defaultChecked={editing?.active ?? true} />
@@ -560,24 +601,24 @@ export default function CustomersModule() {
               </div>
             </DialogBody>
 
-            <DialogFooter className="bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800 p-4 shrink-0">
-              <div className="flex items-center justify-end gap-3 w-full">
+            <DialogFooter className="bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800 p-3.5 sm:p-4 shrink-0">
+              <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3 w-full">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setDialogOpen(false)}
-                  className="px-5 py-2.5 h-11 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
+                  className="w-full sm:w-auto h-11 sm:h-10 px-5 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
                 >
                   {isRTL ? 'إلغاء' : 'Cancel'}
                 </Button>
                 <Button
                   type="submit"
                   disabled={saveMutation.isPending}
-                  className="px-6 py-2.5 h-11 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transition-all"
+                  className="w-full sm:w-auto h-11 sm:h-10 px-6 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transition-all"
                 >
                   {saveMutation.isPending
                     ? (isRTL ? 'جاري الحفظ...' : 'Saving...')
-                    : (isRTL ? 'حفظ ' : 'Save ')}
+                    : (isRTL ? 'حفظ البيانات' : 'Save Details')}
                 </Button>
               </div>
             </DialogFooter>

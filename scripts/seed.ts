@@ -18,6 +18,7 @@ async function main() {
 
   // === Currencies ===
   const sar = await db.currency.upsert({ where: { code: 'SAR' }, update: {}, create: { code: 'SAR', nameAr: 'ريال سعودي', nameEn: 'Saudi Riyal', symbol: 'ر.س', decimals: 2 } })
+  await db.currency.upsert({ where: { code: 'YER' }, update: {}, create: { code: 'YER', nameAr: 'ريال يمني', nameEn: 'Yemeni Riyal', symbol: 'ر.ي', decimals: 2 } })
   await db.currency.upsert({ where: { code: 'USD' }, update: {}, create: { code: 'USD', nameAr: 'دولار أمريكي', nameEn: 'US Dollar', symbol: '$', decimals: 2 } })
   await db.currency.upsert({ where: { code: 'EUR' }, update: {}, create: { code: 'EUR', nameAr: 'يورو', nameEn: 'Euro', symbol: '€', decimals: 2 } })
   await db.currency.upsert({ where: { code: 'AED' }, update: {}, create: { code: 'AED', nameAr: 'درهم إماراتي', nameEn: 'UAE Dirham', symbol: 'د.إ', decimals: 2 } })
@@ -28,6 +29,7 @@ async function main() {
 
   // === Countries ===
   await db.country.upsert({ where: { code: 'SA' }, update: {}, create: { code: 'SA', nameAr: 'المملكة العربية السعودية', nameEn: 'Saudi Arabia', dialCode: '+966' } })
+  await db.country.upsert({ where: { code: 'YE' }, update: {}, create: { code: 'YE', nameAr: 'اليمن', nameEn: 'Yemen', dialCode: '+967' } })
   await db.country.upsert({ where: { code: 'AE' }, update: {}, create: { code: 'AE', nameAr: 'الإمارات', nameEn: 'United Arab Emirates', dialCode: '+971' } })
   await db.country.upsert({ where: { code: 'EG' }, update: {}, create: { code: 'EG', nameAr: 'مصر', nameEn: 'Egypt', dialCode: '+20' } })
 
@@ -56,7 +58,7 @@ async function main() {
   await db.paymentTerm.upsert({ where: { code: 'COD' }, update: {}, create: { code: 'COD', nameAr: 'دفع عند الاستلام', nameEn: 'Cash on Delivery', dueDays: 0 } })
   await db.paymentTerm.upsert({ where: { code: 'PREPAID' }, update: {}, create: { code: 'PREPAID', nameAr: 'مدفوع مسبقاً', nameEn: 'Prepaid', dueDays: 0 } })
 
-  // === Reason Codes ===
+  // ===  Reason Codes ===
   for (const r of [
     { code: 'DAMAGED', nameAr: 'تالف', nameEn: 'Damaged', category: 'scrap' },
     { code: 'EXPIRED', nameAr: 'منتهي الصلاحية', nameEn: 'Expired', category: 'scrap' },

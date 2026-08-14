@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody, DialogDescription } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Skeleton } from '@/components/ui/skeleton'
+import { DatePicker } from '@/components/ui/date-picker'
 import { CalendarClock, Plus, Download, Lock, Unlock, AlertCircle, Pencil } from 'lucide-react'
 
 export function FiscalPeriodsModule() {
@@ -462,13 +463,10 @@ export function FiscalPeriodsModule() {
                 <Label htmlFor="yearStartDate" className="text-xs font-semibold text-slate-650 dark:text-slate-400">
                   {txt('تاريخ البداية *', 'Start Date *')}
                 </Label>
-                <Input
+                <DatePicker
                   id="yearStartDate"
-                  type="date"
                   value={yearForm.startDate}
-                  onChange={(e) => setYearForm({ ...yearForm, startDate: e.target.value })}
-                  className="h-10 border-slate-250 dark:border-blue-400/30 focus-visible:ring-blue-500 text-start"
-                  dir={dir}
+                  onChange={(val) => setYearForm({ ...yearForm, startDate: val })}
                 />
               </div>
 
@@ -477,13 +475,10 @@ export function FiscalPeriodsModule() {
                 <Label htmlFor="yearEndDate" className="text-xs font-semibold text-slate-650 dark:text-slate-400">
                   {txt('تاريخ النهاية *', 'End Date *')}
                 </Label>
-                <Input
+                <DatePicker
                   id="yearEndDate"
-                  type="date"
                   value={yearForm.endDate}
-                  onChange={(e) => setYearForm({ ...yearForm, endDate: e.target.value })}
-                  className="h-10 border-slate-250 dark:border-blue-400/30 focus-visible:ring-blue-500 text-start"
-                  dir={dir}
+                  onChange={(val) => setYearForm({ ...yearForm, endDate: val })}
                 />
               </div>
 
@@ -622,13 +617,10 @@ export function FiscalPeriodsModule() {
                 <Label htmlFor="periodStartDate" className="text-xs font-semibold text-slate-650 dark:text-slate-400">
                   {txt('تاريخ البداية *', 'Start Date *')}
                 </Label>
-                <Input
+                <DatePicker
                   id="periodStartDate"
-                  type="date"
                   value={periodForm.startDate}
-                  onChange={(e) => setPeriodForm({ ...periodForm, startDate: e.target.value })}
-                  className="h-10 border-slate-250 dark:border-blue-400/30 focus-visible:ring-blue-500 text-start"
-                  dir={dir}
+                  onChange={(val) => setPeriodForm({ ...periodForm, startDate: val })}
                 />
               </div>
 
@@ -637,13 +629,10 @@ export function FiscalPeriodsModule() {
                 <Label htmlFor="periodEndDate" className="text-xs font-semibold text-slate-650 dark:text-slate-400">
                   {txt('تاريخ النهاية *', 'End Date *')}
                 </Label>
-                <Input
+                <DatePicker
                   id="periodEndDate"
-                  type="date"
                   value={periodForm.endDate}
-                  onChange={(e) => setPeriodForm({ ...periodForm, endDate: e.target.value })}
-                  className="h-10 border-slate-250 dark:border-blue-400/30 focus-visible:ring-blue-500 text-start"
-                  dir={dir}
+                  onChange={(val) => setPeriodForm({ ...periodForm, endDate: val })}
                 />
               </div>
 

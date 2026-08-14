@@ -18,36 +18,49 @@ async function main() {
 
     // === Currencies ===
     console.log('💱 Creating currencies...');
-    const sar = await db.currency.upsert({ 
-      where: { code: 'SAR' }, 
-      update: {}, 
-      create: { code: 'SAR', nameAr: 'ريال سعودي', nameEn: 'Saudi Riyal', symbol: 'ر.س', decimals: 2 } 
+    const sar = await db.currency.upsert({
+      where: { code: 'SAR' },
+      update: {},
+      create: { code: 'SAR', nameAr: 'ريال سعودي', nameEn: 'Saudi Riyal', symbol: 'ر.س', decimals: 2 }
     });
-    
-    await db.currency.upsert({ 
-      where: { code: 'USD' }, 
-      update: {}, 
-      create: { code: 'USD', nameAr: 'دولار أمريكي', nameEn: 'US Dollar', symbol: '$', decimals: 2 } 
+
+
+    await db.currency.upsert({
+      where: { code: 'YER' },
+      update: {},
+      create: { code: 'YER', nameAr: 'ريال يمني', nameEn: 'Yemeni Riyal', symbol: 'ر.ي', decimals: 2 }
     });
-    
-    await db.currency.upsert({ 
-      where: { code: 'EUR' }, 
-      update: {}, 
-      create: { code: 'EUR', nameAr: 'يورو', nameEn: 'Euro', symbol: '€', decimals: 2 } 
+
+    await db.currency.upsert({
+      where: { code: 'USD' },
+      update: {},
+      create: { code: 'USD', nameAr: 'دولار أمريكي', nameEn: 'US Dollar', symbol: '$', decimals: 2 }
+    });
+
+    await db.currency.upsert({
+      where: { code: 'EUR' },
+      update: {},
+      create: { code: 'EUR', nameAr: 'يورو', nameEn: 'Euro', symbol: '€', decimals: 2 }
     });
 
     // === Countries ===
     console.log('🌍 Creating countries...');
-    await db.country.upsert({ 
-      where: { code: 'SA' }, 
-      update: {}, 
-      create: { code: 'SA', nameAr: 'المملكة العربية السعودية', nameEn: 'Saudi Arabia', dialCode: '+966' } 
+    await db.country.upsert({
+      where: { code: 'SA' },
+      update: {},
+      create: { code: 'SA', nameAr: 'المملكة العربية السعودية', nameEn: 'Saudi Arabia', dialCode: '+966' }
     });
-    
-    await db.country.upsert({ 
-      where: { code: 'AE' }, 
-      update: {}, 
-      create: { code: 'AE', nameAr: 'الإمارات', nameEn: 'United Arab Emirates', dialCode: '+971' } 
+
+    await db.country.upsert({
+      where: { code: 'YE' },
+      update: {},
+      create: { code: 'YE', nameAr: 'اليمن', nameEn: 'Yemen', dialCode: '+967' }
+    });
+
+    await db.country.upsert({
+      where: { code: 'AE' },
+      update: {},
+      create: { code: 'AE', nameAr: 'الإمارات', nameEn: 'United Arab Emirates', dialCode: '+971' }
     });
 
     // === Units of Measure ===
@@ -57,29 +70,29 @@ async function main() {
       { code: 'KG', nameAr: 'كيلوجرام', nameEn: 'Kilogram', category: 'weight' },
       { code: 'BOX', nameAr: 'صندوق', nameEn: 'Box', category: 'unit' },
     ];
-    
+
     for (const u of uoms) {
-      await db.unitOfMeasure.upsert({ 
-        where: { code: u.code }, 
-        update: {}, 
-        create: u 
+      await db.unitOfMeasure.upsert({
+        where: { code: u.code },
+        update: {},
+        create: u
       });
     }
 
     // === Tax Codes ===
     console.log('💰 Creating tax codes...');
-    await db.taxCode.upsert({ 
-      where: { code: 'VAT15' }, 
-      update: {}, 
-      create: { 
-        code: 'VAT15', 
-        nameAr: 'ضريبة القيمة المضافة 15%', 
-        nameEn: 'VAT 15%', 
-        rate: 15, 
-        taxType: 'vat', 
-        inputAccount: '1400', 
-        outputAccount: '2100' 
-      } 
+    await db.taxCode.upsert({
+      where: { code: 'VAT15' },
+      update: {},
+      create: {
+        code: 'VAT15',
+        nameAr: 'ضريبة القيمة المضافة 15%',
+        nameEn: 'VAT 15%',
+        rate: 15,
+        taxType: 'vat',
+        inputAccount: '1400',
+        outputAccount: '2100'
+      }
     });
 
     // === Roles ===

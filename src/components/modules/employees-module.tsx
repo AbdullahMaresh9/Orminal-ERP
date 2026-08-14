@@ -27,6 +27,7 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
+import { DatePicker } from '@/components/ui/date-picker'
 import {
   Users, Plus, Pencil, Trash2, Printer, UserCheck, Building2, CalendarOff, Coins, Wallet, History, CalendarClock, DollarSign, ChevronsUpDown, Check,
 } from 'lucide-react'
@@ -579,7 +580,6 @@ export function EmployeesModule() {
                 <DialogTitle className="text-xl font-bold tracking-tight text-blue-955 dark:text-white">
                   {editing ? (isRTL ? 'تعديل بيانات الموظف' : 'Edit Employee Details') : (isRTL ? 'إضافة موظف جديد' : 'Add New Employee')}
                 </DialogTitle>
-
               </div>
             </div>
           </DialogHeader>
@@ -635,7 +635,7 @@ export function EmployeesModule() {
               </div>
               <div className="space-y-1.5 text-start">
                 <Label htmlFor="hireDate" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'تاريخ التعيين' : 'Hire Date'}</Label>
-                <Input id="hireDate" type="date" value={draft.hireDate} onChange={(e) => setDraft({ ...draft, hireDate: e.target.value })} className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-end font-mono" dir="ltr" />
+                <DatePicker id="hireDate" value={draft.hireDate} onChange={(val) => setDraft({ ...draft, hireDate: val })} />
               </div>
               <div className="space-y-1.5 text-start">
                 <Label htmlFor="gender" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'الجنس' : 'Gender'}</Label>
@@ -728,26 +728,20 @@ export function EmployeesModule() {
                     <Label htmlFor="contractStartDate" className="text-xs font-semibold text-slate-700 dark:text-slate-350">
                       {isRTL ? 'تاريخ البدء *' : 'Start Date *'}
                     </Label>
-                    <Input
+                    <DatePicker
                       id="contractStartDate"
-                      type="date"
                       value={contractDraft.startDate}
-                      onChange={(e) => setContractDraft({ ...contractDraft, startDate: e.target.value })}
-                      className="h-10 bg-slate-50/50 dark:bg-slate-900/50 border-slate-300 dark:border-slate-700 focus-visible:ring-blue-500 font-mono text-end"
-                      dir="ltr"
+                      onChange={(val) => setContractDraft({ ...contractDraft, startDate: val })}
                     />
                   </div>
                   <div className="space-y-1.5 text-start">
                     <Label htmlFor="contractEndDate" className="text-xs font-semibold text-slate-700 dark:text-slate-350">
                       {isRTL ? 'تاريخ الانتهاء' : 'End Date'}
                     </Label>
-                    <Input
+                    <DatePicker
                       id="contractEndDate"
-                      type="date"
                       value={contractDraft.endDate}
-                      onChange={(e) => setContractDraft({ ...contractDraft, endDate: e.target.value })}
-                      className="h-10 bg-slate-50/50 dark:bg-slate-900/50 border-slate-300 dark:border-slate-700 focus-visible:ring-blue-500 font-mono text-end"
-                      dir="ltr"
+                      onChange={(val) => setContractDraft({ ...contractDraft, endDate: val })}
                     />
                   </div>
                   <div className="space-y-1.5 text-start md:col-span-2">

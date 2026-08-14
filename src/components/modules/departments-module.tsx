@@ -182,7 +182,7 @@ export function DepartmentsModule() {
       kids.forEach((k) => walk(k, depth + 1))
     }
     list.filter((d) => !d.parentId).forEach((root) => walk(root, 0))
-    // Add orphans (parentId points to non-existing) at depth 0
+    //  Add orphans (parentId points to non-existing) at depth 
     list.filter((d) => d.parentId && !list.find((p) => p.id === d.parentId)).forEach((o) => {
       if (!result.find((r) => r.id === o.id)) result.push({ ...o, depth: 0 })
     })

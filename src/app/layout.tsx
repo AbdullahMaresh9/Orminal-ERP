@@ -31,6 +31,7 @@ export const metadata: Metadata = {
   },
 };
 
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -38,6 +39,41 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if (typeof window !== 'undefined') {
+                const removeBis = (node) => {
+                  if (node.nodeType === 1 && node.hasAttribute('bis_skin_checked')) {
+                    node.removeAttribute('bis_skin_checked');
+                  }
+                  if (node.children) {
+                    for (let i = 0; i < node.children.length; i++) {
+                      removeBis(node.children[i]);
+                    }
+                  }
+                };
+                const observer = new MutationObserver((mutations) => {
+                  for (const m of mutations) {
+                    if (m.type === 'attributes' && m.attributeName === 'bis_skin_checked') {
+                      m.target.removeAttribute('bis_skin_checked');
+                    } else if (m.type === 'childList') {
+                      m.addedNodes.forEach(removeBis);
+                    }
+                  }
+                });
+                observer.observe(document.documentElement, {
+                  attributes: true,
+                  childList: true,
+                  subtree: true,
+                  attributeFilter: ['bis_skin_checked'],
+                });
+              }
+            `,
+          }}
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${cairo.variable} antialiased bg-background text-foreground`}
         suppressHydrationWarning

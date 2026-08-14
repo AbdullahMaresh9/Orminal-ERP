@@ -23,11 +23,13 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogBody,
 } from '@/components/ui/dialog'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { DatePicker } from '@/components/ui/date-picker'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
-  Receipt, Plus, Trash2, Printer, Coins, Wallet, Download, FileSpreadsheet, FileText, FileDown,
+  Receipt, Plus, Trash2, Printer, Coins, Wallet, Download, FileSpreadsheet, FileText, FileDown, Eye, Pencil,
 } from 'lucide-react'
 
 interface Partner { id: string; code: string; nameAr: string; nameEn?: string }
@@ -45,6 +47,7 @@ interface SalesInvoiceLine {
 interface SalesInvoice {
   id: string
   code: string
+  partnerId?: string
   invoiceDate: string
   dueDate?: string
   status: string
@@ -75,7 +78,7 @@ const STATUS_LABELS: Record<string, { ar: string; en: string }> = {
   cancelled: { ar: 'ملغي', en: 'Cancelled' },
 }
 
-const VISIBLE_ROWS = 5
+const VISIBLE_ROWS = 7
 const ROW_HEIGHT = 44
 const HEADER_HEIGHT = 40
 
@@ -84,7 +87,6 @@ export function SalesInvoicesModule() {
   const L = (ar: string, en: string) => (isRTL ? ar : en)
   const partnerName = (p?: Partner) => (p ? (isRTL ? p.nameAr : p.nameEn || p.nameAr) : '')
   const productName = (p?: Product) => (p ? (isRTL ? p.nameAr : p.nameEn || p.nameAr) : '')
-
   const stickyHead = 'sticky top-0 z-20 bg-muted whitespace-nowrap shadow-[inset_0_-1px_0_0_hsl(var(--border))]'
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
@@ -138,6 +140,9 @@ export function SalesInvoicesModule() {
     outstanding: invoices.reduce((s, o) => s + (o.total - o.paid), 0),
   }), [invoices])
 
+  // Form state
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [viewOnly, setViewOnly] = useState(false)
   const [partnerId, setPartnerId] = useState('')
   const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().slice(0, 10))
   const [dueDate, setDueDate] = useState('')
@@ -182,11 +187,35 @@ export function SalesInvoicesModule() {
   }
 
   const resetForm = () => {
+    setEditingId(null)
+    setViewOnly(false)
     setPartnerId('')
     setInvoiceDate(new Date().toISOString().slice(0, 10))
     setDueDate('')
     setNotes('')
     setLines([{ key: '1', productId: '', quantity: '1', unitPrice: '0', discountAmount: '0', taxRate: '15' }])
+  }
+
+  const openEdit = (o: SalesInvoice, readOnly = false) => {
+    setEditingId(o.id)
+    setViewOnly(readOnly)
+    setPartnerId(o.partnerId || o.partner?.id || '')
+    setInvoiceDate((o.invoiceDate || '').slice(0, 10) || new Date().toISOString().slice(0, 10))
+    setDueDate(o.dueDate ? o.dueDate.slice(0, 10) : '')
+    setNotes(o.notes || '')
+    setLines(
+      o.lines?.length
+        ? o.lines.map((l, i) => ({
+          key: l.id ?? `${o.id}-${i}`,
+          productId: l.productId || l.product?.id || '',
+          quantity: String(l.quantity ?? 1),
+          unitPrice: String(l.unitPrice ?? 0),
+          discountAmount: String(l.discountAmount ?? 0),
+          taxRate: String(l.taxRate ?? 15),
+        }))
+        : [{ key: '1', productId: '', quantity: '1', unitPrice: '0', discountAmount: '0', taxRate: '15' }],
+    )
+    setAddOpen(true)
   }
 
   const saveMutation = useMutation({
@@ -207,8 +236,10 @@ export function SalesInvoicesModule() {
           taxRate: Number(l.taxRate),
         })),
       }
-      const r = await fetch('/api/erp/sales-invoices', {
-        method: 'POST',
+      const url = editingId ? `/api/erp/sales-invoices/${editingId}` : '/api/erp/sales-invoices'
+      const method = editingId ? 'PUT' : 'POST'
+      const r = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
@@ -219,7 +250,7 @@ export function SalesInvoicesModule() {
       return r.json()
     },
     onSuccess: () => {
-      toast.success(L('تم إنشاء الفاتورة وترحيل القيد بنجاح', 'Invoice created and entry posted successfully'))
+      toast.success(editingId ? L('تم تحديث الفاتورة بنجاح', 'Invoice updated successfully') : L('تم إنشاء الفاتورة وترحيل القيد بنجاح', 'Invoice created and entry posted successfully'))
       qc.invalidateQueries({ queryKey: ['sales-invoices'] })
       setAddOpen(false)
       resetForm()
@@ -408,17 +439,26 @@ export function SalesInvoicesModule() {
               ) : invoices.length === 0 ? (
                 <TableRow><TableCell colSpan={7} className="text-center py-10 text-muted-foreground border-b">{L('لا توجد فواتير. ابدأ بإنشاء أول فاتورة.', 'No sales invoices found. Start by creating the first invoice.')}</TableCell></TableRow>
               ) : invoices.map((o) => (
-                <TableRow key={o.id} className="hover:bg-muted/40 align-middle">
+                <TableRow
+                  key={o.id}
+                  className="hover:bg-muted/40 align-middle cursor-pointer"
+                  onClick={() => openEdit(o, true)}
+                >
                   <TableCell className="ps-6 font-mono text-xs border-b truncate" dir="ltr" title={o.code}>{o.code}</TableCell>
                   <TableCell className="font-medium border-b truncate" title={partnerName(o.partner)}>{partnerName(o.partner) || '—'}</TableCell>
                   <TableCell className="text-sm text-center whitespace-nowrap border-b">{formatDate(o.invoiceDate)}</TableCell>
                   <TableCell className="text-center whitespace-nowrap border-b"><span className="num tabular-nums font-semibold" dir="ltr">{formatCurrency(o.total)}</span></TableCell>
                   <TableCell className="text-center whitespace-nowrap border-b"><span className="num tabular-nums" dir="ltr">{formatCurrency(o.paid)}</span></TableCell>
                   <TableCell className="text-center border-b"><div className="flex justify-center"><StatusBadge status={o.status} /></div></TableCell>
-                  <TableCell className="text-end pe-4 border-b">
-                    <Button size="icon" variant="ghost" className="size-8" title={L('طباعة الفاتورة الضريبية', 'Print Tax Invoice')} onClick={() => handlePrint(o)}>
-                      <Printer className="size-3.5" />
-                    </Button>
+                  <TableCell className="text-end pe-4 border-b" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center justify-end gap-1">
+                      <Button size="icon" variant="ghost" className="size-8" title={L('عرض الفاتورة', 'View Invoice')} onClick={() => openEdit(o, true)}>
+                        <Eye className="size-4" />
+                      </Button>
+                      <Button size="icon" variant="ghost" className="size-8" title={L('طباعة الفاتورة الضريبية', 'Print Tax Invoice')} onClick={() => handlePrint(o)}>
+                        <Printer className="size-3.5" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -427,19 +467,33 @@ export function SalesInvoicesModule() {
         </div>
       </Card>
 
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="max-w-4xl" dir={isRTL ? 'rtl' : 'ltr'}>
+      <Dialog open={addOpen} onOpenChange={(o) => { setAddOpen(o); if (!o) resetForm() }}>
+        <DialogContent
+          dir={isRTL ? 'rtl' : 'ltr'}
+          className="w-[calc(100vw-1.5rem)] sm:w-[95vw] max-w-4xl max-h-[92vh] p-0 flex flex-col overflow-hidden"
+        >
           <DialogHeader>
-            <DialogTitle>{L('فاتورة ضريبية جديدة', 'New Tax Invoice')}</DialogTitle>
-            <DialogDescription>{L('سيتم ترحيل القيد المحاسبي تلقائياً عند الحفظ (مدين الذمم / دائن المبيعات + الضريبة)', 'Journal entry will be posted automatically upon saving (Debit Receivables / Credit Sales + Tax)')}</DialogDescription>
+            <DialogTitle>
+              {viewOnly
+                ? L('عرض فاتورة ضريبية', 'View Tax Invoice')
+                : editingId
+                  ? L('تعديل فاتورة ضريبية', 'Edit Tax Invoice')
+                  : L('فاتورة ضريبية جديدة', 'New Tax Invoice')}
+            </DialogTitle>
+            {!viewOnly && !editingId && (
+              <DialogDescription>{L('سيتم ترحيل القيد المحاسبي تلقائياً عند الحفظ (مدين الذمم / دائن المبيعات + الضريبة)', 'Journal entry will be posted automatically upon saving (Debit Receivables / Credit Sales + Tax)')}</DialogDescription>
+            )}
           </DialogHeader>
-          <DialogBody>
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="space-y-1.5">
+
+          <DialogBody className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">
+            <fieldset disabled={viewOnly} className="space-y-4 sm:space-y-5">
+              {/* ===== بيانات الرأس: عمودان على الجوال → 3 على الديسكتوب ===== */}
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+                {/* العميل — كامل العرض على الجوال */}
+                <div className="space-y-1.5 col-span-2 lg:col-span-1">
                   <Label>{L('العميل *', 'Customer *')}</Label>
                   <Select value={partnerId} onValueChange={setPartnerId}>
-                    <SelectTrigger><SelectValue placeholder={L('اختر العميل', 'Select Customer')} /></SelectTrigger>
+                    <SelectTrigger className="w-full"><SelectValue placeholder={L('اختر العميل', 'Select Customer')} /></SelectTrigger>
                     <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
                       {partners.map((p) => (
                         <SelectItem key={p.id} value={p.id}>
@@ -449,100 +503,184 @@ export function SalesInvoicesModule() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-1.5">
+
+                {/* تاريخ الفاتورة — نصف العرض على الجوال */}
+                <div className="space-y-1.5 col-span-1">
                   <Label htmlFor="invoiceDate">{L('تاريخ الفاتورة', 'Invoice Date')}</Label>
-                  <Input id="invoiceDate" type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} />
+                  <DatePicker id="invoiceDate" value={invoiceDate} onChange={setInvoiceDate} disabled={viewOnly} />
                 </div>
-                <div className="space-y-1.5">
+
+                {/* تاريخ الاستحقاق — نصف العرض على الجوال */}
+                <div className="space-y-1.5 col-span-1">
                   <Label htmlFor="dueDate">{L('تاريخ الاستحقاق', 'Due Date')}</Label>
-                  <Input id="dueDate" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+                  <DatePicker id="dueDate" value={dueDate} onChange={setDueDate} disabled={viewOnly} />
                 </div>
               </div>
 
-              <Card className="rounded-lg overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/50">
-                      <TableHead className="ps-3">{L('المنتج', 'Product')}</TableHead>
-                      <TableHead className="text-end num-cell w-20">{L('الكمية', 'Qty')}</TableHead>
-                      <TableHead className="text-end num-cell w-28">{L('السعر', 'Price')}</TableHead>
-                      <TableHead className="text-end num-cell w-24">{L('الخصم', 'Discount')}</TableHead>
-                      <TableHead className="text-end num-cell w-20">{L('الضريبة %', 'Tax %')}</TableHead>
-                      <TableHead className="text-end num-cell w-28">{L('الإجمالي', 'Total')}</TableHead>
-                      <TableHead className="w-12"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {lines.map((l) => {
-                      const qty = Number(l.quantity) || 0
-                      const price = Number(l.unitPrice) || 0
-                      const disc = Number(l.discountAmount) || 0
-                      const taxRate = Number(l.taxRate) || 0
-                      const lineTotal = (qty * price - disc) * (1 + taxRate / 100)
-                      return (
-                        <TableRow key={l.key}>
-                          <TableCell className="ps-3">
-                            <Select value={l.productId} onValueChange={(v) => updateLine(l.key, 'productId', v)}>
-                              <SelectTrigger className="h-9 min-w-[220px]"><SelectValue placeholder={L('اختر المنتج', 'Select Product')} /></SelectTrigger>
-                              <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
-                                {products.map((p) => (
-                                  <SelectItem key={p.id} value={p.id}>
-                                    <span dir="ltr" className="font-mono text-xs">{p.sku}</span> — {productName(p)}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
-                          <TableCell className="text-end num-cell">
-                            <Input className="h-9 text-end tabular-nums" type="number" step="0.01" dir="ltr" value={l.quantity} onChange={(e) => updateLine(l.key, 'quantity', e.target.value)} />
-                          </TableCell>
-                          <TableCell className="text-end num-cell">
-                            <Input className="h-9 text-end tabular-nums" type="number" step="0.01" dir="ltr" value={l.unitPrice} onChange={(e) => updateLine(l.key, 'unitPrice', e.target.value)} />
-                          </TableCell>
-                          <TableCell className="text-end num-cell">
-                            <Input className="h-9 text-end tabular-nums" type="number" step="0.01" dir="ltr" value={l.discountAmount} onChange={(e) => updateLine(l.key, 'discountAmount', e.target.value)} />
-                          </TableCell>
-                          <TableCell className="text-end num-cell">
-                            <Input className="h-9 text-end tabular-nums" type="number" step="0.01" dir="ltr" value={l.taxRate} onChange={(e) => updateLine(l.key, 'taxRate', e.target.value)} />
-                          </TableCell>
-                          <TableCell className="text-end num-cell">
-                            <span className="num font-semibold tabular-nums" dir="ltr">{formatCurrency(lineTotal)}</span>
-                          </TableCell>
-                          <TableCell>
-                            <Button type="button" size="icon" variant="ghost" className="size-8 text-rose-500 hover:text-rose-600" onClick={() => removeLine(l.key)}>
-                              <Trash2 className="size-3.5" />
+              {/* ===== البنود: بطاقات على الجوال (< md) ===== */}
+              <div className="space-y-3 md:hidden">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">{L('البنود', 'Line Items')}</span>
+                  <span className="text-xs text-muted-foreground px-2">{lines.length} {L('بند', 'items')}</span>
+                </div>
+
+                {lines.map((l, idx) => {
+                  const qty = Number(l.quantity) || 0
+                  const price = Number(l.unitPrice) || 0
+                  const disc = Number(l.discountAmount) || 0
+                  const taxRate = Number(l.taxRate) || 0
+                  const lineTotal = (qty * price - disc) * (1 + taxRate / 100)
+                  return (
+                    <Card key={l.key} className="p-3 space-y-3 rounded-lg">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-medium text-muted-foreground">{L('بند', 'Item')} #{idx + 1}</span>
+                        {!viewOnly && (
+                          <Button type="button" size="icon" variant="ghost" className="size-8 text-rose-500 hover:text-rose-600 shrink-0" onClick={() => removeLine(l.key)}>
+                            <Trash2 className="size-4" />
+                          </Button>
+                        )}
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">{L('المنتج', 'Product')}</Label>
+                        <Select value={l.productId} onValueChange={(v) => updateLine(l.key, 'productId', v)}>
+                          <SelectTrigger className="h-9 w-full"><SelectValue placeholder={L('اختر المنتج', 'Select Product')} /></SelectTrigger>
+                          <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
+                            {products.map((p) => (
+                              <SelectItem key={p.id} value={p.id}>
+                                <span dir="ltr" className="font-mono text-xs">{p.sku}</span> — {productName(p)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-xs">{L('الكمية', 'Qty')}</Label>
+                          <Input className="h-9 text-start tabular-nums" type="number" step="1" inputMode="decimal" dir="ltr" value={l.quantity} onChange={(e) => updateLine(l.key, 'quantity', e.target.value)} />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">{L('السعر', 'Price')}</Label>
+                          <Input className="h-9 text-start tabular-nums" type="number" step="0.1" inputMode="decimal" dir="ltr" value={l.unitPrice} onChange={(e) => updateLine(l.key, 'unitPrice', e.target.value)} />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">{L('الخصم', 'Discount')}</Label>
+                          <Input className="h-9 text-start tabular-nums" type="number" step="0.1" inputMode="decimal" dir="ltr" value={l.discountAmount} onChange={(e) => updateLine(l.key, 'discountAmount', e.target.value)} />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">{L('الضريبة %', 'Tax %')}</Label>
+                          <Input className="h-9 text-start tabular-nums" type="number" step="0.1" inputMode="decimal" dir="ltr" value={l.taxRate} onChange={(e) => updateLine(l.key, 'taxRate', e.target.value)} />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between border-t pt-2">
+                        <span className="text-xs text-muted-foreground">{L('إجمالي البند', 'Line Total')}</span>
+                        <span className="num font-semibold tabular-nums" dir="ltr">{formatCurrency(lineTotal)}</span>
+                      </div>
+                    </Card>
+                  )
+                })}
+
+                {!viewOnly && (
+                  <Button type="button" size="sm" variant="outline" onClick={addLine} className="w-full gap-1.5">
+                    <Plus className="size-3.5" /> {L('إضافة بند', 'Add Item')}
+                  </Button>
+                )}
+              </div>
+
+              {/* ===== البنود: جدول على التابلت/الديسكتوب (md+) مع تمرير أفقي آمن ===== */}
+              <Card className="rounded-lg overflow-hidden hidden md:block">
+                <div className="w-full overflow-x-auto">
+                  <Table className="min-w-[720px]">
+                    <TableHeader>
+                      <TableRow className="bg-muted/50">
+                        <TableHead className="ps-3 min-w-[200px]">{L('المنتج', 'Product')}</TableHead>
+                        <TableHead className="text-end num-cell w-24">{L('الكمية', 'Qty')}</TableHead>
+                        <TableHead className="text-end num-cell w-28">{L('السعر', 'Price')}</TableHead>
+                        <TableHead className="text-end num-cell w-24">{L('الخصم', 'Discount')}</TableHead>
+                        <TableHead className="text-end num-cell w-24">{L('الضريبة %', 'Tax %')}</TableHead>
+                        <TableHead className="text-end num-cell w-28">{L('الإجمالي', 'Total')}</TableHead>
+                        <TableHead className="w-12"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {lines.map((l) => {
+                        const qty = Number(l.quantity) || 0
+                        const price = Number(l.unitPrice) || 0
+                        const disc = Number(l.discountAmount) || 0
+                        const taxRate = Number(l.taxRate) || 0
+                        const lineTotal = (qty * price - disc) * (1 + taxRate / 100)
+                        return (
+                          <TableRow key={l.key}>
+                            <TableCell className="ps-3">
+                              <Select value={l.productId} onValueChange={(v) => updateLine(l.key, 'productId', v)}>
+                                <SelectTrigger className="h-9 w-full min-w-[200px]"><SelectValue placeholder={L('اختر المنتج', 'Select Product')} /></SelectTrigger>
+                                <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
+                                  {products.map((p) => (
+                                    <SelectItem key={p.id} value={p.id}>
+                                      <span dir="ltr" className="font-mono text-xs">{p.sku}</span> — {productName(p)}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
+                            <TableCell className="text-start num-cell">
+                              <Input className="h-9 text-start tabular-nums" type="number" step="1" inputMode="decimal" dir="ltr" value={l.quantity} onChange={(e) => updateLine(l.key, 'quantity', e.target.value)} />
+                            </TableCell>
+                            <TableCell className="text-start num-cell">
+                              <Input className="h-9 text-start tabular-nums" type="number" step="0.1" inputMode="decimal" dir="ltr" value={l.unitPrice} onChange={(e) => updateLine(l.key, 'unitPrice', e.target.value)} />
+                            </TableCell>
+                            <TableCell className="text-start num-cell">
+                              <Input className="h-9 text-start tabular-nums" type="number" step="0.1" inputMode="decimal" dir="ltr" value={l.discountAmount} onChange={(e) => updateLine(l.key, 'discountAmount', e.target.value)} />
+                            </TableCell>
+                            <TableCell className="text-start num-cell">
+                              <Input className="h-9 text-start tabular-nums" type="number" step="0.1" inputMode="decimal" dir="ltr" value={l.taxRate} onChange={(e) => updateLine(l.key, 'taxRate', e.target.value)} />
+                            </TableCell>
+                            <TableCell className="text-end num-cell">
+                              <span className="num font-semibold tabular-nums" dir="ltr">{formatCurrency(lineTotal)}</span>
+                            </TableCell>
+                            <TableCell>
+                              {!viewOnly && (
+                                <Button type="button" size="icon" variant="ghost" className="size-8 text-rose-500 hover:text-rose-600" onClick={() => removeLine(l.key)}>
+                                  <Trash2 className="size-4" />
+                                </Button>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })}
+                    </TableBody>
+                    <TableFooter>
+                      <TableRow>
+                        <TableCell colSpan={5}>
+                          {!viewOnly && (
+                            <Button type="button" size="sm" variant="outline" onClick={addLine} className="gap-1.5">
+                              <Plus className="size-3.5" /> {L('إضافة بند', 'Add Item')}
                             </Button>
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                  <TableFooter>
-                    <TableRow>
-                      <TableCell colSpan={5}>
-                        <Button type="button" size="sm" variant="outline" onClick={addLine} className="gap-1.5">
-                          <Plus className="size-3.5" /> {L('إضافة بند', 'Add Item')}
-                        </Button>
-                      </TableCell>
-                      <TableCell className="text-end num-cell">
-                        <span className="num font-bold tabular-nums" dir="ltr">{formatCurrency(computed.total)}</span>
-                      </TableCell>
-                      <TableCell></TableCell>
-                    </TableRow>
-                  </TableFooter>
-                </Table>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-end num-cell">
+                          <span className="num font-bold tabular-nums" dir="ltr">{formatCurrency(computed.total)}</span>
+                        </TableCell>
+                        <TableCell></TableCell>
+                      </TableRow>
+                    </TableFooter>
+                  </Table>
+                </div>
               </Card>
 
-              <div className="grid grid-cols-3 gap-3 text-sm">
-                <div className="p-3 rounded-lg bg-muted/40">
+              {/* ===== ملخّص الإجماليات ===== */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+                <div className="p-3 rounded-lg bg-muted/50 dark:bg-muted-900/30 border border-green-200 dark:border-green-900">
                   <p className="text-xs text-muted-foreground">{L('المجموع الفرعي', 'Subtotal')}</p>
                   <p className="font-bold tabular-nums" dir="ltr">{formatCurrency(computed.subtotal)}</p>
                 </div>
-                <div className="p-3 rounded-lg bg-muted/40">
+                <div className="p-3 rounded-lg bg-muted/50 dark:bg-muted-900/30 border border-muted-200 dark:border-muted-900">
                   <p className="text-xs text-muted-foreground">{L('الضريبة', 'Tax')}</p>
                   <p className="font-bold tabular-nums" dir="ltr">{formatCurrency(computed.taxTotal)}</p>
                 </div>
-                <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900">
+                <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 col-span-2 sm:col-span-1">
                   <p className="text-xs text-blue-700 dark:text-blue-400">{L('الإجمالي', 'Total')}</p>
                   <p className="font-bold tabular-nums text-blue-700 dark:text-blue-400" dir="ltr">{formatCurrency(computed.total)}</p>
                 </div>
@@ -552,13 +690,20 @@ export function SalesInvoicesModule() {
                 <Label htmlFor="notes">{L('ملاحظات', 'Notes')}</Label>
                 <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder={L('ملاحظات إضافية...', 'Additional notes...')} />
               </div>
-            </div>
+            </fieldset>
           </DialogBody>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>{L('إلغاء', 'Cancel')}</Button>
-            <Button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
-              {saveMutation.isPending ? L('جاري الحفظ...', 'Saving...') : L('إنشاء وترحيل', 'Create & Post')}
+
+          <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-between gap-2 px-4 sm:px-6 py-3 border-t shrink-0">
+            <Button type="button" variant="outline" className="w-full sm:w-auto sm:min-w-25" onClick={() => { setAddOpen(false); resetForm() }}>
+              {viewOnly ? L('إغلاق', 'Close') : L('إلغاء', 'Cancel')}
             </Button>
+            {!viewOnly && (
+              <Button type="button" className="w-full sm:w-auto sm:min-w-30" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
+                {saveMutation.isPending
+                  ? L('جاري الحفظ...', 'Saving...')
+                  : editingId ? L('حفظ', 'Save') : L('إنشاء وترحيل', 'Create & Post')}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

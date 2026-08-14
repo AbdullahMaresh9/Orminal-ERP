@@ -25,6 +25,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogBody,
 } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { DatePicker } from '@/components/ui/date-picker'
 import {
   Factory, Plus, Pencil, Trash2, Printer, PlayCircle, CheckCircle2, XCircle, Package, ClipboardList, Coins,
 } from 'lucide-react'
@@ -313,7 +314,7 @@ export function ProductionOrdersModule() {
           </Table>
         </ScrollArea>
       </Card>
-
+/////////
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-2xl p-0 overflow-hidden bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800" dir={dir}>
           <DialogHeader className="bg-gradient-to-r rtl:bg-gradient-to-l from-blue-50 to-[#E6F0FF] dark:bg-none dark:bg-blue-700/80 border-b border-blue-100 dark:border-blue-600/40 p-6 shrink-0 relative">
@@ -352,11 +353,11 @@ export function ProductionOrdersModule() {
                 </div>
                 <div className="space-y-1.5 text-start">
                   <Label htmlFor="plannedStart" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'تاريخ البدء المخطط' : 'Planned Start Date'}</Label>
-                  <Input id="plannedStart" type="date" value={plannedStart} onChange={(e) => setPlannedStart(e.target.value)} className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-end font-mono" dir="ltr" />
+                  <DatePicker id="plannedStart" value={plannedStart} onChange={(val) => setPlannedStart(val)} />
                 </div>
                 <div className="space-y-1.5 text-start">
                   <Label htmlFor="plannedEnd" className="text-xs font-semibold text-slate-650 dark:text-slate-400">{isRTL ? 'تاريخ الانتهاء المخطط' : 'Planned End Date'}</Label>
-                  <Input id="plannedEnd" type="date" value={plannedEnd} onChange={(e) => setPlannedEnd(e.target.value)} className="h-10 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 text-end font-mono" dir="ltr" />
+                  <DatePicker id="plannedEnd" value={plannedEnd} onChange={(val) => setPlannedEnd(val)} />
                 </div>
               </div>
               <div className="space-y-1.5 text-start">

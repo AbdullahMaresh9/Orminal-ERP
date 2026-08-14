@@ -23,7 +23,7 @@ import {
   Download, FileSpreadsheet, FileCheck, ChevronDown
 } from 'lucide-react'
 
-// أبعاد الجدول وحساب الارتفاع الثابت لخمسة صفوف تماشياً مع نمط مرتجعات المشتريات
+//  أبعاد الجدول وحساب الارتفاع الثابت لخمسة صفوف تماشياً مع نمط مرتجعات المشتريات
 const HEADER_HEIGHT = 44
 const VISIBLE_ROWS = 6
 const ROW_HEIGHT = 52
