@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useI18n } from '@/stores/i18n-store'
@@ -40,12 +40,6 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
     const { locale, setLocale } = useI18n()
     const { t, isRTL, dir } = useT()
     const { theme, setTheme } = useTheme()
-    const [mounted, setMounted] = useState(false)
-
-    useEffect(() => {
-        setMounted(true)
-    }, [])
-
     // Login form state
     const [loginUsername, setLoginUsername] = useState('')
     const [loginPassword, setLoginPassword] = useState('')
@@ -385,21 +379,21 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="outline" size="sm" className="h-9 w-9 p-0 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 dark:text-white" aria-label="تغيير المظهر">
-                                    {mounted && theme === 'dark' ? <Moon className="size-4 text-blue-400" /> : <Sun className="size-4 text-amber-500" />}
+                                    {theme === 'dark' ? <Moon className="size-4 text-blue-400" /> : <Sun className="size-4 text-amber-500" />}
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-36 dark:bg-slate-900 dark:border-slate-800 dark:text-white">
                                 <DropdownMenuItem onClick={() => setTheme('light')} className="justify-between text-xs">
                                     <span className="flex items-center gap-2"><Sun className="size-3.5" /> {isRTL ? 'مضيء' : 'Light'}</span>
-                                    {mounted && theme === 'light' && <Check className="size-3.5" />}
+                                    {theme === 'light' && <Check className="size-3.5" />}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => setTheme('dark')} className="justify-between text-xs">
                                     <span className="flex items-center gap-2"><Moon className="size-3.5" /> {isRTL ? 'داكن' : 'Dark'}</span>
-                                    {mounted && theme === 'dark' && <Check className="size-3.5" />}
+                                    {theme === 'dark' && <Check className="size-3.5" />}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => setTheme('system')} className="justify-between text-xs">
                                     <span className="flex items-center gap-2"><Monitor className="size-3.5" /> {isRTL ? 'النظام' : 'System'}</span>
-                                    {mounted && theme === 'system' && <Check className="size-3.5" />}
+                                    {theme === 'system' && <Check className="size-3.5" />}
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
