@@ -1,18 +1,21 @@
 import { db } from '@/lib/db'
-import { ok, created, list, badRequest, serverError, parsePagination, parseSearch } from '@/lib/erp/api-response'
+import { created, list, badRequest, serverError, unauthorized, parsePagination, parseSearch } from '@/lib/erp/api-response'
 import { nextNumber } from '@/lib/erp/number-sequence'
 import { postJournalEntry, goodsReceiptPosting } from '@/lib/erp/accounting-engine'
+import { getRequestContext } from '@/lib/erp/context'
 
 // GET /api/erp/goods-receipts
 export async function GET(req: Request) {
   try {
+    const context = await getRequestContext()
+    if (!context) return unauthorized()
     const { page, pageSize, skip } = parsePagination(req)
     const q = parseSearch(req)
     const url = new URL(req.url)
     const status = url.searchParams.get('status')
     const partnerId = url.searchParams.get('partnerId')
 
-    const where: any = {}
+    const where: any = { companyId: context.companyId }
     if (q) where.code = { contains: q }
     if (status) where.status = status
     if (partnerId) where.partnerId = partnerId
@@ -41,66 +44,83 @@ export async function GET(req: Request) {
 // POST — create; on validate: create StockMove, upsert StockQuant, post goods receipt journal
 export async function POST(req: Request) {
   try {
+    const context = await getRequestContext()
+    if (!context) return unauthorized()
     const body = await req.json()
     if (!body.partnerId) return badRequest('partnerId is required')
     if (!body.warehouseId) return badRequest('warehouseId is required')
-    if (!body.lines || body.lines.length === 0) return badRequest('lines are required')
+    if (!Array.isArray(body.lines) || body.lines.length === 0) return badRequest('lines are required')
 
-    const company = await db.company.findFirst()
-    if (!company) return badRequest('no company in db')
-    const branch = await db.branch.findFirst({ where: { companyId: company.id } })
+    const status = body.status === 'validated' || body.status === 'received' ? 'validated' : 'draft'
+    if (status === 'validated' && body.lines.some((l: any) => !l.productId || !Number.isFinite(Number(l.receivedQty)) || Number(l.receivedQty) <= 0 || !Number.isFinite(Number(l.unitCost)) || Number(l.unitCost) < 0)) {
+      return badRequest('Each line must have a product, positive received quantity, and non-negative unit cost to validate')
+    }
+
+    const branchId = body.branchId ?? context.branchId
+    const [company, partner, warehouse] = await Promise.all([
+      db.company.findUnique({ where: { id: context.companyId } }),
+      db.partner.findFirst({ where: { id: body.partnerId, companyId: context.companyId } }),
+      db.warehouse.findFirst({ where: { id: body.warehouseId, branch: { companyId: context.companyId } } }),
+    ])
+    if (!company) return badRequest('company not found')
+    if (!partner) return badRequest('partner not found')
+    if (!warehouse) return badRequest('warehouse not found')
+    const branch = branchId ? await db.branch.findFirst({ where: { id: branchId, companyId: context.companyId } }) : null
+
+    if (body.purchaseOrderId) {
+      const po = await db.purchaseOrder.findFirst({ where: { id: body.purchaseOrderId, companyId: context.companyId } })
+      if (!po) return badRequest('purchase order not found')
+    }
 
     const code = await nextNumber('goods_receipt', company.id, branch?.id)
+    const receiptDate = body.receiptDate ? new Date(body.receiptDate) : new Date()
 
     // Compute total from lines
     const lines = body.lines.map((l: any) => {
-      const total = (l.receivedQty || 0) * (l.unitCost || 0)
+      const total = (Number(l.receivedQty) || 0) * (Number(l.unitCost) || 0)
       return { ...l, total }
     })
     const amount = lines.reduce((s: number, l: any) => s + l.total, 0)
 
-    const status = body.status ?? 'draft'
-
-    const grn = await db.goodsReceipt.create({
-      data: {
-        companyId: company.id,
-        branchId: branch?.id,
-        code,
-        purchaseOrderId: body.purchaseOrderId,
-        partnerId: body.partnerId,
-        warehouseId: body.warehouseId,
-        receiptDate: body.receiptDate ? new Date(body.receiptDate) : new Date(),
-        status,
-        notes: body.notes,
-        createdBy: body.createdBy,
-        lines: {
-          create: lines.map((l: any) => ({
-            productId: l.productId,
-            purchaseOrderLineId: l.purchaseOrderLineId,
-            orderedQty: l.orderedQty ?? 0,
-            receivedQty: l.receivedQty,
-            uomId: l.uomId,
-            lotNumber: l.lotNumber,
-            expiryDate: l.expiryDate ? new Date(l.expiryDate) : undefined,
-            unitCost: l.unitCost,
-            total: l.total,
-          })),
+    // Create record + stock moves + quants + journal + PO update in one transaction
+    const grn = await db.$transaction(async (tx) => {
+      const receipt = await tx.goodsReceipt.create({
+        data: {
+          companyId: company.id,
+          branchId: branch?.id,
+          code,
+          purchaseOrderId: body.purchaseOrderId,
+          partnerId: body.partnerId,
+          warehouseId: body.warehouseId,
+          receiptDate,
+          status,
+          notes: body.notes,
+          createdBy: context.userId,
+          lines: {
+            create: lines.map((l: any) => ({
+              productId: l.productId,
+              purchaseOrderLineId: l.purchaseOrderLineId,
+              orderedQty: l.orderedQty ?? 0,
+              receivedQty: l.receivedQty,
+              uomId: l.uomId,
+              lotNumber: l.lotNumber,
+              expiryDate: l.expiryDate ? new Date(l.expiryDate) : undefined,
+              unitCost: l.unitCost,
+              total: l.total,
+            })),
+          },
         },
-      },
-      include: { lines: { include: { product: true } } },
-    })
+        include: { lines: { include: { product: true } } },
+      })
 
-    // On validate: create stock moves, upsert stock quants, post journal
-    if (status === 'validated' || status === 'received') {
-      // Create StockMoves + upsert StockQuants atomically
-      await db.$transaction(async (tx) => {
+      if (status === 'validated') {
         for (const l of lines) {
           // Append-only StockMove (in)
           await tx.stockMove.create({
             data: {
               companyId: company.id,
               documentType: 'receipt',
-              documentId: grn.id,
+              documentId: receipt.id,
               productId: l.productId,
               destWarehouseId: body.warehouseId,
               quantity: l.receivedQty,
@@ -108,7 +128,7 @@ export async function POST(req: Request) {
               state: 'done',
               valuationAmount: l.total,
               costPrice: l.unitCost,
-              postingDate: new Date(),
+              postingDate: receiptDate,
             },
           })
 
@@ -131,34 +151,35 @@ export async function POST(req: Request) {
             })
           }
         }
-      })
 
-      // Post goods receipt journal (Dr Inventory / Cr GRNI)
-      const je = await postJournalEntry({
-        companyId: company.id,
-        branchId: branch?.id,
-        journalType: 'purchase',
-        postingDate: new Date(),
-        description: `استلام بضاعة ${code}`,
-        refType: 'goods_receipt',
-        refId: grn.id,
-        lines: goodsReceiptPosting({ amount }),
-        userId: body.createdBy,
-      })
+        // Post goods receipt journal (Dr Inventory / Cr GRNI)
+        const je = await postJournalEntry({
+          companyId: company.id,
+          branchId: branch?.id,
+          journalType: 'purchase',
+          postingDate: receiptDate,
+          description: `استلام بضاعة ${code}`,
+          refType: 'goods_receipt',
+          refId: receipt.id,
+          lines: goodsReceiptPosting({ amount }),
+          userId: context.userId,
+        }, tx)
 
-      await db.goodsReceipt.update({
-        where: { id: grn.id },
-        data: { journalEntryId: je.id, status: 'validated' },
-      })
-
-      // Update purchase order receipt status
-      if (body.purchaseOrderId) {
-        await db.purchaseOrder.update({
-          where: { id: body.purchaseOrderId },
-          data: { receiptStatus: 'received', status: 'received' },
+        await tx.goodsReceipt.update({
+          where: { id: receipt.id },
+          data: { journalEntryId: je.id },
         })
+
+        // Update purchase order receipt status
+        if (body.purchaseOrderId) {
+          await tx.purchaseOrder.update({
+            where: { id: body.purchaseOrderId },
+            data: { receiptStatus: 'received', status: 'received' },
+          })
+        }
       }
-    }
+      return receipt
+    })
 
     const result = await db.goodsReceipt.findUnique({
       where: { id: grn.id },

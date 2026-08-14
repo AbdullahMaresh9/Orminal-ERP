@@ -1,17 +1,20 @@
 import { db } from '@/lib/db'
-import { ok, created, list, badRequest, serverError, parsePagination, parseSearch } from '@/lib/erp/api-response'
+import { created, list, badRequest, serverError, unauthorized, parsePagination, parseSearch } from '@/lib/erp/api-response'
 import { nextNumber } from '@/lib/erp/number-sequence'
+import { getRequestContext } from '@/lib/erp/context'
 
 // GET /api/erp/sales-quotations
 export async function GET(req: Request) {
   try {
+    const context = await getRequestContext()
+    if (!context) return unauthorized()
     const { page, pageSize, skip } = parsePagination(req)
     const q = parseSearch(req)
     const url = new URL(req.url)
     const status = url.searchParams.get('status')
     const partnerId = url.searchParams.get('partnerId')
 
-    const where: any = {}
+    const where: any = { companyId: context.companyId }
     if (q) {
       where.OR = [{ code: { contains: q } }, { description: { contains: q } }]
     }
@@ -40,12 +43,19 @@ export async function GET(req: Request) {
 // POST /api/erp/sales-quotations — create (no posting, no stock)
 export async function POST(req: Request) {
   try {
+    const context = await getRequestContext()
+    if (!context) return unauthorized()
     const body = await req.json()
     if (!body.partnerId) return badRequest('partnerId is required')
 
-    const company = await db.company.findFirst()
-    if (!company) return badRequest('no company in db')
-    const branch = await db.branch.findFirst({ where: { companyId: company.id } })
+    const branchId = body.branchId ?? context.branchId
+    const [company, partner] = await Promise.all([
+      db.company.findUnique({ where: { id: context.companyId } }),
+      db.partner.findFirst({ where: { id: body.partnerId, companyId: context.companyId } }),
+    ])
+    if (!company) return badRequest('company not found')
+    if (!partner) return badRequest('partner not found')
+    const branch = branchId ? await db.branch.findFirst({ where: { id: branchId, companyId: context.companyId } }) : null
 
     const code = await nextNumber('sales_quotation', company.id, branch?.id)
 
@@ -91,7 +101,7 @@ export async function POST(req: Request) {
         discount: body.discount ?? 0,
         total,
         notes: body.notes,
-        createdBy: body.createdBy,
+        createdBy: context.userId,
         lines: { create: processedLines },
       },
       include: {

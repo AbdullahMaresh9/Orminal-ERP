@@ -58,58 +58,52 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         return badRequest('Return already debited or cancelled')
       }
 
-      let journalEntryId: string | null = null
-
-      try {
-        const je = await postJournalEntry({
-          companyId: exists.companyId,
-          branchId: exists.branchId ?? undefined,
-          journalType: 'purchase',
-          postingDate: exists.date ? new Date(exists.date) : new Date(),
-          description: `إشعار مدين — مرتجع مشتريات ${exists.code}`,
-          refType: 'purchase_return',
-          refId: exists.id,
-          lines: purchaseReturnPosting({
-            total: exists.total,
-            subtotal: exists.subtotal,
-            taxTotal: exists.taxTotal,
-            partnerId: exists.partnerId,
-          }),
-          userId: body.userId,
-        })
-        journalEntryId = je.id
-      } catch (err: any) {
-        return badRequest(`فشل إصدار قيد الإشعار المدين: ${err.message}`)
-      }
-
-      // Create an official PurchaseCreditNote (Debit Note) tracking record & update balances transactionally
+      // Journal posting + credit note record + status + partner balance must all
+      // be atomic to avoid half-applied debit notes.
       const result = await db.$transaction(async (tx) => {
-        try {
-          const pcnCode = await nextNumber('purchase_credit_note', exists.companyId, exists.branchId ?? undefined)
-          await tx.purchaseCreditNote.create({
-            data: {
-              companyId: exists.companyId,
-              branchId: exists.branchId,
-              code: pcnCode,
-              partnerId: exists.partnerId,
-              invoiceId: exists.originalInvoiceId ?? null,
-              date: exists.date ? new Date(exists.date) : new Date(),
-              reason: exists.reason || 'إشعار مدين عن مرتجع مشتريات',
-              status: 'posted',
+        const je = await postJournalEntry(
+          {
+            companyId: exists.companyId,
+            branchId: exists.branchId ?? undefined,
+            journalType: 'purchase',
+            postingDate: exists.date ? new Date(exists.date) : new Date(),
+            description: `إشعار مدين — مرتجع مشتريات ${exists.code}`,
+            refType: 'purchase_return',
+            refId: exists.id,
+            lines: purchaseReturnPosting({
+              total: exists.total,
               subtotal: exists.subtotal,
               taxTotal: exists.taxTotal,
-              total: exists.total,
-              journalEntryId: journalEntryId ?? null,
-              notes: exists.notes || null,
-            },
-          })
-        } catch (err: any) {
-          console.error('Failed to create purchase credit note record:', err)
-        }
+              partnerId: exists.partnerId,
+            }),
+            userId: body.userId,
+          },
+          tx
+        )
+        const journalEntryId = je.id
+
+        const pcnCode = await nextNumber('purchase_credit_note', exists.companyId, exists.branchId ?? undefined)
+        await tx.purchaseCreditNote.create({
+          data: {
+            companyId: exists.companyId,
+            branchId: exists.branchId,
+            code: pcnCode,
+            partnerId: exists.partnerId,
+            invoiceId: exists.originalInvoiceId ?? null,
+            date: exists.date ? new Date(exists.date) : new Date(),
+            reason: exists.reason || 'إشعار مدين عن مرتجع مشتريات',
+            status: 'posted',
+            subtotal: exists.subtotal,
+            taxTotal: exists.taxTotal,
+            total: exists.total,
+            journalEntryId,
+            notes: exists.notes || null,
+          },
+        })
 
         await tx.purchaseReturn.update({
           where: { id },
-          data: { status: 'debited', ...(journalEntryId ? { journalEntryId } : {}) },
+          data: { status: 'debited', journalEntryId },
         })
 
         // Decrease AP (partner balance — supplier is owed less)
@@ -168,7 +162,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         const maxQty = invQtyMap.get(l.productId) ?? 0
         const retQty = Number(l.quantity) || 0
         if (retQty > maxQty) {
-          return badRequest(`الكمية المرجعة (${retQty}) تتجاوز الكمية المشتراة في الفاتورة الأصلية (${maxQty})`)
+          return badRequest(`ا��كمية المرجعة (${retQty}) تتجاوز الكمية المشتراة في الفاتورة الأصلية (${maxQty})`)
         }
       }
     }

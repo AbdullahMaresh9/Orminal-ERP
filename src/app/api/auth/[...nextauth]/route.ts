@@ -1,33 +1,9 @@
-import NextAuth from 'next-auth'
+import NextAuth, { type AuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { db } from '@/lib/db'
-import { scrypt, timingSafeEqual, randomBytes } from 'crypto'
-const scryptAsync = (password: string | Buffer, salt: string | Buffer, keylen: number, options: { N: number; r: number; p: number }): Promise<Buffer> => {
-  return new Promise((resolve, reject) => {
-    scrypt(password, salt, keylen, options, (err, derivedKey) => {
-      if (err) reject(err)
-      else resolve(derivedKey)
-    })
-  })
-}
+import { hashPassword, verifyPassword } from '@/lib/auth/password'
 
-async function verifyPassword(plaintext: string, hash: string): Promise<boolean> {
-  try {
-    // Support both scrypt format (scrypt:N:r:p$salt$hash) and plain bcrypt-style 
-    if (hash.startsWith('scrypt:')) {
-      const [params, salt, storedHash] = hash.split('$')
-      const [, N, r, p] = params.split(':').map(Number)
-      const derivedKey = (await scryptAsync(plaintext, Buffer.from(salt, 'hex'), 64, { N, r, p })) as Buffer
-      return timingSafeEqual(derivedKey, Buffer.from(storedHash, 'hex'))
-    }
-    // Fallback: plain text comparison (dev-only seeds)
-    return plaintext === hash
-  } catch {
-    return false
-  }
-}
-
-const handler = NextAuth({
+export const authOptions: AuthOptions = {
   providers: [
     CredentialsProvider({
       name: 'credentials',
@@ -68,11 +44,17 @@ const handler = NextAuth({
 
           if (!user) return null
 
-          const valid = await verifyPassword(credentials.password, user.passwordHash)
+          const { valid, needsRehash } = await verifyPassword(credentials.password, user.passwordHash)
           if (!valid) return null
 
-          // Update last login timestamp (fire-and-forget)
-          db.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } }).catch(() => { })
+          // Update last login timestamp, and transparently migrate any
+          // legacy (bcrypt / insecure base64) password hash to the current
+          // scrypt format now that we've verified the plaintext (fire-and-forget).
+          const updateData: { lastLoginAt: Date; passwordHash?: string } = { lastLoginAt: new Date() }
+          if (needsRehash) {
+            updateData.passwordHash = await hashPassword(credentials.password)
+          }
+          db.user.update({ where: { id: user.id }, data: updateData }).catch(() => { })
 
           const primaryRole = user.userRoles[0]?.role
 
@@ -137,6 +119,8 @@ const handler = NextAuth({
     error: '/login',
   },
   secret: process.env.NEXTAUTH_SECRET,
-})
+}
+
+const handler = NextAuth(authOptions)
 
 export { handler as GET, handler as POST }

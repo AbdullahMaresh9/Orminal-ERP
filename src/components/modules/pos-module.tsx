@@ -144,9 +144,7 @@ export function PosModule() {
       if (cart.length === 0) throw new Error(L('السلة فارغة', 'Cart is empty'))
       if (!clientId) throw new Error(L('لا يوجد عميل متاح — الرجاء إضافة عميل أولاً', 'No customer available — Please add a customer first'))
       const payload = {
-        isPos: true,
-        clientId,
-        status: 'confirmed',
+        partnerId: clientId,
         paymentMethod,
         items: cart.map((i) => ({
           productId: i.product.id,
@@ -155,16 +153,17 @@ export function PosModule() {
           taxRate: getTaxRate(i.product),
         })),
       }
-      const r = await fetch('/api/erp/sales-orders', {
+      const r = await fetch('/api/erp/pos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
       if (!r.ok) {
         const e = await r.json().catch(() => ({}))
-        throw new Error(e.error || L('فشلت عملية البيع', 'Checkout failed'))
+        throw new Error(e.error?.message || e.error || L('فشلت عملية البيع', 'Checkout failed'))
       }
-      return r.json()
+      const json = await r.json()
+      return json.data ?? json
     },
     onSuccess: (data) => {
       toast.success(L('تمت عملية البيع بنجاح', 'Sale completed successfully'))
@@ -339,7 +338,7 @@ export function PosModule() {
             <div className="h-full flex flex-col items-center justify-center text-center p-8 text-muted-foreground">
               <ShoppingCart className="size-12 opacity-30 mb-2" />
               <p className="text-sm">{L('السلة فارغة', 'Cart is empty')}</p>
-              <p className="text-xs mt-1">{L('اضغط على المنتجات لإضافتها', 'Click products to add them')}</p>
+              <p className="text-xs mt-1">{L('اضغط على المنتجات ل��ضافتها', 'Click products to add them')}</p>
             </div>
           ) : (
             <div className="divide-y">
@@ -483,7 +482,7 @@ export function PosModule() {
                 </div>
                 <div className="space-y-1 text-sm">
                   <div className="flex justify-between"><span className="text-muted-foreground">{L('المجموع الفرعي', 'Subtotal')}</span><span><span className="num">{formatCurrency(receipt.subtotal)}</span></span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">{L('الضريبة', 'Tax')}</span><span><span className="num">{formatCurrency(receipt.taxTotal)}</span></span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">{L('ال��ريبة', 'Tax')}</span><span><span className="num">{formatCurrency(receipt.taxTotal)}</span></span></div>
                   <div className="flex justify-between font-bold text-base pt-1 border-t"><span>{L('الإجمالي', 'Total')}</span><span className="text-primary"><span className="num">{formatCurrency(receipt.total)}</span></span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">{L('المدفوع', 'Paid')}</span><span><span className="num">{formatCurrency(receipt.received)}</span></span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">{L('الباقي', 'Change')}</span><span><span className="num">{formatCurrency(receipt.change)}</span></span></div>

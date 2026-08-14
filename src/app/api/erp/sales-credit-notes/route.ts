@@ -1,18 +1,21 @@
 import { db } from '@/lib/db'
-import { ok, created, list, badRequest, serverError, parsePagination, parseSearch } from '@/lib/erp/api-response'
+import { created, list, badRequest, serverError, unauthorized, parsePagination, parseSearch } from '@/lib/erp/api-response'
 import { nextNumber } from '@/lib/erp/number-sequence'
 import { reverseJournalEntry } from '@/lib/erp/accounting-engine'
+import { getRequestContext } from '@/lib/erp/context'
 
 // GET /api/erp/sales-credit-notes
 export async function GET(req: Request) {
   try {
+    const context = await getRequestContext()
+    if (!context) return unauthorized()
     const { page, pageSize, skip } = parsePagination(req)
     const q = parseSearch(req)
     const url = new URL(req.url)
     const status = url.searchParams.get('status')
     const partnerId = url.searchParams.get('partnerId')
 
-    const where: any = {}
+    const where: any = { companyId: context.companyId }
     if (q) where.OR = [{ code: { contains: q } }, { reason: { contains: q } }]
     if (status) where.status = status
     if (partnerId) where.partnerId = partnerId
@@ -36,53 +39,79 @@ export async function GET(req: Request) {
 // POST /api/erp/sales-credit-notes — create + reverse original invoice journal
 export async function POST(req: Request) {
   try {
+    const context = await getRequestContext()
+    if (!context) return unauthorized()
     const body = await req.json()
     if (!body.partnerId) return badRequest('partnerId is required')
 
-    const company = await db.company.findFirst()
-    if (!company) return badRequest('no company in db')
-    const branch = await db.branch.findFirst({ where: { companyId: company.id } })
+    const subtotal = Number(body.subtotal ?? 0)
+    const taxTotal = Number(body.taxTotal ?? 0)
+    const total = Number(body.total ?? 0)
+    if (![subtotal, taxTotal, total].every((n) => Number.isFinite(n) && n >= 0)) {
+      return badRequest('subtotal, taxTotal and total must be non-negative numbers')
+    }
+
+    const branchId = body.branchId ?? context.branchId
+    const [company, partner] = await Promise.all([
+      db.company.findUnique({ where: { id: context.companyId } }),
+      db.partner.findFirst({ where: { id: body.partnerId, companyId: context.companyId } }),
+    ])
+    if (!company) return badRequest('company not found')
+    if (!partner) return badRequest('partner not found')
+    const branch = branchId ? await db.branch.findFirst({ where: { id: branchId, companyId: context.companyId } }) : null
+
+    // Validate linked invoice (required for posting a reversal)
+    const origInvoice = body.invoiceId
+      ? await db.salesInvoice.findFirst({ where: { id: body.invoiceId, companyId: context.companyId } })
+      : null
+    if (body.invoiceId && !origInvoice) return badRequest('invoice not found')
+
+    const status = body.status === 'posted' ? 'posted' : 'draft'
+    if (status === 'posted') {
+      if (!origInvoice) return badRequest('a linked invoice is required to post a credit note')
+      if (!origInvoice.journalEntryId) return badRequest('linked invoice has no posted journal to reverse')
+    }
 
     const code = await nextNumber('sales_credit_note', company.id, branch?.id)
 
-    const cn = await db.salesCreditNote.create({
-      data: {
-        companyId: company.id,
-        branchId: branch?.id,
-        code,
-        partnerId: body.partnerId,
-        invoiceId: body.invoiceId,
-        date: body.date ? new Date(body.date) : new Date(),
-        reason: body.reason,
-        status: body.status ?? 'draft',
-        subtotal: body.subtotal ?? 0,
-        taxTotal: body.taxTotal ?? 0,
-        total: body.total ?? 0,
-        notes: body.notes,
-      },
-      include: { partner: true },
-    })
+    const cn = await db.$transaction(async (tx) => {
+      const note = await tx.salesCreditNote.create({
+        data: {
+          companyId: company.id,
+          branchId: branch?.id,
+          code,
+          partnerId: body.partnerId,
+          invoiceId: body.invoiceId,
+          date: body.date ? new Date(body.date) : new Date(),
+          reason: body.reason,
+          status,
+          subtotal,
+          taxTotal,
+          total,
+          notes: body.notes,
+        },
+        include: { partner: true },
+      })
 
-    // If invoiceId provided and status posted: reverse the original invoice's journal
-    if (body.invoiceId && body.status === 'posted') {
-      const origInvoice = await db.salesInvoice.findUnique({ where: { id: body.invoiceId } })
-      if (origInvoice?.journalEntryId) {
+      if (status === 'posted' && origInvoice?.journalEntryId) {
         const reversal = await reverseJournalEntry(
           origInvoice.journalEntryId,
-          body.userId,
-          `إشعار دائن ${code}`
+          context.userId,
+          `إشعار دائن ${code}`,
+          tx
         )
-        await db.salesCreditNote.update({
-          where: { id: cn.id },
+        await tx.salesCreditNote.update({
+          where: { id: note.id },
           data: { journalEntryId: reversal.id },
         })
         // Update partner.currentBalance (decrease AR for credit note)
-        await db.partner.update({
+        await tx.partner.update({
           where: { id: body.partnerId },
-          data: { currentBalance: { decrement: body.total ?? 0 } },
+          data: { currentBalance: { decrement: total } },
         })
       }
-    }
+      return note
+    })
 
     const result = await db.salesCreditNote.findUnique({
       where: { id: cn.id },

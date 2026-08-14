@@ -1,29 +1,31 @@
 import { db } from '@/lib/db'
 import {
-  ok,
   created,
   list,
   badRequest,
   serverError,
+  unauthorized,
   parsePagination,
   parseSearch,
 } from '@/lib/erp/api-response'
 import {
   postJournalEntry,
-  reverseJournalEntry,
   validateBalanced,
 } from '@/lib/erp/accounting-engine'
+import { getRequestContext } from '@/lib/erp/context'
 
 // GET /api/erp/journal-entries — list with includes
 export async function GET(req: Request) {
   try {
+    const context = await getRequestContext()
+    if (!context) return unauthorized()
     const { page, pageSize, skip } = parsePagination(req)
     const q = parseSearch(req)
     const url = new URL(req.url)
     const state = url.searchParams.get('state')
     const refType = url.searchParams.get('refType')
 
-    const where: any = {}
+    const where: any = { companyId: context.companyId }
     if (q) {
       where.OR = [
         { code: { contains: q } },
@@ -63,13 +65,23 @@ export async function GET(req: Request) {
 // POST /api/erp/journal-entries — create draft OR post directly
 export async function POST(req: Request) {
   try {
+    const context = await getRequestContext()
+    if (!context) return unauthorized()
     const body = await req.json()
-    const company = await db.company.findFirst()
-    if (!company) return badRequest('no company in db')
-    const branch = await db.branch.findFirst({ where: { companyId: company.id } })
+    const company = await db.company.findUnique({ where: { id: context.companyId } })
+    if (!company) return badRequest('company not found')
+    const branchId = body.branchId ?? context.branchId
+    const branch = branchId ? await db.branch.findFirst({ where: { id: branchId, companyId: context.companyId } }) : null
 
     if (!body.lines || !Array.isArray(body.lines) || body.lines.length < 2) {
       return badRequest('At least 2 lines required')
+    }
+    if (body.lines.some((l: any) => {
+      const d = Number(l.debit) || 0
+      const c = Number(l.credit) || 0
+      return (d < 0 || c < 0) || (d > 0 && c > 0) || (d === 0 && c === 0)
+    })) {
+      return badRequest('Each line must have exactly one non-negative debit OR credit amount')
     }
 
     // Resolve account codes → input format for posting engine
@@ -114,7 +126,7 @@ export async function POST(req: Request) {
         refId: body.refId,
         currencyId: body.currencyId,
         lines,
-        userId: body.userId,
+        userId: context.userId,
       })
       const entry = await db.journalEntry.findUnique({
         where: { id: result.id },
@@ -162,7 +174,7 @@ export async function POST(req: Request) {
         state: 'draft',
         totalDebit,
         totalCredit,
-        createdBy: body.userId,
+        createdBy: context.userId,
         lines: {
           create: lines.map((l) => ({
             accountId: accountMap.get(l.accountCode)!,

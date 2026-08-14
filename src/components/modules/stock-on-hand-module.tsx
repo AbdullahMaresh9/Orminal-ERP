@@ -236,10 +236,6 @@ export function StockOnHandModule() {
     }
     resetPage()
   }
-  const SortIcon = ({ col }: { col: Exclude<SortKey, null> }) => {
-    if (sortBy !== col) return <ChevronsUpDown className="size-3 opacity-40" />
-    return sortDir === 'asc' ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" />
-  }
 
   // Full export across ALL pages
   const fetchAll = async (): Promise<StockQuant[]> => {
@@ -509,19 +505,19 @@ export function StockOnHandModule() {
                 <TableHead className={`${stickyHead} text-center num-cell`}>{L('الحد الأدنى', 'Min')}</TableHead>
                 <TableHead className={`${stickyHead} text-center num-cell`}>
                   <button className="inline-flex items-center gap-1 hover:text-foreground mx-auto" onClick={() => toggleSort('quantity')}>
-                    {L('الكمية', 'Quantity')} <SortIcon col="quantity" />
+                    {L('الكمية', 'Quantity')} {sortBy !== 'quantity' ? <ChevronsUpDown className="size-3 opacity-40" /> : sortDir === 'asc' ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" />}
                   </button>
                 </TableHead>
                 <TableHead className={`${stickyHead} text-center num-cell`}>{L('المحجوز', 'Reserved')}</TableHead>
                 <TableHead className={`${stickyHead} text-center num-cell`}>
                   <button className="inline-flex items-center gap-1 hover:text-foreground mx-auto" onClick={() => toggleSort('available')}>
-                    {L('المتاح', 'Available')} <SortIcon col="available" />
+                    {L('المتاح', 'Available')} {sortBy !== 'available' ? <ChevronsUpDown className="size-3 opacity-40" /> : sortDir === 'asc' ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" />}
                   </button>
                 </TableHead>
                 {canViewCost && (
                   <TableHead className={`${stickyHead} text-end num-cell`}>
                     <button className="inline-flex items-center gap-1 hover:text-foreground ms-auto" onClick={() => toggleSort('value')}>
-                      {L('القيمة', 'Value')} <SortIcon col="value" />
+                      {L('القيمة', 'Value')} {sortBy !== 'value' ? <ChevronsUpDown className="size-3 opacity-40" /> : sortDir === 'asc' ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" />}
                     </button>
                   </TableHead>
                 )}

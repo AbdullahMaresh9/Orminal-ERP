@@ -24,12 +24,25 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     const body = await req.json()
     const exists = await db.salesOrder.findUnique({ where: { id } })
     if (!exists) return notFound('Sales order not found')
-    if (exists.status === 'posted' || exists.status === 'paid') {
-      return badRequest('Cannot edit posted/paid order')
+    if (['delivered', 'posted', 'paid'].includes(exists.status)) {
+      return badRequest('Cannot edit an order that has been delivered, posted, or paid')
     }
 
-    const { id: _id, lines, createdAt: _c, updatedAt: _u, ...rest } = body
-    const updated = await db.salesOrder.update({ where: { id }, data: rest })
+    // Whitelist safe editable fields only — never let totals or scope be overwritten here.
+    const { notes, requiredDate, paymentTermId, currencyId, warehouseId, salespersonId, priceListId, status } = body
+    const updated = await db.salesOrder.update({
+      where: { id },
+      data: {
+        notes,
+        requiredDate: requiredDate ? new Date(requiredDate) : undefined,
+        paymentTermId,
+        currencyId,
+        warehouseId,
+        salespersonId,
+        priceListId,
+        status: ['draft', 'confirmed', 'cancelled'].includes(status) ? status : undefined,
+      },
+    })
     return ok(updated)
   } catch (e: any) {
     return serverError(e.message)

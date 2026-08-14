@@ -29,9 +29,11 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     })
     if (!exists) return notFound('أمر الشراء غير موجود')
 
-    //// Prevent modifying orders that are already processed or finalized
-    if (exists.status === 'received' || exists.status === 'paid' || exists.status === 'cancelled') {
-      if (body.status && Object.keys(body).filter((k) => k !== 'status' && k !== 'action').length === 0) {
+    // Once a PO has been received/billed/paid/cancelled it is locked against
+    // structural edits — only a safe status-only transition is allowed.
+    if (['received', 'billed', 'paid', 'cancelled'].includes(exists.status)) {
+      const onlyStatusChange = Object.keys(body).every((k) => k === 'status')
+      if (onlyStatusChange && ['draft', 'confirmed', 'cancelled'].includes(body.status)) {
         const updatedStatus = await db.purchaseOrder.update({
           where: { id },
           data: { status: body.status },
@@ -42,10 +44,17 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       return badRequest('لا يمكن تعديل بنود أو إجماليات أمر شراء مستلم أو مدفوع أو ملغي.')
     }
 
-    const { id: _id, lines, createdAt: _c, updatedAt: _u, orderDate, expectedDate, ...rest } = body
+    // Whitelist safe editable fields only — never let totals or scope be
+    // overwritten directly from the request body.
+    const { notes, expectedDate, orderDate, paymentTermId, currencyId, warehouseId, incoterms, status, discount, lines } = body
 
     const updateData: any = {
-      ...rest,
+      notes,
+      paymentTermId,
+      currencyId,
+      warehouseId,
+      incoterms,
+      status: ['draft', 'confirmed', 'cancelled'].includes(status) ? status : undefined,
     }
 
     if (orderDate) {
@@ -90,7 +99,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           }
         })
 
-        const overallDiscount = Math.max(0, Number(body.discount ?? exists.discount) || 0)
+        const overallDiscount = Math.max(0, Number(discount ?? exists.discount) || 0)
         const total = Math.max(0, subtotal + taxTotal - overallDiscount)
 
         updateData.subtotal = subtotal

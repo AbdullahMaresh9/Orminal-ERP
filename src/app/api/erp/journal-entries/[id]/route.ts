@@ -1,13 +1,16 @@
 import { db } from '@/lib/db'
-import { ok, notFound, badRequest, serverError } from '@/lib/erp/api-response'
+import { ok, notFound, badRequest, serverError, unauthorized } from '@/lib/erp/api-response'
 import { postJournalEntry, reverseJournalEntry } from '@/lib/erp/accounting-engine'
+import { getRequestContext } from '@/lib/erp/context'
 
 // GET /api/erp/journal-entries/[id]
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const context = await getRequestContext()
+    if (!context) return unauthorized()
     const { id } = await params
-    const item = await db.journalEntry.findUnique({
-      where: { id },
+    const item = await db.journalEntry.findFirst({
+      where: { id, companyId: context.companyId },
       include: {
         journal: true,
         lines: {
@@ -31,12 +34,14 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 // POST /api/erp/journal-entries/[id] — actions: post | reverse
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const context = await getRequestContext()
+    if (!context) return unauthorized()
     const { id } = await params
     const body = await req.json().catch(() => ({}))
     const action = body.action
 
-    const entry = await db.journalEntry.findUnique({
-      where: { id },
+    const entry = await db.journalEntry.findFirst({
+      where: { id, companyId: context.companyId },
       include: { lines: true },
     })
     if (!entry) return notFound('Journal entry not found')
@@ -60,24 +65,23 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         taxCodeId: l.taxCodeId ?? undefined,
       }))
 
-      // Post via central engine (atomic)
-      const posted = await postJournalEntry({
-        companyId: entry.companyId,
-        branchId: entry.branchId ?? undefined,
-        journalType: 'general',
-        postingDate: entry.postingDate,
-        description: entry.description ?? 'Manual journal entry',
-        refType: entry.refType ?? 'manual',
-        refId: entry.refId ?? undefined,
-        currencyId: entry.currencyId ?? undefined,
-        lines,
-        userId: body.userId,
-      })
-
-      // Reverse the draft lines (since postJournalEntry creates a new posted entry)
-      await db.journalEntry.update({
-        where: { id },
-        data: { state: 'cancelled' },
+      // Post the new entry AND cancel the draft in one transaction so we never
+      // end up with a duplicate posted entry while the draft stays open.
+      const posted = await db.$transaction(async (tx) => {
+        const p = await postJournalEntry({
+          companyId: entry.companyId,
+          branchId: entry.branchId ?? undefined,
+          journalType: 'general',
+          postingDate: entry.postingDate,
+          description: entry.description ?? 'Manual journal entry',
+          refType: entry.refType ?? 'manual',
+          refId: entry.refId ?? undefined,
+          currencyId: entry.currencyId ?? undefined,
+          lines,
+          userId: context.userId,
+        }, tx)
+        await tx.journalEntry.update({ where: { id }, data: { state: 'cancelled' } })
+        return p
       })
 
       const newEntry = await db.journalEntry.findUnique({
@@ -89,7 +93,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     if (action === 'reverse') {
       if (entry.state !== 'posted') return badRequest('Only posted entries can be reversed')
-      const reversal = await reverseJournalEntry(id, body.userId, body.reason)
+      const reversal = await db.$transaction((tx) =>
+        reverseJournalEntry(id, context.userId, body.reason, tx)
+      )
       const reversed = await db.journalEntry.findUnique({
         where: { id: reversal.id },
         include: { lines: { include: { account: true } } },
@@ -99,6 +105,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     return badRequest('Unknown action. Use action=post or action=reverse')
   } catch (e: any) {
+    if (typeof e?.message === 'string' && e.message.startsWith('PERIOD_CLOSED')) {
+      return badRequest('The accounting period for this date is closed')
+    }
     return serverError(e.message)
   }
 }
@@ -106,14 +115,24 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 // PUT — only allow editing draft entries
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const context = await getRequestContext()
+    if (!context) return unauthorized()
     const { id } = await params
     const body = await req.json()
-    const entry = await db.journalEntry.findUnique({ where: { id } })
+    const entry = await db.journalEntry.findFirst({ where: { id, companyId: context.companyId } })
     if (!entry) return notFound('Journal entry not found')
     if (entry.state !== 'draft') return badRequest('Only draft entries can be edited')
 
-    const { id: _id, lines, createdAt: _c, updatedAt: _u, ...rest } = body
-    const updated = await db.journalEntry.update({ where: { id }, data: rest })
+    // Whitelist descriptive fields only — never let state, totals, or scope be overwritten here.
+    const { description, reference, postingDate } = body
+    const updated = await db.journalEntry.update({
+      where: { id },
+      data: {
+        description,
+        reference,
+        postingDate: postingDate ? new Date(postingDate) : undefined,
+      },
+    })
     return ok(updated)
   } catch (e: any) {
     return serverError(e.message)
