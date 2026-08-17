@@ -411,6 +411,234 @@ export const dictionary = {
   'role.employee': { ar: 'موظف', en: 'Employee' },
   'role.viewer': { ar: 'مشاهد', en: 'Viewer' },
 
+  // ── Chart of Accounts (coa.*) ─────────────────────────────────────────────
+  'coa.description': { ar: 'دليل الحسابات الشامل وإدارة الخطة المحاسبية', en: 'Comprehensive chart of accounts and accounting plan management' },
+  'coa.searchPlaceholder': { ar: 'ابحث برمز أو اسم الحساب...', en: 'Search by account code or name...' },
+  'coa.addGroup': { ar: 'إضافة مجموعة', en: 'Add Group' },
+  'coa.addAccount': { ar: 'إضافة حساب', en: 'Add Account' },
+  'coa.addChild': { ar: 'إضافة حساب فرعي', en: 'Add Child Account' },
+  'coa.import': { ar: 'استيراد', en: 'Import' },
+  'coa.exportCsv': { ar: 'تصدير CSV', en: 'Export CSV' },
+  'coa.settings': { ar: 'إعدادات الربط', en: 'Account Determination' },
+  'coa.viewTree': { ar: 'شجرة', en: 'Tree' },
+  'coa.viewFlat': { ar: 'جدول', en: 'Table' },
+  'coa.expandAll': { ar: 'توسيع الكل', en: 'Expand All' },
+  'coa.collapseAll': { ar: 'طي الكل', en: 'Collapse All' },
+
+  // KPI labels
+  'coa.kpi.total': { ar: 'إجمالي الحسابات', en: 'Total Accounts' },
+  'coa.kpi.posting': { ar: 'حسابات ترحيل', en: 'Posting Accounts' },
+  'coa.kpi.group': { ar: 'حسابات مجموعة', en: 'Group Accounts' },
+  'coa.kpi.active': { ar: 'حسابات نشطة', en: 'Active Accounts' },
+  'coa.kpi.system': { ar: 'حسابات نظامية', en: 'System Accounts' },
+  'coa.kpi.assets': { ar: 'إجمالي الأصول', en: 'Total Assets' },
+  'coa.kpi.liabilities': { ar: 'إجمالي الالتزامات', en: 'Total Liabilities' },
+  'coa.kpi.equity': { ar: 'حقوق الملكية', en: 'Total Equity' },
+
+  // Warning strip
+  'coa.missingRoles.title': { ar: 'تحذير: أدوار محاسبية غير مربوطة', en: 'Warning: Unmapped Accounting Roles' },
+  'coa.missingRoles.desc': { ar: 'بعض الأدوار الحسابية المطلوبة غير مربوطة بحسابات. ستفشل عمليات الترحيل التلقائية.', en: 'Some required accounting roles are not mapped to accounts. Automatic postings will fail.' },
+  'coa.missingRoles.fix': { ar: 'إصلاح الآن', en: 'Fix Now' },
+
+  // Tree columns
+  'coa.col.code': { ar: 'الرمز', en: 'Code' },
+  'coa.col.name': { ar: 'الاسم', en: 'Name' },
+  'coa.col.class': { ar: 'التصنيف', en: 'Class' },
+  'coa.col.kind': { ar: 'النوع', en: 'Kind' },
+  'coa.col.balance': { ar: 'الرصيد', en: 'Balance' },
+  'coa.col.currency': { ar: 'العملة', en: 'Currency' },
+  'coa.col.status': { ar: 'الحالة', en: 'Status' },
+  'coa.col.actions': { ar: 'إجراءات', en: 'Actions' },
+  'coa.col.level': { ar: 'المستوى', en: 'Level' },
+  'coa.col.childCount': { ar: 'الفروع', en: 'Children' },
+
+  // Account kinds
+  'coa.kind.group': { ar: 'مجموعة', en: 'Group' },
+  'coa.kind.posting': { ar: 'ترحيل', en: 'Posting' },
+
+  // Account classes
+  'coa.class.asset': { ar: 'أصول', en: 'Assets' },
+  'coa.class.liability': { ar: 'التزامات', en: 'Liabilities' },
+  'coa.class.equity': { ar: 'حقوق ملكية', en: 'Equity' },
+  'coa.class.revenue': { ar: 'إيرادات', en: 'Revenue' },
+  'coa.class.cogs': { ar: 'تكلفة بضاعة مباعة', en: 'Cost of Goods Sold' },
+  'coa.class.operating_expense': { ar: 'مصروفات تشغيلية', en: 'Operating Expenses' },
+  'coa.class.other_income': { ar: 'إيرادات أخرى', en: 'Other Income' },
+  'coa.class.other_expense': { ar: 'مصروفات أخرى', en: 'Other Expenses' },
+
+  // Normal balances
+  'coa.balance.debit': { ar: 'مدين', en: 'Debit' },
+  'coa.balance.credit': { ar: 'دائن', en: 'Credit' },
+
+  // Tax behaviors
+  'coa.tax.none': { ar: 'بدون ضريبة', en: 'None' },
+  'coa.tax.taxable': { ar: 'خاضع للضريبة', en: 'Taxable' },
+  'coa.tax.exempt': { ar: 'معفى', en: 'Exempt' },
+  'coa.tax.zero_rated': { ar: 'صفري', en: 'Zero Rated' },
+
+  // FS Sections
+  'coa.fs.balance_sheet': { ar: 'الميزانية العمومية', en: 'Balance Sheet' },
+  'coa.fs.income_statement': { ar: 'قائمة الدخل', en: 'Income Statement' },
+  'coa.fs.cash_flow': { ar: 'التدفقات النقدية', en: 'Cash Flow' },
+  'coa.fs.equity_statement': { ar: 'قائمة حقوق الملكية', en: 'Equity Statement' },
+
+  // Filters
+  'coa.filter.allClasses': { ar: 'كل الأنواع', en: 'All Classes' },
+  'coa.filter.allStatus': { ar: 'كل الحالات', en: 'All Statuses' },
+  'coa.filter.allKinds': { ar: 'كل الأنواع', en: 'All Kinds' },
+  'coa.filter.systemOnly': { ar: 'النظامية فقط', en: 'System Only' },
+
+  // Account detail drawer tabs
+  'coa.tab.overview': { ar: 'نظرة عامة', en: 'Overview' },
+  'coa.tab.accounting': { ar: 'الإعدادات المحاسبية', en: 'Accounting Settings' },
+  'coa.tab.reconciliation': { ar: 'التسوية', en: 'Reconciliation' },
+  'coa.tab.taxes': { ar: 'الضرائب', en: 'Taxes' },
+  'coa.tab.dimensions': { ar: 'الأبعاد', en: 'Dimensions' },
+  'coa.tab.reporting': { ar: 'التقارير المالية', en: 'Financial Reporting' },
+  'coa.tab.systemMapping': { ar: 'الربط النظامي', en: 'System Mapping' },
+  'coa.tab.transactions': { ar: 'الحركات', en: 'Transactions' },
+  'coa.tab.audit': { ar: 'سجل التدقيق', en: 'Audit History' },
+  'coa.tab.ledger': { ar: 'كشف الحساب', en: 'Ledger' },
+
+  // Account detail fields
+  'coa.detail.code': { ar: 'رمز الحساب', en: 'Account Code' },
+  'coa.detail.nameAr': { ar: 'الاسم (عربي)', en: 'Name (Arabic)' },
+  'coa.detail.nameEn': { ar: 'الاسم (إنجليزي)', en: 'Name (English)' },
+  'coa.detail.shortName': { ar: 'الاسم المختصر', en: 'Short Name' },
+  'coa.detail.class': { ar: 'تصنيف الحساب', en: 'Account Class' },
+  'coa.detail.subtype': { ar: 'النوع الفرعي', en: 'Subtype' },
+  'coa.detail.parent': { ar: 'الحساب الأب', en: 'Parent Account' },
+  'coa.detail.isPosting': { ar: 'نوع الحساب', en: 'Account Kind' },
+  'coa.detail.normalBalance': { ar: 'الرصيد الطبيعي', en: 'Normal Balance' },
+  'coa.detail.currency': { ar: 'العملة', en: 'Currency' },
+  'coa.detail.allowReconciliation': { ar: 'السماح بالتسوية', en: 'Allow Reconciliation' },
+  'coa.detail.allowManualEntry': { ar: 'السماح بالإدخال اليدوي', en: 'Allow Manual Entry' },
+  'coa.detail.taxBehavior': { ar: 'السلوك الضريبي', en: 'Tax Behavior' },
+  'coa.detail.taxCode': { ar: 'الكود الضريبي', en: 'Tax Code' },
+  'coa.detail.fsSection': { ar: 'القسم المالي', en: 'FS Section' },
+  'coa.detail.reportCategory': { ar: 'فئة التقرير', en: 'Report Category' },
+  'coa.detail.requireCostCenter': { ar: 'يتطلب مركز تكلفة', en: 'Require Cost Center' },
+  'coa.detail.requireBranch': { ar: 'يتطلب فرع', en: 'Require Branch' },
+  'coa.detail.requireProject': { ar: 'يتطلب مشروع', en: 'Require Project' },
+  'coa.detail.role': { ar: 'الدور المحاسبي', en: 'Accounting Role' },
+  'coa.detail.active': { ar: 'حالة الحساب', en: 'Account Status' },
+  'coa.detail.system': { ar: 'حساب نظامي', en: 'System Account' },
+  'coa.detail.systemHint': { ar: 'الحسابات النظامية محمية — لا يمكن تغيير رمزها أو تصنيفها', en: 'System accounts are protected — code and class cannot be changed' },
+  'coa.detail.ownBalance': { ar: 'الرصيد الخاص', en: 'Own Balance' },
+  'coa.detail.aggregateBalance': { ar: 'الرصيد التراكمي', en: 'Aggregate Balance' },
+  'coa.detail.lastMovement': { ar: 'آخر حركة', en: 'Last Movement' },
+  'coa.detail.childCount': { ar: 'الحسابات الفرعية', en: 'Child Accounts' },
+  'coa.detail.lineCount': { ar: 'بنود القيود', en: 'Journal Lines' },
+  'coa.detail.descendantCount': { ar: 'إجمالي الفروع', en: 'Total Descendants' },
+
+  // Actions
+  'coa.action.edit': { ar: 'تعديل', en: 'Edit' },
+  'coa.action.createChild': { ar: 'إضافة فرعي', en: 'Add Child' },
+  'coa.action.deactivate': { ar: 'إيقاف تفعيل', en: 'Deactivate' },
+  'coa.action.reactivate': { ar: 'إعادة تفعيل', en: 'Reactivate' },
+  'coa.action.duplicate': { ar: 'تكرار', en: 'Duplicate' },
+  'coa.action.viewLedger': { ar: 'كشف الحساب', en: 'View Ledger' },
+  'coa.action.hardDelete': { ar: 'حذف نهائي', en: 'Hard Delete' },
+  'coa.action.deactivateConfirm': { ar: 'تأكيد إيقاف التفعيل', en: 'Confirm Deactivation' },
+  'coa.action.deactivateDesc': { ar: 'سيتم إيقاف تفعيل هذا الحساب وجميع حساباته الفرعية. هل تريد المتابعة؟', en: 'This account and all its sub-accounts will be deactivated. Continue?' },
+  'coa.action.deactivateReason': { ar: 'سبب الإيقاف (اختياري)', en: 'Deactivation Reason (Optional)' },
+  'coa.action.hardDeleteConfirm': { ar: 'تأكيد الحذف النهائي', en: 'Confirm Hard Delete' },
+  'coa.action.hardDeleteDesc': { ar: 'سيتم حذف هذا الحساب نهائياً. هذا الإجراء لا يمكن التراجع عنه.', en: 'This account will be permanently deleted. This action cannot be undone.' },
+
+  // Create/Edit dialog sections
+  'coa.section.basic': { ar: 'المعلومات الأساسية', en: 'Basic Information' },
+  'coa.section.accounting': { ar: 'السلوك المحاسبي', en: 'Accounting Behavior' },
+  'coa.section.reporting': { ar: 'التقارير', en: 'Reporting' },
+  'coa.section.dimensions': { ar: 'الأبعاد التحليلية', en: 'Analytical Dimensions' },
+  'coa.section.status': { ar: 'الحالة', en: 'Status' },
+
+  // Form dialog titles
+  'coa.dialog.createGroup': { ar: 'إضافة حساب مجموعة', en: 'Add Group Account' },
+  'coa.dialog.createAccount': { ar: 'إضافة حساب ترحيل', en: 'Add Posting Account' },
+  'coa.dialog.createChild': { ar: 'إضافة حساب فرعي', en: 'Add Child Account' },
+  'coa.dialog.editAccount': { ar: 'تعديل بيانات الحساب', en: 'Edit Account' },
+  'coa.dialog.autoCode': { ar: 'ترقيم تلقائي', en: 'Auto-generate' },
+  'coa.dialog.groupAccount': { ar: 'حساب مجموعة (لا يقبل قيوداً)', en: 'Group account (no direct postings)' },
+  'coa.dialog.postingAccount': { ar: 'حساب ترحيل (يقبل القيود)', en: 'Posting account (accepts direct postings)' },
+
+  // Roles dialog
+  'coa.roles.title': { ar: 'ربط الأدوار المحاسبية', en: 'Account Determination' },
+  'coa.roles.desc': { ar: 'ربط كل دور محاسبي بالحساب المناسب. الأدوار المطلوبة غير المربوطة تمنع الترحيل التلقائي.', en: 'Map each accounting role to the appropriate account. Unmapped required roles prevent automatic postings.' },
+  'coa.roles.required': { ar: 'مطلوب', en: 'Required' },
+  'coa.roles.optional': { ar: 'اختياري', en: 'Optional' },
+  'coa.roles.unmapped': { ar: 'غير مربوط', en: 'Unmapped' },
+  'coa.roles.mapped': { ar: 'مربوط', en: 'Mapped' },
+  'coa.roles.pickAccount': { ar: 'اختر حساباً...', en: 'Select an account...' },
+  'coa.roles.removeMapping': { ar: 'إزالة الربط', en: 'Remove Mapping' },
+  'coa.roles.saveAll': { ar: 'حفظ كل التغييرات', en: 'Save All Changes' },
+  'coa.roles.noGroup': { ar: 'بدون مجموعة', en: 'Ungrouped' },
+
+  // Import dialog
+  'coa.import.title': { ar: 'استيراد الحسابات', en: 'Import Accounts' },
+  'coa.import.desc': { ar: 'الصق بيانات CSV أو ارفع ملفاً. استخدم "تحقق فقط" أولاً للاطلاع على الأخطاء قبل الاستيراد.', en: 'Paste CSV data or upload a file. Use "Dry Run" first to preview errors before importing.' },
+  'coa.import.csvLabel': { ar: 'بيانات CSV', en: 'CSV Data' },
+  'coa.import.csvPlaceholder': { ar: 'الصق بيانات CSV هنا...', en: 'Paste CSV data here...' },
+  'coa.import.dryRun': { ar: 'تحقق فقط', en: 'Dry Run' },
+  'coa.import.confirmImport': { ar: 'تأكيد الاستيراد', en: 'Confirm Import' },
+  'coa.import.updateExisting': { ar: 'تحديث الحسابات الموجودة', en: 'Update Existing Accounts' },
+  'coa.import.toCreate': { ar: 'سيتم إنشاء', en: 'To Create' },
+  'coa.import.toUpdate': { ar: 'سيتم تحديث', en: 'To Update' },
+  'coa.import.validRows': { ar: 'صفوف صحيحة', en: 'Valid Rows' },
+  'coa.import.errors': { ar: 'أخطاء في البيانات', en: 'Validation Errors' },
+  'coa.import.dropzone': { ar: 'اسحب ملف CSV هنا أو انقر للاختيار', en: 'Drop a CSV file here or click to browse' },
+
+  // Ledger view
+  'coa.ledger.title': { ar: 'كشف الحساب', en: 'Account Ledger' },
+  'coa.ledger.from': { ar: 'من تاريخ', en: 'From Date' },
+  'coa.ledger.to': { ar: 'إلى تاريخ', en: 'To Date' },
+  'coa.ledger.opening': { ar: 'الرصيد الافتتاحي', en: 'Opening Balance' },
+  'coa.ledger.period': { ar: 'حركة الفترة', en: 'Period Movement' },
+  'coa.ledger.closing': { ar: 'الرصيد الختامي', en: 'Closing Balance' },
+  'coa.ledger.runningBalance': { ar: 'الرصيد الجاري', en: 'Running Balance' },
+  'coa.ledger.includeChildren': { ar: 'تضمين الحسابات الفرعية', en: 'Include Children' },
+  'coa.ledger.entry': { ar: 'القيد', en: 'Entry' },
+  'coa.ledger.description': { ar: 'البيان', en: 'Description' },
+  'coa.ledger.partner': { ar: 'الطرف', en: 'Partner' },
+
+  // Empty / loading states
+  'coa.empty.noAccounts': { ar: 'لا توجد حسابات', en: 'No accounts found' },
+  'coa.empty.noAccountsDesc': { ar: 'ابدأ بإضافة حسابك الأول من الزر أعلاه', en: 'Start by adding your first account using the button above' },
+  'coa.empty.noResults': { ar: 'لا توجد نتائج مطابقة', en: 'No matching accounts' },
+  'coa.empty.noTransactions': { ar: 'لا توجد حركات محاسبية', en: 'No transactions found' },
+  'coa.empty.noAudit': { ar: 'لا يوجد سجل تدقيق', en: 'No audit history' },
+
+  // Audit actions
+  'coa.audit.created': { ar: 'إنشاء', en: 'Created' },
+  'coa.audit.updated': { ar: 'تحديث', en: 'Updated' },
+  'coa.audit.deactivated': { ar: 'إيقاف', en: 'Deactivated' },
+  'coa.audit.reactivated': { ar: 'إعادة تفعيل', en: 'Reactivated' },
+  'coa.audit.deleted': { ar: 'حذف', en: 'Deleted' },
+  'coa.audit.by': { ar: 'بواسطة', en: 'By' },
+  'coa.audit.reason': { ar: 'السبب', en: 'Reason' },
+  'coa.audit.changes': { ar: 'التغييرات', en: 'Changes' },
+
+  // Success/Error messages
+  'coa.success.created': { ar: 'تم إنشاء الحساب بنجاح', en: 'Account created successfully' },
+  'coa.success.updated': { ar: 'تم تحديث الحساب بنجاح', en: 'Account updated successfully' },
+  'coa.success.deactivated': { ar: 'تم إيقاف تفعيل الحساب', en: 'Account deactivated' },
+  'coa.success.reactivated': { ar: 'تم إعادة تفعيل الحساب', en: 'Account reactivated' },
+  'coa.success.deleted': { ar: 'تم حذف الحساب', en: 'Account deleted' },
+  'coa.success.exported': { ar: 'تم تصدير الملف', en: 'File exported' },
+  'coa.success.imported': { ar: 'تم استيراد الحسابات بنجاح', en: 'Accounts imported successfully' },
+  'coa.success.rolesSaved': { ar: 'تم حفظ الربط المحاسبي بنجاح', en: 'Account determination saved successfully' },
+
+  // Misc
+  'coa.systemBadge': { ar: 'نظامي', en: 'System' },
+  'coa.lockedBadge': { ar: 'مقفل', en: 'Locked' },
+  'coa.inactiveBadge': { ar: 'غير نشط', en: 'Inactive' },
+  'coa.activeBadge': { ar: 'نشط', en: 'Active' },
+  'coa.depth': { ar: 'المستوى', en: 'Level' },
+  'coa.children': { ar: 'فرعية', en: 'children' },
+  'coa.noParent': { ar: 'حساب جذر', en: 'Root Account' },
+  'coa.page': { ar: 'صفحة', en: 'Page' },
+  'coa.of': { ar: 'من', en: 'of' },
+  'coa.pageSize': { ar: 'عدد الصفوف', en: 'Rows per page' },
+
   // Misc
   'misc.all': { ar: 'الكل', en: 'All' },
   'misc.none': { ar: 'لا شيء', en: 'None' },

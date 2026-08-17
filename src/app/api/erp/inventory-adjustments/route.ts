@@ -2,7 +2,6 @@ import { db } from '@/lib/db'
 import { ok, created, list, badRequest, serverError, parsePagination, parseSearch } from '@/lib/erp/api-response'
 import { nextNumber } from '@/lib/erp/number-sequence'
 import { postJournalEntry } from '@/lib/erp/accounting-engine'
-import { SYSTEM_ACCOUNTS } from '@/lib/erp/accounting-engine'
 
 // GET /api/erp/inventory-adjustments
 export async function GET(req: Request) {
@@ -141,13 +140,13 @@ export async function POST(req: Request) {
       const journalLines: any[] = []
       if (gainAmount > 0) {
         // Inventory gain: Dr Inventory / Cr Other Revenue
-        journalLines.push({ accountCode: SYSTEM_ACCOUNTS.INVENTORY, debit: gainAmount, credit: 0, description: 'زيادة مخزون' })
-        journalLines.push({ accountCode: SYSTEM_ACCOUNTS.OTHER_REVENUE, debit: 0, credit: gainAmount, description: 'إيراد آخر - زيادة مخزون' })
+        journalLines.push({ role: 'INVENTORY', debit: gainAmount, credit: 0, description: 'زيادة مخزون' })
+        journalLines.push({ role: 'INVENTORY_GAIN', debit: 0, credit: gainAmount, description: 'إيراد آخر - زيادة مخزون' })
       }
       if (lossAmount > 0) {
         // Inventory loss: Dr Operating Expenses / Cr Inventory
-        journalLines.push({ accountCode: SYSTEM_ACCOUNTS.OPERATING_EXPENSES, debit: lossAmount, credit: 0, description: 'مصروف - نقص مخزون' })
-        journalLines.push({ accountCode: SYSTEM_ACCOUNTS.INVENTORY, debit: 0, credit: lossAmount, description: 'نقص مخزون' })
+        journalLines.push({ role: 'INVENTORY_LOSS', debit: lossAmount, credit: 0, description: 'مصروف - نقص مخزون' })
+        journalLines.push({ role: 'INVENTORY', debit: 0, credit: lossAmount, description: 'نقص مخزون' })
       }
 
       if (journalLines.length > 0) {

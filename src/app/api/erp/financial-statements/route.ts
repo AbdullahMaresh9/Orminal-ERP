@@ -1,9 +1,19 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { ok, serverError } from '@/lib/erp/api-response'
+import { COA_ACTIONS, isAuthFailure, requireCapability } from '@/lib/erp/rbac'
+
+// NOTE ON HIERARCHY: every figure below is aggregated from JournalLine, and group
+// accounts never carry journal lines (the posting engine rejects postings to a
+// group). Group accounts therefore contribute exactly 0 here, so introducing the
+// account hierarchy cannot double-count. Group totals are exposed separately in
+// `byGroup` for hierarchical presentation.
 
 // GET /api/erp/financial-statements?type=trial-balance|income|balance-sheet|sales-summary|purchases-summary|inventory-value
 export async function GET(req: Request) {
+  const auth = await requireCapability(COA_ACTIONS.LEDGER, 'canRead')
+  if (isAuthFailure(auth)) return auth
+
   try {
     const url = new URL(req.url)
     const type = url.searchParams.get('type') || 'trial-balance'
@@ -23,7 +33,13 @@ export async function GET(req: Request) {
       include: {
         lines: {
           include: {
-            account: { select: { id: true, code: true, nameAr: true, type: true, subtype: true } },
+            account: {
+              select: {
+                id: true, code: true, nameAr: true, nameEn: true, type: true, subtype: true,
+                accountClass: true, normalBalance: true, fsSection: true, isPosting: true,
+                parent: { select: { code: true, nameAr: true } },
+              },
+            },
             partner: { select: { id: true, code: true, nameAr: true } },
           },
         },
@@ -34,8 +50,14 @@ export async function GET(req: Request) {
     const accountMap = new Map<string, {
       code: string
       nameAr: string
+      nameEn: string | null
       type: string
       subtype: string | null
+      accountClass: string
+      normalBalance: string
+      fsSection: string
+      groupCode: string | null
+      groupNameAr: string | null
       debit: number
       credit: number
     }>()
@@ -47,8 +69,14 @@ export async function GET(req: Request) {
         const cur = accountMap.get(k) ?? {
           code: l.account.code,
           nameAr: l.account.nameAr,
+          nameEn: l.account.nameEn ?? null,
           type: l.account.type,
           subtype: l.account.subtype ?? null,
+          accountClass: l.account.accountClass,
+          normalBalance: l.account.normalBalance,
+          fsSection: l.account.fsSection,
+          groupCode: l.account.parent?.code ?? null,
+          groupNameAr: l.account.parent?.nameAr ?? null,
           debit: 0,
           credit: 0,
         }
@@ -70,7 +98,31 @@ export async function GET(req: Request) {
       }))
       const totalDebit = rows.reduce((s, r) => s + r.debit, 0)
       const totalCredit = rows.reduce((s, r) => s + r.credit, 0)
-      return ok({ rows, totalDebit, totalCredit })
+
+      // Hierarchical rollup: posting accounts summed under their immediate group.
+      const byGroup = new Map<string, { groupCode: string; groupNameAr: string; debit: number; credit: number; accounts: number }>()
+      for (const a of allAccounts) {
+        const key = a.groupCode ?? '—'
+        const cur = byGroup.get(key) ?? {
+          groupCode: key,
+          groupNameAr: a.groupNameAr ?? 'بدون مجموعة',
+          debit: 0,
+          credit: 0,
+          accounts: 0,
+        }
+        cur.debit += a.debit
+        cur.credit += a.credit
+        cur.accounts += 1
+        byGroup.set(key, cur)
+      }
+
+      return ok({
+        rows,
+        totalDebit,
+        totalCredit,
+        isBalanced: Math.abs(totalDebit - totalCredit) < 0.01,
+        byGroup: Array.from(byGroup.values()).sort((x, y) => x.groupCode.localeCompare(y.groupCode, 'en', { numeric: true })),
+      })
     }
 
     if (type === 'income') {

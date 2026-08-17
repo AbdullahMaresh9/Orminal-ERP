@@ -145,8 +145,35 @@ async function main() {
     { code: '6400', nameAr: 'الإهلاك', nameEn: 'Depreciation Expense', type: 'expense', subtype: 'operating_expense', isSystem: true },
     { code: '6500', nameAr: 'مصاريف إدارية', nameEn: 'Administrative Expenses', type: 'expense', subtype: 'operating_expense', isSystem: true },
   ]
+  // Derive the enterprise class fields from the legacy type/subtype so a fresh
+  // install is consistent with the re-engineered Chart of Accounts. Run
+  // `npm run coa:migrate` afterwards to build the group hierarchy and the
+  // account-determination mappings.
+  const classOf = (type: string, subtype?: string): string => {
+    const st = (subtype ?? '').toLowerCase()
+    if (type === 'income') return st.includes('other') ? 'other_income' : 'revenue'
+    if (type === 'expense') {
+      if (st === 'cogs' || st === 'purchases') return 'cogs'
+      if (st === 'other_expense' || st === 'fx_loss') return 'other_expense'
+      return 'operating_expense'
+    }
+    return type
+  }
+  const CREDIT_CLASSES = new Set(['liability', 'equity', 'revenue', 'other_income'])
+  // Contra accounts carry the opposite normal balance of their class.
+  const CONTRA_CODES: Record<string, 'debit' | 'credit'> = { '1590': 'credit', '4200': 'debit' }
+
   for (const a of accounts) {
-    await db.account.create({ data: a as any })
+    const accountClass = classOf(a.type, (a as { subtype?: string }).subtype)
+    const normalBalance = CONTRA_CODES[a.code] ?? (CREDIT_CLASSES.has(accountClass) ? 'credit' : 'debit')
+    await db.account.create({
+      data: {
+        ...a,
+        accountClass,
+        normalBalance,
+        fsSection: ['asset', 'liability', 'equity'].includes(accountClass) ? 'balance_sheet' : 'income_statement',
+      } as any,
+    })
   }
   const cashAccount = await db.account.findUnique({ where: { code: '1000' } })!
   const arAccount = await db.account.findUnique({ where: { code: '1100' } })!

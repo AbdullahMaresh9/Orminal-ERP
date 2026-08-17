@@ -1,3 +1,16 @@
+// Next.js 16 request interceptor.
+//
+// FILENAME MATTERS: in Next.js 16 this convention is `proxy.ts` (the old
+// `middleware.ts` name still works but is deprecated and logs a build warning).
+// Do NOT rename this file to middleware.ts — it is wired up and running; the
+// build output confirms it as "ƒ Proxy (Middleware)".
+//
+// Scope: this guard only answers "is there a valid session?". It deliberately
+// does NOT decide what an authenticated user may do — per-route authorization
+// lives in src/lib/erp/rbac.ts (requireCapability), because a single global
+// gate cannot express per-module capabilities like "read the chart but never
+// edit account determination".
+
 import { withAuth } from 'next-auth/middleware'
 import { NextResponse } from 'next/server'
 
