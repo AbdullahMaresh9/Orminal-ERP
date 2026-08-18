@@ -248,11 +248,11 @@ export function StockMovesModule() {
             <colgroup>
               <col className="w-[12%]" />{/* التاريخ */}
               <col className="w-[26%]" />{/* المنتج */}
-              <col className="w-[18%]" />{/* المستودع المصدر */}
+              <col className="w-[16%]" />{/* المستودع المصدر */}
               <col className="w-[18%]" />{/* المستودع الوجهة */}
               <col className="w-[10%]" />{/* الكمية */}
               <col className="w-[10%]" />{/* نوع المستند */}
-              <col className="w-[6%]" />{/* الحالة */}
+              <col className="w-[10%]" />{/* الحالة */}
             </colgroup>
 
             <TableHeader>

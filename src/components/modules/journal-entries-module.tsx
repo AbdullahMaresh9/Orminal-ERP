@@ -428,7 +428,7 @@ export function JournalEntriesModule() {
 
       {/* Add Dialog with line editor */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent dir={dir}>
+        <DialogContent className="w-[calc(100vw-1.5rem)] sm:w-[95vw] max-w-4xl max-h-[92vh] p-0 flex flex-col overflow-hidden bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800" dir={dir}>
           <DialogHeader>
             <div className="flex items-start gap-3 sm:gap-4 text-start">
               <div className="size-10 sm:size-12 rounded-xl bg-white dark:bg-blue-950/60 border border-blue-100 dark:border-blue-500/20 text-blue-600 dark:text-blue-300 flex items-center justify-center shadow-sm shadow-blue-100/40 dark:shadow-none shrink-0">
@@ -487,7 +487,7 @@ export function JournalEntriesModule() {
                             <SelectContent>
                               {accounts.map((a) => (
                                 <SelectItem key={a.id} value={a.code}>
-                                  <span dir="ltr" className="font-mono text-xs">{a.code}</span> — {a.nameAr}
+                                  {a.nameAr}
                                 </SelectItem>
                               ))}
                             </SelectContent>
