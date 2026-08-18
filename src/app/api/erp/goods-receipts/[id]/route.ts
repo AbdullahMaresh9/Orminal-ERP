@@ -30,6 +30,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
     const { id: _id, lines, createdAt: _c, updatedAt: _u, ...rest } = body
 
+    if (rest.receiptDate) {
+      rest.receiptDate = new Date(rest.receiptDate)
+    }
+
     // If cancelling a receipt
     if (rest.status === 'cancelled') {
       const updated = await db.goodsReceipt.update({

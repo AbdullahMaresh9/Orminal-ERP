@@ -66,7 +66,7 @@ function DialogContent({
         data-slot="dialog-content"
         dir={currentDir}
         className={cn(
-          "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 flex flex-col w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] rounded-xl border border-gray-200 dark:border-slate-700 shadow-modal duration-200 max-h-[95vh] overflow-hidden bg-white dark:bg-slate-950",
+          "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 flex flex-col w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] rounded-xl border border-slate-300 dark:border-slate-700 shadow-modal duration-200 max-h-[95vh] overflow-hidden bg-white dark:bg-slate-950",
           className
         )}
         {...props}
@@ -138,7 +138,7 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="dialog-header"
       className={cn(
-        "flex flex-col gap-1 px-6 py-6 bg-gradient-to-r rtl:bg-gradient-to-l from-blue-50 to-[#E6F0FF] dark:from-blue-700/80 dark:to-blue-800/90 border-b border-blue-100 dark:border-blue-700/40 text-start shrink-0",
+        "flex flex-col gap-1 px-6 py-6 p-4 sm:p-6 bg-gradient-to-r rtl:bg-gradient-to-l from-blue-50 to-[#E6F0FF]  dark:bg-none dark:bg-blue-700/80  border-b border-blue-100 dark:border-blue-700/40 text-start shrink-0 relative",
         className
       )}
       {...props}
@@ -161,7 +161,7 @@ function DialogFooter({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="dialog-footer"
       className={cn(
-        "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end px-6 py-3 border-t border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-950 shrink-0",
+        "flex flex-col-reverse gap-2 sm:flex-row sm:justify-between px-4 py-5 sm:px-6 border-t border-slate-300 dark:border-slate-800 shrink-0 bg-slate-50 dark:bg-slate-900/80 ",
         className
       )}
       {...props}

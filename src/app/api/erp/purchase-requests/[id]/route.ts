@@ -37,7 +37,11 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     const { id } = await params
     const exists = await db.purchaseRequest.findUnique({ where: { id } })
     if (!exists) return notFound('Purchase request not found')
-    if (exists.status !== 'draft') return badRequest('Only draft requests can be deleted')
+
+    const status = (exists.status || '').toLowerCase()
+    if (status === 'approved' || status === 'converted') {
+      return badRequest('Cannot delete approved or converted purchase requests')
+    }
 
     await db.purchaseRequest.delete({ where: { id } })
     return ok({ success: true })

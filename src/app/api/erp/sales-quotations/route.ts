@@ -1,3 +1,4 @@
+import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { ok, created, list, badRequest, serverError, parsePagination, parseSearch } from '@/lib/erp/api-response'
 import { nextNumber } from '@/lib/erp/number-sequence'
@@ -13,25 +14,38 @@ export async function GET(req: Request) {
 
     const where: any = {}
     if (q) {
-      where.OR = [{ code: { contains: q } }, { description: { contains: q } }]
+      where.OR = [{ code: { contains: q } }, { notes: { contains: q } }]
     }
     if (status) where.status = status
     if (partnerId) where.partnerId = partnerId
 
-    const [data, total] = await Promise.all([
+    const [data, total, totalAll, acceptedCount, pendingCount, convertedCount] = await Promise.all([
       db.salesQuotation.findMany({
         where,
         skip,
         take: pageSize,
         include: {
           partner: { select: { id: true, nameAr: true, nameEn: true, code: true } },
-          lines: { include: { product: { select: { id: true, sku: true, nameAr: true } } } },
+          lines: { include: { product: { select: { id: true, sku: true, nameAr: true, nameEn: true } } } },
         },
         orderBy: { createdAt: 'desc' },
       }),
       db.salesQuotation.count({ where }),
+      db.salesQuotation.count(),
+      db.salesQuotation.count({ where: { OR: [{ status: 'accepted' }, { status: 'converted' }] } }),
+      db.salesQuotation.count({ where: { OR: [{ status: 'draft' }, { status: 'sent' }] } }),
+      db.salesQuotation.count({ where: { status: 'converted' } }),
     ])
-    return list(data, total, page, pageSize)
+
+    const totalPages = Math.ceil(total / pageSize) || 1
+    return NextResponse.json({
+      data,
+      meta: {
+        timestamp: new Date().toISOString(),
+        pagination: { page, pageSize, total, totalPages, hasMore: page < totalPages },
+        stats: { total: totalAll, accepted: acceptedCount, pending: pendingCount, converted: convertedCount },
+      },
+    })
   } catch (e: any) {
     return serverError(e.message)
   }

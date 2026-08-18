@@ -42,6 +42,45 @@ export const SYSTEM_ACCOUNTS = {
   ADMIN_EXPENSES: '6500',
 } as const
 
+// System account definitions and fallback dictionary
+export const SYSTEM_ACCOUNT_DEFS: Record<string, { nameAr: string; nameEn: string; type: string; subtype: string }> = {
+  '1000': { nameAr: 'النقدية', nameEn: 'Cash', type: 'asset', subtype: 'current_asset' },
+  '1010': { nameAr: 'النقدية - الصندوق', nameEn: 'Cash - Safe', type: 'asset', subtype: 'current_asset' },
+  '1020': { nameAr: 'النقدية - البنك', nameEn: 'Cash - Bank', type: 'asset', subtype: 'current_asset' },
+  '1100': { nameAr: 'الذمم المدينة', nameEn: 'Accounts Receivable', type: 'asset', subtype: 'current_asset' },
+  '1110': { nameAr: 'الذمم المدينة - العملاء', nameEn: 'Accounts Receivable - Customers', type: 'asset', subtype: 'current_asset' },
+  '1200': { nameAr: 'المخزون', nameEn: 'Inventory', type: 'asset', subtype: 'current_asset' },
+  '1210': { nameAr: 'المواد الخام', nameEn: 'Raw Materials', type: 'asset', subtype: 'current_asset' },
+  '1220': { nameAr: 'البضائع الجاهزة', nameEn: 'Finished Goods', type: 'asset', subtype: 'current_asset' },
+  '1230': { nameAr: 'تحت التشغيل', nameEn: 'Work in Process', type: 'asset', subtype: 'current_asset' },
+  '1300': { nameAr: 'الراتب المقدم', nameEn: 'Prepaid Expenses', type: 'asset', subtype: 'current_asset' },
+  '1400': { nameAr: 'ضريبة القيمة المضافة القابلة للخصم', nameEn: 'Input VAT', type: 'asset', subtype: 'current_asset' },
+  '1500': { nameAr: 'الأصول الثابتة', nameEn: 'Fixed Assets', type: 'asset', subtype: 'fixed_asset' },
+  '1510': { nameAr: 'الأثاث والمعدات', nameEn: 'Furniture & Equipment', type: 'asset', subtype: 'fixed_asset' },
+  '1520': { nameAr: 'المركبات', nameEn: 'Vehicles', type: 'asset', subtype: 'fixed_asset' },
+  '1590': { nameAr: 'مجمع الإهلاك', nameEn: 'Accumulated Depreciation', type: 'asset', subtype: 'fixed_asset' },
+  '2000': { nameAr: 'الذمم الدائنة', nameEn: 'Accounts Payable', type: 'liability', subtype: 'current_liability' },
+  '2100': { nameAr: 'ضريبة القيمة المضافة المستحقة', nameEn: 'Output VAT', type: 'liability', subtype: 'current_liability' },
+  '2200': { nameAr: 'الرواتب المستحقة', nameEn: 'Salaries Payable', type: 'liability', subtype: 'current_liability' },
+  '2300': { nameAr: 'بضاعة مستلمة غير مفوتر', nameEn: 'GRNI', type: 'liability', subtype: 'current_liability' },
+  '2400': { nameAr: 'ضريبة الدخل المستحقة', nameEn: 'Income Tax Payable', type: 'liability', subtype: 'current_liability' },
+  '2500': { nameAr: 'قروض طويلة الأجل', nameEn: 'Long-term Loans', type: 'liability', subtype: 'long_term_liability' },
+  '3000': { nameAr: 'رأس المال', nameEn: 'Owner Capital', type: 'equity', subtype: 'capital' },
+  '3100': { nameAr: 'الأرباح المحتجزة', nameEn: 'Retained Earnings', type: 'equity', subtype: 'retained_earnings' },
+  '4000': { nameAr: 'إيرادات المبيعات', nameEn: 'Sales Revenue', type: 'income', subtype: 'operating_revenue' },
+  '4100': { nameAr: 'إيرادات أخرى', nameEn: 'Other Revenue', type: 'income', subtype: 'other_revenue' },
+  '4200': { nameAr: 'مرتجع المبيعات', nameEn: 'Sales Returns', type: 'income', subtype: 'operating_revenue' },
+  '5000': { nameAr: 'تكلفة البضاعة المباعة', nameEn: 'COGS', type: 'expense', subtype: 'cogs' },
+  '5100': { nameAr: 'المشتريات', nameEn: 'Purchases', type: 'expense', subtype: 'cogs' },
+  '5200': { nameAr: 'تكلفة الإنتاج', nameEn: 'Production Cost', type: 'expense', subtype: 'cogs' },
+  '6000': { nameAr: 'الرواتب والأجور', nameEn: 'Salaries & Wages', type: 'expense', subtype: 'operating_expense' },
+  '6100': { nameAr: 'الإيجار', nameEn: 'Rent', type: 'expense', subtype: 'operating_expense' },
+  '6200': { nameAr: 'الكهرباء والمياه', nameEn: 'Utilities', type: 'expense', subtype: 'operating_expense' },
+  '6300': { nameAr: 'مصاريف تشغيلية', nameEn: 'Operating Expenses', type: 'expense', subtype: 'operating_expense' },
+  '6400': { nameAr: 'الإهلاك', nameEn: 'Depreciation Expense', type: 'expense', subtype: 'operating_expense' },
+  '6500': { nameAr: 'مصاريف إدارية', nameEn: 'Administrative Expenses', type: 'expense', subtype: 'operating_expense' },
+}
+
 export interface JournalLineInput {
   accountCode: string
   debit: number
@@ -73,11 +112,34 @@ export function validateBalanced(lines: JournalLineInput[]): boolean {
   return Math.abs(totalDebit - totalCredit) < 0.01
 }
 
-// Resolve account codes to account IDs
+// Resolve account codes to account IDs (with auto-creation fallback for missing system accounts)
 async function resolveAccounts(lines: JournalLineInput[]): Promise<Map<string, string>> {
   const codes = [...new Set(lines.map((l) => l.accountCode))]
   const accounts = await db.account.findMany({ where: { code: { in: codes } } })
-  return new Map(accounts.map((a) => [a.code, a.id]))
+  const accountMap = new Map(accounts.map((a) => [a.code, a.id]))
+
+  for (const code of codes) {
+    if (!accountMap.has(code)) {
+      const def = SYSTEM_ACCOUNT_DEFS[code]
+      if (def) {
+        const created = await db.account.upsert({
+          where: { code },
+          update: {},
+          create: {
+            code,
+            nameAr: def.nameAr,
+            nameEn: def.nameEn,
+            type: def.type,
+            subtype: def.subtype,
+            isSystem: true,
+          },
+        })
+        accountMap.set(code, created.id)
+      }
+    }
+  }
+
+  return accountMap
 }
 
 // === Central post function — creates a posted journal entry atomically ===
@@ -98,13 +160,31 @@ export async function postJournalEntry(input: PostEntryInput): Promise<{ id: str
     }
   }
 
-  // Find journal by type
+  // Find journal by type (with auto-creation fallback)
   let journal: any = null
   if (input.journalType) {
     const journalMap: Record<string, string> = {
       sale: 'SJ', purchase: 'PJ', cash: 'CJ', bank: 'BJ', general: 'GJ', opening: 'OJ', closing: 'CLJ',
     }
-    journal = await db.journal.findUnique({ where: { code: journalMap[input.journalType] || 'GJ' } })
+    const targetCode = journalMap[input.journalType] || 'GJ'
+    journal = await db.journal.findUnique({ where: { code: targetCode } })
+    if (!journal) {
+      const journalDefs: Record<string, { nameAr: string; nameEn: string; type: string }> = {
+        SJ: { nameAr: 'يومية المبيعات', nameEn: 'Sales Journal', type: 'sale' },
+        PJ: { nameAr: 'يومية المشتريات', nameEn: 'Purchase Journal', type: 'purchase' },
+        CJ: { nameAr: 'يومية النقدية', nameEn: 'Cash Journal', type: 'cash' },
+        BJ: { nameAr: 'يومية البنك', nameEn: 'Bank Journal', type: 'bank' },
+        GJ: { nameAr: 'يومية عامة', nameEn: 'General Journal', type: 'general' },
+        OJ: { nameAr: 'يومية افتتاحية', nameEn: 'Opening Journal', type: 'opening' },
+        CLJ: { nameAr: 'يومية الإقفال', nameEn: 'Closing Journal', type: 'closing' },
+      }
+      const def = journalDefs[targetCode] || journalDefs['GJ']
+      journal = await db.journal.upsert({
+        where: { code: targetCode },
+        update: {},
+        create: { code: targetCode, nameAr: def.nameAr, nameEn: def.nameEn, type: def.type },
+      })
+    }
   }
 
   // Find fiscal period for posting date

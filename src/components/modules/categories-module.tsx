@@ -327,10 +327,10 @@ export function CategoriesModule() {
               <col className="w-[12%]" />{/* الرمز */}
               <col className="w-[20%]" />{/* الاسم (عربي) */}
               <col className="w-[20%]" />{/* الاسم (إنجليزي) */}
-              <col className="w-[16%]" />{/* الفئة الأم */}
+              <col className="w-[14%]" />{/* الفئة الأم */}
               <col className="w-[10%]" />{/* النوع */}
               <col className="w-[12%]" />{/* الحالة */}
-              <col className="w-[10%]" />{/* إجراءات */}
+              <col className="w-[12%]" />{/* إجراءات */}
             </colgroup>
 
             <TableHeader>
@@ -537,7 +537,7 @@ export function CategoriesModule() {
                     .filter((c: CategoryItem) => c.id !== editId)
                     .map((c: CategoryItem) => (
                       <SelectItem key={c.id} value={c.id}>
-                        {c.code} — {c.nameAr}
+                        {c.nameAr}
                       </SelectItem>
                     ))}
                 </SelectContent>

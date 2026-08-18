@@ -92,9 +92,9 @@ const STATUS_LABELS: Record<string, { ar: string; en: string }> = {
   cancelled: { ar: 'ملغي', en: 'Cancelled' },
 }
 
-const VISIBLE_ROWS = 6
-const ROW_HEIGHT = 52
-const HEADER_HEIGHT = 44
+const VISIBLE_ROWS = 7
+const ROW_HEIGHT = 40
+const HEADER_HEIGHT = 42
 
 export function PurchaseOrdersModule() {
   const { t, isRTL } = useT()
@@ -251,7 +251,7 @@ export function PurchaseOrdersModule() {
       toast.error(L('أمر الشراء ملغي، يلزم حذفه أو مراجعته', 'Purchase order is cancelled, must be deleted or reviewed'))
       return
     }
-    ////////////////////////////////////    setEditingId(order.id)
+    setEditingId(order.id)
     const viewMode = explicitViewMode ?? isReadOnlyStatus(order.status)
     setViewOnly(viewMode)
     setPartnerId(order.partnerId || order.partner?.id || '')
@@ -533,13 +533,13 @@ export function PurchaseOrdersModule() {
         >
           <table className="w-full caption-bottom text-sm min-w-[960px] table-fixed border-separate border-spacing-0">
             <colgroup>
+              <col className="w-[12%]" />
               <col className="w-[20%]" />
-              <col className="w-[20%]" />
-              <col className="w-[10%]" />
+              <col className="w-[13%]" />
               <col className="w-[14%]" />
-              <col className="w-[13%]" />
-              <col className="w-[10%]" />
-              <col className="w-[13%]" />
+              <col className="w-[12%]" />
+              <col className="w-[12%]" />
+              <col className="w-[14%]" />
             </colgroup>
 
             <TableHeader>
@@ -650,7 +650,7 @@ export function PurchaseOrdersModule() {
                     <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
                       {partners.map((p) => (
                         <SelectItem key={p.id} value={p.id}>
-                          <span dir="ltr" className="font-mono text-xs">{p.code}</span> — {partnerName(p)}
+                          {partnerName(p)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -727,7 +727,7 @@ export function PurchaseOrdersModule() {
                           <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
                             {products.map((p) => (
                               <SelectItem key={p.id} value={p.id}>
-                                <span dir="ltr" className="font-mono text-xs">{p.sku}</span> — {productName(p)}
+                                {productName(p)}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -798,7 +798,7 @@ export function PurchaseOrdersModule() {
                                 <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
                                   {products.map((p) => (
                                     <SelectItem key={p.id} value={p.id}>
-                                      <span dir="ltr" className="font-mono text-xs">{p.sku}</span> — {productName(p)}
+                                      {productName(p)}
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
