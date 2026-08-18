@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { serverError, parsePagination } from '@/lib/erp/api-response'
 import { NextResponse } from 'next/server'
+import { n } from '@/lib/erp/money'
 
 // GET /api/erp/stock-quants — current stock on hand per product/warehouse/location
 export async function GET(req: Request) {
@@ -53,11 +54,11 @@ export async function GET(req: Request) {
 
     // Compute fields
     let mapped = allQuants.map((q) => {
-      const minStock = q.product?.minStock ?? 0
-      const costPrice = q.product?.costPrice ?? 0
-      const available = q.quantity - q.reservedQty
-      const value = q.quantity * costPrice
-      const isLowStock = q.quantity <= minStock
+      const minStock = n(q.product?.minStock ?? 0)
+      const costPrice = n(q.product?.costPrice ?? 0)
+      const available = n(q.quantity) - n(q.reservedQty)
+      const value = n(q.quantity) * costPrice
+      const isLowStock = n(q.quantity) <= minStock
 
       return {
         id: q.id,
@@ -66,8 +67,8 @@ export async function GET(req: Request) {
         warehouseId: q.warehouseId,
         warehouse: q.warehouse,
         location: q.location,
-        quantity: q.quantity,
-        reservedQty: q.reservedQty,
+        quantity: n(q.quantity),
+        reservedQty: n(q.reservedQty),
         available,
         value,
         isLowStock,

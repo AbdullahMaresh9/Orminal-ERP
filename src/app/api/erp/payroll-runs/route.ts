@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { ok, list, notFound, badRequest, serverError, parsePagination, parseSearch } from '@/lib/erp/api-response'
 import { nextNumber } from '@/lib/erp/number-sequence'
+import { n } from '@/lib/erp/money'
 
 export async function GET(req: Request) {
   try {
@@ -61,8 +62,8 @@ export async function POST(req: Request) {
 
       for (const emp of employees) {
         const contract = emp.contracts[0]
-        const baseSalary = contract?.baseSalary ?? 0
-        const allowances = contract?.allowances ?? 0
+        const baseSalary = n(contract?.baseSalary ?? 0)
+        const allowances = n(contract?.allowances ?? 0)
         const gross = baseSalary + allowances
         const deductions = Math.round(gross * 0.05 * 100) / 100
         const net = gross - deductions

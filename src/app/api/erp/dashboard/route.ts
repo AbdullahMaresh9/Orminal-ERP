@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { ok, serverError } from '@/lib/erp/api-response'
+import { n, sumBy } from '@/lib/erp/money'
 
 export async function GET() {
   try {
@@ -22,20 +23,20 @@ export async function GET() {
       db.purchaseInvoice.findMany({ select: { total: true, paid: true, status: true, createdAt: true } }),
     ])
 
-    const totalSales = salesOrders.reduce((s, o) => s + o.total, 0)
-    const totalPurchases = purchaseOrders.reduce((s, o) => s + o.total, 0)
-    const totalReceipts = salesPayments.reduce((s, p) => s + p.amount, 0)
-    const totalPaid = purchasePayments.reduce((s, p) => s + p.amount, 0)
+    const totalSales = sumBy(salesOrders, (o) => o.total)
+    const totalPurchases = sumBy(purchaseOrders, (o) => o.total)
+    const totalReceipts = sumBy(salesPayments, (p) => p.amount)
+    const totalPaid = sumBy(purchasePayments, (p) => p.amount)
 
-    const inventoryValue = stockQuants.reduce((s, q) => s + q.quantity * (q.product?.costPrice ?? 0), 0)
+    const inventoryValue = stockQuants.reduce((s, q) => s + n(q.quantity) * n(q.product?.costPrice ?? 0), 0)
 
     // Net profit from journal: revenue - expense
     let totalRevenue = 0, totalExpense = 0
     for (const je of journalEntries) {
       if (je.state !== 'posted') continue
       for (const line of je.lines) {
-        if (line.account?.type === 'income') totalRevenue += line.credit - line.debit
-        if (line.account?.type === 'expense') totalExpense += line.debit - line.credit
+        if (line.account?.type === 'income') totalRevenue += n(line.credit) - n(line.debit)
+        if (line.account?.type === 'expense') totalExpense += n(line.debit) - n(line.credit)
       }
     }
     const netProfit = totalRevenue - totalExpense
@@ -54,8 +55,8 @@ export async function GET() {
     for (let i = 5; i >= 0; i--) {
       const start = new Date(now.getFullYear(), now.getMonth() - i, 1)
       const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 1)
-      const monthSales = salesOrders.filter((o) => { const d = new Date(o.createdAt); return d >= start && d < end }).reduce((s, o) => s + o.total, 0)
-      const monthPurchases = purchaseOrders.filter((o) => { const d = new Date(o.createdAt); return d >= start && d < end }).reduce((s, o) => s + o.total, 0)
+      const monthSales = salesOrders.filter((o) => { const d = new Date(o.createdAt); return d >= start && d < end }).reduce((s, o) => s + n(o.total), 0)
+      const monthPurchases = purchaseOrders.filter((o) => { const d = new Date(o.createdAt); return d >= start && d < end }).reduce((s, o) => s + n(o.total), 0)
       const monthsAr = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر']
       months.push({ label: monthsAr[start.getMonth()], sales: Math.round(monthSales), purchases: Math.round(monthPurchases) })
     }
@@ -65,8 +66,8 @@ export async function GET() {
     const productSales = new Map<string, { name: string; sku: string; qty: number; revenue: number }>()
     for (const it of salesOrderItems) {
       const existing = productSales.get(it.productId) ?? { name: it.product?.nameAr ?? it.product?.nameEn ?? '—', sku: it.product?.sku ?? '', qty: 0, revenue: 0 }
-      existing.qty += it.quantity
-      existing.revenue += it.total
+      existing.qty += n(it.quantity)
+      existing.revenue += n(it.total)
       productSales.set(it.productId, existing)
     }
     const topProducts = Array.from(productSales.entries()).map(([id, v]) => ({ id, ...v })).sort((a, b) => b.revenue - a.revenue).slice(0, 5)

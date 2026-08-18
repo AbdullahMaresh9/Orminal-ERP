@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import { ok, created, list, badRequest, serverError, parsePagination, parseSearch } from '@/lib/erp/api-response'
 import { nextNumber } from '@/lib/erp/number-sequence'
 import { postJournalEntry, receiptPosting } from '@/lib/erp/accounting-engine'
+import { n } from '@/lib/erp/money'
 
 // GET /api/erp/sales-payments
 export async function GET(req: Request) {
@@ -48,14 +49,6 @@ export async function POST(req: Request) {
     const status = body.status ?? 'posted'
     const amount = Number(body.amount)
 
-    let paymentDate = new Date()
-    if (body.paymentDate) {
-      const d = new Date(body.paymentDate)
-      if (!isNaN(d.getTime())) {
-        paymentDate = d
-      }
-    }
-
     const payment = await db.salesPayment.create({
       data: {
         companyId: company.id,
@@ -64,7 +57,7 @@ export async function POST(req: Request) {
         partnerId: body.partnerId,
         invoiceId: body.invoiceId,
         amount,
-        paymentDate,
+        paymentDate: body.paymentDate ? new Date(body.paymentDate) : new Date(),
         method: body.method ?? 'cash',
         reference: body.reference,
         bankAccountId: body.bankAccountId,
@@ -82,7 +75,7 @@ export async function POST(req: Request) {
         companyId: company.id,
         branchId: branch?.id,
         journalType: 'cash',
-        postingDate: paymentDate,
+        postingDate: body.paymentDate ? new Date(body.paymentDate) : new Date(),
         description: `سند قبض ${code}`,
         refType: 'sales_payment',
         refId: payment.id,
@@ -105,12 +98,12 @@ export async function POST(req: Request) {
       if (body.invoiceId) {
         const invoice = await db.salesInvoice.findUnique({ where: { id: body.invoiceId } })
         if (invoice) {
-          const newPaid = invoice.paid + amount
+          const newPaid = n(invoice.paid) + amount
           await db.salesInvoice.update({
             where: { id: body.invoiceId },
             data: {
               paid: newPaid,
-              status: newPaid >= invoice.total ? 'paid' : 'partially_paid',
+              status: newPaid >= n(invoice.total) ? 'paid' : 'partially_paid',
             },
           })
         }

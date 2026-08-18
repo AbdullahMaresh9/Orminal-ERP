@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { ok, notFound, badRequest, serverError } from '@/lib/erp/api-response'
 import { postJournalEntry, cogsPosting } from '@/lib/erp/accounting-engine'
+import { n } from '@/lib/erp/money'
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -51,8 +52,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
             }
 
             const product = await tx.product.findUnique({ where: { id: l.productId } })
-            const cost = product?.costPrice ?? 0
-            const lineCost = cost * l.deliveredQty
+            const cost = n(product?.costPrice ?? 0)
+            const lineCost = cost * n(l.deliveredQty)
             cogsAmount += lineCost
 
             await tx.stockMove.create({

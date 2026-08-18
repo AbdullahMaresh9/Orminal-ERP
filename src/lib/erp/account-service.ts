@@ -15,6 +15,7 @@ import {
   type AccountClass,
 } from './account-classes'
 import { isValidRole, roleAcceptsClass } from './account-roles'
+import { n } from './money'
 
 export interface FieldError {
   field: string
@@ -347,7 +348,8 @@ export async function fetchAccountBalances(accountIds?: string[]): Promise<Map<s
     where: accountIds && accountIds.length ? { accountId: { in: accountIds } } : undefined,
     _sum: { debit: true, credit: true },
   })
-  return new Map(grouped.map((g) => [g.accountId, { debit: g._sum.debit ?? 0, credit: g._sum.credit ?? 0 }]))
+  // _sum on a Decimal column returns Prisma.Decimal; coerce to number at this edge.
+  return new Map(grouped.map((g) => [g.accountId, { debit: n(g._sum.debit), credit: n(g._sum.credit) }]))
 }
 
 /** Normalize the derived fields that must always agree with the class. */

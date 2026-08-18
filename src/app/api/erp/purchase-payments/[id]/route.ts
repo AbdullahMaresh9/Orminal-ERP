@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { ok, notFound, badRequest, serverError } from '@/lib/erp/api-response'
 import { postJournalEntry, paymentPosting } from '@/lib/erp/accounting-engine'
+import { n } from '@/lib/erp/money'
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -41,7 +42,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         description: `سند صرف ${payment.code}`,
         refType: 'purchase_payment',
         refId: payment.id,
-        lines: paymentPosting({ amount: payment.amount, partnerId: payment.partnerId }),
+        lines: paymentPosting({ amount: n(payment.amount), partnerId: payment.partnerId }),
       })
 
       // Update partner balance (decrease AP)
@@ -54,12 +55,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       if (payment.invoiceId) {
         const invoice = await db.purchaseInvoice.findUnique({ where: { id: payment.invoiceId } })
         if (invoice) {
-          const newPaid = invoice.paid + payment.amount
+          const newPaid = n(invoice.paid) + n(payment.amount)
           await db.purchaseInvoice.update({
             where: { id: payment.invoiceId },
             data: {
               paid: newPaid,
-              status: newPaid >= invoice.total ? 'paid' : 'partially_paid',
+              status: newPaid >= n(invoice.total) ? 'paid' : 'partially_paid',
             },
           })
         }
@@ -87,12 +88,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         if (payment.invoiceId) {
           const invoice = await db.purchaseInvoice.findUnique({ where: { id: payment.invoiceId } })
           if (invoice) {
-            const newPaid = Math.max(0, invoice.paid - payment.amount)
+            const newPaid = Math.max(0, n(invoice.paid) - n(payment.amount))
             await db.purchaseInvoice.update({
               where: { id: payment.invoiceId },
               data: {
                 paid: newPaid,
-                status: newPaid <= 0 ? 'posted' : (newPaid >= invoice.total ? 'paid' : 'partially_paid'),
+                status: newPaid <= 0 ? 'posted' : (newPaid >= n(invoice.total) ? 'paid' : 'partially_paid'),
               },
             })
           }

@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import { ok, created, list, badRequest, serverError, parsePagination, parseSearch } from '@/lib/erp/api-response'
 import { nextNumber } from '@/lib/erp/number-sequence'
 import { postJournalEntry, cogsPosting } from '@/lib/erp/accounting-engine'
+import { n } from '@/lib/erp/money'
 
 // GET /api/erp/deliveries
 export async function GET(req: Request) {
@@ -83,7 +84,7 @@ export async function POST(req: Request) {
         for (const l of body.lines) {
           // Get product cost price
           const product = await tx.product.findUnique({ where: { id: l.productId } })
-          const cost = product?.costPrice ?? 0
+          const cost = n(product?.costPrice ?? 0)
           const lineCost = cost * (l.deliveredQty || 0)
           cogsAmount += lineCost
 

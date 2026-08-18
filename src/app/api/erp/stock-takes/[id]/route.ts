@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { ok, badRequest, serverError, notFound } from '@/lib/erp/api-response'
 import { postJournalEntry, inventoryAdjustmentPosting } from '@/lib/erp/accounting-engine'
+import { n } from '@/lib/erp/money'
 
 // GET /api/erp/stock-takes/[id]
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -27,11 +28,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       productNameEn: l.product?.nameEn,
       sku: l.product?.sku,
       barcode: l.product?.barcode,
-      systemQty: l.systemQty,
-      countedQty: l.countedQty,
-      diff: l.variance,
-      unitCost: l.unitCost,
-      varianceValue: l.variance * l.unitCost,
+      systemQty: n(l.systemQty),
+      countedQty: n(l.countedQty),
+      diff: n(l.variance),
+      unitCost: n(l.unitCost),
+      varianceValue: n(l.variance) * n(l.unitCost),
     }))
 
     return ok({
@@ -99,10 +100,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
       await db.$transaction(async (tx) => {
         for (const l of linesData) {
-          const varValue = l.variance * l.unitCost
+          const varValue = n(l.variance) * n(l.unitCost)
           totalVarianceValue += varValue
 
-          if (l.variance !== 0) {
+          if (n(l.variance) !== 0) {
             // Append-only stock move
             await tx.stockMove.create({
               data: {
@@ -110,9 +111,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
                 documentType: 'adjustment',
                 documentId: id,
                 productId: l.productId,
-                destWarehouseId: l.variance > 0 ? warehouseId : null,
-                sourceWarehouseId: l.variance < 0 ? warehouseId : null,
-                quantity: Math.abs(l.variance),
+                destWarehouseId: n(l.variance) > 0 ? warehouseId : null,
+                sourceWarehouseId: n(l.variance) < 0 ? warehouseId : null,
+                quantity: Math.abs(n(l.variance)),
                 state: 'done',
                 valuationAmount: varValue,
                 costPrice: l.unitCost,
@@ -174,11 +175,11 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       productNameEn: l.product?.nameEn,
       sku: l.product?.sku,
       barcode: l.product?.barcode,
-      systemQty: l.systemQty,
-      countedQty: l.countedQty,
-      diff: l.variance,
-      unitCost: l.unitCost,
-      varianceValue: l.variance * l.unitCost,
+      systemQty: n(l.systemQty),
+      countedQty: n(l.countedQty),
+      diff: n(l.variance),
+      unitCost: n(l.unitCost),
+      varianceValue: n(l.variance) * n(l.unitCost),
     }))
 
     return ok({

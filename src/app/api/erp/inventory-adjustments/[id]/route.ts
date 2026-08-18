@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { ok, notFound, badRequest, serverError } from '@/lib/erp/api-response'
 import { postJournalEntry } from '@/lib/erp/accounting-engine'
+import { n } from '@/lib/erp/money'
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -41,7 +42,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       let lossAmount = 0
       await db.$transaction(async (tx) => {
         for (const l of exists.lines) {
-          const variance = (l.countedQty ?? 0) - (l.systemQty ?? 0)
+          const variance = (n(l.countedQty) ?? 0) - (n(l.systemQty) ?? 0)
           if (variance === 0) continue
 
           // StockMove
@@ -56,7 +57,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
               quantity: Math.abs(variance),
               uomId: l.product?.uomId ?? undefined,
               state: 'done',
-              valuationAmount: Math.abs(variance) * (l.unitCost || 0),
+              valuationAmount: Math.abs(variance) * n(l.unitCost || 0),
               costPrice: l.unitCost,
               postingDate: new Date(),
             },
@@ -81,7 +82,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
             })
           }
 
-          const lineValue = Math.abs(variance) * (l.unitCost || 0)
+          const lineValue = Math.abs(variance) * n(l.unitCost || 0)
           if (variance > 0) gainAmount += lineValue
           else lossAmount += lineValue
         }

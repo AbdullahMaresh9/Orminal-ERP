@@ -5,9 +5,15 @@ These two are genuine ERP standards, deliberately NOT applied in the
 live data would introduce silent bugs. Each needs a code pass alongside the
 schema change.
 
-## 1. Money & quantity precision: Float → Decimal  (HIGH value, MEDIUM risk)
+## 1. Money & quantity precision: Float → Decimal  ✅ DONE (migration 20260818010000)
 
-**Why staged:** 141 monetary/quantity columns are `Float`. Prisma maps
+**Status: IMPLEMENTED.** All 153 monetary/quantity columns are now `Decimal`
+(amounts 20,4 · quantities 20,6 · percentages 9,4 · fx rate 20,10). A `money.ts`
+helper (`n`, `round2`, `sumBy`, `decimalsToNumbers`) coerces at read/serialization
+edges, the response envelope converts Decimal→number centrally, and 11 money tests
+guard it. Original rationale kept below for the record.
+
+**Original why-staged:** 141 monetary/quantity columns were `Float`. Prisma maps
 `Decimal` to the `Prisma.Decimal` object on reads, so JS `+ - * /` operators
 stop doing math (`+` becomes **string concatenation**). ~59 files read these
 fields and compute with them (accounting engine, financial statements, every

@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { ok, notFound, badRequest, serverError } from '@/lib/erp/api-response'
 import { postJournalEntry, payrollPosting } from '@/lib/erp/accounting-engine'
+import { n } from '@/lib/erp/money'
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -42,7 +43,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         if (exists.status !== 'calculated' && exists.status !== 'reviewed' && exists.status !== 'approved') {
           return badRequest('يجب الحساب أولاً قبل الترحيل')
         }
-        if (exists.totalNet <= 0) return badRequest('لا يمكن ترحيل تشغيل بصافي صفري')
+        if (n(exists.totalNet) <= 0) return badRequest('لا يمكن ترحيل تشغيل بصافي صفري')
 
         // Use the main branch for the journal sequence (matches existing setup)
         const branch = await db.branch.findFirst({ where: { companyId: exists.companyId }, orderBy: { isMain: 'desc' } })
@@ -54,9 +55,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           refType: 'payroll',
           refId: exists.id,
           lines: payrollPosting({
-            gross: exists.totalGross,
-            deductions: exists.totalDeductions,
-            net: exists.totalNet,
+            gross: n(exists.totalGross),
+            deductions: n(exists.totalDeductions),
+            net: n(exists.totalNet),
           }),
         })
 

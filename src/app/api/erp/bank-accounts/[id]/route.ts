@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
 import { ok, notFound, badRequest, serverError } from '@/lib/erp/api-response'
+import { n } from '@/lib/erp/money'
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -68,7 +69,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     if (!exists) return notFound('Bank account not found')
 
     // Block if balance non-zero
-    if (Math.abs(exists.balance) > 0.001) {
+    if (Math.abs(n(exists.balance)) > 0.001) {
       return badRequest('Cannot delete: bank account has non-zero balance. Settle balance first.')
     }
 
