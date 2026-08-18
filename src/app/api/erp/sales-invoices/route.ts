@@ -118,7 +118,7 @@ export async function POST(req: Request) {
         refType: 'sales_invoice',
         refId: invoice.id,
         currencyId: body.currencyId,
-        lines: salesInvoicePosting({ total, subtotal, taxTotal, partnerId: body.partnerId }),
+        lines: salesInvoicePosting({ total, subtotal, taxTotal, partnerId: body.partnerId, discount: body.discount ?? 0 }),
         userId: body.createdBy,
       })
 

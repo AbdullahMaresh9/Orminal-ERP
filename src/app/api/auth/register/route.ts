@@ -66,9 +66,14 @@ export async function POST(req: Request) {
         // Hash password
         const passwordHash = await hashPassword(password)
 
-        // Find default viewer or admin role
+        // SECURITY: self-registration must grant LEAST PRIVILEGE.
+        // This previously matched `{ OR: [{ code: 'admin' }, { isSystem: true }] }`,
+        // and because every seeded role has isSystem = true, findFirst handed the
+        // ADMIN role to anyone who registered — a privilege-escalation hole that
+        // bypassed RBAC entirely. New accounts now get the read-only VIEWER role
+        // and an administrator must elevate them explicitly.
         const defaultRole = await db.role.findFirst({
-            where: { OR: [{ code: 'admin' }, { isSystem: true }] },
+            where: { code: { in: ['VIEWER', 'viewer'] }, active: true },
             select: { id: true },
         })
 

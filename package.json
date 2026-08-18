@@ -10,7 +10,11 @@
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "db:reset": "prisma migrate reset"
+    "db:reset": "prisma migrate reset",
+    "test:coa": "node --import ./tests/alias-hook.mjs --test tests/chart-of-accounts.test.ts",
+    "test": "node --import ./tests/alias-hook.mjs --test tests/**/*.test.ts",
+    "coa:migrate": "node scripts/migrate-chart-of-accounts.mjs",
+    "coa:migrate:dry": "node scripts/migrate-chart-of-accounts.mjs --dry-run"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

@@ -1,6 +1,6 @@
 import { db } from '@/lib/db'
 import { ok, notFound, badRequest, serverError } from '@/lib/erp/api-response'
-import { postJournalEntry, SYSTEM_ACCOUNTS } from '@/lib/erp/accounting-engine'
+import { postJournalEntry, payrollPosting } from '@/lib/erp/accounting-engine'
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -53,11 +53,11 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           description: `ترحيل رواتب فترة ${exists.period}`,
           refType: 'payroll',
           refId: exists.id,
-          lines: [
-            { accountCode: SYSTEM_ACCOUNTS.SALARIES_EXPENSE, debit: exists.totalGross, credit: 0, description: 'مصروف الرواتب' },
-            { accountCode: SYSTEM_ACCOUNTS.SALARIES_PAYABLE, debit: 0, credit: exists.totalNet, description: 'رواتب مستحقة' },
-            { accountCode: SYSTEM_ACCOUNTS.OPERATING_EXPENSES, debit: 0, credit: exists.totalDeductions, description: 'استقطاعات الرواتب' },
-          ],
+          lines: payrollPosting({
+            gross: exists.totalGross,
+            deductions: exists.totalDeductions,
+            net: exists.totalNet,
+          }),
         })
 
         // Mark payslips as posted
