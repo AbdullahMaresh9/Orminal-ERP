@@ -113,12 +113,18 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
                 redirect: false,
             })
 
-            if (result?.error) {
+            if (!result || result.error || !result.ok) {
                 setLoginError(isRTL ? 'اسم المستخدم أو كلمة المرور غير صحيحة' : 'Invalid username or password')
-            } else {
-                router.replace('/')
-                router.refresh()
+                return
             }
+
+            // Use the URL returned by NextAuth and refresh the router only after
+            // the credentials callback has completed and the session cookie exists.
+            const destination = result.url && new URL(result.url, window.location.origin).origin === window.location.origin
+                ? new URL(result.url, window.location.origin).pathname
+                : '/'
+            router.replace(destination || '/')
+            router.refresh()
         } catch {
             setLoginError(isRTL ? 'حدث خطأ أثناء الاتصال بالخادم. الرجاء المحاولة لاحقاً' : 'Connection error. Please try again later')
         } finally {
@@ -164,22 +170,27 @@ export default function AuthPage({ initialMode = 'login' }: AuthPageProps) {
             } else {
                 setSignUpSuccess(isRTL ? 'تم إنشاء حسابك بنجاح! جاري تسجيل دخولك ...' : 'Account created successfully! Logging you in...')
 
-                // Auto login after sign up
-                setTimeout(async () => {
-                    const result = await signIn('credentials', {
-                        username: signUpUsername.trim(),
-                        password: signUpPassword,
-                        redirect: false,
-                    })
-                    if (result?.error) {
-                        setMode('login')
-                        setLoginUsername(signUpUsername)
-                        setLoginError(isRTL ? 'تم إنشاء الحساب! أدخل كلمة المرور لتسجيل الدخول.' : 'Account created! Enter password to log in.')
-                    } else {
-                        router.replace('/')
-                        router.refresh()
-                    }
-                }, 1200)
+                // Auto login immediately after the registration response succeeds.
+                // Waiting on a timer can race the session cookie and leave the user
+                // on the login screen without a usable authenticated session.
+                const result = await signIn('credentials', {
+                    username: signUpUsername.trim(),
+                    password: signUpPassword,
+                    redirect: false,
+                })
+
+                if (!result || result.error || !result.ok) {
+                    setMode('login')
+                    setLoginUsername(signUpUsername)
+                    setLoginError(isRTL ? 'تم إنشاء الحساب! أدخل كلمة المرور لتسجيل الدخول.' : 'Account created! Enter password to log in.')
+                    return
+                }
+
+                const destination = result.url && new URL(result.url, window.location.origin).origin === window.location.origin
+                    ? new URL(result.url, window.location.origin).pathname
+                    : '/'
+                router.replace(destination || '/')
+                router.refresh()
             }
         } catch {
             setSignUpError(isRTL ? 'حدث خطأ في الاتصال بالخادم' : 'Server connection error')
