@@ -623,7 +623,7 @@ export function PurchaseRequestsModule() {
                         <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
                           {products.map((p) => (
                             <SelectItem key={p.id} value={p.id}>
-                              <span dir="ltr" className="font-mono text-xs">{p.sku}</span> — {p.nameAr}
+                              {p.nameAr}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -642,7 +642,7 @@ export function PurchaseRequestsModule() {
                           <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
                             {costCenters.map((c) => (
                               <SelectItem key={c.id} value={c.id}>
-                                <span dir="ltr" className="font-mono text-xs">{c.code}</span> — {c.nameAr}
+                                {c.nameAr}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -686,7 +686,7 @@ export function PurchaseRequestsModule() {
                               <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
                                 {products.map((p) => (
                                   <SelectItem key={p.id} value={p.id}>
-                                    <span dir="ltr" className="font-mono text-xs">{p.sku}</span> — {p.nameAr}
+                                    {p.nameAr}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -701,7 +701,7 @@ export function PurchaseRequestsModule() {
                               <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
                                 {costCenters.map((c) => (
                                   <SelectItem key={c.id} value={c.id}>
-                                    <span dir="ltr" className="font-mono text-xs">{c.code}</span> — {c.nameAr}
+                                    {c.nameAr}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -787,7 +787,7 @@ export function PurchaseRequestsModule() {
                   <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
                     {suppliers.map((p) => (
                       <SelectItem key={p.id} value={p.id}>
-                        <span dir="ltr" className="font-mono text-xs">{p.code}</span> — {p.nameAr}
+                        {p.nameAr}
                       </SelectItem>
                     ))}
                   </SelectContent>

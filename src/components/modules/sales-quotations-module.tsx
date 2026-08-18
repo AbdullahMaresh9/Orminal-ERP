@@ -93,7 +93,7 @@ const STATUS_LABELS: Record<string, { ar: string; en: string }> = {
 // الحالات القابلة للتغيير اليدوي (لا نسمح بتعيين converted يدويًا — يتم عبر التحويل فقط)
 const MANUAL_STATUSES = ['draft', 'sent', 'accepted', 'expired', 'cancelled']
 
-const VISIBLE_ROWS = 7
+const VISIBLE_ROWS = 6
 const ROW_HEIGHT = 44
 const HEADER_HEIGHT = 40
 
@@ -371,11 +371,15 @@ export function SalesQuotationsModule() {
         throw new Error(err?.error?.message ?? L('فشل التحويل', 'Failed to convert'))
       }
       const so = await r.json()
-      await fetch(`/api/erp/sales-quotations/${q.id}`, {
+      const updateRes = await fetch(`/api/erp/sales-quotations/${q.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'converted', convertedSalesOrderId: so.data.id }),
+        body: JSON.stringify({ status: 'converted', convertedSalesOrderId: so.data?.id ?? so.id }),
       })
+      if (!updateRes.ok) {
+        const err = await updateRes.json().catch(() => ({}))
+        throw new Error(err?.error?.message ?? L('فشل تحديث حالة عرض السعر', 'Failed to update quotation status'))
+      }
       return so
     },
     onSuccess: () => {
@@ -441,7 +445,7 @@ export function SalesQuotationsModule() {
       <div class="party">
         <div class="label">${L('العميل', 'Customer')}</div>
         <div class="name">${partnerName(q.partner)}</div>
-        <div class="sub">${L('رمز', 'Code')}: ${q.partner?.code ?? ''}</div>
+        <div class="sub">${L('رقم الحساب', 'Account Number')}: ${q.partner?.code ?? ''}</div>
         ${q.validUntil ? `<div class="sub">${L('صالح حتى', 'Valid Until')}: ${formatDate(q.validUntil)}</div>` : ''}
       </div>
       <table>
@@ -545,13 +549,13 @@ export function SalesQuotationsModule() {
         >
           <table className="w-full caption-bottom text-sm min-w-[960px] table-fixed border-separate border-spacing-0">
             <colgroup>
+              <col className="w-[14%]" />
+              <col className="w-[14%]" />
+              <col className="w-[13%]" />
+              <col className="w-[13%]" />
+              <col className="w-[13%]" />
               <col className="w-[12%]" />
-              <col className="w-[20%]" />
-              <col className="w-[14%]" />
-              <col className="w-[14%]" />
-              <col className="w-[14%]" />
-              <col className="w-[12%]" />
-              <col className="w-[14%]" />
+              <col className="w-[21%]" />
             </colgroup>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
@@ -561,7 +565,7 @@ export function SalesQuotationsModule() {
                 <TableHead className={`${stickyHead} text-center`}>{L('صالح حتى', 'Valid Until')}</TableHead>
                 <TableHead className={`${stickyHead} text-center`}>{L('الإجمالي', 'Total')}</TableHead>
                 <TableHead className={`${stickyHead} text-center`}>{L('الحالة', 'Status')}</TableHead>
-                <TableHead className={`${stickyHead} text-end pe-4`}>{L('إجراءات', 'Actions')}</TableHead>
+                <TableHead className={`${stickyHead} text-center pe-4`}>{L('إجراءات', 'Actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -679,7 +683,7 @@ export function SalesQuotationsModule() {
                     <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
                       {partners.map((p) => (
                         <SelectItem key={p.id} value={p.id}>
-                          <span dir="ltr" className="font-mono text-xs">{p.code}</span> — {partnerName(p)}
+                          {partnerName(p)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -742,7 +746,7 @@ export function SalesQuotationsModule() {
                           <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
                             {products.map((p) => (
                               <SelectItem key={p.id} value={p.id}>
-                                <span dir="ltr" className="font-mono text-xs">{p.sku}</span> — {productName(p)}
+                                {productName(p)}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -811,7 +815,7 @@ export function SalesQuotationsModule() {
                                 <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
                                   {products.map((p) => (
                                     <SelectItem key={p.id} value={p.id}>
-                                      <span dir="ltr" className="font-mono text-xs">{p.sku}</span> — {productName(p)}
+                                      {productName(p)}
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
@@ -905,8 +909,8 @@ export function SalesQuotationsModule() {
             </DialogTitle>
             <DialogDescription>
               {L(
-                `هل أنت متأكد من حذف عرض السعر "${deleteTarget?.code ?? ''}"؟ لا يمكن التراجع عن هذا الإجراء.`,
-                `Are you sure you want to delete quotation "${deleteTarget?.code ?? ''}"? This action cannot be undone.`,
+                `هل أنت متأكد من حذف عرض السعر لا يمكن التراجع عن هذا الإجراء.`,
+                `Are you sure you want to delete quotationء This action cannot be undone.`,
               )}
             </DialogDescription>
           </DialogHeader>

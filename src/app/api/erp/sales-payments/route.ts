@@ -48,6 +48,14 @@ export async function POST(req: Request) {
     const status = body.status ?? 'posted'
     const amount = Number(body.amount)
 
+    let paymentDate = new Date()
+    if (body.paymentDate) {
+      const d = new Date(body.paymentDate)
+      if (!isNaN(d.getTime())) {
+        paymentDate = d
+      }
+    }
+
     const payment = await db.salesPayment.create({
       data: {
         companyId: company.id,
@@ -56,7 +64,7 @@ export async function POST(req: Request) {
         partnerId: body.partnerId,
         invoiceId: body.invoiceId,
         amount,
-        paymentDate: body.paymentDate ? new Date(body.paymentDate) : new Date(),
+        paymentDate,
         method: body.method ?? 'cash',
         reference: body.reference,
         bankAccountId: body.bankAccountId,
@@ -74,7 +82,7 @@ export async function POST(req: Request) {
         companyId: company.id,
         branchId: branch?.id,
         journalType: 'cash',
-        postingDate: body.paymentDate ? new Date(body.paymentDate) : new Date(),
+        postingDate: paymentDate,
         description: `سند قبض ${code}`,
         refType: 'sales_payment',
         refId: payment.id,

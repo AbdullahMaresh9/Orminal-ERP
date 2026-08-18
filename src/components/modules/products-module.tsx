@@ -34,7 +34,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Package, Boxes, Tag, Pencil, Trash2, Download, FileSpreadsheet, FileText, FileCheck, Eye } from 'lucide-react'
+import { Package, Boxes, Tag, Pencil, Trash2, Download, FileSpreadsheet, FileText, FileCheck } from 'lucide-react'
 
 interface Category { id: string; code: string; nameAr: string; nameEn?: string }
 interface Uom { id: string; code: string; nameAr: string; nameEn?: string }
@@ -157,7 +157,7 @@ export function ProductsModule() {
   })
 
   const handleDelete = (p: Product) => {
-    if (confirm(L(`هل أنت تأكد من رغبتك في حذف المنتج "${p.nameAr}"؟`, `Are you sure you want to delete product "${p.nameEn || p.nameAr}"?`))) {
+    if (confirm(L(`هل أنت متأكد من رغبتك في حذف المنتج "${p.nameAr}"؟`, `Are you sure you want to delete product "${p.nameEn || p.nameAr}"?`))) {
       deleteMutation.mutate(p.id)
     }
   }
@@ -173,7 +173,7 @@ export function ProductsModule() {
       type: formData.get('type') || 'product',
       costPrice: Number(formData.get('costPrice')) || 0,
       salePrice: Number(formData.get('salePrice')) || 0,
-      minStock: Number(formData.get('minStock')) || 0,
+      minStock: Math.floor(Math.max(0, Number(formData.get('minStock')) || 0)),
       active: formData.get('active') === 'on',
     }
     saveMutation.mutate(payload)
@@ -290,14 +290,14 @@ export function ProductsModule() {
             <colgroup>
               <col className="w-[8%]" />{/* SKU */}
               <col className="w-[18%]" />{/* الاسم */}
-              <col className="w-[12%]" />{/* الفئة */}
-              <col className="w-[7%]" />{/* النوع */}
+              <col className="w-[13%]" />{/* الفئة */}
+              <col className="w-[8%]" />{/* النوع */}
               <col className="w-[6%]" />{/* الوحدة */}
               <col className="w-[9%]" />{/* التكلفة */}
               <col className="w-[10%]" />{/* البيع */}
               <col className="w-[8%]" />{/* الحد الأدنى */}
               <col className="w-[9%]" />{/* الحالة */}
-              <col className="w-[11%]" />{/* إجراءات */}
+              <col className="w-[8%]" />{/* إجراءات */}
             </colgroup>
 
             <TableHeader>
@@ -406,14 +406,14 @@ export function ProductsModule() {
 
       {/* Add / Edit Product Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent dir={dir as 'rtl' | 'ltr'} className="w-[calc(100vw-1.5rem)] sm:w-[95vw] max-w-2xl max-h-[92vh] p-0 flex flex-col overflow-hidden bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 shadow-xl rounded-xl">
-          <DialogHeader className="bg-gradient-to-r rtl:bg-gradient-to-l from-blue-50 to-[#E6F0FF] dark:from-blue-700/80 dark:to-blue-800/90 border-b border-blue-100 dark:border-blue-700/40 p-4 sm:p-6 shrink-0 relative">
+        <DialogContent dir={dir as 'rtl' | 'ltr'} className="w-[calc(100vw-1.5rem)] sm:w-[95vw] max-w-2xl max-h-[92vh] p-0 flex flex-col overflow-hidden bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-700 shadow-xl rounded-xl">
+          <DialogHeader>
             <div className="flex items-center gap-3">
               <div className="size-10 sm:size-12 rounded-xl bg-white dark:bg-slate-900/80 border border-blue-100 dark:border-blue-500/30 text-blue-600 dark:text-blue-300 flex items-center justify-center shadow-sm shadow-blue-100/40 dark:shadow-none shrink-0">
                 <Package className="size-5" />
               </div>
               <div>
-                <DialogTitle className="text-base font-bold text-slate-900 dark:text-white rtl:text-right ltr:text-left">
+                <DialogTitle>
                   {editing ? L('تعديل بيانات المنتج', 'Edit Product') : L('إضافة منتج جديد', 'Add New Product')}
                 </DialogTitle>
               </div>
@@ -542,7 +542,7 @@ export function ProductsModule() {
                       id="costPrice"
                       name="costPrice"
                       type="number"
-                      step="0.01"
+                      step="0.1"
                       defaultValue={editing?.costPrice ?? 0}
                       className="h-10 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rtl:text-right ltr:text-left"
                       dir={dir as 'rtl' | 'ltr'}
@@ -558,7 +558,7 @@ export function ProductsModule() {
                       id="salePrice"
                       name="salePrice"
                       type="number"
-                      step="0.01"
+                      step="0.1"
                       defaultValue={editing?.salePrice ?? 0}
                       className="h-10 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rtl:text-right ltr:text-left"
                       dir={dir as 'rtl' | 'ltr'}
@@ -577,8 +577,9 @@ export function ProductsModule() {
                       id="minStock"
                       name="minStock"
                       type="number"
-                      step="0.01"
-                      defaultValue={editing?.minStock ?? 0}
+                      step="1"
+                      min="0"
+                      defaultValue={editing?.minStock ? Math.floor(editing.minStock) : 0}
                       className="h-10 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rtl:text-right ltr:text-left"
                       dir={dir as 'rtl' | 'ltr'}
                     />
@@ -597,12 +598,12 @@ export function ProductsModule() {
           </DialogBody>
 
           {/* Footer Buttons — Styled matching Category modal */}
-          <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-between gap-2 px-4 sm:px-6 py-3 border-t shrink-0 bg-slate-50 dark:bg-slate-900/80 border-slate-200 dark:border-slate-800">
+          <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-between gap-2">
             <Button
               type="button"
               variant="outline"
               onClick={() => setDialogOpen(false)}
-              className="w-full sm:w-auto sm:min-w-25 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300"
+              className="w-full sm:w-auto sm:min-w-25 border-slate-300 dark:border-slate-600 bg-slate-300 dark:bg-slate-600 text-slate-700 dark:text-slate-300"
             >
               {L('إلغاء', 'Cancel')}
             </Button>

@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { DatePicker } from '@/components/ui/date-picker'
 import {
-  FileText, Plus, Trash2, Printer, ShoppingCart, Coins, Wallet, Download, FileSpreadsheet, FileDown, Eye, Pencil,
+  FileText, Plus, Trash2, Printer, ShoppingCart, Coins, Wallet, Download, FileSpreadsheet, FileDown, Eye, Pencil, AlertTriangle,
 } from 'lucide-react'
 
 interface Partner { id: string; code: string; nameAr: string; nameEn?: string }
@@ -259,6 +259,26 @@ export function SalesOrdersModule() {
     onError: (e: any) => toast.error(e.message || L('حدث خطأ', 'An error occurred')),
   })
 
+  // Delete dialog state
+  const [deleteTarget, setDeleteTarget] = useState<SalesOrder | null>(null)
+
+  const deleteMutation = useMutation({
+    mutationFn: async (order: SalesOrder) => {
+      const r = await fetch(`/api/erp/sales-orders/${order.id}`, { method: 'DELETE' })
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({}))
+        throw new Error(err?.error?.message ?? L('فشل الحذف', 'Failed to delete'))
+      }
+      return true
+    },
+    onSuccess: () => {
+      toast.success(L('تم حذف أمر البيع بنجاح', 'Sales order deleted'))
+      qc.invalidateQueries({ queryKey: ['sales-orders'] })
+      setDeleteTarget(null)
+    },
+    onError: (e: any) => toast.error(e.message || L('حدث خطأ', 'An error occurred')),
+  })
+
   const exportColumns: ExportColumn<SalesOrder>[] = [
     { key: 'code', header: L('الرمز', 'Code'), width: 14, align: 'center', value: (o) => o.code },
     { key: 'customer', header: L('العميل', 'Customer'), width: 22, align: 'center', value: (o) => partnerName(o.partner) },
@@ -447,7 +467,7 @@ export function SalesOrdersModule() {
                 <TableRow
                   key={o.id}
                   className="hover:bg-muted/40 align-middle cursor-pointer"
-                  onClick={() => openEdit(o, true)}
+                  onClick={() => openEdit(o, o.status !== 'draft')}
                 >
                   <TableCell className="ps-6 font-mono text-xs border-b truncate" dir="ltr" title={o.code}>{o.code}</TableCell>
                   <TableCell className="font-medium border-b truncate" title={partnerName(o.partner)}>{partnerName(o.partner) || '—'}</TableCell>
@@ -457,12 +477,37 @@ export function SalesOrdersModule() {
                   <TableCell className="text-center border-b"><div className="flex justify-center"><StatusBadge status={o.status} /></div></TableCell>
                   <TableCell className="text-end pe-4 border-b" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-1">
-                      <Button size="icon" variant="ghost" className="size-8" title={L('عرض أمر البيع', 'View Sales Order')} onClick={() => openEdit(o, true)}>
-                        <Eye className="size-4" />
-                      </Button>
-                      <Button size="icon" variant="ghost" className="size-8" title={L('طباعة أمر البيع', 'Print Sales Order')} onClick={() => handlePrint(o)}>
-                        <Printer className="size-3.5" />
-                      </Button>
+                      {o.status === 'draft' ? (
+                        <>
+                          <Button size="icon" variant="ghost" className="size-8" title={L('تعديل أمر البيع', 'Edit Sales Order')} onClick={() => openEdit(o, false)}>
+                            <Pencil className="size-4 text-blue-600" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="size-8" title={L('طباعة أمر البيع', 'Print Sales Order')} onClick={() => handlePrint(o)}>
+                            <Printer className="size-3.5" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="size-8 text-rose-500 hover:text-rose-600" title={L('حذف أمر البيع', 'Delete Sales Order')} onClick={() => setDeleteTarget(o)}>
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </>
+                      ) : o.status === 'cancelled' ? (
+                        <>
+                          <Button size="icon" variant="ghost" className="size-8" title={L('عرض أمر البيع', 'View Sales Order')} onClick={() => openEdit(o, true)}>
+                            <Eye className="size-4" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="size-8 text-rose-500 hover:text-rose-600" title={L('حذف أمر البيع', 'Delete Sales Order')} onClick={() => setDeleteTarget(o)}>
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button size="icon" variant="ghost" className="size-8" title={L('عرض أمر البيع', 'View Sales Order')} onClick={() => openEdit(o, true)}>
+                            <Eye className="size-4" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="size-8" title={L('طباعة أمر البيع', 'Print Sales Order')} onClick={() => handlePrint(o)}>
+                            <Printer className="size-3.5" />
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -479,7 +524,7 @@ export function SalesOrdersModule() {
           dir={isRTL ? 'rtl' : 'ltr'}
           className="w-[calc(100vw-1.5rem)] sm:w-[95vw] max-w-4xl max-h-[92vh] p-0 flex flex-col overflow-hidden"
         >
-          <DialogHeader className="px-4 sm:px-6 py-4 border-b shrink-0">
+          <DialogHeader >
             <DialogTitle>
               {viewOnly
                 ? L('عرض أمر البيع', 'View Sales Order')
@@ -501,7 +546,7 @@ export function SalesOrdersModule() {
                     <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
                       {partners.map((p) => (
                         <SelectItem key={p.id} value={p.id}>
-                          <span dir="ltr" className="font-mono text-xs">{p.code}</span> — {partnerName(p)}
+                          {partnerName(p)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -559,7 +604,7 @@ export function SalesOrdersModule() {
                           <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
                             {products.map((p) => (
                               <SelectItem key={p.id} value={p.id}>
-                                <span dir="ltr" className="font-mono text-xs">{p.sku}</span> — {productName(p)}
+                                {productName(p)}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -630,7 +675,7 @@ export function SalesOrdersModule() {
                                 <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
                                   {products.map((p) => (
                                     <SelectItem key={p.id} value={p.id}>
-                                      <span dir="ltr" className="font-mono text-xs">{p.sku}</span> — {productName(p)}
+                                      {productName(p)}
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
@@ -704,7 +749,7 @@ export function SalesOrdersModule() {
             </fieldset>
           </DialogBody>
 
-          <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-between gap-2 px-4 sm:px-6 py-4 border-t shrink-0">
+          <DialogFooter>
             <Button type="button" variant="outline" className="w-full sm:w-auto sm:min-w-25" onClick={() => { setAddOpen(false); resetForm() }}>
               {viewOnly ? L('إغلاق', 'Close') : L('إلغاء', 'Cancel')}
             </Button>
@@ -712,9 +757,37 @@ export function SalesOrdersModule() {
               <Button type="button" className="w-full sm:w-auto sm:min-w-25" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
                 {saveMutation.isPending
                   ? L('جاري الحفظ...', 'Saving...')
-                  : editingId ? L('حفظ', 'Save') : L('إنشاء', 'Create')}
+                  : editingId ? L('حفظ التغييرات', 'Save Changes') : L('إنشاء', 'Create')}
               </Button>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ============ تأكيد الحذف ============ */}
+      <Dialog open={!!deleteTarget} onOpenChange={(o) => { if (!o) setDeleteTarget(null) }}>
+        <DialogContent className="max-w-md" dir={isRTL ? 'rtl' : 'ltr'}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-rose-600">
+              <AlertTriangle className="size-5" /> {L('حذف أمر البيع', 'Delete Sales Order')}
+            </DialogTitle>
+            <DialogDescription>
+              {L(
+                `هل أنت متأكد من حذف أمر البيع "${deleteTarget?.code ?? ''}"؟ لا يمكن التراجع عن هذا الإجراء.`,
+                `Are you sure you want to delete sales order "${deleteTarget?.code ?? ''}"? This action cannot be undone.`,
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setDeleteTarget(null)}>{L('إلغاء', 'Cancel')}</Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={deleteMutation.isPending}
+              onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget)}
+            >
+              {deleteMutation.isPending ? L('جاري الحذف...', 'Deleting...') : L('حذف', 'Delete')}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

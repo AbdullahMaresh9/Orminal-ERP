@@ -577,7 +577,7 @@ export function DeliveriesModule() {
       {/* New Delivery Modal */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-          <DialogHeader className="px-6 py-4 border-b shrink-0">
+          <DialogHeader>
             <DialogTitle className="text-lg font-bold flex items-center gap-2">
               <Truck className="size-5 text-blue-600" />
               <span>{L('إنشاء إذن تسليم مبيعات جديد', 'Create Sales Delivery Note')}</span>

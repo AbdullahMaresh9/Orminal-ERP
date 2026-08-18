@@ -351,7 +351,7 @@ export default function SuppliersModule() {
             }}
             className="flex flex-col max-h-[85vh] sm:max-h-[90vh] h-full overflow-hidden"
           >
-            <DialogHeader className="bg-gradient-to-r from-blue-50 to-[#E6F0FF] rtl:bg-gradient-to-l dark:bg-none dark:bg-blue-700/80 border-b border-blue-100 dark:border-blue-800 p-4 sm:p-6 shrink-0 relative">
+            <DialogHeader>
               <div className="flex items-center gap-3">
                 <div className="size-10 sm:size-11 rounded-xl bg-blue-600 dark:bg-blue-500 text-white flex items-center justify-center shadow-md dark:shadow-blue-900/30 shrink-0">
                   <Truck className="size-5" />
@@ -365,7 +365,7 @@ export default function SuppliersModule() {
                   <p className="text-xs text-blue-700/70 dark:text-blue-200/70">
                     {editing
                       ? (isRTL ? `حـساب المورد: ${editing.code}` : `Supplier Account: ${editing.code}`)
-                      : (isRTL ? 'قم بملء البيانات التالية لتسجيل مورد جديد في النظام' : 'Fill in the details below to register a new supplier')}
+                      : (isRTL ? 'قم بملء بيانات تسجيل المورد' : 'Fill in the details below to register a new supplier')}
                   </p>
                 </div>
               </div>
@@ -599,20 +599,20 @@ export default function SuppliersModule() {
               </div>
             </DialogBody>
 
-            <DialogFooter className="bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800 p-3.5 sm:p-4 shrink-0">
-              <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3 w-full">
+            <DialogFooter>
+              <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3 w-full">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setDialogOpen(false)}
-                  className="w-full sm:w-auto h-11 sm:h-10 px-5 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
+                  className="w-full sm:w-auto sm:min-w-25 border-slate-300 dark:border-slate-600 bg-slate-300 dark:bg-slate-600 text-slate-700 dark:text-slate-300"
                 >
                   {isRTL ? 'إلغاء' : 'Cancel'}
                 </Button>
                 <Button
                   type="submit"
                   disabled={saveMutation.isPending}
-                  className="w-full sm:w-auto h-11 sm:h-10 px-6 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transition-all"
+                  className="w-full sm:w-auto sm:min-w-30 px-5 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transition-all"
                 >
                   {saveMutation.isPending
                     ? (isRTL ? 'جاري الحفظ...' : 'Saving...')

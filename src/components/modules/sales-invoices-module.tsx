@@ -78,7 +78,7 @@ const STATUS_LABELS: Record<string, { ar: string; en: string }> = {
   cancelled: { ar: 'ملغي', en: 'Cancelled' },
 }
 
-const VISIBLE_ROWS = 7
+const VISIBLE_ROWS = 6
 const ROW_HEIGHT = 44
 const HEADER_HEIGHT = 40
 
@@ -318,7 +318,7 @@ export function SalesInvoicesModule() {
       <div class="party">
         <div class="label">${L('العميل', 'Customer')}</div>
         <div class="name">${partnerName(inv.partner)}</div>
-        <div class="sub">${L('رمز', 'Code')}: ${inv.partner?.code ?? ''}</div>
+        <div class="sub">${L('رقم الحساب', 'Account Code')}: ${inv.partner?.code ?? ''}</div>
       </div>
       <table>
         <thead>
@@ -497,7 +497,7 @@ export function SalesInvoicesModule() {
                     <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
                       {partners.map((p) => (
                         <SelectItem key={p.id} value={p.id}>
-                          <span dir="ltr" className="font-mono text-xs">{p.code}</span> — {partnerName(p)}
+                          {partnerName(p)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -548,7 +548,7 @@ export function SalesInvoicesModule() {
                           <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
                             {products.map((p) => (
                               <SelectItem key={p.id} value={p.id}>
-                                <span dir="ltr" className="font-mono text-xs">{p.sku}</span> — {productName(p)}
+                                {productName(p)}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -619,7 +619,7 @@ export function SalesInvoicesModule() {
                                 <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
                                   {products.map((p) => (
                                     <SelectItem key={p.id} value={p.id}>
-                                      <span dir="ltr" className="font-mono text-xs">{p.sku}</span> — {productName(p)}
+                                      {productName(p)}
                                     </SelectItem>
                                   ))}
                                 </SelectContent>

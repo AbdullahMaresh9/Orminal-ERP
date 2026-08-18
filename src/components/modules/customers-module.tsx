@@ -247,13 +247,13 @@ export default function CustomersModule() {
         >
           <table className="w-full caption-bottom text-sm min-w-[900px] table-fixed border-separate border-spacing-0">
             <colgroup>
-              <col className="w-[12%]" />
+              <col className="w-[7%]" />
               <col className="w-[22%]" />
               <col className="w-[18%]" />
               <col className="w-[14%]" />
               <col className="w-[14%]" />
               <col className="w-[10%]" />
-              <col className="w-[10%]" />
+              <col className="w-[12%]" />
             </colgroup>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
@@ -344,7 +344,7 @@ export default function CustomersModule() {
       </Card>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="w-[calc(100vw-1.5rem)] sm:max-w-3xl p-0 overflow-hidden bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl" dir={dir}>
+        <DialogContent className="w-[calc(100vw-1.5rem)] sm:max-w-3xl p-0 overflow-hidden bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-700 rounded-xl shadow-2xl" dir={dir}>
           <form
             key={editing ? editing.id : 'new'}
             onSubmit={(e) => {
@@ -353,7 +353,7 @@ export default function CustomersModule() {
             }}
             className="flex flex-col max-h-[85vh] sm:max-h-[90vh] h-full overflow-hidden"
           >
-            <DialogHeader className="bg-gradient-to-r from-blue-50 to-[#E6F0FF] rtl:bg-gradient-to-l dark:bg-none dark:bg-blue-700/80 border-b border-blue-100 dark:border-blue-800 p-4 sm:p-6 shrink-0 relative">
+            <DialogHeader>
               <div className="flex items-center gap-3">
                 <div className="size-10 sm:size-11 rounded-xl bg-blue-600 dark:bg-blue-500 text-white flex items-center justify-center shadow-md dark:shadow-blue-900/30 shrink-0">
                   <Users className="size-5" />
@@ -367,7 +367,7 @@ export default function CustomersModule() {
                   <p className="text-xs text-blue-700/70 dark:text-blue-200/70">
                     {editing
                       ? (isRTL ? `حـساب العميل: ${editing.code}` : `Customer Account: ${editing.code}`)
-                      : (isRTL ? 'قم بملء البيانات التالية لتسجيل عميل جديد في النظام' : 'Fill in the details below to register a new customer')}
+                      : (isRTL ? 'قم بملء بيانات  تسجيل العميل ' : 'Fill in the details to register a customer')}
                   </p>
                 </div>
               </div>
@@ -601,20 +601,20 @@ export default function CustomersModule() {
               </div>
             </DialogBody>
 
-            <DialogFooter className="bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800 p-3.5 sm:p-4 shrink-0">
-              <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3 w-full">
+            <DialogFooter>
+              <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3 w-full">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setDialogOpen(false)}
-                  className="w-full sm:w-auto h-11 sm:h-10 px-5 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
+                  className="w-full sm:w-auto sm:min-w-25 border-slate-300 dark:border-slate-600 bg-slate-300 dark:bg-slate-600 text-slate-700 dark:text-slate-300"
                 >
                   {isRTL ? 'إلغاء' : 'Cancel'}
                 </Button>
                 <Button
                   type="submit"
                   disabled={saveMutation.isPending}
-                  className="w-full sm:w-auto h-11 sm:h-10 px-6 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transition-all"
+                  className="w-full sm:w-auto sm:min-w-30 px-5 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transition-all"
                 >
                   {saveMutation.isPending
                     ? (isRTL ? 'جاري الحفظ...' : 'Saving...')
@@ -625,6 +625,6 @@ export default function CustomersModule() {
           </form>
         </DialogContent>
       </Dialog>
-    </ModuleShell>
+    </ModuleShell >
   )
 }

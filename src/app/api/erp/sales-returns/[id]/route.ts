@@ -1,6 +1,6 @@
 import { db } from '@/lib/db'
 import { ok, notFound, badRequest, serverError } from '@/lib/erp/api-response'
-import { reverseJournalEntry } from '@/lib/erp/accounting-engine'
+import { postJournalEntry, SYSTEM_ACCOUNTS, JournalLineInput } from '@/lib/erp/accounting-engine'
 
 // GET /api/erp/sales-returns/[id]
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -42,27 +42,95 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       return ok(updated)
     }
     if (action === 'credit') {
-      // Reverse the original invoice's journal entry, update partner balance
-      if (exists.status === 'credited' || exists.status === 'closed')
+      // Issue a dedicated Credit Note & journal entry for the return
+      if (exists.status === 'credited' || exists.status === 'closed') {
         return badRequest('Return already credited')
-      if (!exists.originalInvoiceId) return badRequest('No original invoice linked to credit')
+      }
 
-      const origInvoice = await db.salesInvoice.findUnique({ where: { id: exists.originalInvoiceId } })
-      if (!origInvoice) return badRequest('Original invoice not found')
-      if (!origInvoice.journalEntryId) return badRequest('Original invoice has no journal entry to reverse')
+      const company = await db.company.findFirst()
+      if (!company) return badRequest('no company in db')
+      const branch = await db.branch.findFirst({ where: { companyId: company.id } })
 
-      const reversal = await reverseJournalEntry(
-        origInvoice.journalEntryId,
-        body.userId,
-        `مرتجع مبيعات ${exists.code}`
-      )
+      // Construct Credit Note journal entry lines:
+      // Debit: Sales Returns (4200) -> subtotal
+      // Debit: Output VAT (2100) -> taxTotal
+      // Credit: AR Customer (1100) -> total
+      const creditNoteLines: JournalLineInput[] = []
 
-      await db.salesReturn.update({
-        where: { id },
-        data: { status: 'credited', journalEntryId: reversal.id },
+      if (exists.subtotal > 0) {
+        creditNoteLines.push({
+          accountCode: SYSTEM_ACCOUNTS.SALES_RETURNS, // '4200'
+          debit: exists.subtotal,
+          credit: 0,
+          description: `مردودات مبيعات - مرتجع ${exists.code}`,
+        })
+      }
+
+      if (exists.taxTotal > 0) {
+        creditNoteLines.push({
+          accountCode: SYSTEM_ACCOUNTS.OUTPUT_VAT, // '2100'
+          debit: exists.taxTotal,
+          credit: 0,
+          description: `تخفيض ضريبة القيمة المضافة لمرتجع ${exists.code}`,
+        })
+      }
+
+      creditNoteLines.push({
+        accountCode: SYSTEM_ACCOUNTS.AR, // '1100'
+        debit: 0,
+        credit: exists.total,
+        partnerId: exists.partnerId,
+        description: `تسوية حساب العميل لمرتجع المبيعات ${exists.code}`,
       })
 
-      // Decrease AR (partner balance)
+      const journalEntry = await postJournalEntry({
+        companyId: company.id,
+        branchId: branch?.id,
+        journalType: 'sale',
+        postingDate: new Date(),
+        description: `إشعار دائن لمرتجع مبيعات ${exists.code}`,
+        refType: 'sales_return_credit',
+        refId: exists.id,
+        lines: creditNoteLines,
+        userId: body.userId,
+      })
+
+      // Generate Credit Note Code CN-YYYY-NNNNN
+      const year = new Date().getFullYear()
+      const countCN = await db.salesCreditNote.count({ where: { companyId: company.id } })
+      let seqCN = countCN + 1
+      let cnCode = `CN-${year}-${String(seqCN).padStart(5, '0')}`
+      while (await db.salesCreditNote.findUnique({ where: { code: cnCode } })) {
+        seqCN += 1
+        cnCode = `CN-${year}-${String(seqCN).padStart(5, '0')}`
+      }
+
+      // Save formal Sales Credit Note record
+      const creditNote = await db.salesCreditNote.create({
+        data: {
+          companyId: company.id,
+          branchId: branch?.id,
+          code: cnCode,
+          partnerId: exists.partnerId,
+          invoiceId: exists.originalInvoiceId || null,
+          date: new Date(),
+          reason: exists.reason || `إشعار دائن لمرتجع مبيعات ${exists.code}`,
+          status: 'posted',
+          subtotal: exists.subtotal,
+          taxTotal: exists.taxTotal,
+          total: exists.total,
+          journalEntryId: journalEntry.id,
+          notes: `تم الإصدار آلياً عبر مرتجع المبيعات ${exists.code}`,
+        },
+      })
+
+      // Update Sales Return status
+      await db.salesReturn.update({
+        where: { id },
+        data: { status: 'credited', journalEntryId: journalEntry.id },
+      })
+
+      // Decrease customer receivable balance (decrement AR)
       await db.partner.update({
         where: { id: exists.partnerId },
         data: { currentBalance: { decrement: exists.total } },
@@ -72,7 +140,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         where: { id },
         include: { partner: true, lines: { include: { product: true } } },
       })
-      return ok(result)
+      return ok({ ...result, creditNote })
     }
     if (action === 'close') {
       if (exists.status !== 'credited') return badRequest('Only credited returns can be closed')

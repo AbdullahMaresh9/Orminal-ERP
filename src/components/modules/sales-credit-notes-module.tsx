@@ -265,7 +265,7 @@ export function SalesCreditNotesModule() {
       <div class="party">
         <div class="label">${L('العميل', 'Customer')}</div>
         <div class="name">${partnerName(n.partner)}</div>
-        <div class="sub">${L('رمز', 'Code')}: ${n.partner?.code ?? ''}</div>
+        <div class="sub">${L('رقم الحساب', 'Account Code')}: ${n.partner?.code ?? ''}</div>
         ${inv ? `<div class="sub">${L('فاتورة مرتبطة', 'Linked Invoice')}: ${inv.code}</div>` : ''}
       </div>
       <table>
@@ -352,8 +352,8 @@ export function SalesCreditNotesModule() {
           <table className="w-full caption-bottom text-sm min-w-[960px] table-fixed border-separate border-spacing-0">
             <colgroup>
               <col className="w-[12%]" />
-              <col className="w-[18%]" />
-              <col className="w-[14%]" />
+              <col className="w-[16%]" />
+              <col className="w-[16%]" />
               <col className="w-[12%]" />
               <col className="w-[14%]" />
               <col className="w-[12%]" />
@@ -430,7 +430,7 @@ export function SalesCreditNotesModule() {
                     <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
                       {partners.map((p) => (
                         <SelectItem key={p.id} value={p.id}>
-                          <span dir="ltr" className="font-mono text-xs">{p.code}</span> — {partnerName(p)}
+                          {partnerName(p)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -464,11 +464,11 @@ export function SalesCreditNotesModule() {
                 </div>
                 <div className="space-y-1.5 col-span-1">
                   <Label htmlFor="subtotal">{L('المبلغ قبل الضريبة', 'Subtotal')}</Label>
-                  <Input id="subtotal" type="number" step="0.01" inputMode="decimal" dir="ltr" className="text-start tabular-nums" value={subtotal} onChange={(e) => setSubtotal(e.target.value)} />
+                  <Input id="subtotal" type="number" step="0.1" inputMode="decimal" dir="ltr" className="text-start tabular-nums" value={subtotal} onChange={(e) => setSubtotal(e.target.value)} />
                 </div>
                 <div className="space-y-1.5 col-span-1">
                   <Label htmlFor="taxRate">{L('نسبة الضريبة %', 'Tax %')}</Label>
-                  <Input id="taxRate" type="number" step="0.01" inputMode="decimal" dir="ltr" className="text-start tabular-nums" value={taxRate} onChange={(e) => setTaxRate(e.target.value)} />
+                  <Input id="taxRate" type="number" step="0.1" inputMode="decimal" dir="ltr" className="text-start tabular-nums w-full" value={taxRate} onChange={(e) => setTaxRate(e.target.value)} />
                 </div>
                 <div className="space-y-1.5 col-span-1">
                   <Label>{L('السبب', 'Reason')}</Label>

@@ -668,7 +668,7 @@ export function PurchasePaymentsModule() {
               <div className="flex items-center gap-3 p-3 rounded-xl border border-amber-200 bg-amber-50/70 dark:bg-amber-950/30 dark:border-amber-900/50 text-amber-800 dark:text-amber-300 text-xs">
                 <Lock className="size-4 shrink-0 text-amber-600 dark:text-amber-400" />
                 <span>
-                  {L('هذا السند مرحّل نهائياً وأنتج أثراً مالياً. التعديل والحذف محظوران منعاً باتاً للحفاظ على القيود.', 'This voucher is posted and generated a financial entry. Editing and deleting are strictly prohibited.')}
+                  {L('هذا السند مرحّل نهائياً وأنتج أثراً مالياً. لا يمكن التعديل أو الحذف', 'This voucher is posted and generated a financial entry.couldnt edit or delete')}
                 </span>
               </div>
             )}
@@ -689,7 +689,7 @@ export function PurchasePaymentsModule() {
                     <SelectContent>
                       {partners.map((p) => (
                         <SelectItem key={p.id} value={p.id}>
-                          <span dir="ltr" className="font-mono text-xs">{p.code}</span> — {partnerName(p)}
+                          {partnerName(p)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -885,13 +885,13 @@ export function PurchasePaymentsModule() {
           dir={isRTL ? 'rtl' : 'ltr'}
           className="w-[calc(100vw-1.5rem)] sm:w-[95vw] max-w-lg max-h-[92vh] p-0 flex flex-col overflow-hidden bg-background text-foreground dark:bg-zinc-950 dark:border-zinc-800"
         >
-          <DialogHeader className="p-4 sm:p-6 pb-3 border-b bg-muted/30 dark:bg-zinc-900/40">
+          <DialogHeader >
             <div className="flex items-start gap-3">
               <div className="size-10 rounded-full bg-rose-100 dark:bg-rose-950/80 border border-rose-200 dark:border-rose-900/60 flex items-center justify-center text-rose-600 dark:text-rose-400 shrink-0">
                 <RotateCcw className="size-5" />
               </div>
               <div className="flex flex-col gap-1 text-start">
-                <DialogTitle className="text-base font-bold text-rose-700 dark:text-rose-400 flex items-center gap-2">
+                <DialogTitle>
                   <span>{L('تأكيد عكس سند الصرف', 'Confirm Payment Voucher Reversal')}</span>
                 </DialogTitle>
 

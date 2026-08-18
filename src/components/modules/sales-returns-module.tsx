@@ -339,7 +339,7 @@ export function SalesReturnsModule() {
       <div class="party">
         <div class="label">${L('العميل', 'Customer')}</div>
         <div class="name">${partnerName(r.partner)}</div>
-        <div class="sub">${L('رمز', 'Code')}: ${r.partner?.code ?? ''}</div>
+        <div class="sub">${L('رقم الحساب', 'Account Code')}: ${r.partner?.code ?? ''}</div>
         ${origInv ? `<div class="sub">${L('فاتورة أصلية', 'Original Invoice')}: ${origInv.code}</div>` : ''}
         ${r.reason ? `<div class="sub">${L('السبب', 'Reason')}: ${r.reason}</div>` : ''}
       </div>
@@ -438,13 +438,13 @@ export function SalesReturnsModule() {
         >
           <table className="w-full caption-bottom text-sm min-w-[960px] table-fixed border-separate border-spacing-0">
             <colgroup>
+              <col className="w-[13%]" />
+              <col className="w-[16%]" />
+              <col className="w-[15%]" />
               <col className="w-[12%]" />
-              <col className="w-[18%]" />
-              <col className="w-[14%]" />
+              <col className="w-[13%]" />
               <col className="w-[12%]" />
-              <col className="w-[14%]" />
-              <col className="w-[12%]" />
-              <col className="w-[18%]" />
+              <col className="w-[19%]" />
             </colgroup>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
@@ -534,7 +534,7 @@ export function SalesReturnsModule() {
                     <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
                       {partners.map((p) => (
                         <SelectItem key={p.id} value={p.id}>
-                          <span dir="ltr" className="font-mono text-xs">{p.code}</span> — {partnerName(p)}
+                          {partnerName(p)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -599,7 +599,7 @@ export function SalesReturnsModule() {
                           <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
                             {products.map((p) => (
                               <SelectItem key={p.id} value={p.id}>
-                                <span dir="ltr" className="font-mono text-xs">{p.sku}</span> — {productName(p)}
+                                {productName(p)}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -617,7 +617,7 @@ export function SalesReturnsModule() {
                         </div>
                         <div className="space-y-1">
                           <Label className="text-xs">{L('الضريبة %', 'Tax %')}</Label>
-                          <Input className="h-9 text-start tabular-nums" type="number" step="0.01" inputMode="decimal" dir="ltr" value={l.taxRate} onChange={(e) => updateLine(l.key, 'taxRate', e.target.value)} />
+                          <Input className="h-9 text-start tabular-nums" type="number" step="0.1" inputMode="decimal" dir="ltr" value={l.taxRate} onChange={(e) => updateLine(l.key, 'taxRate', e.target.value)} />
                         </div>
                       </div>
 
@@ -663,7 +663,7 @@ export function SalesReturnsModule() {
                                 <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
                                   {products.map((p) => (
                                     <SelectItem key={p.id} value={p.id}>
-                                      <span dir="ltr" className="font-mono text-xs">{p.sku}</span> — {productName(p)}
+                                      {productName(p)}
                                     </SelectItem>
                                   ))}
                                 </SelectContent>

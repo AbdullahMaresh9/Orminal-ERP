@@ -26,7 +26,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { DatePicker } from '@/components/ui/date-picker'
 import {
-  FileMinus, Plus, Printer, Hash, CalendarDays, Coins,
+  FileMinus, Plus, Printer, Hash, CalendarDays, Coins, Eye,
 } from 'lucide-react'
 
 interface Partner { id: string; code: string; nameAr: string; nameEn?: string }
@@ -130,6 +130,8 @@ export function PurchaseCreditNotesModule() {
   }, [notes])
 
   // Form
+  const [selectedNote, setSelectedNote] = useState<PurchaseCreditNote | null>(null)
+  const [viewOnly, setViewOnly] = useState(false)
   const [partnerId, setPartnerId] = useState('')
   const [invoiceId, setInvoiceId] = useState('')
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
@@ -138,8 +140,23 @@ export function PurchaseCreditNotesModule() {
   const [notes_, setNotes] = useState('')
 
   const resetForm = () => {
+    setSelectedNote(null)
+    setViewOnly(false)
     setPartnerId(''); setInvoiceId(''); setDate(new Date().toISOString().slice(0, 10))
     setReason('returned'); setAmount('0'); setNotes('')
+  }
+
+  const openView = (n: PurchaseCreditNote) => {
+    setSelectedNote(n)
+    setViewOnly(true)
+    setPartnerId(n.partnerId || n.partner?.id || '')
+    setInvoiceId(n.invoiceId || '')
+    setDate((n.date || '').slice(0, 10) || new Date().toISOString().slice(0, 10))
+    const foundReason = REASON_OPTIONS.find((r) => r.ar === n.reason || r.en === n.reason || r.value === n.reason)
+    setReason(foundReason ? foundReason.value : n.reason || 'returned')
+    setAmount(String(n.total ?? 0))
+    setNotes(n.notes || '')
+    setAddOpen(true)
   }
 
   const saveMutation = useMutation({
@@ -304,7 +321,11 @@ export function PurchaseCreditNotesModule() {
               ) : notes.length === 0 ? (
                 <TableRow><TableCell colSpan={8} className="text-center py-10 text-muted-foreground">{L('لا توجد إشعارات دائنة.', 'No purchase credit notes found.')}</TableCell></TableRow>
               ) : notes.map((n) => (
-                <TableRow key={n.id} className="hover:bg-muted/40">
+                <TableRow
+                  key={n.id}
+                  className="hover:bg-muted/40 cursor-pointer"
+                  onClick={() => openView(n)}
+                >
                   <TableCell className="ps-4 font-mono text-xs border-b truncate" dir="ltr">{n.code}</TableCell>
                   <TableCell className="font-medium border-b truncate">{partnerName(n.partner)}</TableCell>
                   <TableCell className="font-mono text-xs text-center border-b truncate" dir="ltr">{invoices.find((i) => i.id === n.invoiceId)?.code ?? '—'}</TableCell>
@@ -312,10 +333,15 @@ export function PurchaseCreditNotesModule() {
                   <TableCell className="text-center border-b whitespace-nowrap"><span className="num tabular-nums font-semibold" dir="ltr">{formatCurrency(n.total)}</span></TableCell>
                   <TableCell className="text-center border-b"><StatusBadge status={n.status} /></TableCell>
                   <TableCell className="text-sm text-muted-foreground border-b truncate">{n.reason ?? '—'}</TableCell>
-                  <TableCell className="text-end pe-4 border-b">
-                    <Button size="icon" variant="ghost" className="size-8" onClick={() => handlePrint(n)} title={L('طباعة', 'Print')}>
-                      <Printer className="size-4.5" />
-                    </Button>
+                  <TableCell className="text-end pe-4 border-b" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center justify-end gap-1">
+                      <Button size="icon" variant="ghost" className="size-8" title={L('عرض الإشعار الدائن', 'View Credit Note')} onClick={() => openView(n)}>
+                        <Eye className="size-4" />
+                      </Button>
+                      <Button size="icon" variant="ghost" className="size-8" title={L('طباعة', 'Print')} onClick={() => handlePrint(n)}>
+                        <Printer className="size-4.5" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -324,15 +350,16 @@ export function PurchaseCreditNotesModule() {
         </div>
       </Card>
 
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+      <Dialog open={addOpen} onOpenChange={(o) => { setAddOpen(o); if (!o) resetForm() }}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{L('إشعار دائن مشتريات جديد', 'New Purchase Credit Note')}</DialogTitle>
-
+            <DialogTitle>
+              {viewOnly ? L('عرض إشعار دائن مشتريات', 'View Purchase Credit Note') : L('إشعار دائن مشتريات جديد', 'New Purchase Credit Note')}
+            </DialogTitle>
           </DialogHeader>
 
           <DialogBody>
-            <div className="space-y-3">
+            <fieldset disabled={viewOnly} className="space-y-3">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label>{L('المورد *', 'Supplier *')}</Label>
@@ -341,7 +368,7 @@ export function PurchaseCreditNotesModule() {
                     <SelectContent>
                       {partners.map((p) => (
                         <SelectItem key={p.id} value={p.id}>
-                          <span dir="ltr" className="font-mono text-xs">{p.code}</span> — {partnerName(p)}
+                          {partnerName(p)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -396,13 +423,22 @@ export function PurchaseCreditNotesModule() {
                 <Label htmlFor="notes_">{L('ملاحظات', 'Notes')}</Label>
                 <Textarea id="notes_" value={notes_} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder={L('ملاحظات إضافية...', 'Additional notes...')} />
               </div>
-            </div>
+            </fieldset>
           </DialogBody>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>{L('إلغاء', 'Cancel')}</Button>
-            <Button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
-              {saveMutation.isPending ? L('جاري الحفظ...', 'Saving...') : L('إنشاء وترحيل', 'Create & Post')}
+          <DialogFooter className="flex items-center justify-between gap-2">
+            <Button type="button" variant="outline" onClick={() => { setAddOpen(false); resetForm() }}>
+              {L('إلغاء', 'Cancel')}
             </Button>
+            {viewOnly && selectedNote ? (
+              <Button type="button" variant="secondary" className="gap-1.5 border" onClick={() => handlePrint(selectedNote)}>
+                <Printer className="size-4" />
+                {L('طباعة', 'Print')}
+              </Button>
+            ) : (
+              <Button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
+                {saveMutation.isPending ? L('جاري الحفظ...', 'Saving...') : L('إنشاء وترحيل', 'Create & Post')}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

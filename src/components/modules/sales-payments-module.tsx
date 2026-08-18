@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { DatePicker } from '@/components/ui/date-picker'
 import {
-  Receipt, Hash, TrendingUp, CreditCard, Download, FileSpreadsheet, FileText, FileDown, Eye, Pencil, Printer, RotateCcw, AlertTriangle, History, ShieldAlert, ArrowLeftRight,
+  Receipt, Hash, TrendingUp, CreditCard, Download, FileSpreadsheet, FileText, FileDown, Eye, Pencil, Printer, RotateCcw, AlertTriangle, History, ShieldAlert, ArrowLeftRight, Trash2,
 } from 'lucide-react'
 
 interface Partner { id: string; code: string; nameAr: string; nameEn?: string }
@@ -149,6 +149,10 @@ export function SalesPaymentsModule() {
   const [method, setMethod] = useState('cash')
   const [reference, setReference] = useState('')
   const [notes, setNotes] = useState('')
+  const [status, setStatus] = useState<'draft' | 'posted'>('posted')
+
+  // Delete Modal State
+  const [deleteTarget, setDeleteTarget] = useState<SalesPayment | null>(null)
 
   // Reversal Modal State
   const [reverseTarget, setReverseTarget] = useState<SalesPayment | null>(null)
@@ -160,6 +164,7 @@ export function SalesPaymentsModule() {
     setPartnerId(''); setInvoiceId(''); setAmount('0')
     setPaymentDate(new Date().toISOString().slice(0, 10)); setMethod('cash')
     setReference(''); setNotes('')
+    setStatus('posted')
   }
 
   // Open voucher modal based on status
@@ -172,6 +177,7 @@ export function SalesPaymentsModule() {
     setMethod(p.method || 'cash')
     setReference(p.reference || '')
     setNotes(p.notes || '')
+    setStatus((p.status === 'draft' ? 'draft' : 'posted') as any)
 
     if (p.status === 'draft') {
       setViewOnly(false) // Draft allows full editing
@@ -180,6 +186,26 @@ export function SalesPaymentsModule() {
     }
     setAddOpen(true)
   }
+
+  // Delete Draft Payment Mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (paymentId: string) => {
+      const r = await fetch(`/api/erp/sales-payments/${paymentId}`, {
+        method: 'DELETE',
+      })
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({}))
+        throw new Error(err?.error?.message ?? L('فشل حذف مسودة سند القبض', 'Failed to delete receipt draft'))
+      }
+      return r.json()
+    },
+    onSuccess: () => {
+      toast.success(L('تم حذف مسودة سند القبض بنجاح', 'Receipt draft deleted successfully'))
+      qc.invalidateQueries({ queryKey: ['sales-payments'] })
+      setDeleteTarget(null)
+    },
+    onError: (e: any) => toast.error(e.message || L('حدث خطأ أثناء الحذف', 'An error occurred during deletion')),
+  })
 
   // Open Reversal Confirmation Modal
   const openReverseModal = (p: SalesPayment) => {
@@ -533,9 +559,14 @@ export function SalesPaymentsModule() {
                   <TableCell className="text-end pe-4 border-b" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-1">
                       {p.status === 'draft' ? (
-                        <Button size="icon" variant="ghost" className="size-8 text-sky-600 hover:text-sky-700" title={L('تعديل سند القبض', 'Edit Receipt')} onClick={() => openVoucherModal(p)}>
-                          <Pencil className="size-4" />
-                        </Button>
+                        <>
+                          <Button size="icon" variant="ghost" className="size-8 text-sky-600 hover:text-sky-700" title={L('تعديل سند القبض', 'Edit Receipt')} onClick={() => openVoucherModal(p)}>
+                            <Pencil className="size-4" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="size-8 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30" title={L('حذف مسودة السند', 'Delete Draft')} onClick={() => setDeleteTarget(p)}>
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </>
                       ) : p.status === 'reversed' || p.status === 'cancelled' ? (
                         <Button size="icon" variant="ghost" className="size-8 text-amber-600 hover:text-amber-700" title={L('عرض السجل والسند', 'View Audit & Record')} onClick={() => openVoucherModal(p)}>
                           <History className="size-4" />
@@ -577,18 +608,19 @@ export function SalesPaymentsModule() {
           className="w-[calc(100vw-1.5rem)] sm:w-[95vw] max-w-2xl max-h-[92vh] p-0 flex flex-col overflow-hidden"
         >
           <DialogHeader>
-            <DialogTitle>
-              <span>{getModalTitle()}</span>
-              {selectedPayment && (
-                <span className="font-mono text-xs text-muted-foreground dir-ltr ms-2">
-                  ({selectedPayment.code})
-                </span>
-              )}
-            </DialogTitle>
+            <div className="flex items-center justify-between gap-3 pe-6">
+              <DialogTitle className="flex items-center gap-2">
+                <span>{getModalTitle()}</span>
+                {selectedPayment?.code && (
+                  <span className="font-mono text-xs text-muted-foreground dir-ltr">({selectedPayment.code})</span>
+                )}
+              </DialogTitle>
+
+            </div>
             <DialogDescription>
               {viewOnly
-                ? L('عرض بيانات وتفاصيل سند القبض', 'Read-only view of receipt voucher to preserve financial records')
-                : L('إدخال وتعديل حقول سند القبض — يمكنك الحفظ كمسودة أو الترحيل المباشر للصندوق/البنك', 'Fill in receipt voucher details — save as draft or post directly to cash/bank')}
+                ? L('عرض بيانات وتفاصيل سند القبض (للقراءة فقط لحماية السجلات المالية)', 'Read-only view of receipt voucher to preserve financial records')
+                : L('تعبئة وتعديل بيانات سند القبض - يمكنك الحفظ كمسودة أو الترحيل المباشر للصندوق/البنك', 'Fill in receipt voucher details - save as draft or post directly to cash/bank')}
             </DialogDescription>
           </DialogHeader>
 
@@ -599,7 +631,6 @@ export function SalesPaymentsModule() {
                 <ShieldAlert className="size-5 shrink-0 text-rose-600 dark:text-rose-400" />
                 <div className="flex flex-col gap-0.5">
                   <span className="font-bold">{L('سند قبض معكوس / ملغي', 'Reversed / Cancelled Receipt Voucher')}</span>
-
                 </div>
               </div>
             )}
@@ -608,7 +639,7 @@ export function SalesPaymentsModule() {
               disabled={viewOnly}
               className={`space-y-4 sm:space-y-5 ${viewOnly ? 'cursor-not-allowed select-none' : ''}`}
             >
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                 <div className="space-y-1.5">
                   <Label>{L('العميل / الحساب *', 'Customer / Account *')}</Label>
                   <Select value={partnerId} onValueChange={setPartnerId} disabled={viewOnly}>
@@ -618,7 +649,7 @@ export function SalesPaymentsModule() {
                     <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
                       {partners.map((p) => (
                         <SelectItem key={p.id} value={p.id}>
-                          <span dir="ltr" className="font-mono text-xs">{p.code}</span> — {partnerName(p)}
+                          {partnerName(p)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -649,10 +680,30 @@ export function SalesPaymentsModule() {
                           const due = Math.max(0, i.total - i.paid)
                           return (
                             <SelectItem key={i.id} value={i.id}>
-                              <span dir="ltr" className="font-mono text-xs">{i.code}</span> — {L('المستحق:', 'Due:')} {formatCurrency(due)}
+                              <span dir="ltr" className="font-mono text-xs">{i.code}</span> — {formatCurrency(due)}
                             </SelectItem>
                           )
                         })}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>{L('حالة السند', 'Voucher Status')}</Label>
+                  <Select
+                    value={status}
+                    onValueChange={(v) => setStatus(v as 'draft' | 'posted')}
+                    disabled={viewOnly || (!!selectedPayment && selectedPayment.status !== 'draft')}
+                  >
+                    <SelectTrigger className={`w-full ${viewOnly ? 'cursor-not-allowed bg-muted/60 text-muted-foreground opacity-90' : ''}`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
+                      <SelectItem value="draft">{STATUS_LABELS['draft']?.[isRTL ? 'ar' : 'en']}</SelectItem>
+                      <SelectItem value="posted">{STATUS_LABELS['posted']?.[isRTL ? 'ar' : 'en']}</SelectItem>
+                      {selectedPayment && (selectedPayment.status === 'reversed' || selectedPayment.status === 'cancelled') && (
+                        <SelectItem value={selectedPayment.status}>{STATUS_LABELS[selectedPayment.status]?.[isRTL ? 'ar' : 'en']}</SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -982,6 +1033,75 @@ export function SalesPaymentsModule() {
               {reverseMutation.isPending
                 ? L('جاري العكس والتوليد...', 'Reversing...')
                 : L('تأكيد العكس وتوليد القيد', 'Confirm Reversal')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Draft Deletion Confirmation Dialog */}
+      <Dialog open={!!deleteTarget} onOpenChange={(o) => { if (!o) setDeleteTarget(null) }}>
+        <DialogContent
+          dir={isRTL ? 'rtl' : 'ltr'}
+          className="w-[calc(100vw-1.5rem)] sm:w-[95vw] max-w-md p-0 flex flex-col overflow-hidden bg-background text-foreground dark:bg-zinc-950 dark:border-zinc-800"
+        >
+          <DialogHeader className="p-4 sm:p-6 pb-2">
+            <div className="flex items-start gap-3">
+              <div className="size-10 rounded-full bg-rose-100 dark:bg-rose-950/80 border border-rose-200 dark:border-rose-900/60 flex items-center justify-center text-rose-600 dark:text-rose-400 shrink-0">
+                <AlertTriangle className="size-5" />
+              </div>
+              <div className="flex flex-col gap-1 text-start">
+                <DialogTitle>
+                  <span>{L('تأكيد حذف مسودة سند القبض', 'Confirm Deleting Receipt Voucher Draft')}</span>
+                </DialogTitle>
+                <DialogDescription>
+                  {L('هل أنت تأكد من إرادتك لحذف مسودة سند القبض التالية؟ لا يمكن التراجع عن هذا الإجراء.', 'Are you sure you want to delete this draft receipt voucher? This action cannot be undone.')}
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          {deleteTarget && (
+            <DialogBody className="px-4 sm:px-6 py-2">
+              <div className="p-3 rounded-lg border bg-muted/40 text-xs space-y-1.5">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{L('رمز السند:', 'Code:')}</span>
+                  <span className="font-mono font-semibold dir-ltr">{deleteTarget.code}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{L('العميل:', 'Customer:')}</span>
+                  <span className="font-medium">{partnerName(deleteTarget.partner)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{L('المبلغ:', 'Amount:')}</span>
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-400 dir-ltr">{formatCurrency(deleteTarget.amount)}</span>
+                </div>
+              </div>
+            </DialogBody>
+          )}
+
+          <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-between gap-2 px-4 sm:px-6 py-3 border-t bg-muted/20 shrink-0">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full sm:w-auto min-w-24"
+              onClick={() => setDeleteTarget(null)}
+            >
+              {L('إلغاء', 'Cancel')}
+            </Button>
+
+            <Button
+              type="button"
+              variant="destructive"
+              className="w-full sm:w-auto min-w-28 gap-2 bg-rose-600 hover:bg-rose-700 text-white"
+              disabled={deleteMutation.isPending}
+              onClick={() => {
+                if (deleteTarget) {
+                  deleteMutation.mutate(deleteTarget.id)
+                }
+              }}
+            >
+              <Trash2 className="size-4" />
+              {deleteMutation.isPending ? L('جاري الحذف...', 'Deleting...') : L('تأكيد الحذف', 'Delete Draft')}
             </Button>
           </DialogFooter>
         </DialogContent>

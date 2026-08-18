@@ -676,20 +676,20 @@ export function PurchaseReturnsModule() {
         >
           <table className="w-full caption-bottom text-sm min-w-[900px] table-fixed border-separate border-spacing-0">
             <colgroup>
-              <col className="w-[11%]" />{/* الرمز */}
-              <col className="w-[18%]" />{/* المورد */}
+              <col className="w-[12%]" />{/* الرمز */}
+              <col className="w-[17%]" />{/* المورد */}
               <col className="w-[14%]" />{/* الفاتورة الأصلية */}
-              <col className="w-[15%]" />{/* التاريخ */}
-              <col className="w-[14%]" />{/* الإجمالي */}
-              <col className="w-[13%]" />{/* الحالة */}
-              <col className="w-[15%]" />{/* إجراءات */}
+              <col className="w-[16%]" />{/* التاريخ */}
+              <col className="w-[13%]" />{/* الإجمالي */}
+              <col className="w-[12%]" />{/* الحالة */}
+              <col className="w-[16%]" />{/* إجراءات */}
             </colgroup>
 
             <TableHeader>
               <TableRow className="hover:bg-transparent border-b">
                 <TableHead className={`${stickyHead} ps-4 text-start`}>{L('الرمز', 'Code')}</TableHead>
                 <TableHead className={`${stickyHead} text-start`}>{L('المورد', 'Supplier')}</TableHead>
-                <TableHead className={`${stickyHead} text-start`}>{L('الفاتورة الأصلية', 'Original Invoice')}</TableHead>
+                <TableHead className={`${stickyHead} text-center`}>{L('الفاتورة الأصلية', 'Original Invoice')}</TableHead>
                 <TableHead className={`${stickyHead} text-center`}>{L('التاريخ', 'Date')}</TableHead>
                 <TableHead className={`${stickyHead} text-center`}>{L('الإجمالي', 'Total')}</TableHead>
                 <TableHead className={`${stickyHead} text-center`}>{L('الحالة', 'Status')}</TableHead>
@@ -883,7 +883,7 @@ export function PurchaseReturnsModule() {
                   <SelectContent>
                     {partners.map((p) => (
                       <SelectItem key={p.id} value={p.id}>
-                        <span dir="ltr" className="font-mono text-xs text-blue-600 dark:text-blue-400 me-2"></span> {partnerName(p)}
+                        <span dir="ltr" className="font-mono text-xs text-blue-600 dark:text-blue-400 me-2">[{p.code}]</span> {partnerName(p)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -987,7 +987,7 @@ export function PurchaseReturnsModule() {
                                 <SelectContent>
                                   {products.map((p) => (
                                     <SelectItem key={p.id} value={p.id}>
-                                      <span dir="ltr" className="font-mono text-xs me-2 text-slate-500"></span> {productName(p)}
+                                      <span dir="ltr" className="font-mono text-xs me-2 text-slate-500">[{p.sku}]</span> {productName(p)}
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
