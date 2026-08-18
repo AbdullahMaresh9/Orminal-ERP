@@ -105,14 +105,14 @@ const STATUS_LABELS: Record<string, { ar: string; en: string }> = {
   draft: { ar: 'مسودة', en: 'Draft' },
   approved: { ar: 'معتمد', en: 'Approved' },
   shipped: { ar: 'تم الشحن', en: 'Shipped' },
-  debited: { ar: 'مُصدَر إشعار مدين / مرحّل', en: 'Debited / Posted' },
+  debited: { ar: ' إشعار مدين / مرحّل', en: 'Debited / Posted' },
   closed: { ar: 'مغلق', en: 'Closed' },
   cancelled: { ar: 'ملغي / معكوس', en: 'Cancelled / Reversed' },
 }
 
 // عدد الصفوف الظاهرة قبل ظهور الاسكرول
-const VISIBLE_ROWS = 7
-const ROW_HEIGHT = 52    // ارتفاع الصف التقريبي بالبكسل
+const VISIBLE_ROWS = 6
+const ROW_HEIGHT = 50    // ارتفاع الصف التقريبي بالبكسل
 const HEADER_HEIGHT = 44 // ارتفاع رأس الجدول
 
 export function PurchaseReturnsModule() {
@@ -829,9 +829,9 @@ export function PurchaseReturnsModule() {
                   {isCancelled
                     ? L('هذا المرتجع ملغي/معكوس ولا يمكن إجراء أي عمليات عليه', 'This return is cancelled/reversed and no further action can be taken')
                     : isPosted
-                      ? L(`كود المرتجع: ${editingReturn?.code ?? ''} — مرحّل ومحمي من التعديل/الحذف`, `Code: ${editingReturn?.code ?? ''} — Posted and protected from editing/deletion`)
+                      ? L(`مرحّل ومحمي من التعديل/الحذف`, `Posted and protected from editing/deletion`)
                       : isEditMode
-                        ? L(`كود المرتجع: ${editingReturn?.code ?? ''} — يمكنك تعديل الحقول والتحديث أو الترحيل`, `Code: ${editingReturn?.code ?? ''} — You can edit fields and update or post`)
+                        ? L(` يمكنك تعديل وتحديث البيانات أو الترحيل`, ` You can edit and update data or post`)
                         : L('قم بتعبئة بيانات مرتجع المشتريات وإدراج البنود', 'Fill in purchase return details and item lines')}
                 </p>
               </div>
@@ -883,7 +883,7 @@ export function PurchaseReturnsModule() {
                   <SelectContent>
                     {partners.map((p) => (
                       <SelectItem key={p.id} value={p.id}>
-                        {partnerName(p)}
+                        <span dir="ltr" className="font-mono text-xs text-blue-600 dark:text-blue-400 me-2">[{p.code}]</span> {partnerName(p)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -903,7 +903,7 @@ export function PurchaseReturnsModule() {
                       .filter((i) => !partnerId || i.partnerId === partnerId)
                       .map((i) => (
                         <SelectItem key={i.id} value={i.id}>
-                          <span dir="ltr" className="font-mono text-xs me-2">[{i.code}]</span> — {formatCurrency(i.total)}
+                          <span dir="ltr" className="font-mono text-xs me-2"></span> — {formatCurrency(i.total)}
                         </SelectItem>
                       ))}
                   </SelectContent>
@@ -987,7 +987,7 @@ export function PurchaseReturnsModule() {
                                 <SelectContent>
                                   {products.map((p) => (
                                     <SelectItem key={p.id} value={p.id}>
-                                      {productName(p)}
+                                      <span dir="ltr" className="font-mono text-xs me-2 text-slate-500">[{p.sku}]</span> {productName(p)}
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
@@ -1119,7 +1119,7 @@ export function PurchaseReturnsModule() {
                   )}
                   {editingReturn && (editingReturn.status === 'debited' || editingReturn.status === 'closed' || editingReturn.journalEntryId) && (
                     <Button type="button" className="w-full sm:w-auto text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => setDebitNoteReturn(editingReturn)}>
-                      <Receipt className="size-4" /> {L('عرض الإشعار المدين المرتبط', 'View Associated Debit Note')}
+                      <Receipt className="size-4" /> {L('عرض إشعار المدين المرتبط', 'View Associated Debit Note')}
                     </Button>
                   )}
                 </div>
@@ -1141,7 +1141,7 @@ export function PurchaseReturnsModule() {
                   >
                     {saveMutation.isPending
                       ? L('جاري الحفظ...', 'Saving...')
-                      : L('تحديث (مسودة)', 'Update (Draft)')}
+                      : L('تحديث ', 'Update')}
                   </Button>
 
                   <Button
@@ -1168,7 +1168,7 @@ export function PurchaseReturnsModule() {
           <DialogHeader className="border-b pb-3">
             <DialogTitle className="text-base font-bold flex items-center gap-2 text-slate-900 dark:text-slate-100">
               <Receipt className="size-5 text-emerald-600" />
-              {L('إشعار مدين رسمي للمشتريات', 'Official Purchase Debit Note')}
+              {L('إشعار مدين للمشتريات', 'Purchase Debit Note')}
             </DialogTitle>
           </DialogHeader>
           <DialogBody className="space-y-4 py-4 text-xs">
@@ -1259,7 +1259,7 @@ export function PurchaseReturnsModule() {
             </Button>
             {fullDebitNoteReturn && (
               <Button size="sm" variant="default" className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold" onClick={() => handlePrintDebitNote(fullDebitNoteReturn, fullDebitNoteReturn.journalEntry)}>
-                <Printer className="size-4" /> {L('طباعة الإشعار المدين', 'Print Debit Note')}
+                <Printer className="size-4" /> {L('طباعة إشعار المدين', 'Print Debit Note')}
               </Button>
             )}
           </DialogFooter>
