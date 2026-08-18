@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
 import { list, serverError, parsePagination } from '@/lib/erp/api-response'
+import { n } from '@/lib/erp/money'
 
 // GET /api/erp/stock-on-hand — list stock quants with product+warehouse, filter by warehouse/product
 export async function GET(req: Request) {
@@ -34,8 +35,8 @@ export async function GET(req: Request) {
     // Compute available = quantity - reservedQty
     const enriched = data.map((q) => ({
       ...q,
-      availableQty: q.quantity - q.reservedQty,
-      inventoryValue: q.quantity * (q.product?.costPrice ?? 0),
+      availableQty: n(q.quantity) - n(q.reservedQty),
+      inventoryValue: n(q.quantity) * n(q.product?.costPrice ?? 0),
     }))
 
     return list(enriched, total, page, pageSize)

@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import { ok, notFound, badRequest, serverError } from '@/lib/erp/api-response'
 import { postJournalEntry, purchaseReturnPosting } from '@/lib/erp/accounting-engine'
 import { nextNumber } from '@/lib/erp/number-sequence'
+import { n } from '@/lib/erp/money'
 
 // GET /api/erp/purchase-returns/[id]
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -70,9 +71,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           refType: 'purchase_return',
           refId: exists.id,
           lines: purchaseReturnPosting({
-            total: exists.total,
-            subtotal: exists.subtotal,
-            taxTotal: exists.taxTotal,
+            total: n(exists.total),
+            subtotal: n(exists.subtotal),
+            taxTotal: n(exists.taxTotal),
             partnerId: exists.partnerId,
           }),
           userId: body.userId,
@@ -159,7 +160,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       })
       const invQtyMap = new Map<string, number>()
       for (const il of invoiceLines) {
-        invQtyMap.set(il.productId, (invQtyMap.get(il.productId) ?? 0) + il.quantity)
+        invQtyMap.set(il.productId, (invQtyMap.get(il.productId) ?? 0) + n(il.quantity))
       }
       for (const l of validLines) {
         if (!invQtyMap.has(l.productId)) {

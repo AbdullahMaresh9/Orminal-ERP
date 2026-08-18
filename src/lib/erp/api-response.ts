@@ -3,6 +3,7 @@
 // All API routes MUST use these helpers for consistent responses.
 
 import { NextResponse } from 'next/server'
+import { decimalsToNumbers } from './money'
 
 export interface ApiResponseMeta {
   requestId?: string
@@ -43,15 +44,15 @@ function meta(): ApiResponseMeta {
 }
 
 export function ok<T>(data: T, status: number = 200): NextResponse {
-  return NextResponse.json({ data, meta: meta() }, { status })
+  return NextResponse.json({ data: decimalsToNumbers(data), meta: meta() }, { status })
 }
 
 export function created<T>(data: T): NextResponse {
-  return NextResponse.json({ data, meta: meta() }, { status: 201 })
+  return NextResponse.json({ data: decimalsToNumbers(data), meta: meta() }, { status: 201 })
 }
 
 export function accepted<T>(data: T): NextResponse {
-  return NextResponse.json({ data, meta: meta() }, { status: 202 })
+  return NextResponse.json({ data: decimalsToNumbers(data), meta: meta() }, { status: 202 })
 }
 
 export function noContent(): NextResponse {
@@ -61,7 +62,7 @@ export function noContent(): NextResponse {
 export function list<T>(data: T[], total: number, page: number = 1, pageSize: number = 50): NextResponse {
   const totalPages = Math.ceil(total / pageSize) || 1
   return NextResponse.json({
-    data,
+    data: decimalsToNumbers(data),
     meta: {
       ...meta(),
       pagination: { page, pageSize, total, totalPages, hasMore: page < totalPages },

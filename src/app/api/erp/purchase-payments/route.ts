@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import { ok, created, list, badRequest, serverError, parsePagination, parseSearch } from '@/lib/erp/api-response'
 import { nextNumber } from '@/lib/erp/number-sequence'
 import { postJournalEntry, paymentPosting } from '@/lib/erp/accounting-engine'
+import { n } from '@/lib/erp/money'
 
 // GET /api/erp/purchase-payments
 export async function GET(req: Request) {
@@ -95,12 +96,12 @@ export async function POST(req: Request) {
       if (body.invoiceId) {
         const invoice = await db.purchaseInvoice.findUnique({ where: { id: body.invoiceId } })
         if (invoice) {
-          const newPaid = invoice.paid + amount
+          const newPaid = n(invoice.paid) + amount
           await db.purchaseInvoice.update({
             where: { id: body.invoiceId },
             data: {
               paid: newPaid,
-              status: newPaid >= invoice.total ? 'paid' : 'partially_paid',
+              status: newPaid >= n(invoice.total) ? 'paid' : 'partially_paid',
             },
           })
         }

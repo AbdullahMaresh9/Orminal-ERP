@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
 import { ok, created, list, badRequest, serverError, parsePagination, parseSearch } from '@/lib/erp/api-response'
+import { n } from '@/lib/erp/money'
 
 // GET /api/erp/purchase-returns
 export async function GET(req: Request) {
@@ -61,7 +62,7 @@ export async function POST(req: Request) {
       })
       const invQtyMap = new Map<string, number>()
       for (const il of invoiceLines) {
-        invQtyMap.set(il.productId, (invQtyMap.get(il.productId) ?? 0) + il.quantity)
+        invQtyMap.set(il.productId, (invQtyMap.get(il.productId) ?? 0) + n(il.quantity))
       }
       for (const l of lines) {
         if (!l.productId) continue

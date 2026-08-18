@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { ok, notFound, badRequest, serverError } from '@/lib/erp/api-response'
 import { postJournalEntry, goodsReceiptPosting } from '@/lib/erp/accounting-engine'
+import { n, sumBy } from '@/lib/erp/money'
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -29,10 +30,6 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     if (!exists) return notFound('Goods receipt not found')
 
     const { id: _id, lines, createdAt: _c, updatedAt: _u, ...rest } = body
-
-    if (rest.receiptDate) {
-      rest.receiptDate = new Date(rest.receiptDate)
-    }
 
     // If cancelling a receipt
     if (rest.status === 'cancelled') {
@@ -81,7 +78,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       if (!fullGrn) return notFound('Goods receipt not found')
 
       const grnLines = fullGrn.lines
-      const amount = grnLines.reduce((s, l) => s + l.total, 0)
+      const amount = sumBy(grnLines, (l) => l.total)
 
       await db.$transaction(async (tx) => {
         for (const l of grnLines) {

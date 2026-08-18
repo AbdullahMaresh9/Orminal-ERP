@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { ok, serverError } from '@/lib/erp/api-response'
 import { COA_ACTIONS, isAuthFailure, requireCapability } from '@/lib/erp/rbac'
+import { n } from '@/lib/erp/money'
 
 // NOTE ON HIERARCHY: every figure below is aggregated from JournalLine, and group
 // accounts never carry journal lines (the posting engine rejects postings to a
@@ -80,8 +81,8 @@ export async function GET(req: Request) {
           debit: 0,
           credit: 0,
         }
-        cur.debit += l.debit
-        cur.credit += l.credit
+        cur.debit += n(l.debit)
+        cur.credit += n(l.credit)
         accountMap.set(k, cur)
       }
     }
@@ -179,9 +180,9 @@ export async function GET(req: Request) {
         where: { ...dateFilter.postingDate ? { invoiceDate: dateFilter.postingDate } : {} },
         select: { total: true, paid: true, status: true },
       })
-      const totalSales = salesOrders.reduce((s, o) => s + o.total, 0)
-      const totalInvoiced = invoices.reduce((s, i) => s + i.total, 0)
-      const totalPaid = invoices.reduce((s, i) => s + i.paid, 0)
+      const totalSales = salesOrders.reduce((s, o) => s + n(o.total), 0)
+      const totalInvoiced = invoices.reduce((s, i) => s + n(i.total), 0)
+      const totalPaid = invoices.reduce((s, i) => s + n(i.paid), 0)
       const outstanding = totalInvoiced - totalPaid
       return ok({
         totalSales,
@@ -200,9 +201,9 @@ export async function GET(req: Request) {
       const invoices = await db.purchaseInvoice.findMany({
         select: { total: true, paid: true, status: true },
       })
-      const totalPurchases = purchaseOrders.reduce((s, o) => s + o.total, 0)
-      const totalInvoiced = invoices.reduce((s, i) => s + i.total, 0)
-      const totalPaid = invoices.reduce((s, i) => s + i.paid, 0)
+      const totalPurchases = purchaseOrders.reduce((s, o) => s + n(o.total), 0)
+      const totalInvoiced = invoices.reduce((s, i) => s + n(i.total), 0)
+      const totalPaid = invoices.reduce((s, i) => s + n(i.paid), 0)
       const outstanding = totalInvoiced - totalPaid
       return ok({
         totalPurchases,
@@ -225,10 +226,10 @@ export async function GET(req: Request) {
         sku: q.product?.sku ?? '',
         name: q.product?.nameAr ?? q.product?.nameEn ?? '—',
         warehouse: q.warehouse?.nameAr ?? '—',
-        quantity: q.quantity,
-        costPrice: q.product?.costPrice ?? 0,
-        value: q.quantity * (q.product?.costPrice ?? 0),
-        isLowStock: q.quantity <= (q.product?.minStock ?? 0),
+        quantity: n(q.quantity),
+        costPrice: n(q.product?.costPrice),
+        value: n(q.quantity) * n(q.product?.costPrice),
+        isLowStock: n(q.quantity) <= n(q.product?.minStock),
       }))
       const totalValue = rows.reduce((s, r) => s + r.value, 0)
       const totalQuantity = rows.reduce((s, r) => s + r.quantity, 0)

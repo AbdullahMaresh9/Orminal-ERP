@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { ok, notFound, badRequest, serverError } from '@/lib/erp/api-response'
 import { postJournalEntry, reverseJournalEntry } from '@/lib/erp/accounting-engine'
+import { n } from '@/lib/erp/money'
 
 // GET /api/erp/journal-entries/[id]
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -51,8 +52,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
       const lines = entry.lines.map((l) => ({
         accountCode: accountMap.get(l.accountId)!,
-        debit: l.debit,
-        credit: l.credit,
+        debit: n(l.debit),
+        credit: n(l.credit),
         description: l.description ?? undefined,
         partnerId: l.partnerId ?? undefined,
         costCenterId: l.costCenterId ?? undefined,

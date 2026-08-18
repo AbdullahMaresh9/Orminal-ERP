@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import { ok, created, list, badRequest, serverError, parsePagination, parseSearch } from '@/lib/erp/api-response'
 import { nextNumber } from '@/lib/erp/number-sequence'
 import { postJournalEntry, inventoryAdjustmentPosting } from '@/lib/erp/accounting-engine'
+import { n } from '@/lib/erp/money'
 
 // GET /api/erp/stock-takes
 export async function GET(req: Request) {
@@ -49,11 +50,11 @@ export async function GET(req: Request) {
         productNameEn: l.product?.nameEn,
         sku: l.product?.sku,
         barcode: l.product?.barcode,
-        systemQty: l.systemQty,
-        countedQty: l.countedQty,
-        diff: l.variance,
-        unitCost: l.unitCost,
-        varianceValue: l.variance * l.unitCost,
+        systemQty: n(l.systemQty),
+        countedQty: n(l.countedQty),
+        diff: n(l.variance),
+        unitCost: n(l.unitCost),
+        varianceValue: n(l.variance) * n(l.unitCost),
       }))
       return {
         ...st,
@@ -114,13 +115,13 @@ export async function POST(req: Request) {
 
       linesData = products.map((p) => {
         const quant = p.stockQuants[0]
-        const sysQty = quant ? quant.quantity : 0
+        const sysQty = quant ? n(quant.quantity) : 0
         return {
           productId: p.id,
           systemQty: sysQty,
           countedQty: sysQty,
           variance: 0,
-          unitCost: p.costPrice || 0,
+          unitCost: n(p.costPrice) || 0,
         }
       })
     }
@@ -216,11 +217,11 @@ export async function POST(req: Request) {
       productNameEn: l.product?.nameEn,
       sku: l.product?.sku,
       barcode: l.product?.barcode,
-      systemQty: l.systemQty,
-      countedQty: l.countedQty,
-      diff: l.variance,
-      unitCost: l.unitCost,
-      varianceValue: l.variance * l.unitCost,
+      systemQty: n(l.systemQty),
+      countedQty: n(l.countedQty),
+      diff: n(l.variance),
+      unitCost: n(l.unitCost),
+      varianceValue: n(l.variance) * n(l.unitCost),
     }))
 
     return created({

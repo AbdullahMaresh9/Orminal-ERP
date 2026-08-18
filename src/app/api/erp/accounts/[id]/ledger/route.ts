@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import { ok, notFound, serverError, parsePagination } from '@/lib/erp/api-response'
 import { COA_ACTIONS, isAuthFailure, requireCapability } from '@/lib/erp/rbac'
 import { signedBalance } from '@/lib/erp/account-classes'
+import { n } from '@/lib/erp/money'
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireCapability(COA_ACTIONS.LEDGER, 'canRead')
@@ -47,8 +48,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         where: { accountId: { in: accountIds }, entry: { postingDate: { lt: new Date(from) }, state: 'posted' } },
         _sum: { debit: true, credit: true },
       })
-      openingDebit = opening._sum.debit ?? 0
-      openingCredit = opening._sum.credit ?? 0
+      openingDebit = n(opening._sum.debit)
+      openingCredit = n(opening._sum.credit)
     }
     const openingBalance = signedBalance(account.normalBalance, openingDebit, openingCredit)
 
@@ -85,16 +86,16 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         orderBy: [{ entry: { postingDate: 'asc' } }, { id: 'asc' }],
         select: { debit: true, credit: true },
       })
-      for (const l of prior) running += signedBalance(account.normalBalance, l.debit, l.credit)
+      for (const l of prior) running += signedBalance(account.normalBalance, n(l.debit), n(l.credit))
     }
 
     const rows = lines.map((l) => {
-      running += signedBalance(account.normalBalance, l.debit, l.credit)
+      running += signedBalance(account.normalBalance, n(l.debit), n(l.credit))
       return { ...l, runningBalance: Math.round(running * 100) / 100 }
     })
 
-    const periodDebit = periodTotals._sum.debit ?? 0
-    const periodCredit = periodTotals._sum.credit ?? 0
+    const periodDebit = n(periodTotals._sum.debit)
+    const periodCredit = n(periodTotals._sum.credit)
 
     return ok({
       account,
