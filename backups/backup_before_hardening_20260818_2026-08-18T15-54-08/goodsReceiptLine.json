@@ -1,0 +1,93 @@
+[
+  {
+    "id": "cmsnqzih3000w5ptk5acm2997",
+    "receiptId": "cmsnqzih3000u5ptkak97umeo",
+    "productId": "cmsnpselx00075ptkwrzmcldz",
+    "purchaseOrderLineId": null,
+    "orderedQty": 0,
+    "receivedQty": 1,
+    "uomId": null,
+    "lotNumber": null,
+    "expiryDate": null,
+    "unitCost": 1000,
+    "total": 1000
+  },
+  {
+    "id": "cmss0ngmt0000jt04ziebdj8y",
+    "receiptId": "cmsnr6pzn00125ptkzall14p9",
+    "productId": "cmsnpselx00075ptkwrzmcldz",
+    "purchaseOrderLineId": null,
+    "orderedQty": 0,
+    "receivedQty": 1,
+    "uomId": null,
+    "lotNumber": "111",
+    "expiryDate": null,
+    "unitCost": 1000,
+    "total": 1000
+  },
+  {
+    "id": "cmss2csce0003la04etcp6qtl",
+    "receiptId": "cmss2csce0001la047jj701nk",
+    "productId": "cmsnpselx00075ptkwrzmcldz",
+    "purchaseOrderLineId": null,
+    "orderedQty": 1,
+    "receivedQty": 1,
+    "uomId": null,
+    "lotNumber": null,
+    "expiryDate": null,
+    "unitCost": 1000,
+    "total": 1000
+  },
+  {
+    "id": "cmss2cvg7000bla04e3n0vsuq",
+    "receiptId": "cmss2cvg70009la04we824ymk",
+    "productId": "cmsnpselx00075ptkwrzmcldz",
+    "purchaseOrderLineId": null,
+    "orderedQty": 1,
+    "receivedQty": 1,
+    "uomId": null,
+    "lotNumber": null,
+    "expiryDate": null,
+    "unitCost": 1000,
+    "total": 1000
+  },
+  {
+    "id": "cmss2d5o9000nla043ns2t030",
+    "receiptId": "cmss2d5o9000lla04vbx2j6a9",
+    "productId": "cmsrlotqb00015pqw9qryjkx9",
+    "purchaseOrderLineId": null,
+    "orderedQty": 1,
+    "receivedQty": 1,
+    "uomId": null,
+    "lotNumber": null,
+    "expiryDate": null,
+    "unitCost": 1000,
+    "total": 1000
+  },
+  {
+    "id": "cmss2d9u8000vla043wp2qpqn",
+    "receiptId": "cmss2d9u8000tla046df70rac",
+    "productId": "cmsrlotqb00015pqw9qryjkx9",
+    "purchaseOrderLineId": null,
+    "orderedQty": 1,
+    "receivedQty": 1,
+    "uomId": null,
+    "lotNumber": null,
+    "expiryDate": null,
+    "unitCost": 1000,
+    "total": 1000
+  },
+  {
+    "id": "cmsxxtbo5001o5pp007r09m1h",
+    "receiptId": "cmsnu2jx7001a5ptk8aeyxdse",
+    "productId": "cmsrlotqb00015pqw9qryjkx9",
+    "purchaseOrderLineId": null,
+    "orderedQty": 1,
+    "receivedQty": 1,
+    "uomId": null,
+    "lotNumber": null,
+    "expiryDate": null,
+    "unitCost": 90,
+    "total": 90
+  }
+]

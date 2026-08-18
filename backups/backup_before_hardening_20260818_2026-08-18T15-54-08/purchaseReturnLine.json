@@ -1,0 +1,112 @@
+[
+  {
+    "id": "cmss0tr330005jt044j16eq9c",
+    "returnId": "cmss0tr330003jt04nmwgzjks",
+    "productId": "cmsrlotqb00015pqw9qryjkx9",
+    "description": null,
+    "quantity": 1,
+    "uomId": null,
+    "unitCost": 90,
+    "taxRate": 15,
+    "total": 103.5
+  },
+  {
+    "id": "cmss0tue90009jt04b9ccqbwo",
+    "returnId": "cmss0tue90007jt048lnw43pk",
+    "productId": "cmsrlotqb00015pqw9qryjkx9",
+    "description": null,
+    "quantity": 1,
+    "uomId": null,
+    "unitCost": 90,
+    "taxRate": 15,
+    "total": 103.5
+  },
+  {
+    "id": "cmss10ehv0003jo044reaytpr",
+    "returnId": "cmss10ehv0001jo04sxpusl0n",
+    "productId": "cmsrlotqb00015pqw9qryjkx9",
+    "description": null,
+    "quantity": 1,
+    "uomId": null,
+    "unitCost": 90,
+    "taxRate": 15,
+    "total": 103.5
+  },
+  {
+    "id": "cmss10qc00007jo048i2eg8i2",
+    "returnId": "cmss10qc00005jo04jm0hqdny",
+    "productId": "cmsrlotqb00015pqw9qryjkx9",
+    "description": null,
+    "quantity": 1,
+    "uomId": null,
+    "unitCost": 90,
+    "taxRate": 15,
+    "total": 103.5
+  },
+  {
+    "id": "cmss111zl000bjo04lzp090ix",
+    "returnId": "cmss111zl0009jo0409nz76qn",
+    "productId": "cmsrlotqb00015pqw9qryjkx9",
+    "description": null,
+    "quantity": 1,
+    "uomId": null,
+    "unitCost": 90,
+    "taxRate": 15,
+    "total": 103.5
+  },
+  {
+    "id": "cmss11top000jjo04i8t18mph",
+    "returnId": "cmss11top000hjo041o4aqu31",
+    "productId": "cmsrlotqb00015pqw9qryjkx9",
+    "description": null,
+    "quantity": 1,
+    "uomId": null,
+    "unitCost": 90,
+    "taxRate": 15,
+    "total": 103.5
+  },
+  {
+    "id": "cmss1jy5v000njo04ijmkpx73",
+    "returnId": "cmss1jy5v000ljo04f0495u0r",
+    "productId": "cmsrlotqb00015pqw9qryjkx9",
+    "description": null,
+    "quantity": 1,
+    "uomId": null,
+    "unitCost": 90,
+    "taxRate": 15,
+    "total": 103.5
+  },
+  {
+    "id": "cmss1vuzy0003l5043w3us794",
+    "returnId": "cmss1vuzy0001l504kxjob11a",
+    "productId": "cmsrlotqb00015pqw9qryjkx9",
+    "description": null,
+    "quantity": 1,
+    "uomId": null,
+    "unitCost": 90,
+    "taxRate": 15,
+    "total": 103.5
+  },
+  {
+    "id": "cmss1zf680008l504yxxx9r0g",
+    "returnId": "cmss1zf680006l504884tcavd",
+    "productId": "cmsnpselx00075ptkwrzmcldz",
+    "description": null,
+    "quantity": 1,
+    "uomId": null,
+    "unitCost": 1000,
+    "taxRate": 15,
+    "total": 1150
+  },
+  {
+    "id": "cmsxypkud003r5pp0ka9aih8t",
+    "returnId": "cmss11b5f000djo04bdtpilwd",
+    "productId": "cmsnpselx00075ptkwrzmcldz",
+    "description": null,
+    "quantity": 1,
+    "uomId": null,
+    "unitCost": 1000,
+    "taxRate": 15,
+    "total": 1150
+  }
+]

@@ -17,7 +17,7 @@
 
 import { db } from '@/lib/db'
 import { nextNumber } from './number-sequence'
-import { resolveAccounts } from './account-determination'
+import { resolveAccounts, type ResolvedAccount } from './account-determination'
 import { signedBalance } from './account-classes'
 import type { AccountRole } from './account-roles'
 
@@ -139,7 +139,6 @@ export function validateBalanced(lines: JournalLineInput[]): boolean {
   return Math.abs(round2(totalDebit) - round2(totalCredit)) < CENTS
 }
 
-feat/coa-reengineering-and-db-hardening
 interface AccountRow {
   id: string
   code: string
@@ -175,9 +174,9 @@ async function resolveLineAccounts(input: PostEntryInput): Promise<{ accountIds:
   const codes = input.lines.map((l) => l.accountCode).filter((c): c is string => Boolean(c))
   const ids = input.lines.map((l) => l.accountId).filter((i): i is string => Boolean(i))
 
-  const roleMap = roles.length
+  const roleMap: Map<AccountRole, ResolvedAccount> = roles.length
     ? await resolveAccounts(roles, { companyId: input.companyId, branchId: input.branchId })
-    : new Map()
+    : new Map<AccountRole, ResolvedAccount>()
 
   const directWhere: any[] = []
   if (codes.length) directWhere.push({ code: { in: codes } })
@@ -233,36 +232,6 @@ async function resolveLineAccounts(input: PostEntryInput): Promise<{ accountIds:
   }
 
   return { accountIds, accounts }
-
-// Resolve account codes to account IDs (with auto-creation fallback for missing system accounts)
-async function resolveAccounts(lines: JournalLineInput[]): Promise<Map<string, string>> {
-  const codes = [...new Set(lines.map((l) => l.accountCode))]
-  const accounts = await db.account.findMany({ where: { code: { in: codes } } })
-  const accountMap = new Map(accounts.map((a) => [a.code, a.id]))
-
-  for (const code of codes) {
-    if (!accountMap.has(code)) {
-      const def = SYSTEM_ACCOUNT_DEFS[code]
-      if (def) {
-        const created = await db.account.upsert({
-          where: { code },
-          update: {},
-          create: {
-            code,
-            nameAr: def.nameAr,
-            nameEn: def.nameEn,
-            type: def.type,
-            subtype: def.subtype,
-            isSystem: true,
-          },
-        })
-        accountMap.set(code, created.id)
-      }
-    }
-  }
-
-  return accountMap
-     main
 }
 
 // === Central post function — creates a posted journal entry atomically ===
@@ -283,24 +252,17 @@ export async function postJournalEntry(input: PostEntryInput): Promise<{ id: str
     if (d > 0 && c > 0) throw new Error(`JOURNAL_LINE_BOTH_SIDES: السطر ${i + 1} لا يمكن أن يكون مديناً ودائناً معاً`)
   }
 
- feat/coa-reengineering-and-db-hardening
   // Resolve + guard every account before writing anything.
   const { accountIds, accounts } = await resolveLineAccounts(input)
 
-  // Find journal by type
-  let journalId: string | undefined
-
   // Find journal by type (with auto-creation fallback)
+  let journalId: string | undefined
   let journal: any = null
-     main
+
   if (input.journalType) {
     const journalMap: Record<string, string> = {
       sale: 'SJ', purchase: 'PJ', cash: 'CJ', bank: 'BJ', general: 'GJ', opening: 'OJ', closing: 'CLJ',
     }
- feat/coa-reengineering-and-db-hardening
-    const journal = await db.journal.findUnique({ where: { code: journalMap[input.journalType] || 'GJ' } })
-    journalId = journal?.id
-
     const targetCode = journalMap[input.journalType] || 'GJ'
     journal = await db.journal.findUnique({ where: { code: targetCode } })
     if (!journal) {
@@ -320,11 +282,11 @@ export async function postJournalEntry(input: PostEntryInput): Promise<{ id: str
         create: { code: targetCode, nameAr: def.nameAr, nameEn: def.nameEn, type: def.type },
       })
     }
-     main
+    journalId = journal?.id
   }
 
-  // Find fiscal period for posting date
-  const postingDate = input.postingDate ?? new Date()
+  // Find fiscal period for posting date (safely convert string/Date to Date instance)
+  const postingDate = input.postingDate ? new Date(input.postingDate) : new Date()
   const fiscalPeriod = await db.fiscalPeriod.findFirst({
     where: { startDate: { lte: postingDate }, endDate: { gte: postingDate } },
   })
@@ -336,15 +298,15 @@ export async function postJournalEntry(input: PostEntryInput): Promise<{ id: str
 
   const code = await nextNumber('journal_entry', input.companyId, input.branchId, postingDate.getFullYear())
 
-  const totalDebit = round2(input.lines.reduce((s, l) => s + (Number(l.debit) || 0), 0))
-  const totalCredit = round2(input.lines.reduce((s, l) => s + (Number(l.credit) || 0), 0))
+  const totalDebit = round2(input.lines.reduce((s, l) => s + round2(l.debit), 0))
+  const totalCredit = round2(input.lines.reduce((s, l) => s + round2(l.credit), 0))
 
   // Aggregate the cached-balance delta per account (one update per account).
   const deltaByAccount = new Map<string, number>()
   input.lines.forEach((line, i) => {
     const accountId = accountIds[i]
     const nb = accounts.get(accountId)?.normalBalance ?? 'debit'
-    const delta = signedBalance(nb, Number(line.debit) || 0, Number(line.credit) || 0)
+    const delta = signedBalance(nb, round2(line.debit), round2(line.credit))
     deltaByAccount.set(accountId, round2((deltaByAccount.get(accountId) ?? 0) + delta))
   })
 
@@ -383,8 +345,9 @@ export async function postJournalEntry(input: PostEntryInput): Promise<{ id: str
     })
 
     for (const [accountId, delta] of deltaByAccount) {
-      if (delta === 0) continue
-      await tx.account.update({ where: { id: accountId }, data: { balance: { increment: delta } } })
+      const roundedDelta = round2(delta)
+      if (roundedDelta === 0) continue
+      await tx.account.update({ where: { id: accountId }, data: { balance: { increment: roundedDelta } } })
     }
 
     if (input.userId) {
@@ -623,17 +586,27 @@ export function payrollPosting(args: { gross: number; deductions: number; net: n
 
 /** Expense: Dr Expense account / Cr Cash. */
 export function expensePosting(args: { amount: number; expenseAccount?: string }): JournalLineInput[] {
-  const debitLine: JournalLineInput = args.expenseAccount
-    ? { accountCode: args.expenseAccount, debit: round2(args.amount), credit: 0, description: 'مصروف' }
-    : { role: 'INVENTORY_LOSS', debit: round2(args.amount), credit: 0, description: 'مصروف' }
+  let debitLine: JournalLineInput
+  if (!args.expenseAccount) {
+    debitLine = { role: 'INVENTORY_LOSS', debit: round2(args.amount), credit: 0, description: 'مصروف' }
+  } else if (args.expenseAccount.includes('-') || args.expenseAccount.length > 20) {
+    debitLine = { accountId: args.expenseAccount, debit: round2(args.amount), credit: 0, description: 'مصروف' }
+  } else {
+    debitLine = { accountCode: args.expenseAccount, debit: round2(args.amount), credit: 0, description: 'مصروف' }
+  }
   return [debitLine, { role: 'CASH', debit: 0, credit: round2(args.amount), description: 'نقدية مدفوعة' }]
 }
 
 /** Revenue: Dr Cash / Cr Other Revenue. */
 export function revenuePosting(args: { amount: number; revenueAccount?: string }): JournalLineInput[] {
-  const creditLine: JournalLineInput = args.revenueAccount
-    ? { accountCode: args.revenueAccount, debit: 0, credit: round2(args.amount), description: 'إيراد آخر' }
-    : { role: 'OTHER_REVENUE', debit: 0, credit: round2(args.amount), description: 'إيراد آخر' }
+  let creditLine: JournalLineInput
+  if (!args.revenueAccount) {
+    creditLine = { role: 'OTHER_REVENUE', debit: 0, credit: round2(args.amount), description: 'إيراد آخر' }
+  } else if (args.revenueAccount.includes('-') || args.revenueAccount.length > 20) {
+    creditLine = { accountId: args.revenueAccount, debit: 0, credit: round2(args.amount), description: 'إيراد آخر' }
+  } else {
+    creditLine = { accountCode: args.revenueAccount, debit: 0, credit: round2(args.amount), description: 'إيراد آخر' }
+  }
   return [{ role: 'CASH', debit: round2(args.amount), credit: 0, description: 'نقدية مستلمة' }, creditLine]
 }
 

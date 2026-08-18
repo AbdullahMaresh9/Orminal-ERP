@@ -39,6 +39,12 @@ interface FlatResponse {
 }
 
 const PAGE_SIZE = 25
+const VISIBLE_ROWS = 5
+const ROW_HEIGHT = 50
+const HEADER_HEIGHT = 44
+
+const stickyHead =
+  'sticky top-0 z-20 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold whitespace-nowrap shadow-[inset_0_-1px_0_0_hsl(var(--border))] text-xs select-none py-2.5'
 
 function SortIcon({ sortBy, col, sortDir }: { sortBy: SortBy; col: SortBy; sortDir: SortDir }) {
   if (sortBy !== col) return <span className="size-4 inline-block" />
@@ -52,10 +58,10 @@ function TH({ col, label, className, sortBy, sortDir, onSort }: {
   sortBy: SortBy; sortDir: SortDir; onSort: (col: SortBy) => void
 }) {
   return (
-    <TableHead
+    <th
       className={cn(
-        'whitespace-nowrap text-xs font-semibold select-none',
-        col && 'cursor-pointer hover:bg-muted/60 transition-colors',
+        stickyHead,
+        col && 'cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors',
         className,
       )}
       onClick={() => col && onSort(col)}
@@ -63,7 +69,7 @@ function TH({ col, label, className, sortBy, sortDir, onSort }: {
       <span className="flex items-center gap-1">
         {label}{col && <SortIcon sortBy={sortBy} col={col} sortDir={sortDir} />}
       </span>
-    </TableHead>
+    </th>
   )
 }
 
@@ -120,41 +126,54 @@ export function FlatTable({ filters, onSelect, onEdit, onAddChild, onDeactivate,
 
   return (
     <div>
-      <div className="overflow-auto">
-        <Table className="min-w-[900px]">
-          <TableHeader>
-            <TableRow className="bg-muted/40 hover:bg-muted/40">
-              <TH col="code" label={t('coa.col.code')} className="ps-4 w-[130px]" sortBy={sortBy} sortDir={sortDir} onSort={toggleSort} />
-              <TH col="nameAr" label={t('coa.col.name')} sortBy={sortBy} sortDir={sortDir} onSort={toggleSort} />
-              <TH col="accountClass" label={t('coa.col.class')} className="w-[150px]" sortBy={sortBy} sortDir={sortDir} onSort={toggleSort} />
-              <TH col="level" label={t('coa.col.level')} className="text-center w-[80px]" sortBy={sortBy} sortDir={sortDir} onSort={toggleSort} />
-              <TH label={t('coa.col.kind')} className="w-[100px]" sortBy={sortBy} sortDir={sortDir} onSort={toggleSort} />
-              <TH label={t('coa.col.balance')} className="text-end w-[150px]" sortBy={sortBy} sortDir={sortDir} onSort={toggleSort} />
-              <TH label={t('coa.col.status')} className="w-[90px]" sortBy={sortBy} sortDir={sortDir} onSort={toggleSort} />
-              <TH label={t('coa.col.actions')} className="text-end pe-4 w-[60px]" sortBy={sortBy} sortDir={sortDir} onSort={toggleSort} />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+      <div
+        className="w-full overflow-y-auto overflow-x-auto overscroll-contain scrollbar-thin"
+        style={{ maxHeight: HEADER_HEIGHT + VISIBLE_ROWS * ROW_HEIGHT }}
+      >
+        <table className="w-full caption-bottom text-sm min-w-[940px] table-fixed border-separate border-spacing-0">
+          <colgroup>
+            <col className="w-[140px]" />
+            <col className="w-[260px]" />
+            <col className="w-[130px]" />
+            <col className="w-[70px]" />
+            <col className="w-[100px]" />
+            <col className="w-[140px]" />
+            <col className="w-[100px]" />
+            <col className="w-[60px]" />
+          </colgroup>
+          <thead>
+            <tr className="hover:bg-transparent border-b">
+              <TH col="code" label={t('coa.col.code')} className="ps-4 text-start" sortBy={sortBy} sortDir={sortDir} onSort={toggleSort} />
+              <TH col="nameAr" label={t('coa.col.name')} className="text-start" sortBy={sortBy} sortDir={sortDir} onSort={toggleSort} />
+              <TH col="accountClass" label={t('coa.col.class')} className="text-start" sortBy={sortBy} sortDir={sortDir} onSort={toggleSort} />
+              <TH col="level" label={t('coa.col.level')} className="text-center" sortBy={sortBy} sortDir={sortDir} onSort={toggleSort} />
+              <TH label={t('coa.col.kind')} className="text-start" sortBy={sortBy} sortDir={sortDir} onSort={toggleSort} />
+              <TH label={t('coa.col.balance')} className="text-end pe-3" sortBy={sortBy} sortDir={sortDir} onSort={toggleSort} />
+              <TH label={t('coa.col.status')} className="text-center" sortBy={sortBy} sortDir={sortDir} onSort={toggleSort} />
+              <TH label={t('coa.col.actions')} className="text-end pe-4" sortBy={sortBy} sortDir={sortDir} onSort={toggleSort} />
+            </tr>
+          </thead>
+          <tbody>
             {accounts.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center py-16 text-muted-foreground">
+              <tr>
+                <td colSpan={8} className="text-center py-16 text-muted-foreground border-b border-border/50">
                   {t('coa.empty.noResults')}
-                </TableCell>
-              </TableRow>
+                </td>
+              </tr>
             ) : (
               accounts.map((account) => {
                 const cm = getClassMeta(account.accountClass)
                 const balance = account.isPosting ? (account.ownBalance ?? account.balance ?? 0) : (account.aggregateBalance ?? account.balance ?? 0)
                 return (
-                  <TableRow
+                  <tr
                     key={account.id}
-                    className={cn('hover:bg-muted/40 cursor-pointer', !account.active && 'opacity-60')}
+                    className={cn('hover:bg-muted/40 cursor-pointer transition-colors', !account.active && 'opacity-60')}
                     onClick={() => onSelect(account)}
                   >
-                    <TableCell className="ps-4 font-mono text-xs" dir="ltr">
+                    <td className="ps-4 py-2 font-mono text-xs border-b border-slate-100 dark:border-slate-800/60" dir="ltr">
                       {account.code}
-                    </TableCell>
-                    <TableCell>
+                    </td>
+                    <td className="py-2 pe-3 border-b border-slate-100 dark:border-slate-800/60">
                       <div className="flex items-center gap-2">
                         <span className={cn('text-sm', !account.isPosting && 'font-semibold')}>
                           {account.nameAr}
@@ -170,18 +189,18 @@ export function FlatTable({ filters, onSelect, onEdit, onAddChild, onDeactivate,
                           <span className="font-mono">{account.parent.code}</span> — {account.parent.nameAr}
                         </p>
                       )}
-                    </TableCell>
-                    <TableCell>
+                    </td>
+                    <td className="py-2 pe-3 border-b border-slate-100 dark:border-slate-800/60">
                       <Badge variant="outline" className={cn('text-[10px]', cm.badgeClass)}>
                         {isRTL ? cm.labelAr : cm.labelEn}
                       </Badge>
-                    </TableCell>
-                    <TableCell className="text-center">
+                    </td>
+                    <td className="py-2 pe-3 text-center border-b border-slate-100 dark:border-slate-800/60">
                       <span className="text-xs text-muted-foreground tabular-nums" dir="ltr">
                         {account.level ?? account.depth ?? '—'}
                       </span>
-                    </TableCell>
-                    <TableCell>
+                    </td>
+                    <td className="py-2 pe-3 border-b border-slate-100 dark:border-slate-800/60">
                       <Badge
                         variant="outline"
                         className={cn(
@@ -193,13 +212,13 @@ export function FlatTable({ filters, onSelect, onEdit, onAddChild, onDeactivate,
                       >
                         {account.isPosting ? t('coa.kind.posting') : t('coa.kind.group')}
                       </Badge>
-                    </TableCell>
-                    <TableCell className="text-end">
+                    </td>
+                    <td className="py-2 pe-3 text-end border-b border-slate-100 dark:border-slate-800/60">
                       <span className={cn('text-sm font-semibold tabular-nums', cm.color)} dir="ltr">
                         {formatCurrency(balance)}
                       </span>
-                    </TableCell>
-                    <TableCell>
+                    </td>
+                    <td className="py-2 pe-3 text-center border-b border-slate-100 dark:border-slate-800/60">
                       <span className={cn(
                         'inline-flex items-center gap-1.5 text-xs font-medium',
                         account.active ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground',
@@ -207,8 +226,8 @@ export function FlatTable({ filters, onSelect, onEdit, onAddChild, onDeactivate,
                         <span className={cn('size-1.5 rounded-full', account.active ? 'bg-emerald-500' : 'bg-muted-foreground/50')} />
                         {account.active ? t('coa.activeBadge') : t('coa.inactiveBadge')}
                       </span>
-                    </TableCell>
-                    <TableCell className="text-end pe-4" onClick={(e) => e.stopPropagation()}>
+                    </td>
+                    <td className="py-2 pe-4 text-end border-b border-slate-100 dark:border-slate-800/60" onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="size-7" aria-label={t('action.actions')}>
@@ -257,13 +276,13 @@ export function FlatTable({ filters, onSelect, onEdit, onAddChild, onDeactivate,
                           )}
                         </DropdownMenuContent>
                       </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
+                    </td>
+                  </tr>
                 )
               })
             )}
-          </TableBody>
-        </Table>
+          </tbody>
+        </table>
       </div>
 
       {/* Pagination */}

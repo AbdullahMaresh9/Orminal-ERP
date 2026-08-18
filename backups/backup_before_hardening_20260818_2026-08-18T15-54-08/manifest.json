@@ -1,0 +1,331 @@
+{
+  "createdAt": "2026-08-18T15:54:08.593Z",
+  "label": "before_hardening_20260818",
+  "node": "v24.14.1",
+  "tables": {
+    "currency": {
+      "rows": 3,
+      "checksum": "c907cf8212183166"
+    },
+    "unitOfMeasure": {
+      "rows": 3,
+      "checksum": "93c766a1bac32e1e"
+    },
+    "country": {
+      "rows": 2,
+      "checksum": "8a2ce6351de14e8d"
+    },
+    "taxCode": {
+      "rows": 1,
+      "checksum": "09572a3d96aaae1d"
+    },
+    "paymentTerm": {
+      "rows": 0,
+      "checksum": "4f53cda18c2baa0c"
+    },
+    "reasonCode": {
+      "rows": 0,
+      "checksum": "4f53cda18c2baa0c"
+    },
+    "setting": {
+      "rows": 108,
+      "checksum": "93fc4bd0976b2199"
+    },
+    "settingAuditLog": {
+      "rows": 3,
+      "checksum": "2e3771fecc464517"
+    },
+    "company": {
+      "rows": 1,
+      "checksum": "19fc5735572c4af3"
+    },
+    "branch": {
+      "rows": 1,
+      "checksum": "68ee954663573aab"
+    },
+    "user": {
+      "rows": 7,
+      "checksum": "86d95625380a516d"
+    },
+    "role": {
+      "rows": 2,
+      "checksum": "3f2e08f2260028ab"
+    },
+    "permission": {
+      "rows": 0,
+      "checksum": "4f53cda18c2baa0c"
+    },
+    "rolePermission": {
+      "rows": 0,
+      "checksum": "4f53cda18c2baa0c"
+    },
+    "userRole": {
+      "rows": 7,
+      "checksum": "953ad72ba898e082"
+    },
+    "auditLog": {
+      "rows": 0,
+      "checksum": "4f53cda18c2baa0c"
+    },
+    "outboxEvent": {
+      "rows": 0,
+      "checksum": "4f53cda18c2baa0c"
+    },
+    "notification": {
+      "rows": 0,
+      "checksum": "4f53cda18c2baa0c"
+    },
+    "approvalStep": {
+      "rows": 0,
+      "checksum": "4f53cda18c2baa0c"
+    },
+    "numberSequence": {
+      "rows": 15,
+      "checksum": "cb35dcc8ce8ccfbb"
+    },
+    "exchangeRate": {
+      "rows": 0,
+      "checksum": "4f53cda18c2baa0c"
+    },
+    "bankAccount": {
+      "rows": 0,
+      "checksum": "4f53cda18c2baa0c"
+    },
+    "safe": {
+      "rows": 0,
+      "checksum": "4f53cda18c2baa0c"
+    },
+    "fiscalYear": {
+      "rows": 1,
+      "checksum": "6df3cf29290c72ae"
+    },
+    "fiscalPeriod": {
+      "rows": 12,
+      "checksum": "e481f5f4042167e6"
+    },
+    "partner": {
+      "rows": 4,
+      "checksum": "0cfd02f1710fb1a4"
+    },
+    "partnerContact": {
+      "rows": 0,
+      "checksum": "4f53cda18c2baa0c"
+    },
+    "partnerAddress": {
+      "rows": 0,
+      "checksum": "4f53cda18c2baa0c"
+    },
+    "partnerBankAccount": {
+      "rows": 0,
+      "checksum": "4f53cda18c2baa0c"
+    },
+    "category": {
+      "rows": 2,
+      "checksum": "e272a5e68f30647c"
+    },
+    "product": {
+      "rows": 2,
+      "checksum": "ea466689dbd9833e"
+    },
+    "warehouse": {
+      "rows": 1,
+      "checksum": "2b90105529805e6c"
+    },
+    "stockLocation": {
+      "rows": 0,
+      "checksum": "4f53cda18c2baa0c"
+    },
+    "stockLot": {
+      "rows": 0,
+      "checksum": "4f53cda18c2baa0c"
+    },
+    "stockQuant": {
+      "rows": 2,
+      "checksum": "3d81820ef94b5895"
+    },
+    "stockReservation": {
+      "rows": 0,
+      "checksum": "4f53cda18c2baa0c"
+    },
+    "stockValuationLayer": {
+      "rows": 0,
+      "checksum": "4f53cda18c2baa0c"
+    },
+    "bom": {
+      "rows": 0,
+      "checksum": "4f53cda18c2baa0c"
+    },
+    "bomComponent": {
+      "rows": 0,
+      "checksum": "4f53cda18c2baa0c"
+    },
+    "employee": {
+      "rows": 2,
+      "checksum": "5fe43b03c1aecfe3"
+    },
+    "leaveRequest": {
+      "rows": 0,
+      "checksum": "4f53cda18c2baa0c"
+    },
+    "payrollRun": {
+      "rows": 0,
+      "checksum": "4f53cda18c2baa0c"
+    },
+    "journalEntry": {
+      "rows": 17,
+      "checksum": "a3335e9070b41dba"
+    },
+    "journalLine": {
+      "rows": 41,
+      "checksum": "e9c6b866e1d069a7"
+    },
+    "salesQuotation": {
+      "rows": 6,
+      "checksum": "254a1e22351d6e1a"
+    },
+    "salesQuotationLine": {
+      "rows": 6,
+      "checksum": "bd10ee592a38c3dd"
+    },
+    "salesOrder": {
+      "rows": 14,
+      "checksum": "3f6c950a46d0d8c2"
+    },
+    "salesOrderLine": {
+      "rows": 14,
+      "checksum": "c8fe74cbfcc39f45"
+    },
+    "salesInvoice": {
+      "rows": 12,
+      "checksum": "d68d49871cc19d86"
+    },
+    "salesInvoiceLine": {
+      "rows": 12,
+      "checksum": "975704d1d4bee756"
+    },
+    "salesPayment": {
+      "rows": 3,
+      "checksum": "77819c54683ec45c"
+    },
+    "salesReturn": {
+      "rows": 3,
+      "checksum": "0dfa909632aa5241"
+    },
+    "salesReturnLine": {
+      "rows": 3,
+      "checksum": "b7a27155c31b3a50"
+    },
+    "salesCreditNote": {
+      "rows": 5,
+      "checksum": "010fc3802cb3d5ce"
+    },
+    "delivery": {
+      "rows": 1,
+      "checksum": "e4c7eb989243e769"
+    },
+    "deliveryLine": {
+      "rows": 1,
+      "checksum": "a4bbb7b793012112"
+    },
+    "purchaseRequest": {
+      "rows": 2,
+      "checksum": "d3691b177948aa21"
+    },
+    "purchaseRequestLine": {
+      "rows": 2,
+      "checksum": "6fb58530f92a40ed"
+    },
+    "purchaseOrder": {
+      "rows": 6,
+      "checksum": "928da550336c9622"
+    },
+    "purchaseOrderLine": {
+      "rows": 6,
+      "checksum": "555e623b7130be24"
+    },
+    "purchaseInvoice": {
+      "rows": 6,
+      "checksum": "20e52a415dab1424"
+    },
+    "purchaseInvoiceLine": {
+      "rows": 6,
+      "checksum": "5a71084d4fa8feb0"
+    },
+    "purchasePayment": {
+      "rows": 3,
+      "checksum": "7340bdea45f47d76"
+    },
+    "purchaseReturn": {
+      "rows": 10,
+      "checksum": "512cdc674fb04eaa"
+    },
+    "purchaseReturnLine": {
+      "rows": 10,
+      "checksum": "470a80ff97179778"
+    },
+    "purchaseCreditNote": {
+      "rows": 7,
+      "checksum": "e09b3f35e20ab2f3"
+    },
+    "goodsReceipt": {
+      "rows": 7,
+      "checksum": "70d5011a7a4eeafe"
+    },
+    "goodsReceiptLine": {
+      "rows": 7,
+      "checksum": "f677f4a4f928467c"
+    },
+    "stockMove": {
+      "rows": 5,
+      "checksum": "11be701ec4f93031"
+    },
+    "stockTransfer": {
+      "rows": 0,
+      "checksum": "4f53cda18c2baa0c"
+    },
+    "stockTransferLine": {
+      "rows": 0,
+      "checksum": "4f53cda18c2baa0c"
+    },
+    "inventoryAdjustment": {
+      "rows": 0,
+      "checksum": "4f53cda18c2baa0c"
+    },
+    "inventoryAdjustmentLine": {
+      "rows": 0,
+      "checksum": "4f53cda18c2baa0c"
+    },
+    "productionOrder": {
+      "rows": 0,
+      "checksum": "4f53cda18c2baa0c"
+    },
+    "expense": {
+      "rows": 0,
+      "checksum": "4f53cda18c2baa0c"
+    },
+    "revenue": {
+      "rows": 0,
+      "checksum": "4f53cda18c2baa0c"
+    },
+    "activity": {
+      "rows": 1,
+      "checksum": "2fb8b7fec907911b"
+    }
+  },
+  "totalRows": 395,
+  "errors": [
+    "Read error [account]: \nInvalid `prisma.account.findMany()` invocation:\n\n\nThe column `Account.allowManualEntry` does not exist in the current database.",
+    "Read error [accountRoleMapping]: \nInvalid `prisma.accountRoleMapping.findMany()` invocation:\n\n\nThe table `public.AccountRoleMapping` does not exist in the current database.",
+    "Model not found: employeeContract",
+    "Model not found: payrollEntry",
+    "Model not found: bankReconciliation",
+    "Model not found: bankReconciliationLine",
+    "Model not found: cashFlow",
+    "Read error [salesCreditNoteLine]: \nInvalid `prisma.salesCreditNoteLine.findMany()` invocation:\n\n\nThe table `public.SalesCreditNoteLine` does not exist in the current database.",
+    "Read error [purchaseCreditNoteLine]: \nInvalid `prisma.purchaseCreditNoteLine.findMany()` invocation:\n\n\nThe table `public.PurchaseCreditNoteLine` does not exist in the current database.",
+    "Model not found: productionMaterial",
+    "Model not found: productionLabor",
+    "Model not found: asset",
+    "Model not found: activityComment"
+  ]
+}

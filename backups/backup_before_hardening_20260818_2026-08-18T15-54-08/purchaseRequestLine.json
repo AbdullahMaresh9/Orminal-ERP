@@ -1,0 +1,22 @@
+[
+  {
+    "id": "cmsnpu7pr000b5ptkjpdqvjct",
+    "requestId": "cmsnpu7pq00095ptkkl9dtv3w",
+    "productId": "cmsnpselx00075ptkwrzmcldz",
+    "quantity": 2,
+    "uomId": null,
+    "requiredDate": null,
+    "costCenterId": null,
+    "notes": ""
+  },
+  {
+    "id": "cmsykqte90002lf04ktdrezke",
+    "requestId": "cmsykqte90000lf04is269dp6",
+    "productId": "cmsrlotqb00015pqw9qryjkx9",
+    "quantity": 1,
+    "uomId": null,
+    "requiredDate": "2026-08-18T00:00:00.000Z",
+    "costCenterId": null,
+    "notes": ""
+  }
+]

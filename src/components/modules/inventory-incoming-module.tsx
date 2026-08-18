@@ -570,7 +570,7 @@ export function InventoryIncomingModule() {
                           <SelectValue placeholder={isRTL ? 'اختر المستودع' : 'Select warehouse'} />
                         </SelectTrigger>
                         <SelectContent dir={dir}>
-                          {storehouses.map(s => <SelectItem key={s.id} value={s.id}>{s.name} ({s.code})</SelectItem>)}
+                          {storehouses.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </div>
@@ -589,7 +589,7 @@ export function InventoryIncomingModule() {
                             const supplierName = s.nameAr || s.nameEn || s.name || s.code || 'مورد'
                             return (
                               <SelectItem key={s.id} value={s.id}>
-                                {supplierName} {s.code ? `(${s.code})` : ''}
+                                {supplierName}
                               </SelectItem>
                             )
                           })}

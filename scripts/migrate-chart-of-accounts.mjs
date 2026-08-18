@@ -340,7 +340,9 @@ async function main() {
         if (!DRY_RUN) await tx.account.update({ where: { id: existing.id }, data })
         codeToId.set(a.code, existing.id)
       } else {
-        if (!DRY_RUN) {
+        if (DRY_RUN) {
+          codeToId.set(a.code, `dry-${a.code}`)
+        } else {
           const row = await tx.account.create({ data: { ...data, code: a.code } })
           codeToId.set(a.code, row.id)
         }
@@ -453,8 +455,31 @@ async function main() {
       if (perm) permIds[p.actionCode] = perm.id
     }
 
+    const ROLE_DEFS = {
+      ADMIN: { nameAr: 'مدير النظام', nameEn: 'System Administrator' },
+      FIN_MGR: { nameAr: 'المدير المالي', nameEn: 'Finance Manager' },
+      CHIEF_ACC: { nameAr: 'رئيس الحسابات', nameEn: 'Chief Accountant' },
+      ACCOUNTANT: { nameAr: 'محاسب', nameEn: 'Accountant' },
+      CEO: { nameAr: 'المدير التنفيذي', nameEn: 'Chief Executive Officer' },
+      AUDITOR: { nameAr: 'مراجع مالي', nameEn: 'Financial Auditor' },
+      CASHIER: { nameAr: 'أمين صندوق', nameEn: 'Cashier' },
+      VIEWER: { nameAr: 'مستطلع / عرض فقط', nameEn: 'Viewer' },
+    }
+
     for (const [roleCode, grants] of Object.entries(ROLE_GRANTS)) {
-      const role = await tx.role.findUnique({ where: { code: roleCode } })
+      let role = await tx.role.findUnique({ where: { code: roleCode } })
+      if (!role && !DRY_RUN) {
+        const def = ROLE_DEFS[roleCode] || { nameAr: roleCode, nameEn: roleCode }
+        role = await tx.role.create({
+          data: { code: roleCode, nameAr: def.nameAr, nameEn: def.nameEn, isSystem: true, active: true },
+        })
+      }
+      if (!role && DRY_RUN) {
+        for (const [action] of Object.entries(grants)) {
+          if (permIds[action]) report.grants++
+        }
+        continue
+      }
       if (!role) {
         report.warnings.push(`RBAC: role ${roleCode} not found — grants skipped`)
         continue

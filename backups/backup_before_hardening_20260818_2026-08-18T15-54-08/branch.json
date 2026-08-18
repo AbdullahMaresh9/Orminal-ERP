@@ -1,0 +1,17 @@
+[
+  {
+    "id": "cmsdpov6f000enwgnyyt3sxy0",
+    "code": "BR001",
+    "nameAr": "الفرع الرئيسي",
+    "nameEn": "Main Branch",
+    "companyId": "cmsdpov34000cnwgnu2s5umam",
+    "address": "اليمن تعز",
+    "phone": "737239291",
+    "email": "mainbransh@orminal.org",
+    "managerId": null,
+    "isMain": true,
+    "active": true,
+    "createdAt": "2026-08-03T20:58:46.360Z",
+    "updatedAt": "2026-08-14T15:39:33.367Z"
+  }
+]

@@ -1,0 +1,26 @@
+[
+  {
+    "id": "cmsdpoumy0005nwgnn8cuznrp",
+    "code": "PCE",
+    "nameAr": "قطعة",
+    "nameEn": "Piece",
+    "category": "unit",
+    "active": true
+  },
+  {
+    "id": "cmsdpouq80006nwgngicka8hb",
+    "code": "KG",
+    "nameAr": "كيلوجرام",
+    "nameEn": "Kilogram",
+    "category": "weight",
+    "active": true
+  },
+  {
+    "id": "cmsdpous70007nwgnzlifehzi",
+    "code": "BOX",
+    "nameAr": "صندوق",
+    "nameEn": "Box",
+    "category": "unit",
+    "active": true
+  }
+]

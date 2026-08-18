@@ -447,7 +447,7 @@ export function StockTakesModule() {
         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #1E40AF; padding-bottom:12px; margin-bottom:20px;">
           <div>
             <h1 style="margin:0; font-size:20px; color:#1E40AF;">${L('كشف الجرد المخزني الميداني', 'Physical Stocktake Worksheet')}</h1>
-            <p style="margin:4px 0 0 0; color:#64748B; font-size:12px;">${L('رمز الجلسة', 'Session Code')}: <strong>${take.code}</strong> &middot; ${L('المستودع', 'Warehouse')}: <strong>${stName}</strong></p>
+            <p style="margin:4px 0 0 0; color:#64748B; font-size:12px;">${L('رمز الجلسة', 'Session Code')}: <strong> </strong> &middot; ${L('المستودع', 'Warehouse')}: <strong>${stName}</strong></p>
           </div>
           <div style="text-align:left; font-size:11px; color:#475569;">
             <p style="margin:0;">${L('التاريخ', 'Date')}: ${formatDate(take.createdAt)}</p>
@@ -527,7 +527,7 @@ export function StockTakesModule() {
         <div style="border-bottom:2px solid #DC2626; padding-bottom:12px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center;">
           <div>
             <h1 style="margin:0; font-size:20px; color:#DC2626;">${L('تقرير فروقات الجرد المخزني', 'Stocktake Variance Report')}</h1>
-            <p style="margin:4px 0 0 0; color:#64748B; font-size:12px;">${L('الجلسة', 'Session')}: <strong>${take.code}</strong> &middot; ${L('المستودع', 'Warehouse')}: <strong>${stName}</strong></p>
+            <p style="margin:4px 0 0 0; color:#64748B; font-size:12px;">${L('الجلسة', 'Session')}: <strong></strong> &middot; ${L('المستودع', 'Warehouse')}: <strong>${stName}</strong></p>
           </div>
           <div style="text-align:left; font-size:11px;">
             <p style="margin:0;">${L('الحالة', 'Status')}: <strong style="color:#059669">${take.status}</strong></p>
@@ -1001,7 +1001,7 @@ export function StockTakesModule() {
                     <SelectContent dir={dir} className="z-[120]">
                       {storehouses.map((s) => (
                         <SelectItem key={s.id} value={s.id}>
-                          {storehouseName(s)} ({s.code})
+                          {storehouseName(s)})
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1396,7 +1396,7 @@ export function StockTakesModule() {
                 <SelectContent dir={dir} className="max-h-60 z-[120]">
                   {products.map((p) => (
                     <SelectItem key={p.id} value={p.id} className="text-xs">
-                      {lang === 'en' ? p.nameEn || p.nameAr : p.nameAr || p.nameEn} ({p.sku})
+                      {lang === 'en' ? p.nameEn || p.nameAr : p.nameAr || p.nameEn}
                     </SelectItem>
                   ))}
                 </SelectContent>

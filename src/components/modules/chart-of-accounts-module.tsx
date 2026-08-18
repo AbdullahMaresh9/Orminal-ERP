@@ -25,9 +25,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
 import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
   BookOpen, Plus, Download, Upload, Settings2, LayoutList, TreePine,
   ChevronsUpDown, ChevronUp, ChevronDown, AlertTriangle, AlertCircle,
-  Layers, Lock, TrendingUp, TrendingDown, Scale, Wallet,
+  Layers, Lock, TrendingUp, TrendingDown, Scale, Wallet, FileSpreadsheet, FileText,
 } from 'lucide-react'
 
 import { AccountTree } from '@/components/erp/coa/account-tree'
@@ -336,8 +339,8 @@ export function ChartOfAccountsModule() {
   }
 
   // ── Export ──
-  function handleExport() {
-    window.open('/api/erp/accounts/export?format=csv', '_blank')
+  function handleExport(format: 'xlsx' | 'csv' = 'xlsx') {
+    window.open(`/api/erp/accounts/export?format=${format}`, '_blank')
     toast.success(t('coa.success.exported'))
   }
 
@@ -383,11 +386,25 @@ export function ChartOfAccountsModule() {
         <span className="hidden sm:inline">{t('coa.import')}</span>
       </Button>
 
-      {/* Export */}
-      <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs" onClick={handleExport}>
-        <Download className="size-3.5" />
-        <span className="hidden sm:inline">{t('coa.exportCsv')}</span>
-      </Button>
+      {/* Export Dropdown */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
+            <Download className="size-3.5" />
+            <span className="hidden sm:inline">{isRTL ? 'تصدير' : 'Export'}</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" side="bottom" sideOffset={4} collisionPadding={8} className="w-32">
+          <DropdownMenuItem onClick={() => handleExport('xlsx')} className="gap-2 cursor-pointer">
+            <FileSpreadsheet className="size-4 text-emerald-600 dark:text-emerald-400" />
+            <span>Excel (.xlsx)</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleExport('csv')} className="gap-2 cursor-pointer">
+            <FileText className="size-4 text-blue-600 dark:text-blue-400" />
+            <span>CSV (.csv)</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       {/* Roles / determination */}
       <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs" onClick={() => setRolesOpen(true)}>
@@ -518,7 +535,7 @@ export function ChartOfAccountsModule() {
         )}
 
         {/* KPI row */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mb-5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 xl:grid-cols-8 gap-3 sm:gap-4 mb-6">
           {statsLoading ? (
             Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
           ) : (

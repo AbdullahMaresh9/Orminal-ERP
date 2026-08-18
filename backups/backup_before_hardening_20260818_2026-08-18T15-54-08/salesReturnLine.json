@@ -1,0 +1,35 @@
+[
+  {
+    "id": "cmss26t1m0003jl04y06g9bew",
+    "returnId": "cmss26t1m0001jl04qz2497e5",
+    "productId": "cmsrlotqb00015pqw9qryjkx9",
+    "description": null,
+    "quantity": 1,
+    "uomId": null,
+    "unitPrice": 120,
+    "taxRate": 15,
+    "total": 138
+  },
+  {
+    "id": "cmswljlpc001w5pv80jga1n0x",
+    "returnId": "cmswljlpc001u5pv8wjuobfs2",
+    "productId": "cmsrlotqb00015pqw9qryjkx9",
+    "description": null,
+    "quantity": 1,
+    "uomId": null,
+    "unitPrice": 120,
+    "taxRate": 15,
+    "total": 138
+  },
+  {
+    "id": "cmsxvejny00085pp04sk7s5ed",
+    "returnId": "cmsxvejny00065pp0unkceml1",
+    "productId": "cmsrlotqb00015pqw9qryjkx9",
+    "description": null,
+    "quantity": 1,
+    "uomId": null,
+    "unitPrice": 120,
+    "taxRate": 15,
+    "total": 138
+  }
+]

@@ -352,7 +352,7 @@ export function InventoryAdjustmentsModule() {
                     </SelectTrigger>
                     <SelectContent dir={dir}>
                       {storehouses.map((s: any) => (
-                        <SelectItem key={s.id} value={s.id}>{s.name} ({s.code})</SelectItem>
+                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

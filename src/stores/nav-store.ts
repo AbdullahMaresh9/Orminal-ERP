@@ -8,11 +8,15 @@ export type ModuleKey =
   | 'dashboard' | 'profile' | 'users' | 'roles' | 'audit-logs' | 'notifications' | 'settings'
   // Master Data
   | 'products' | 'categories' | 'warehouses' | 'branches' | 'customers' | 'suppliers'
-  // Finance
+  // Finance & Accounts
   | 'chart-of-accounts' | 'journal-entries' | 'fiscal-periods' | 'cost-centers' | 'bank-accounts' | 'safes'
-  | 'analytic-accounts' | 'closed-periods'
-  | 'sales-payments' | 'purchase-payments'
-  | 'expenses' | 'revenues' | 'finance-transfers' | 'finance-requisitions'
+  | 'analytic-accounts' | 'closed-periods' | 'opening-balances' | 'financial-statement-designer' | 'payment-methods'
+  | 'sales-payments' | 'purchase-payments' | 'cash-count' | 'financial-adjustments' | 'accounting-posting' | 'accounting-unposting'
+  | 'bank-transfers' | 'bank-reconciliation' | 'credit-card-types'
+  | 'ar-aging' | 'customer-balances' | 'customer-adjustments'
+  | 'ap-aging' | 'supplier-balances' | 'supplier-adjustments'
+  | 'expenses' | 'revenues' | 'finance-transfers' | 'finance-requisitions' | 'expense-adjustments'
+  | 'fixed-assets' | 'asset-categories' | 'asset-depreciation' | 'asset-transfers' | 'asset-disposals'
   // Sales & CRM
   | 'sales-quotations' | 'sales-orders' | 'sales-invoices' | 'sales-credit-notes' | 'sales-returns'
   // POS

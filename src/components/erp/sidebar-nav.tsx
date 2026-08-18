@@ -24,10 +24,18 @@ interface NavItem {
   labelKey: string
   icon: LucideIcon
 }
+
+interface NavSubGroup {
+  labelKey: string
+  icon?: LucideIcon
+  items: NavItem[]
+}
+
 interface NavGroup {
   labelKey: string
   icon: LucideIcon
-  items: NavItem[]
+  items?: NavItem[]
+  subGroups?: NavSubGroup[]
 }
 
 const NAV: NavGroup[] = [
@@ -109,22 +117,92 @@ const NAV: NavGroup[] = [
     ],
   },
 
-  // ── Finance ───────────────────────────────────────────────
+  // ── Accounts & Finance (الحسابات والمالية) ─────────────────
   {
     labelKey: 'nav.group.finance',
     icon: BookOpen,
-    items: [
-      { key: 'chart-of-accounts', labelKey: 'module.chart-of-accounts', icon: BookOpen },
-      { key: 'journal-entries', labelKey: 'module.journal-entries', icon: FileText },
-      { key: 'analytic-accounts', labelKey: 'module.analytic-accounts', icon: GitBranch },
-      { key: 'cost-centers', labelKey: 'module.cost-centers', icon: GitBranch },
-      { key: 'fiscal-periods', labelKey: 'module.fiscal-periods', icon: CalendarClock },
-      { key: 'bank-accounts', labelKey: 'module.bank-accounts', icon: Landmark },
-      { key: 'safes', labelKey: 'module.safes', icon: PiggyBank },
-      { key: 'expenses', labelKey: 'module.expenses', icon: TrendingDown },
-      { key: 'revenues', labelKey: 'module.revenues', icon: TrendingUp },
-      { key: 'finance-transfers', labelKey: 'module.finance-transfers', icon: ArrowLeftRight },
-      { key: 'finance-requisitions', labelKey: 'module.finance-requisitions', icon: DollarSign },
+    subGroups: [
+      {
+        labelKey: 'nav.subgroup.coa-setup',
+        icon: BookOpen,
+        items: [
+          { key: 'chart-of-accounts', labelKey: 'module.chart-of-accounts', icon: BookOpen },
+          { key: 'analytic-accounts', labelKey: 'module.analytic-accounts', icon: GitBranch },
+          { key: 'cost-centers', labelKey: 'module.cost-centers', icon: GitBranch },
+          { key: 'fiscal-periods', labelKey: 'module.fiscal-periods', icon: CalendarClock },
+          { key: 'opening-balances', labelKey: 'module.opening-balances', icon: FileSpreadsheet },
+          { key: 'financial-statement-designer', labelKey: 'module.financial-statement-designer', icon: FileBarChart },
+          { key: 'payment-methods', labelKey: 'module.payment-methods', icon: Receipt },
+        ],
+      },
+      {
+        labelKey: 'nav.subgroup.entries-vouchers',
+        icon: FileText,
+        items: [
+          { key: 'journal-entries', labelKey: 'module.journal-entries', icon: FileText },
+          { key: 'sales-payments', labelKey: 'module.sales-payments', icon: Wallet },
+          { key: 'purchase-payments', labelKey: 'module.purchase-payments', icon: Wallet },
+          { key: 'purchase-credit-notes', labelKey: 'module.purchase-credit-notes', icon: FileMinus },
+          { key: 'sales-credit-notes', labelKey: 'module.sales-credit-notes', icon: FilePlus },
+          { key: 'cash-count', labelKey: 'module.cash-count', icon: ClipboardCheck },
+          { key: 'financial-adjustments', labelKey: 'module.financial-adjustments', icon: RefreshCcw },
+          { key: 'accounting-posting', labelKey: 'module.accounting-posting', icon: FileCheck },
+          { key: 'accounting-unposting', labelKey: 'module.accounting-unposting', icon: RefreshCcw },
+        ],
+      },
+      {
+        labelKey: 'nav.subgroup.safes-banks',
+        icon: Landmark,
+        items: [
+          { key: 'safes', labelKey: 'module.safes', icon: PiggyBank },
+          { key: 'bank-accounts', labelKey: 'module.bank-accounts', icon: Landmark },
+          { key: 'bank-transfers', labelKey: 'module.bank-transfers', icon: ArrowLeftRight },
+          { key: 'finance-transfers', labelKey: 'module.finance-transfers', icon: ArrowLeftRight },
+          { key: 'bank-reconciliation', labelKey: 'module.bank-reconciliation', icon: FileCheck },
+          { key: 'credit-card-types', labelKey: 'module.credit-card-types', icon: Receipt },
+        ],
+      },
+      {
+        labelKey: 'nav.subgroup.ar',
+        icon: Users,
+        items: [
+          { key: 'customers', labelKey: 'module.customers', icon: Users },
+          { key: 'ar-aging', labelKey: 'module.ar-aging', icon: CalendarClock },
+          { key: 'customer-balances', labelKey: 'module.customer-balances', icon: Wallet },
+          { key: 'customer-adjustments', labelKey: 'module.customer-adjustments', icon: FileMinus },
+        ],
+      },
+      {
+        labelKey: 'nav.subgroup.ap',
+        icon: UsersRound,
+        items: [
+          { key: 'suppliers', labelKey: 'module.suppliers', icon: UsersRound },
+          { key: 'ap-aging', labelKey: 'module.ap-aging', icon: CalendarClock },
+          { key: 'supplier-balances', labelKey: 'module.supplier-balances', icon: Wallet },
+          { key: 'supplier-adjustments', labelKey: 'module.supplier-adjustments', icon: FileMinus },
+        ],
+      },
+      {
+        labelKey: 'nav.subgroup.expenses-revenues',
+        icon: TrendingUp,
+        items: [
+          { key: 'expenses', labelKey: 'module.expenses', icon: TrendingDown },
+          { key: 'revenues', labelKey: 'module.revenues', icon: TrendingUp },
+          { key: 'finance-requisitions', labelKey: 'module.finance-requisitions', icon: DollarSign },
+          { key: 'expense-adjustments', labelKey: 'module.expense-adjustments', icon: RefreshCcw },
+        ],
+      },
+      {
+        labelKey: 'nav.subgroup.fixed-assets',
+        icon: Building2,
+        items: [
+          { key: 'fixed-assets', labelKey: 'module.fixed-assets', icon: Building2 },
+          { key: 'asset-categories', labelKey: 'module.asset-categories', icon: FolderTree },
+          { key: 'asset-depreciation', labelKey: 'module.asset-depreciation', icon: TrendingDown },
+          { key: 'asset-transfers', labelKey: 'module.asset-transfers', icon: ArrowLeftRight },
+          { key: 'asset-disposals', labelKey: 'module.asset-disposals', icon: FileMinus },
+        ],
+      },
     ],
   },
 
@@ -204,19 +282,54 @@ export function SidebarNav() {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => {
     const initial = new Set<string>()
     for (const group of NAV) {
-      if (group.items.some((item) => item.key === activeModule)) {
-        initial.add(group.labelKey)
-      }
-    }
-    // Always expand single-item groups (Overview, POS, Reports)
-    for (const group of NAV) {
-      if (group.items.length === 1) initial.add(group.labelKey)
+      const hasItem = group.items?.some((item) => item.key === activeModule)
+      const hasSubItem = group.subGroups?.some((sg) => sg.items.some((i) => i.key === activeModule))
+      if (hasItem || hasSubItem) initial.add(group.labelKey)
+      if (group.items?.length === 1) initial.add(group.labelKey)
     }
     return initial
   })
 
+  const [expandedSubGroups, setExpandedSubGroups] = useState<Set<string>>(() => {
+    const initial = new Set<string>()
+    for (const group of NAV) {
+      if (group.subGroups) {
+        for (const sg of group.subGroups) {
+          if (sg.items.some((item) => item.key === activeModule)) {
+            initial.add(sg.labelKey)
+          }
+        }
+      }
+    }
+    return initial
+  })
+
+  useEffect(() => {
+    for (const group of NAV) {
+      if (group.subGroups) {
+        for (const sg of group.subGroups) {
+          if (sg.items.some((item) => item.key === activeModule)) {
+            setExpandedGroups((prev) => new Set(prev).add(group.labelKey))
+            setExpandedSubGroups((prev) => new Set(prev).add(sg.labelKey))
+          }
+        }
+      } else if (group.items?.some((i) => i.key === activeModule)) {
+        setExpandedGroups((prev) => new Set(prev).add(group.labelKey))
+      }
+    }
+  }, [activeModule])
+
   const toggleGroup = (labelKey: string) => {
     setExpandedGroups((prev) => {
+      const next = new Set(prev)
+      if (next.has(labelKey)) next.delete(labelKey)
+      else next.add(labelKey)
+      return next
+    })
+  }
+
+  const toggleSubGroup = (labelKey: string) => {
+    setExpandedSubGroups((prev) => {
       const next = new Set(prev)
       if (next.has(labelKey)) next.delete(labelKey)
       else next.add(labelKey)
@@ -245,10 +358,13 @@ export function SidebarNav() {
           {NAV.map((group) => {
             const GroupIcon = group.icon
             const isExpanded = expandedGroups.has(group.labelKey)
-            const hasActiveChild = group.items.some((item) => item.key === activeModule)
-            const isSingleItem = group.items.length === 1
+            const hasSubGroups = !!group.subGroups && group.subGroups.length > 0
+            const hasActiveChild = hasSubGroups
+              ? group.subGroups!.some((sg) => sg.items.some((i) => i.key === activeModule))
+              : group.items?.some((item) => item.key === activeModule)
+            const isSingleItem = !hasSubGroups && group.items?.length === 1
 
-            if (isSingleItem) {
+            if (isSingleItem && group.items) {
               const item = group.items[0]
               const Icon = item.icon
               const active = activeModule === item.key
@@ -293,27 +409,83 @@ export function SidebarNav() {
                 </button>
 
                 {isExpanded && (
-                  <div className="flex flex-col gap-0.5 mt-0.5 ms-4 ps-2 border-s border-sidebar-border/60">
-                    {group.items.map((item) => {
-                      const Icon = item.icon
-                      const active = activeModule === item.key
-                      return (
-                        <button
-                          key={item.key}
-                          onClick={() => handleItemClick(item.key)}
-                          className={cn(
-                            'group flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-sm transition-colors w-full',
-                            isRtl ? 'text-right' : 'text-left',
-                            active
-                              ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-sm font-medium'
-                              : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground font-normal'
-                          )}
-                        >
-                          <Icon className={cn('size-3.5 shrink-0', active ? 'text-sidebar-primary-foreground' : 'text-muted-foreground group-hover:text-sidebar-accent-foreground')} />
-                          <span className={cn('truncate flex-1', isRtl ? 'text-right' : 'text-left')}>{t(item.labelKey)}</span>
-                        </button>
-                      )
-                    })}
+                  <div className="flex flex-col gap-0.5 mt-0.5 ms-3 ps-2 border-s border-sidebar-border/60">
+                    {/* Render subGroups if present */}
+                    {hasSubGroups
+                      ? group.subGroups!.map((sg) => {
+                          const SgIcon = sg.icon || BookOpen
+                          const isSgExpanded = expandedSubGroups.has(sg.labelKey)
+                          const hasSgActiveChild = sg.items.some((i) => i.key === activeModule)
+
+                          return (
+                            <div key={sg.labelKey} className="my-0.5">
+                              <button
+                                onClick={() => toggleSubGroup(sg.labelKey)}
+                                className={cn(
+                                  'group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors w-full',
+                                  isRtl ? 'text-right' : 'text-left',
+                                  hasSgActiveChild
+                                    ? 'text-primary font-bold'
+                                    : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground'
+                                )}
+                              >
+                                <SgIcon className={cn('size-3.5 shrink-0', hasSgActiveChild ? 'text-primary' : 'text-muted-foreground')} />
+                                <span className={cn('truncate flex-1', isRtl ? 'text-right' : 'text-left')}>{t(sg.labelKey)}</span>
+                                <ChevronDown
+                                  className={cn(
+                                    'size-3.5 shrink-0 text-muted-foreground/70 transition-transform duration-200',
+                                    isSgExpanded ? 'rotate-0' : (isRtl ? 'rotate-90' : '-rotate-90')
+                                  )}
+                                />
+                              </button>
+
+                              {isSgExpanded && (
+                                <div className="flex flex-col gap-0.5 mt-0.5 ms-3 ps-2 border-s border-sidebar-border/40">
+                                  {sg.items.map((item) => {
+                                    const Icon = item.icon
+                                    const active = activeModule === item.key
+                                    return (
+                                      <button
+                                        key={item.key}
+                                        onClick={() => handleItemClick(item.key)}
+                                        className={cn(
+                                          'group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs transition-colors w-full',
+                                          isRtl ? 'text-right' : 'text-left',
+                                          active
+                                            ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-sm font-semibold'
+                                            : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground font-normal'
+                                        )}
+                                      >
+                                        <Icon className={cn('size-3 shrink-0', active ? 'text-sidebar-primary-foreground' : 'text-muted-foreground group-hover:text-sidebar-accent-foreground')} />
+                                        <span className={cn('truncate flex-1', isRtl ? 'text-right' : 'text-left')}>{t(item.labelKey)}</span>
+                                      </button>
+                                    )
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })
+                      : group.items?.map((item) => {
+                          const Icon = item.icon
+                          const active = activeModule === item.key
+                          return (
+                            <button
+                              key={item.key}
+                              onClick={() => handleItemClick(item.key)}
+                              className={cn(
+                                'group flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-sm transition-colors w-full',
+                                isRtl ? 'text-right' : 'text-left',
+                                active
+                                  ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-sm font-medium'
+                                  : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground font-normal'
+                              )}
+                            >
+                              <Icon className={cn('size-3.5 shrink-0', active ? 'text-sidebar-primary-foreground' : 'text-muted-foreground group-hover:text-sidebar-accent-foreground')} />
+                              <span className={cn('truncate flex-1', isRtl ? 'text-right' : 'text-left')}>{t(item.labelKey)}</span>
+                            </button>
+                          )
+                        })}
                   </div>
                 )}
               </div>

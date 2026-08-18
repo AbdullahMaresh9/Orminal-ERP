@@ -1,0 +1,28 @@
+[
+  {
+    "id": "cmsnpu7pq00095ptkkl9dtv3w",
+    "companyId": "cmsdpov34000cnwgnu2s5umam",
+    "branchId": "cmsdpov6f000enwgnyyt3sxy0",
+    "code": "PR-2026-000001",
+    "requesterId": null,
+    "department": "المالية",
+    "requiredDate": null,
+    "status": "approve",
+    "notes": "",
+    "createdAt": "2026-08-10T21:00:37.647Z",
+    "updatedAt": "2026-08-10T21:00:50.451Z"
+  },
+  {
+    "id": "cmsykqte90000lf04is269dp6",
+    "companyId": "cmsdpov34000cnwgnu2s5umam",
+    "branchId": "cmsdpov6f000enwgnyyt3sxy0",
+    "code": "PR-2026-000004",
+    "requesterId": null,
+    "department": "المالية",
+    "requiredDate": "2026-08-18T00:00:00.000Z",
+    "status": "approve",
+    "notes": "",
+    "createdAt": "2026-08-18T11:23:28.978Z",
+    "updatedAt": "2026-08-18T11:23:55.800Z"
+  }
+]

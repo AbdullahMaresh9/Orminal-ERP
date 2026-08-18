@@ -1,0 +1,14 @@
+[
+  {
+    "id": "cmsdpouu80008nwgnz0yxlezp",
+    "code": "VAT15",
+    "nameAr": "ضريبة القيمة المضافة 15%",
+    "nameEn": "VAT 15%",
+    "rate": 15,
+    "taxType": "vat",
+    "inputAccount": "1400",
+    "outputAccount": "2100",
+    "active": true,
+    "createdAt": "2026-08-03T20:58:45.920Z"
+  }
+]

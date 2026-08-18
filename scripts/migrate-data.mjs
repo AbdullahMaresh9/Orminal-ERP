@@ -2,10 +2,25 @@ import { PrismaClient as PrismaClientPostgres } from '@prisma/client';
 import sqlite3 from 'sqlite3';
 import { promisify } from 'util';
 
+import fs from 'fs';
+import path from 'path';
+
 const prismaPostgres = new PrismaClientPostgres();
 
-// Connect to SQLite database
-const db = new sqlite3.Database('./prisma/dev.db.backup.' + new Date().toISOString().split('T')[0]);
+function findSqliteDb() {
+  const candidates = [
+    './prisma/dev.db',
+    './prisma/prisma/dev.db',
+    './prisma/dev.db.backup.' + new Date().toISOString().split('T')[0],
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(path.resolve(c))) return c;
+  }
+  return candidates[0];
+}
+
+const sqlitePath = findSqliteDb();
+const db = new sqlite3.Database(sqlitePath);
 
 const dbAll = promisify(db.all.bind(db));
 const dbRun = promisify(db.run.bind(db));

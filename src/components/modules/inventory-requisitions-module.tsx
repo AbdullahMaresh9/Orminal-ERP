@@ -560,7 +560,7 @@ export function InventoryRequisitionsModule() {
                       <SelectValue placeholder={isRTL ? 'اختر المستودع' : 'Select warehouse'} />
                     </SelectTrigger>
                     <SelectContent dir={dir}>
-                      {storehouses.map(s => <SelectItem key={s.id} value={s.id}>{s.name} ({s.code})</SelectItem>)}
+                      {storehouses.map(s => <SelectItem key={s.id} value={s.id}>{s.name} </SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -604,7 +604,7 @@ export function InventoryRequisitionsModule() {
                                     <SelectValue placeholder={isRTL ? 'اختر منتج' : 'Select product'} />
                                   </SelectTrigger>
                                   <SelectContent dir={dir}>
-                                    {products.map(p => <SelectItem key={p.id} value={p.id}>{p.name} ({p.sku})</SelectItem>)}
+                                    {products.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                                   </SelectContent>
                                 </Select>
                               </TableCell>

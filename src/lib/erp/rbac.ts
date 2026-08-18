@@ -65,7 +65,19 @@ export async function checkCapability(
   action: Action,
   capability: Cap
 ): Promise<{ allowed: boolean; source: 'db' | 'default_matrix' }> {
-  // Does the RBAC catalog know this action at all?
+  const roleCodeUpper = (ctx.roleCode ?? '').toUpperCase()
+
+  // 1. Superuser roles ALWAYS have full capability
+  if (['ADMIN', 'SUPERADMIN', 'SYSTEM', 'OWNER'].includes(roleCodeUpper)) {
+    return { allowed: true, source: 'default_matrix' }
+  }
+
+  // 2. If default matrix allows this role, grant access
+  if (policyAllows(roleCodeUpper, action, capability)) {
+    return { allowed: true, source: 'default_matrix' }
+  }
+
+  // 3. Check DB RBAC catalog
   const permission = await db.permission.findFirst({
     where: { moduleCode: 'FIN', actionCode: action, active: true },
     select: { id: true },
@@ -93,8 +105,20 @@ export async function checkCapability(
     },
   })
 
+  if (!grants.length) {
+    return { allowed: policyAllows(ctx.roleCode, action, capability), source: 'default_matrix' }
+  }
+
   // Union of the user's role grants (most permissive wins across roles).
-  const allowed = grants.some((g) => Boolean((g as Record<string, boolean>)[capability as string]))
+  let allowed = grants.some((g) => Boolean((g as Record<string, boolean>)[capability as string]))
+
+  // Fallback for canImport: Users with canCreate or canUpdate permission can import
+  if (!allowed && capability === 'canImport') {
+    if (grants.some((g) => g.canCreate || g.canUpdate)) {
+      allowed = true
+    }
+  }
+
   return { allowed, source: 'db' }
 }
 

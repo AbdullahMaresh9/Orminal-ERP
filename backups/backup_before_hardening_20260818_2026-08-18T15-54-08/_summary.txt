@@ -1,0 +1,117 @@
+Orminal ERP — Database Backup
+================================
+Date      : 2026-08-18T15:54:08.593Z
+Label     : before_hardening_20260818
+Directory : D:\IT-Level3-part2\projects\Orminal-ERP\Orminal-ERP\backups\backup_before_hardening_20260818_2026-08-18T15-54-08
+Total rows: 395
+
+Table                              Rows
+─────────────────────────────────────────
+currency                                 3
+unitOfMeasure                            3
+country                                  2
+taxCode                                  1
+paymentTerm                              0
+reasonCode                               0
+setting                                108
+settingAuditLog                          3
+company                                  1
+branch                                   1
+user                                     7
+role                                     2
+permission                               0
+rolePermission                           0
+userRole                                 7
+auditLog                                 0
+outboxEvent                              0
+notification                             0
+approvalStep                             0
+numberSequence                          15
+exchangeRate                             0
+bankAccount                              0
+safe                                     0
+fiscalYear                               1
+fiscalPeriod                            12
+partner                                  4
+partnerContact                           0
+partnerAddress                           0
+partnerBankAccount                       0
+category                                 2
+product                                  2
+warehouse                                1
+stockLocation                            0
+stockLot                                 0
+stockQuant                               2
+stockReservation                         0
+stockValuationLayer                      0
+bom                                      0
+bomComponent                             0
+employee                                 2
+leaveRequest                             0
+payrollRun                               0
+journalEntry                            17
+journalLine                             41
+salesQuotation                           6
+salesQuotationLine                       6
+salesOrder                              14
+salesOrderLine                          14
+salesInvoice                            12
+salesInvoiceLine                        12
+salesPayment                             3
+salesReturn                              3
+salesReturnLine                          3
+salesCreditNote                          5
+delivery                                 1
+deliveryLine                             1
+purchaseRequest                          2
+purchaseRequestLine                      2
+purchaseOrder                            6
+purchaseOrderLine                        6
+purchaseInvoice                          6
+purchaseInvoiceLine                      6
+purchasePayment                          3
+purchaseReturn                          10
+purchaseReturnLine                      10
+purchaseCreditNote                       7
+goodsReceipt                             7
+goodsReceiptLine                         7
+stockMove                                5
+stockTransfer                            0
+stockTransferLine                        0
+inventoryAdjustment                      0
+inventoryAdjustmentLine                  0
+productionOrder                          0
+expense                                  0
+revenue                                  0
+activity                                 1
+
+ERRORS (13):
+  • Read error [account]: 
+Invalid `prisma.account.findMany()` invocation:
+
+
+The column `Account.allowManualEntry` does not exist in the current database.
+  • Read error [accountRoleMapping]: 
+Invalid `prisma.accountRoleMapping.findMany()` invocation:
+
+
+The table `public.AccountRoleMapping` does not exist in the current database.
+  • Model not found: employeeContract
+  • Model not found: payrollEntry
+  • Model not found: bankReconciliation
+  • Model not found: bankReconciliationLine
+  • Model not found: cashFlow
+  • Read error [salesCreditNoteLine]: 
+Invalid `prisma.salesCreditNoteLine.findMany()` invocation:
+
+
+The table `public.SalesCreditNoteLine` does not exist in the current database.
+  • Read error [purchaseCreditNoteLine]: 
+Invalid `prisma.purchaseCreditNoteLine.findMany()` invocation:
+
+
+The table `public.PurchaseCreditNoteLine` does not exist in the current database.
+  • Model not found: productionMaterial
+  • Model not found: productionLabor
+  • Model not found: asset
+  • Model not found: activityComment

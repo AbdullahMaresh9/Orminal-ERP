@@ -1,0 +1,24 @@
+[
+  {
+    "id": "cmss2csef0007la04s2vlpmf5",
+    "productId": "cmsnpselx00075ptkwrzmcldz",
+    "warehouseId": "cmsdqv7gp0003nwku7us9afpp",
+    "locationId": null,
+    "lotId": null,
+    "quantity": 3,
+    "reservedQty": 0,
+    "createdAt": "2026-08-13T22:02:04.359Z",
+    "updatedAt": "2026-08-13T22:02:16.454Z"
+  },
+  {
+    "id": "cmss2d5ox000rla04clctz6qx",
+    "productId": "cmsrlotqb00015pqw9qryjkx9",
+    "warehouseId": "cmsdqv7gp0003nwku7us9afpp",
+    "locationId": null,
+    "lotId": null,
+    "quantity": 2,
+    "reservedQty": 0,
+    "createdAt": "2026-08-13T22:02:21.585Z",
+    "updatedAt": "2026-08-13T22:02:26.985Z"
+  }
+]

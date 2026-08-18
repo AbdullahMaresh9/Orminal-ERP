@@ -1,0 +1,23 @@
+[
+  {
+    "id": "cmsdpov34000cnwgnu2s5umam",
+    "code": "ORG001",
+    "nameAr": "أورمنال للتجارة",
+    "nameEn": "Orminal Trading",
+    "legalName": null,
+    "taxNumber": null,
+    "crNumber": null,
+    "vatNumber": null,
+    "address": null,
+    "phone": null,
+    "email": null,
+    "website": null,
+    "currencyId": "cmsdpoua50000nwgnl7710tte",
+    "timezone": "Asia/Riyadh",
+    "locale": "ar",
+    "fiscalYearStartMonth": 1,
+    "active": true,
+    "createdAt": "2026-08-03T20:58:46.241Z",
+    "updatedAt": "2026-08-03T20:58:46.241Z"
+  }
+]

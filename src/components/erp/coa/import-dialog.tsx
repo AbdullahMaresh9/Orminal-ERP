@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogBody,
 } from '@/components/ui/dialog'
-import { Upload, AlertCircle, CheckCircle2, FileText } from 'lucide-react'
+import { Upload, AlertCircle, CheckCircle2, FileText, FileSpreadsheet, Trash2 } from 'lucide-react'
 
 interface ImportDialogProps {
   open: boolean
@@ -35,17 +35,25 @@ export function ImportDialog({ open, onOpenChange, onImported }: ImportDialogPro
   const { t, isRTL, dir } = useT()
   const L = (ar: string, en: string) => (isRTL ? ar : en)
 
+  const [fileName, setFileName] = useState('')
+  const [fileBase64, setFileBase64] = useState('')
   const [csv, setCsv] = useState('')
   const [updateExisting, setUpdateExisting] = useState(false)
   const [dryResult, setDryResult] = useState<DryRunResult | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
+  const hasData = Boolean(fileBase64 || csv.trim())
+
   const dryMutation = useMutation({
     mutationFn: async () => {
+      const payload: Record<string, unknown> = { dryRun: true, updateExisting }
+      if (fileBase64) payload.fileBase64 = fileBase64
+      else if (csv.trim()) payload.csv = csv
+
       const r = await fetch('/api/erp/accounts/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ csv, dryRun: true, updateExisting }),
+        body: JSON.stringify(payload),
       })
       const data = await r.json()
       if (!r.ok && r.status !== 422) throw new Error(data?.error?.message ?? L('فشل التحقق', 'Validation failed'))
@@ -57,10 +65,14 @@ export function ImportDialog({ open, onOpenChange, onImported }: ImportDialogPro
 
   const importMutation = useMutation({
     mutationFn: async () => {
+      const payload: Record<string, unknown> = { dryRun: false, updateExisting }
+      if (fileBase64) payload.fileBase64 = fileBase64
+      else if (csv.trim()) payload.csv = csv
+
       const r = await fetch('/api/erp/accounts/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ csv, dryRun: false, updateExisting }),
+        body: JSON.stringify(payload),
       })
       const data = await r.json()
       if (!r.ok) throw new Error(data?.error?.message ?? L('فشل الاستيراد', 'Import failed'))
@@ -70,16 +82,39 @@ export function ImportDialog({ open, onOpenChange, onImported }: ImportDialogPro
       toast.success(t('coa.success.imported'))
       onImported()
       onOpenChange(false)
-      setCsv('')
-      setDryResult(null)
+      clearFile()
     },
     onError: (e: Error) => toast.error(e.message),
   })
 
+  function clearFile() {
+    setFileName('')
+    setFileBase64('')
+    setCsv('')
+    setDryResult(null)
+    if (fileRef.current) fileRef.current.value = ''
+  }
+
   function handleFile(file: File) {
-    const reader = new FileReader()
-    reader.onload = (e) => setCsv(String(e.target?.result ?? ''))
-    reader.readAsText(file, 'utf-8')
+    setFileName(file.name)
+    setDryResult(null)
+
+    if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const result = e.target?.result as string
+        setFileBase64(result)
+        setCsv('')
+      }
+      reader.readAsDataURL(file)
+    } else {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setCsv(String(e.target?.result ?? ''))
+        setFileBase64('')
+      }
+      reader.readAsText(file, 'utf-8')
+    }
   }
 
   function handleDrop(e: React.DragEvent) {
@@ -94,14 +129,16 @@ export function ImportDialog({ open, onOpenChange, onImported }: ImportDialogPro
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl p-0 overflow-hidden" dir={dir}>
-        <DialogHeader className="px-6 py-5 shrink-0">
+        <DialogHeader>
           <div className="flex items-start gap-4">
             <div className="size-12 rounded-xl bg-white dark:bg-emerald-950/60 border border-emerald-100 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-300 flex items-center justify-center shadow-sm shrink-0">
               <Upload className="size-6" />
             </div>
             <div>
               <DialogTitle>{t('coa.import.title')}</DialogTitle>
-              <DialogDescription className="mt-0.5">{t('coa.import.desc')}</DialogDescription>
+              <DialogDescription className="mt-0.5">
+                {L('استيراد شجرة الحسابات من ملف Excel (.xlsx) أو CSV', 'Import chart of accounts from Excel (.xlsx) or CSV file')}
+              </DialogDescription>
             </div>
           </div>
         </DialogHeader>
@@ -110,8 +147,8 @@ export function ImportDialog({ open, onOpenChange, onImported }: ImportDialogPro
           {/* Drop zone */}
           <div
             className={cn(
-              'rounded-xl border-2 border-dashed border-border/60 hover:border-primary/40 transition-colors p-6 text-center cursor-pointer',
-              csv && 'border-emerald-300 dark:border-emerald-800 bg-emerald-50/40 dark:bg-emerald-950/20',
+              'rounded-xl border-2 border-dashed border-border/60 hover:border-primary/40 transition-colors p-6 text-center cursor-pointer relative',
+              hasData && 'border-emerald-300 dark:border-emerald-800 bg-emerald-50/40 dark:bg-emerald-950/20',
             )}
             onDrop={handleDrop}
             onDragOver={(e) => e.preventDefault()}
@@ -120,30 +157,61 @@ export function ImportDialog({ open, onOpenChange, onImported }: ImportDialogPro
             <input
               ref={fileRef}
               type="file"
-              accept=".csv,text/csv"
+              accept=".xlsx,.xls,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
               className="sr-only"
               onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f) }}
             />
-            <FileText className={cn('size-8 mx-auto mb-2', csv ? 'text-emerald-500' : 'text-muted-foreground/50')} />
-            <p className="text-sm font-medium">{csv ? L('تم تحميل الملف ✓', 'File loaded ✓') : t('coa.import.dropzone')}</p>
-            <p className="text-xs text-muted-foreground mt-1">{L('أو الصق بيانات CSV أدناه', 'or paste CSV data below')}</p>
+
+            {fileName ? (
+              <div className="flex items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-lg border shadow-sm" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center gap-3">
+                  {fileName.endsWith('.xlsx') ? (
+                    <FileSpreadsheet className="size-8 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  ) : (
+                    <FileText className="size-8 text-blue-600 dark:text-blue-400 shrink-0" />
+                  )}
+                  <div className="text-right">
+                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{fileName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {fileName.endsWith('.xlsx') ? L('ملف اكسل جاهز للفحص والرفع', 'Excel spreadsheet ready') : L('ملف CSV جاهز', 'CSV file ready')}
+                    </p>
+                  </div>
+                </div>
+                <Button variant="ghost" size="icon" className="text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50" onClick={clearFile}>
+                  <Trash2 className="size-4" />
+                </Button>
+              </div>
+            ) : (
+              <>
+                <FileSpreadsheet className="size-8 mx-auto mb-2 text-emerald-600 dark:text-emerald-400" />
+                <p className="text-sm font-medium">{t('coa.import.dropzone')}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {L('يدعم ملفات Excel (.xlsx) و CSV بحجم يصل إلى 5000 صف', 'Supports Excel (.xlsx) and CSV files up to 5,000 rows')}
+                </p>
+              </>
+            )}
           </div>
 
-          {/* CSV textarea */}
-          <textarea
-            value={csv}
-            onChange={(e) => { setCsv(e.target.value); setDryResult(null) }}
-            placeholder={t('coa.import.csvPlaceholder')}
-            rows={6}
-            dir="ltr"
-            className="w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-xs font-mono p-3 resize-none focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-          />
+          {/* CSV Textarea option */}
+          {!fileBase64 && (
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">{L('أو لزق نص CSV مباشرة:', 'Or paste CSV text directly:')}</Label>
+              <textarea
+                value={csv}
+                onChange={(e) => { setCsv(e.target.value); setDryResult(null) }}
+                placeholder={t('coa.import.csvPlaceholder')}
+                rows={4}
+                dir="ltr"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-xs font-mono p-3 resize-none focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              />
+            </div>
+          )}
 
           {/* Options */}
-          <label className="flex items-center gap-2 cursor-pointer">
+          <label className="flex items-center gap-2 cursor-pointer pt-1">
             <Switch
               checked={updateExisting}
-              onCheckedChange={setUpdateExisting}
+              onCheckedChange={(checked) => { setUpdateExisting(checked); setDryResult(null) }}
               className="data-[state=checked]:bg-blue-600"
             />
             <Label className="text-xs font-semibold cursor-pointer">{t('coa.import.updateExisting')}</Label>
@@ -163,7 +231,7 @@ export function ImportDialog({ open, onOpenChange, onImported }: ImportDialogPro
                   : <AlertCircle className="size-4 text-rose-600" />
                 }
                 <span className="text-sm font-semibold">
-                  {dryResult.valid ? L('البيانات صحيحة', 'Data is valid') : L('توجد أخطاء', 'Validation errors found')}
+                  {dryResult.valid ? L('جميع البيانات سليمة ومطابقة للمعايير', 'All data is valid and compliant') : L('توجد أخطاء في البيانات', 'Validation errors found')}
                 </span>
               </div>
               <div className="flex gap-4 text-xs">
@@ -200,16 +268,16 @@ export function ImportDialog({ open, onOpenChange, onImported }: ImportDialogPro
           <Button
             variant="outline"
             onClick={() => dryMutation.mutate()}
-            disabled={!csv.trim() || dryMutation.isPending}
+            disabled={!hasData || dryMutation.isPending}
           >
-            {dryMutation.isPending ? L('جاري التحقق...', 'Checking...') : t('coa.import.dryRun')}
+            {dryMutation.isPending ? L('جاري فحص التجربة...', 'Validating...') : t('coa.import.dryRun')}
           </Button>
           <Button
             onClick={() => importMutation.mutate()}
             disabled={!canImport || importMutation.isPending}
             className="bg-blue-600 hover:bg-blue-700 text-white"
           >
-            {importMutation.isPending ? L('جاري الاستيراد...', 'Importing...') : t('coa.import.confirmImport')}
+            {importMutation.isPending ? L('جاري الاستيراد الفعلي...', 'Importing...') : t('coa.import.confirmImport')}
           </Button>
         </DialogFooter>
       </DialogContent>

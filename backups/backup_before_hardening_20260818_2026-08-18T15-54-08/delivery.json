@@ -1,0 +1,18 @@
+[
+  {
+    "id": "cmss2fyml0007jv04s60v98do",
+    "companyId": "cmsdpov34000cnwgnu2s5umam",
+    "branchId": null,
+    "code": "DN-2026-000001",
+    "salesOrderId": null,
+    "partnerId": null,
+    "warehouseId": "cmsdqv7gp0003nwku7us9afpp",
+    "deliveryDate": "2026-08-13T22:04:32.398Z",
+    "status": "fulfilled",
+    "journalEntryId": null,
+    "notes": null,
+    "createdBy": null,
+    "createdAt": "2026-08-13T22:04:32.398Z",
+    "updatedAt": "2026-08-13T22:05:32.852Z"
+  }
+]

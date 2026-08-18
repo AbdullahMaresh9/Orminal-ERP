@@ -426,21 +426,10 @@ export function JournalEntriesModule() {
         </div>
       </Card>
 
-      <div className="flex items-center justify-between mt-4 text-sm">
-        <p className="text-muted-foreground">
-          عرض {entries.length === 0 ? 0 : (page - 1) * pageSize + 1}–{(page - 1) * pageSize + entries.length} من {total}
-        </p>
-        <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}>السابق</Button>
-          <span className="text-xs text-muted-foreground">صفحة {page} من {totalPages}</span>
-          <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>التالي</Button>
-        </div>
-      </div>
-
       {/* Add Dialog with line editor */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="w-[calc(100vw-1.5rem)] sm:w-[95vw] max-w-4xl max-h-[92vh] p-0 flex flex-col overflow-hidden bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800" dir={dir}>
-          <DialogHeader className="bg-gradient-to-r from-blue-50 to-[#E6F0FF] dark:bg-none dark:bg-blue-700/80 border-b border-blue-100 dark:border-blue-600/40 p-4 sm:p-6 shrink-0 relative">
+        <DialogContent dir={dir}>
+          <DialogHeader>
             <div className="flex items-start gap-3 sm:gap-4 text-start">
               <div className="size-10 sm:size-12 rounded-xl bg-white dark:bg-blue-950/60 border border-blue-100 dark:border-blue-500/20 text-blue-600 dark:text-blue-300 flex items-center justify-center shadow-sm shadow-blue-100/40 dark:shadow-none shrink-0">
                 <BookOpen className="size-5 sm:size-6" />

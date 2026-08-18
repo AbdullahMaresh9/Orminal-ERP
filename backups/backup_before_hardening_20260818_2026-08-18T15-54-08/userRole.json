@@ -1,0 +1,79 @@
+[
+  {
+    "id": "cmsrzj5uc0003ld04een29e1a",
+    "userId": "cmsrzj5uc0001ld041kcnj6nu",
+    "roleId": "cmsdpouxi0009nwgnztvmfz6l",
+    "companyId": null,
+    "branchId": null,
+    "validFrom": "2026-08-13T20:43:02.868Z",
+    "validTo": null,
+    "active": true,
+    "createdAt": "2026-08-13T20:43:02.868Z"
+  },
+  {
+    "id": "cmss2ok5x0009jl04o17clyaa",
+    "userId": "cmsdpovb2000gnwgnslzncnd1",
+    "roleId": "cmsdpouxi0009nwgnztvmfz6l",
+    "companyId": null,
+    "branchId": null,
+    "validFrom": "2026-08-13T22:11:13.557Z",
+    "validTo": null,
+    "active": true,
+    "createdAt": "2026-08-13T22:11:13.557Z"
+  },
+  {
+    "id": "cmssg1xiw0003jl0411g2i43p",
+    "userId": "cmssg1xiw0001jl047u2mogkp",
+    "roleId": "cmsdpouxi0009nwgnztvmfz6l",
+    "companyId": null,
+    "branchId": null,
+    "validFrom": "2026-08-14T04:25:32.409Z",
+    "validTo": null,
+    "active": true,
+    "createdAt": "2026-08-14T04:25:32.409Z"
+  },
+  {
+    "id": "cmst3zab30003l704k0mhormz",
+    "userId": "cmst3zab30001l70449h0nytq",
+    "roleId": "cmsdpouxi0009nwgnztvmfz6l",
+    "companyId": null,
+    "branchId": null,
+    "validFrom": "2026-08-14T15:35:19.791Z",
+    "validTo": null,
+    "active": true,
+    "createdAt": "2026-08-14T15:35:19.791Z"
+  },
+  {
+    "id": "cmsutrilp0003js048w9pp9h6",
+    "userId": "cmsutrilo0001js04yhdvduzs",
+    "roleId": "cmsdpouxi0009nwgnztvmfz6l",
+    "companyId": null,
+    "branchId": null,
+    "validFrom": "2026-08-15T20:24:53.485Z",
+    "validTo": null,
+    "active": true,
+    "createdAt": "2026-08-15T20:24:53.485Z"
+  },
+  {
+    "id": "cmsyjych80003q9eoy42twh3m",
+    "userId": "cmsyjych80001q9eoa95v0xht",
+    "roleId": "cmsdpouxi0009nwgnztvmfz6l",
+    "companyId": null,
+    "branchId": null,
+    "validFrom": "2026-08-18T11:01:20.684Z",
+    "validTo": null,
+    "active": true,
+    "createdAt": "2026-08-18T11:01:20.684Z"
+  },
+  {
+    "id": "cmsyk7zur0007q9eojmqqtimm",
+    "userId": "cmsyk7zur0005q9eo07t08z85",
+    "roleId": "cmsdpouxi0009nwgnztvmfz6l",
+    "companyId": null,
+    "branchId": null,
+    "validFrom": "2026-08-18T11:08:50.883Z",
+    "validTo": null,
+    "active": true,
+    "createdAt": "2026-08-18T11:08:50.883Z"
+  }
+]

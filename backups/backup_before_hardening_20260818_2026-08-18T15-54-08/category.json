@@ -1,0 +1,24 @@
+[
+  {
+    "id": "cmsdqrs0y0001nwkuhrwv7v0x",
+    "code": "CAT-001",
+    "nameAr": "اجهزة الكترونية",
+    "nameEn": "electronic ",
+    "parentId": null,
+    "type": "product",
+    "active": true,
+    "createdAt": "2026-08-03T21:29:01.843Z",
+    "updatedAt": "2026-08-03T21:29:01.843Z"
+  },
+  {
+    "id": "cmsnpqpay00055ptkmc7x1nfs",
+    "code": "CAT-002",
+    "nameAr": "حبوب",
+    "nameEn": "FLOOD",
+    "parentId": null,
+    "type": "product",
+    "active": true,
+    "createdAt": "2026-08-10T20:57:53.818Z",
+    "updatedAt": "2026-08-10T20:57:53.818Z"
+  }
+]

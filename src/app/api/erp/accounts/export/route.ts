@@ -1,6 +1,8 @@
-// GET /api/erp/accounts/export?format=csv|json — export the chart of accounts.
+// GET /api/erp/accounts/export?format=xlsx|csv|json — export the chart of accounts.
+// XLSX generated via ExcelJS with RTL support & styling.
 // CSV is UTF-8 with BOM so Excel renders Arabic correctly.
 
+import ExcelJS from 'exceljs'
 import { db } from '@/lib/db'
 import { ok, serverError } from '@/lib/erp/api-response'
 import { COA_ACTIONS, isAuthFailure, requireCapability } from '@/lib/erp/rbac'
@@ -26,7 +28,7 @@ export async function GET(req: Request) {
 
   try {
     const url = new URL(req.url)
-    const format = (url.searchParams.get('format') ?? 'csv').toLowerCase()
+    const format = (url.searchParams.get('format') ?? 'xlsx').toLowerCase()
 
     const accounts = await db.account.findMany({
       orderBy: { code: 'asc' },
@@ -78,6 +80,85 @@ export async function GET(req: Request) {
     })
 
     if (format === 'json') return ok({ accounts: rows, count: rows.length })
+
+    if (format === 'xlsx') {
+      const workbook = new ExcelJS.Workbook()
+      const sheet = workbook.addWorksheet('دليل الحسابات', {
+        views: [{ showGridLines: true, rightToLeft: true } as any]
+      })
+
+      sheet.columns = [
+        { header: 'رقم الحساب', key: 'code', width: 16 },
+        { header: 'اسم الحساب بالعربي', key: 'nameAr', width: 32 },
+        { header: 'اسم الحساب بالانجليزي', key: 'nameEn', width: 24 },
+        { header: 'كود الحساب الأعلى', key: 'parentCode', width: 18 },
+        { header: 'نوع الحساب', key: 'kind', width: 16 },
+        { header: 'فئة الحساب', key: 'accountClass', width: 20 },
+        { header: 'طبيعة الحساب', key: 'normalBalance', width: 14 },
+        { header: 'نوع التقرير', key: 'fsSection', width: 18 },
+        { header: 'تبويب الحساب', key: 'reportCategory', width: 20 },
+        { header: 'العملة', key: 'currency', width: 12 },
+        { header: 'الحالة', key: 'active', width: 12 },
+        { header: 'مجموع المدين', key: 'debit', width: 16 },
+        { header: 'مجموع الدائن', key: 'credit', width: 16 },
+        { header: 'الرصيد القائم', key: 'balance', width: 16 },
+      ]
+
+      const headerRow = sheet.getRow(1)
+      headerRow.font = { bold: true, color: { argb: 'FFFFFF' }, size: 11 }
+      headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '1E3A8A' } }
+      headerRow.alignment = { horizontal: 'center', vertical: 'middle' }
+      headerRow.height = 28
+
+      const CLASS_LABELS: Record<string, string> = {
+        asset: 'أصول (Asset)',
+        liability: 'التزامات (Liability)',
+        equity: 'حقوق ملكية (Equity)',
+        revenue: 'إيرادات (Revenue)',
+        cogs: 'تكلفة المبيعات (COGS)',
+        operating_expense: 'مصاريف تشغيلية',
+        other_income: 'إيرادات أخرى',
+        other_expense: 'مصاريف أخرى',
+      }
+
+      const FS_LABELS: Record<string, string> = {
+        balance_sheet: 'الميزانية العمومية',
+        income_statement: 'قائمة الدخل',
+      }
+
+      rows.forEach((r) => {
+        const row = sheet.addRow({
+          code: r.code,
+          nameAr: r.nameAr,
+          nameEn: r.nameEn,
+          parentCode: r.parentCode,
+          kind: r.kind === 'group' ? 'رئيسي (Group)' : 'فرعي (Posting)',
+          accountClass: CLASS_LABELS[r.accountClass] ?? r.accountClass,
+          normalBalance: r.normalBalance === 'debit' ? 'مدين' : 'دائن',
+          fsSection: FS_LABELS[r.fsSection] ?? r.fsSection,
+          reportCategory: r.reportCategory,
+          currency: r.currency || 'YER',
+          active: r.active ? 'نشط' : 'موقوف',
+          debit: r.debit,
+          credit: r.credit,
+          balance: r.balance,
+        })
+
+        if (r.kind === 'group') {
+          row.font = { bold: true }
+          row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F1F5F9' } }
+        }
+      })
+
+      const buffer = await workbook.xlsx.writeBuffer()
+      return new Response(buffer, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'Content-Disposition': `attachment; filename="chart-of-accounts-${new Date().toISOString().slice(0, 10)}.xlsx"`,
+        },
+      })
+    }
 
     const csv = [HEADERS.join(','), ...rows.map((r) => HEADERS.map((h) => csvCell((r as Record<string, unknown>)[h])).join(','))].join('\n')
     return new Response(`\uFEFF${csv}`, {

@@ -89,6 +89,7 @@ const InventoryRequisitionsModule = lazy(() => import('@/components/modules/inve
 // =============================================================
 // FINANCE
 // ============================================================
+const FixedAssetsModule = lazy(() => import('@/components/modules/fixed-assets-module'))
 const ChartOfAccountsModule = lazy(() => import('@/components/modules/chart-of-accounts-module'))
 const JournalEntriesModule = lazy(() => import('@/components/modules/journal-entries-module'))
 const FiscalPeriodsModule = lazy(() => import('@/components/modules/fiscal-periods-module'))
@@ -146,8 +147,6 @@ export const moduleRegistry: Record<ModuleKey, React.ComponentType> = {
   'sales-quotations': SalesQuotationsModule,
   'sales-orders': SalesOrdersModule,
   'sales-invoices': SalesInvoicesModule,
-  'sales-credit-notes': SalesCreditNotesModule,
-  'sales-payments': SalesPaymentsModule,
   'sales-returns': SalesReturnsModule,
   pos: PosModule,
 
@@ -157,8 +156,6 @@ export const moduleRegistry: Record<ModuleKey, React.ComponentType> = {
   'purchase-orders': PurchaseOrdersModule,
   'goods-receipts': GoodsReceiptsModule,
   'purchase-invoices': PurchaseInvoicesModule,
-  'purchase-credit-notes': PurchaseCreditNotesModule,
-  'purchase-payments': PurchasePaymentsModule,
   'purchase-returns': PurchaseReturnsModule,
 
   // Inventory
@@ -173,19 +170,51 @@ export const moduleRegistry: Record<ModuleKey, React.ComponentType> = {
   'inventory-outgoing': InventoryOutgoingModule,
   'inventory-requisitions': InventoryRequisitionsModule,
 
-  // Finance
+  // Finance & Accounts
   'chart-of-accounts': ChartOfAccountsModule,
-  'journal-entries': JournalEntriesModule,
-  'fiscal-periods': FiscalPeriodsModule,
-  'cost-centers': CostCentersModule,
   'analytic-accounts': AnalyticAccountsModule,
+  'cost-centers': CostCentersModule,
+  'fiscal-periods': FiscalPeriodsModule,
   'closed-periods': ClosedPeriodsModule,
-  'bank-accounts': BankAccountsModule,
+  'opening-balances': JournalEntriesModule,
+  'financial-statement-designer': ReportsModule,
+  'payment-methods': SettingsModule,
+
+  'journal-entries': JournalEntriesModule,
+  'sales-payments': SalesPaymentsModule,
+  'purchase-payments': PurchasePaymentsModule,
+  'purchase-credit-notes': PurchaseCreditNotesModule,
+  'sales-credit-notes': SalesCreditNotesModule,
+  'cash-count': SafesModule,
+  'financial-adjustments': FinanceRequisitionsModule,
+  'accounting-posting': JournalEntriesModule,
+  'accounting-unposting': JournalEntriesModule,
+
   safes: SafesModule,
+  'bank-accounts': BankAccountsModule,
+  'bank-transfers': FinanceTransfersModule,
+  'finance-transfers': FinanceTransfersModule,
+  'bank-reconciliation': BankAccountsModule,
+  'credit-card-types': BankAccountsModule,
+
+  'ar-aging': ReportsModule,
+  'customer-balances': CustomersModule,
+  'customer-adjustments': SalesCreditNotesModule,
+
+  'ap-aging': ReportsModule,
+  'supplier-balances': SuppliersModule,
+  'supplier-adjustments': PurchaseCreditNotesModule,
+
   expenses: ExpensesModule,
   revenues: RevenuesModule,
-  'finance-transfers': FinanceTransfersModule,
   'finance-requisitions': FinanceRequisitionsModule,
+  'expense-adjustments': ExpensesModule,
+
+  'fixed-assets': FixedAssetsModule,
+  'asset-categories': FixedAssetsModule,
+  'asset-depreciation': FixedAssetsModule,
+  'asset-transfers': FixedAssetsModule,
+  'asset-disposals': FixedAssetsModule,
 
   // Manufacturing
   boms: BomsModule,

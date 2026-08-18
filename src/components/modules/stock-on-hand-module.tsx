@@ -614,7 +614,7 @@ export function StockOnHandModule() {
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="size-8"><MoreHorizontal className="size-4" /></Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align='end' side="bottom" alignOffset={-10} collisionPadding={4} className="w-40">
+                        <DropdownMenuContent align='end' side="bottom" alignOffset={-10} collisionPadding={4} className="w-35">
                           <DropdownMenuItem onClick={() => setKardexItem(r)} className="gap-2 cursor-pointer">
                             <History className="size-4 text-blue-600" /> {L('حركات الصنف', 'Item Movements')}
                           </DropdownMenuItem>

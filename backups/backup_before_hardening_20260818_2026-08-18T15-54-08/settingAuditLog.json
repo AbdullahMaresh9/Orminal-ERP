@@ -1,0 +1,35 @@
+[
+  {
+    "id": "cmss2zqry0001i904w617higc",
+    "settingKey": "company.name",
+    "oldValue": "مؤسسة أورمنال التجارية",
+    "newValue": "شركة أورمنال تك",
+    "userId": "cmslrzmuv0001jy0447upeglo",
+    "category": "company",
+    "reason": "User update from Settings UI",
+    "ipAddress": null,
+    "createdAt": "2026-08-13T22:19:55.343Z"
+  },
+  {
+    "id": "cmss2zqso0003i904xfxuy4tl",
+    "settingKey": "company.legalName",
+    "oldValue": "",
+    "newValue": "Orminal tech company",
+    "userId": "cmslrzmuv0001jy0447upeglo",
+    "category": "company",
+    "reason": "User update from Settings UI",
+    "ipAddress": null,
+    "createdAt": "2026-08-13T22:19:55.368Z"
+  },
+  {
+    "id": "cmss2zqsy0005i904mla213p0",
+    "settingKey": "company.website",
+    "oldValue": "",
+    "newValue": "orminal-erp.vercel.app",
+    "userId": "cmslrzmuv0001jy0447upeglo",
+    "category": "company",
+    "reason": "User update from Settings UI",
+    "ipAddress": null,
+    "createdAt": "2026-08-13T22:19:55.378Z"
+  }
+]

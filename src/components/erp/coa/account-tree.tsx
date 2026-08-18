@@ -45,6 +45,12 @@ interface TreeRowProps {
 }
 
 const INDENT_PX = 20
+const VISIBLE_ROWS = 6
+const ROW_HEIGHT = 40
+const HEADER_HEIGHT = 44
+
+const stickyHead =
+  'sticky top-0 z-20 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold whitespace-nowrap shadow-[inset_0_-1px_0_0_hsl(var(--border))] text-xs select-none py-2.5'
 
 function TreeRow({
   node, depth, isRTL, expanded, onToggle, onSelect, onEdit, onAddChild, onDeactivate, onHardDelete, onViewLedger,
@@ -56,20 +62,20 @@ function TreeRow({
   const balance = node.isPosting ? (node.ownBalance ?? node.balance ?? 0) : (node.aggregateBalance ?? node.balance ?? 0)
 
   const indentStyle = isRTL
-    ? { paddingRight: `${depth * INDENT_PX + 12}px` }
-    : { paddingLeft: `${depth * INDENT_PX + 12}px` }
+    ? { paddingRight: `${depth * INDENT_PX + 16}px` }
+    : { paddingLeft: `${depth * INDENT_PX + 16}px` }
 
   return (
     <>
       <tr
         className={cn(
-          'group border-b border-border/50 transition-colors',
+          'group transition-colors',
           node.active ? 'hover:bg-muted/40' : 'opacity-60 hover:bg-muted/30',
           !node.isPosting && depth === 0 && 'bg-muted/20',
         )}
       >
         {/* Code + expand */}
-        <td className="py-1.5 whitespace-nowrap" style={indentStyle}>
+        <td className="py-2 whitespace-nowrap border-b border-slate-100 dark:border-slate-800/60" style={indentStyle}>
           <div className="flex items-center gap-1.5">
             {/* Guide lines for depth > 0 */}
             {hasChildren ? (
@@ -102,7 +108,7 @@ function TreeRow({
         </td>
 
         {/* Name */}
-        <td className="py-1.5 pe-3">
+        <td className="py-2 pe-3 border-b border-slate-100 dark:border-slate-800/60">
           <button
             className="flex items-center gap-2 text-start hover:text-primary transition-colors w-full focus-visible:outline-none focus-visible:underline"
             onClick={() => onSelect(node)}
@@ -140,7 +146,7 @@ function TreeRow({
         </td>
 
         {/* Class badge */}
-        <td className="py-1.5 pe-3">
+        <td className="py-2 pe-3 border-b border-slate-100 dark:border-slate-800/60">
           <Badge
             variant="outline"
             className={cn('text-[10px] font-semibold whitespace-nowrap', classMeta.badgeClass)}
@@ -150,7 +156,7 @@ function TreeRow({
         </td>
 
         {/* Kind badge */}
-        <td className="py-1.5 pe-3">
+        <td className="py-2 pe-3 border-b border-slate-100 dark:border-slate-800/60">
           <Badge
             variant="outline"
             className={cn(
@@ -165,7 +171,7 @@ function TreeRow({
         </td>
 
         {/* Balance */}
-        <td className="py-1.5 pe-3 text-end">
+        <td className="py-2 pe-3 text-end border-b border-slate-100 dark:border-slate-800/60">
           <span
             className={cn(
               'text-sm font-semibold tabular-nums',
@@ -178,12 +184,12 @@ function TreeRow({
         </td>
 
         {/* Currency */}
-        <td className="py-1.5 pe-3">
+        <td className="py-2 pe-3 text-center border-b border-slate-100 dark:border-slate-800/60">
           <span className="text-xs text-muted-foreground font-mono">{node.currencyId ? node.currencyId : '—'}</span>
         </td>
 
         {/* Status dot */}
-        <td className="py-1.5 pe-3">
+        <td className="py-2 pe-3 text-center border-b border-slate-100 dark:border-slate-800/60">
           <span className={cn(
             'inline-flex items-center gap-1.5 text-xs font-medium',
             node.active ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground',
@@ -194,7 +200,7 @@ function TreeRow({
         </td>
 
         {/* Actions */}
-        <td className="py-1.5 pe-3 text-end">
+        <td className="py-2 pe-4 text-end border-b border-slate-100 dark:border-slate-800/60">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -317,18 +323,31 @@ export function AccountTree({
   }
 
   return (
-    <div className="overflow-auto">
-      <table className="w-full caption-bottom text-sm min-w-[800px]">
+    <div
+      className="w-full overflow-y-auto overflow-x-auto overscroll-contain scrollbar-thin"
+      style={{ maxHeight: HEADER_HEIGHT + VISIBLE_ROWS * ROW_HEIGHT }}
+    >
+      <table className="w-full caption-bottom text-sm min-w-[940px] table-fixed border-separate border-spacing-0">
+        <colgroup>
+          <col className="w-[170px]" />
+          <col className="w-[260px]" />
+          <col className="w-[130px]" />
+          <col className="w-[100px]" />
+          <col className="w-[140px]" />
+          <col className="w-[80px]" />
+          <col className="w-[100px]" />
+          <col className="w-[60px]" />
+        </colgroup>
         <thead>
-          <tr className="border-b border-border bg-muted/40 text-muted-foreground">
-            <th className="py-2 ps-3 text-start text-xs font-semibold whitespace-nowrap w-[180px]">{t('coa.col.code')}</th>
-            <th className="py-2 text-start text-xs font-semibold">{t('coa.col.name')}</th>
-            <th className="py-2 pe-3 text-start text-xs font-semibold whitespace-nowrap w-[140px]">{t('coa.col.class')}</th>
-            <th className="py-2 pe-3 text-start text-xs font-semibold whitespace-nowrap w-[100px]">{t('coa.col.kind')}</th>
-            <th className="py-2 pe-3 text-end text-xs font-semibold whitespace-nowrap w-[140px]">{t('coa.col.balance')}</th>
-            <th className="py-2 pe-3 text-start text-xs font-semibold whitespace-nowrap w-[70px]">{t('coa.col.currency')}</th>
-            <th className="py-2 pe-3 text-start text-xs font-semibold whitespace-nowrap w-[90px]">{t('coa.col.status')}</th>
-            <th className="py-2 pe-3 text-end text-xs font-semibold whitespace-nowrap w-[52px]">{t('coa.col.actions')}</th>
+          <tr className="hover:bg-transparent">
+            <th className={cn(stickyHead, 'ps-4 text-start')}>{t('coa.col.code')}</th>
+            <th className={cn(stickyHead, 'text-start')}>{t('coa.col.name')}</th>
+            <th className={cn(stickyHead, 'text-start')}>{t('coa.col.class')}</th>
+            <th className={cn(stickyHead, 'text-start')}>{t('coa.col.kind')}</th>
+            <th className={cn(stickyHead, 'text-end pe-3')}>{t('coa.col.balance')}</th>
+            <th className={cn(stickyHead, 'text-center')}>{t('coa.col.currency')}</th>
+            <th className={cn(stickyHead, 'text-center')}>{t('coa.col.status')}</th>
+            <th className={cn(stickyHead, 'text-end pe-4')}>{t('coa.col.actions')}</th>
           </tr>
         </thead>
         <tbody>

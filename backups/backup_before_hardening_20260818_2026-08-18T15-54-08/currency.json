@@ -1,0 +1,32 @@
+[
+  {
+    "id": "cmsdpoua50000nwgnl7710tte",
+    "code": "SAR",
+    "nameAr": "ريال سعودي",
+    "nameEn": "Saudi Riyal",
+    "symbol": "ر.س",
+    "decimals": 2,
+    "active": true,
+    "createdAt": "2026-08-03T20:58:45.197Z"
+  },
+  {
+    "id": "cmsdpoudi0001nwgn4bzxog1c",
+    "code": "USD",
+    "nameAr": "دولار أمريكي",
+    "nameEn": "US Dollar",
+    "symbol": "$",
+    "decimals": 2,
+    "active": true,
+    "createdAt": "2026-08-03T20:58:45.319Z"
+  },
+  {
+    "id": "cmsdpoufj0002nwgnu011n00q",
+    "code": "EUR",
+    "nameAr": "يورو",
+    "nameEn": "Euro",
+    "symbol": "€",
+    "decimals": 2,
+    "active": true,
+    "createdAt": "2026-08-03T20:58:45.392Z"
+  }
+]

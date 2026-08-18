@@ -1,0 +1,13 @@
+[
+  {
+    "id": "cmsdqv7gp0003nwku7us9afpp",
+    "code": "WH-001",
+    "nameAr": "المستودع الرئيسي",
+    "nameEn": "main Warehouse",
+    "branchId": "cmsdpov6f000enwgnyyt3sxy0",
+    "address": "الحيالصناعي ، جدة",
+    "active": true,
+    "createdAt": "2026-08-03T21:31:41.818Z",
+    "updatedAt": "2026-08-03T21:31:41.818Z"
+  }
+]

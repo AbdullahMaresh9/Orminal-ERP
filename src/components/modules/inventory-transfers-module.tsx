@@ -550,7 +550,7 @@ export function InventoryTransfersModule() {
                           <SelectValue placeholder={isRTL ? 'اختر المستودع المصدر' : 'Select source warehouse'} />
                         </SelectTrigger>
                         <SelectContent dir={dir}>
-                          {storehouses.map(s => <SelectItem key={s.id} value={s.id}>{s.name} ({s.code})</SelectItem>)}
+                          {storehouses.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </div>
