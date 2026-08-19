@@ -233,7 +233,7 @@ export function NotificationsModule() {
         </>
       }
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2 mb-2">
         <KpiCard title="إجمالي الإشعارات" value={formatInt(stats.total)} icon={<Bell className="size-5" />} accent="blue" />
         <KpiCard title="غير مقروءة" value={formatInt(stats.unread)} icon={<BellOff className="size-5" />} accent="rose" />
         <KpiCard title="الأكثر نوعاً" value={topTypeLabel} icon={<Info className="size-5" />} accent="amber" />

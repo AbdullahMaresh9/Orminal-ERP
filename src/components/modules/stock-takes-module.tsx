@@ -767,7 +767,7 @@ export function StockTakesModule() {
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" className="h-9 gap-1.5 font-semibold text-xs border-slate-200 dark:border-slate-800">
               <Download className="size-3.5" />
-              {L('تصدير التقارير', 'Export Reports')}
+              {L('تصدير ', 'Export')}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align={isRTL ? 'start' : 'end'} sideOffset={6} collisionPadding={10} className="w-48">
@@ -803,7 +803,7 @@ export function StockTakesModule() {
       }
     >
       {/* Global Unfiltered KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5 mb-3">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-2 mb-2">
         {isLoading ? (
           Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (

@@ -323,6 +323,7 @@ export function JournalEntriesModule() {
       onAdd={() => { resetForm(); setAddOpen(true) }}
       addLabel="قيد جديد"
       onExport={handleExport}
+      containerClassName="px-3 sm:px-4 lg:px-5 w-full max-w-full"
       filters={
         <Select value={filterState} onValueChange={setFilterState}>
           <SelectTrigger className="w-40"><SelectValue placeholder="الحالة" /></SelectTrigger>
@@ -336,7 +337,7 @@ export function JournalEntriesModule() {
         </Select>
       }
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2 mb-2">
         <KpiCard title="إجمالي القيود" value={formatInt(total)} icon={<FileText className="size-5" />} accent="blue" />
         <KpiCard title="قيود مرحّلة" value={formatInt(stats.posted)} icon={<CheckCircle2 className="size-5" />} accent="sky" />
         <KpiCard title="قيود مسودة" value={formatInt(stats.drafts)} icon={<BookOpen className="size-5" />} accent="amber" />

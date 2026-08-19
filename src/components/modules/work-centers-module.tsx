@@ -134,7 +134,7 @@ export function WorkCentersModule() {
       addLabel={t('action.add')}
       onExport={handleExport}
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2.5 mb-2">
         <KpiCard title="إجمالي المراكز" value={formatInt(stats.total)} icon={<Factory className="size-5" />} accent="blue" />
         <KpiCard title="المراكز النشطة" value={formatInt(stats.active)} icon={<Cog className="size-5" />} accent="sky" />
         <KpiCard title="إجمالي السعة/ساعة" value={formatNumber(stats.totalCapacity, 0)} icon={<Gauge className="size-5" />} accent="amber" />

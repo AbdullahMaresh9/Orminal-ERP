@@ -250,7 +250,7 @@ export function PayrollRunsModule() {
       addLabel="تشغيل جديد"
       onExport={handleExport}
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2 mb-2">
         <KpiCard title="إجمالي التشغيلات" value={formatInt(stats.total)} icon={<Wallet className="size-5" />} accent="blue" />
         <KpiCard title="مُرحّلة" value={formatInt(stats.posted)} icon={<CheckCircle2 className="size-5" />} accent="sky" />
         <KpiCard title="صافي الرواتب" value={formatCurrency(stats.totalNet)} icon={<Coins className="size-5" />} accent="violet" />

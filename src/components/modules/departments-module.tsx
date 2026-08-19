@@ -202,7 +202,7 @@ export function DepartmentsModule() {
       addLabel={t('action.add')}
       onExport={handleExport}
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2.5 mb-2">
         <KpiCard title="إجمالي الأقسام" value={formatInt(stats.total)} icon={<Building2 className="size-5" />} accent="blue" />
         <KpiCard title="أقسام رئيسية" value={formatInt(stats.root)} icon={<Network className="size-5" />} accent="sky" />
         <KpiCard title="نشطة" value={formatInt(stats.active)} icon={<CheckCircle2 className="size-5" />} accent="amber" />

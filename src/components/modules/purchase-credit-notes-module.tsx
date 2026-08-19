@@ -280,7 +280,7 @@ export function PurchaseCreditNotesModule() {
         </Select>
       }
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2 mb-2">
         <KpiCard title={L('إجمالي الإشعارات', 'Total Credit Notes')} value={formatCurrency(stats.total)} icon={<Coins className="size-5" />} accent="blue" />
         <KpiCard title={L('عدد الإشعارات', 'Total Count')} value={formatInt(stats.count)} icon={<Hash className="size-5" />} accent="sky" />
         <KpiCard title={L('هذا الشهر', 'This Month')} value={formatCurrency(stats.thisMonthTotal)} icon={<CalendarDays className="size-5" />} accent="amber" />

@@ -498,7 +498,7 @@ export function PurchasePaymentsModule() {
         </>
       }
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2 mb-2">
         <KpiCard title={L('صرف هذا الشهر', 'This Month')} value={formatCurrency(stats.monthTotal)} icon={<Banknote className="size-5" />} accent="blue" />
         <KpiCard title={L('عدد السندات', 'Voucher Count')} value={formatInt(stats.count)} icon={<Hash className="size-5" />} accent="sky" />
         <KpiCard title={L('متوسط السند', 'Average Voucher')} value={formatCurrency(stats.avg)} icon={<TrendingUp className="size-5" />} accent="violet" />

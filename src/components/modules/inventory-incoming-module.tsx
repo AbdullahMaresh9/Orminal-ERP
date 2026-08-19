@@ -407,7 +407,7 @@ export function InventoryIncomingModule() {
         </Select>
       }
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2 mb-2">
         {isLoading ? (
           Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />)
         ) : (
@@ -702,11 +702,11 @@ export function InventoryIncomingModule() {
               </div>
             </DialogBody>
 
-            <DialogFooter className="px-6 py-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-blue-500/30/80 flex items-center justify-end gap-2 shrink-0">
-              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} className="h-10 px-5 border-slate-250 dark:border-slate-850 hover:bg-slate-100/80 dark:hover:bg-slate-900 text-xs font-semibold">
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} className="h-9.5 w-full sm:w-auto sm:min-w-25 px-5 border-rose-400 dark:border-rose-800 hover:bg-slate-100/80 dark:hover:bg-slate-900 text-xs font-semibold">
                 {isRTL ? 'إلغاء' : 'Cancel'}
               </Button>
-              <Button type="submit" disabled={saveMutation.isPending} className="h-10 px-5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-xs font-semibold shadow-sm shadow-blue-100 dark:shadow-none">
+              <Button type="submit" disabled={saveMutation.isPending} className="h-10 w-full sm:w-auto sm:min-w-28 px-5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-xs font-semibold shadow-sm shadow-blue-100 dark:shadow-none">
                 {saveMutation.isPending ? (isRTL ? 'جاري الحفظ...' : 'Saving...') : (isRTL ? 'حفظ وتوريد المخزون' : 'Save & Receipt Stock')}
               </Button>
             </DialogFooter>
@@ -788,12 +788,13 @@ export function InventoryIncomingModule() {
               </DialogBody>
 
               <DialogFooter >
-                <Button variant="outline" className="h-10 px-4 border-slate-400 dark:border-slate-500 text-sm font-semibold gap-1.5 " onClick={() => handlePrintVoucher(detailMovement)}>
-                  <Printer className="size-4" /> {isRTL ? 'طباعة' : 'Print'}
-                </Button>
-                <Button variant="outline" onClick={() => setDetailMovement(null)} className="h-10 px-5 border-rose-400 dark:border-rose-800 text-sm font-semibold">
+                <Button variant="outline" onClick={() => setDetailMovement(null)} className="h-10 w-full sm:w-auto sm:min-w-25 px-5 border-rose-400 dark:border-rose-800 text-sm font-semibold">
                   {isRTL ? 'إغلاق' : 'Close'}
                 </Button>
+                <Button variant="outline" className="h-10 w-full sm:w-auto sm:min-w-25 px-4 border-slate-400 dark:border-slate-500 text-sm font-semibold gap-1.5 " onClick={() => handlePrintVoucher(detailMovement)}>
+                  <Printer className="size-4" /> {isRTL ? 'طباعة' : 'Print'}
+                </Button>
+
               </DialogFooter>
             </div>
           )}

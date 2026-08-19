@@ -384,7 +384,7 @@ export default function FixedAssetsModule({ initialTab = 'fixed-assets' }: Fixed
       }
     >
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2.5 mb-2">
         <Card className="p-4 flex items-center justify-between border border-border shadow-sm bg-card">
           <div className="space-y-1">
             <p className="text-xs font-medium text-muted-foreground">إجمالي تكلفة الأصول</p>

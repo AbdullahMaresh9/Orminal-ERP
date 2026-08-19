@@ -494,7 +494,7 @@ export function EmployeesModule() {
         </Select>
       }
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2.5 mb-2">
         <KpiCard title="إجمالي الموظفين" value={formatInt(stats.total)} icon={<Users className="size-5" />} accent="blue" />
         <KpiCard title="نشطون" value={formatInt(stats.active)} icon={<UserCheck className="size-5" />} accent="sky" />
         <KpiCard title="أعلى إدارة" value={stats.topDept} icon={<Building2 className="size-5" />} accent="amber" />

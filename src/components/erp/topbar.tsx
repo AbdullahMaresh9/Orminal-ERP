@@ -67,7 +67,7 @@ export function Topbar() {
   const unread = notifications.filter((n: any) => !n.isRead).length
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center gap-2 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 sm:px-6 shrink-0">
+    <header className="sticky top-0 z-20 flex h-16 items-center gap-2 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-3 sm:px-4 shrink-0 w-full">
       {/* Mobile sidebar toggle */}
       <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
         <SheetTrigger asChild>

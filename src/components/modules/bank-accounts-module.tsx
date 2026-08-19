@@ -55,7 +55,7 @@ export function BankAccountsModule() {
 
   return (
     <ModuleShell title="الحسابات البنكية" description="إدارة الحسابات البنكية" icon={<Landmark className="size-5" />} onSearch={setSearch} searchValue={search} onAdd={handleAdd} addLabel="حساب بنكي" onExport={handleExport}>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4  mb-2">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2.5 mb-2">
         {isLoading ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />) : (
           <>
             <KpiCard title="إجمالي الرصيد" value={formatCurrency(totalBalance)} icon={<Wallet className="size-5" />} accent="blue" />

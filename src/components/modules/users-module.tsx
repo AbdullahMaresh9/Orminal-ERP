@@ -247,7 +247,7 @@ export function UsersModule() {
         </>
       }
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2.5 mb-2">
         <KpiCard title="إجمالي المستخدمين" value={formatInt(stats.total)} icon={<UsersIcon className="size-5" />} accent="blue" />
         <KpiCard title="المستخدمون النشطون" value={formatInt(stats.active)} icon={<UserCheck className="size-5" />} accent="sky" />
         <KpiCard title="الأكثر دوراً" value={topRoleLabel} icon={<KeyRound className="size-5" />} accent="amber" />

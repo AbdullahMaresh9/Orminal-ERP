@@ -233,7 +233,7 @@ export default function CustomersModule() {
         </>
       }
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2.5 mb-2">
         <KpiCard title={isRTL ? 'إجمالي العملاء' : 'Total Customers'} value={formatInt(total)} icon={<Users className="size-5" />} accent="sky" />
         <KpiCard title={isRTL ? 'العملاء النشطون' : 'Active Customers'} value={formatInt(stats.active)} icon={<Users className="size-5" />} accent="blue" />
         <KpiCard title={isRTL ? 'إجمالي الأرصدة' : 'Total Balances'} value={formatCurrency(stats.totalBalance)} icon={<Building2 className="size-5" />} accent="violet" />

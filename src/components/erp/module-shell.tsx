@@ -22,6 +22,7 @@ interface ModuleShellProps {
   filters?: ReactNode
   children: ReactNode
   className?: string
+  containerClassName?: string
 }
 
 export function ModuleShell({
@@ -39,6 +40,7 @@ export function ModuleShell({
   filters,
   children,
   className,
+  containerClassName,
 }: ModuleShellProps) {
   const { isRTL } = useT()
   const L = (ar: string, en: string) => (isRTL ? ar : en)
@@ -48,7 +50,7 @@ export function ModuleShell({
   const addLabelText = addLabel ?? L('إضافة', 'Add')
 
   return (
-    <div className="flex flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8 max-w-[1600px] mx-auto w-full">
+    <div className={cn('flex flex-col gap-4 px-3 py-4 sm:px-4 lg:px-5 w-full max-w-full mx-auto', containerClassName)}>
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-start gap-3 min-w-0">

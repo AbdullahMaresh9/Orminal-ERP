@@ -425,7 +425,7 @@ export function SalesOrdersModule() {
         </Select>
       }
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2 mb-2">
         <KpiCard title={L('إجمالي الطلبات', 'Total Orders')} value={formatInt(total)} icon={<ShoppingCart className="size-5" />} accent="blue" />
         <KpiCard title={L('إجمالي المبيعات', 'Total Sales')} value={formatCurrency(stats.totalSales)} icon={<Coins className="size-5" />} accent="sky" />
         <KpiCard title={L('المحصّل', 'Total Paid')} value={formatCurrency(stats.totalPaid)} icon={<Wallet className="size-5" />} accent="violet" />

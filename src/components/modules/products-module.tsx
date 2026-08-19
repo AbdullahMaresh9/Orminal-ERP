@@ -273,7 +273,7 @@ export function ProductsModule() {
       }
     >
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2 mb-2">
         <KpiCard title={L('إجمالي المنتجات', 'Total Products')} value={formatInt(total)} icon={<Package className="size-5" />} accent="blue" />
         <KpiCard title={L('المنتجات النشطة', 'Active Products')} value={formatInt(stats.active)} icon={<Boxes className="size-5" />} accent="sky" />
         <KpiCard title={L('قيمة التكلفة', 'Cost Value')} value={formatCurrency(stats.totalValue)} icon={<Tag className="size-5" />} accent="amber" />

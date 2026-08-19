@@ -43,15 +43,15 @@ export function AppShell() {
       </aside>
 
       {/* Main */}
-      <div className="flex-1 min-w-0 flex flex-col">
+      <div className="flex-1 min-w-0 flex flex-col w-full">
         <Topbar />
         <main className={cn(
-          "flex-1 overscroll-contain scrollbar-thin min-h-0 flex flex-col",
+          "flex-1 overscroll-contain scrollbar-thin min-h-0 flex flex-col w-full min-w-0",
           activeModule === 'pos' ? "overflow-hidden" : "overflow-y-auto"
         )}>
           <ActiveModule />
           {activeModule !== 'pos' && (
-            <footer className="mt-auto border-t bg-muted/30 py-4 px-6 text-center text-xs text-muted-foreground shrink-0">
+            <footer className="mt-auto border-t bg-muted/30 py-3 px-3 sm:px-4 text-center text-xs text-muted-foreground shrink-0 w-full">
               <span className="font-semibold text-foreground">أورمنال</span> — نظام إدارة موارد المؤسسات ERP ·
               جميع الحقوق محفوظة © {year}
             </footer>

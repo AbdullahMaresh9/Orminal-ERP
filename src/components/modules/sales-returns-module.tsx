@@ -424,7 +424,7 @@ export function SalesReturnsModule() {
         </Select>
       }
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2 mb-2">
         <KpiCard title={L('إجمالي المرتجعات', 'Total Returns')} value={formatInt(stats.total)} icon={<Undo2 className="size-5" />} accent="blue" />
         <KpiCard title={L('قيد المعالجة', 'In Progress')} value={formatInt(stats.pending)} icon={<Clock className="size-5" />} accent="amber" />
         <KpiCard title={L('مُرحّلة', 'Approved/Closed')} value={formatInt(stats.approved)} icon={<CheckCircle2 className="size-5" />} accent="sky" />

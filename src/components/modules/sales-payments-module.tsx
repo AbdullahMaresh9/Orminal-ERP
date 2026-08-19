@@ -503,7 +503,7 @@ export function SalesPaymentsModule() {
         </>
       }
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2 mb-2">
         <KpiCard title={L('قبوض هذا الشهر', 'This Month Total')} value={formatCurrency(stats.monthTotal)} icon={<Receipt className="size-5" />} accent="blue" />
         <KpiCard title={L('عدد السندات المرحّلة', 'Posted Count')} value={formatInt(stats.count)} icon={<Hash className="size-5" />} accent="sky" />
         <KpiCard title={L('متوسط السند', 'Average Amount')} value={formatCurrency(stats.avg)} icon={<TrendingUp className="size-5" />} accent="violet" />

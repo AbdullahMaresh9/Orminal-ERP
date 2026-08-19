@@ -44,6 +44,28 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               if (typeof window !== 'undefined') {
+                // Ignore runtime errors injected by Chrome Extensions
+                window.addEventListener('error', (event) => {
+                  if (
+                    event.filename?.includes('chrome-extension://') ||
+                    event.error?.stack?.includes('chrome-extension://') ||
+                    (event.message && event.message.includes("reading 'M_ID'"))
+                  ) {
+                    event.stopImmediatePropagation();
+                    event.preventDefault();
+                  }
+                }, true);
+
+                window.addEventListener('unhandledrejection', (event) => {
+                  if (
+                    event.reason?.stack?.includes('chrome-extension://') ||
+                    (event.reason?.message && event.reason.message.includes("reading 'M_ID'"))
+                  ) {
+                    event.stopImmediatePropagation();
+                    event.preventDefault();
+                  }
+                }, true);
+
                 const removeBis = (node) => {
                   if (node.nodeType === 1 && node.hasAttribute('bis_skin_checked')) {
                     node.removeAttribute('bis_skin_checked');

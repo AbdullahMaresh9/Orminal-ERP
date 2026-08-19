@@ -535,7 +535,7 @@ export function SalesQuotationsModule() {
         </Select>
       }
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2 mb-2">
         <KpiCard title={L('إجمالي العروض', 'Total Quotations')} value={formatInt(stats.total)} icon={<FileSignature className="size-5" />} accent="blue" />
         <KpiCard title={L('المقبولة', 'Accepted')} value={formatInt(stats.accepted)} icon={<CheckCircle2 className="size-5" />} accent="sky" />
         <KpiCard title={L('قيد الانتظار', 'Pending')} value={formatInt(stats.pending)} icon={<Clock className="size-5" />} accent="amber" />

@@ -55,17 +55,17 @@ export function KpiCard({ title, value, delta, deltaLabel, icon, accent = 'blue'
 
   return (
     <Card className={cn(
-      'p-4 sm:p-4.5 flex flex-col justify-between gap-2.5 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 border bg-card/95 backdrop-blur-xs relative overflow-hidden',
+      'p-2.5 sm:p-3 flex flex-col justify-between gap-1.5 transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5 border bg-card/95 backdrop-blur-xs relative overflow-hidden h-auto',
       a.border,
       className
     )}>
       {/* Top row: Icon + title */}
       <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-semibold text-muted-foreground line-clamp-1 flex-1 leading-snug" title={title}>
+        <p className="text-[11px] sm:text-xs font-semibold text-muted-foreground line-clamp-1 flex-1 leading-tight" title={title}>
           {title}
         </p>
         {icon && (
-          <div className={cn('shrink-0 size-8 sm:size-9 rounded-lg flex items-center justify-center ring-1 shadow-2xs', a.bg, a.text, a.ring)}>
+          <div className={cn('shrink-0 size-7 sm:size-8 rounded-lg flex items-center justify-center ring-1 shadow-2xs [&_svg]:size-3.5 sm:[&_svg]:size-4', a.bg, a.text, a.ring)}>
             {icon}
           </div>
         )}
@@ -73,28 +73,28 @@ export function KpiCard({ title, value, delta, deltaLabel, icon, accent = 'blue'
 
       {/* Main value */}
       <div className="min-w-0">
-        <p className="text-base sm:text-lg lg:text-xl font-bold tracking-tight tabular-nums text-foreground truncate font-mono" title={value}>
+        <p className="text-sm sm:text-base lg:text-lg font-bold tracking-tight tabular-nums text-foreground truncate font-mono leading-snug" title={value}>
           {value}
         </p>
       </div>
 
       {/* Optional Delta indicator */}
       {delta !== undefined && (
-        <div className="flex items-center gap-1.5 text-[11px] pt-1 border-t border-border/40">
+        <div className="flex items-center gap-1.5 text-[10px] pt-1 border-t border-border/30">
           <span
             className={cn(
-              'inline-flex items-center gap-0.5 font-semibold px-1.5 py-0.5 rounded-md text-[10px]',
+              'inline-flex items-center gap-0.5 font-semibold px-1 py-0.5 rounded-md text-[9px]',
               isUp && 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400',
               isDown && 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400',
               isFlat && 'bg-gray-100 text-gray-500'
             )}
           >
-            {isUp && <ArrowUpRight className="size-3" />}
-            {isDown && <ArrowDownRight className="size-3" />}
-            {isFlat && <Minus className="size-3" />}
+            {isUp && <ArrowUpRight className="size-2.5" />}
+            {isDown && <ArrowDownRight className="size-2.5" />}
+            {isFlat && <Minus className="size-2.5" />}
             <span className="font-mono">{Math.abs(delta).toFixed(1)}%</span>
           </span>
-          {deltaLabel && <span className="text-muted-foreground/70 truncate">{deltaLabel}</span>}
+          {deltaLabel && <span className="text-muted-foreground/70 truncate text-[10px]">{deltaLabel}</span>}
         </div>
       )}
     </Card>

@@ -421,27 +421,6 @@ export function StockOnHandModule() {
         <span className="hidden md:inline">{L('تحديث', 'Refresh')}</span>
       </Button>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" className="h-9 gap-1.5" disabled={exporting}>
-            <Download className="size-4" />
-            <span className="hidden md:inline">{L('تصدير', 'Export')}</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align={isRTL ? 'start' : 'end'} side="bottom" sideOffset={4} collisionPadding={8} className="w-36">
-          <DropdownMenuLabel>{L('تصدير البيانات', 'Export Data')}</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => handleExport('excel')} className="gap-2 cursor-pointer">
-            <FileSpreadsheet className="size-4 text-emerald-600" /> Excel
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handleExport('csv')} className="gap-2 cursor-pointer">
-            <FileText className="size-4 text-blue-600" /> CSV
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handleExport('pdf')} className="gap-2 cursor-pointer">
-            <Printer className="size-4 text-rose-600" /> PDF
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
     </div>
   )
 
@@ -453,10 +432,33 @@ export function StockOnHandModule() {
       onSearch={(v: string) => { setSearch(v); resetPage() }}
       searchValue={search}
       searchPlaceholder={L('بحث بالرمز أو اسم المنتج أو المستودع...', 'Search by SKU, product name, or warehouse...')}
+      actions={
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="h-9 gap-1.5" disabled={exporting}>
+              <Download className="size-4" />
+              <span className="hidden md:inline">{L('تصدير', 'Export')}</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align={isRTL ? 'start' : 'end'} side="bottom" sideOffset={4} collisionPadding={8} className="w-30">
+            <DropdownMenuLabel>{L('تصدير البيانات', 'Export Data')}</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => handleExport('excel')} className="gap-2 cursor-pointer">
+              <FileSpreadsheet className="size-4 text-emerald-600" /> Excel
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExport('csv')} className="gap-2 cursor-pointer">
+              <FileText className="size-4 text-blue-600" /> CSV
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExport('pdf')} className="gap-2 cursor-pointer">
+              <Printer className="size-4 text-rose-600" /> PDF
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      }
       filters={toolbar}
     >
       {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2 mb-2">
         {isLoading ? (
           Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />)
         ) : (
@@ -470,12 +472,12 @@ export function StockOnHandModule() {
       </div>
 
       {/* Last updated timestamp line */}
-      {!isLoading && (
+      {/* {!isLoading && (
         <p className="text-[11px] text-muted-foreground mb-2 flex items-center gap-1.5">
           <History className="size-3" />
           {L('آخر تحديث:', 'Last updated:')} {dataUpdatedAt ? formatDateTime(new Date(dataUpdatedAt).toISOString()) : '—'}
         </p>
-      )}
+      )} */}
 
       {/* Table Section — Sticky Header + Vertical Scroll + Column Alignment */}
       <Card className="rounded-xl overflow-hidden">
@@ -488,14 +490,14 @@ export function StockOnHandModule() {
               <col className="w-[9%]" />{/* SKU */}
               <col className="w-[14%]" />{/* المنتج */}
               <col className="w-[13%]" />{/* المستودع */}
-              <col className="w-[9%]" />{/* الموقع */}
+              <col className="w-[8%]" />{/* الموقع */}
               <col className="w-[6%]" />{/* الوحدة */}
               <col className="w-[6%]" />{/* الحد الأدنى */}
               <col className="w-[7%]" />{/* الكمية */}
               <col className="w-[6%]" />{/* المحجوز */}
               <col className="w-[7%]" />{/* المتاح */}
-              {canViewCost && <col className="w-[9%]" />}{/* القيمة */}
-              <col className="w-[9%]" />{/* الحالة */}
+              {canViewCost && <col className="w-[10%]" />}{/* القيمة */}
+              <col className="w-[10%]" />{/* الحالة */}
               <col className="w-[6%]" />{/* إجراءات */}
             </colgroup>
 

@@ -443,7 +443,7 @@ export function PurchaseInvoicesModule() {
         </Select>
       }
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2 mb-2">
         <KpiCard title={L('إجمالي الفواتير', 'Total Billed')} value={formatCurrency(stats.totalBilled)} icon={<Receipt className="size-5" />} accent="blue" />
         <KpiCard title={L('إجمالي المدفوع', 'Total Paid')} value={formatCurrency(stats.totalPaid)} icon={<Wallet className="size-5" />} accent="sky" />
         <KpiCard title={L('المستحق', 'Outstanding')} value={formatCurrency(stats.outstanding)} icon={<Coins className="size-5" />} accent="amber" />

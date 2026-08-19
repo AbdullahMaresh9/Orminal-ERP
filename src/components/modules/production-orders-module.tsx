@@ -240,7 +240,7 @@ export function ProductionOrdersModule() {
         </Select>
       }
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2 mb-2">
         <KpiCard title="إجمالي الأوامر" value={formatInt(stats.total)} icon={<Factory className="size-5" />} accent="blue" />
         <KpiCard title="قيد التنفيذ" value={formatInt(stats.inProgress)} icon={<PlayCircle className="size-5" />} accent="amber" />
         <KpiCard title="مُنتَجة" value={formatInt(stats.produced)} icon={<CheckCircle2 className="size-5" />} accent="sky" />
