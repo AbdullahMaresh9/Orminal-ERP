@@ -67,7 +67,7 @@ export const dictionary = {
   'nav.group.platform': { ar: 'النظام', en: 'System' },
   'nav.group.master-data': { ar: 'البيانات الأساسية', en: 'Master Data' },
   'nav.group.finance': { ar: 'الحسابات والمالية', en: 'Accounts & Finance' },
-  'nav.subgroup.coa-setup': { ar: 'دليل الحسابات والتهيئة المالية', en: 'Chart of Accounts & Financial Setup' },
+  'nav.subgroup.coa-setup': { ar: 'دليل الحسابات والمالية', en: 'Chart of Accounts & Financial' },
   'nav.subgroup.entries-vouchers': { ar: 'القيود والسندات', en: 'Journal Entries & Vouchers' },
   'nav.subgroup.safes-banks': { ar: 'الصناديق والبنوك', en: 'Safes & Banks' },
   'nav.subgroup.ar': { ar: 'الذمم المدينة', en: 'Accounts Receivable' },
