@@ -551,79 +551,79 @@ export function SidebarNav() {
                     {/* Render subGroups if present */}
                     {hasSubGroups
                       ? group.subGroups!.map((sg) => {
-                          const SgIcon = sg.icon || BookOpen
-                          const isSgExpanded = expandedSubGroups.has(sg.labelKey)
-                          const hasSgActiveChild = sg.items.some((i) => i.key === activeModule)
+                        const SgIcon = sg.icon || BookOpen
+                        const isSgExpanded = expandedSubGroups.has(sg.labelKey)
+                        const hasSgActiveChild = sg.items.some((i) => i.key === activeModule)
 
-                          return (
-                            <div key={sg.labelKey} className="my-0.5">
-                              <button
-                                onClick={() => toggleSubGroup(sg.labelKey)}
-                                className={cn(
-                                  'group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors w-full',
-                                  isRtl ? 'text-right' : 'text-left',
-                                  hasSgActiveChild
-                                    ? 'text-primary font-bold'
-                                    : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground'
-                                )}
-                              >
-                                <SgIcon className={cn('size-3.5 shrink-0', hasSgActiveChild ? 'text-primary' : 'text-muted-foreground')} />
-                                <span className={cn('truncate flex-1', isRtl ? 'text-right' : 'text-left')}>{t(sg.labelKey)}</span>
-                                <ChevronDown
-                                  className={cn(
-                                    'size-3.5 shrink-0 text-muted-foreground/70 transition-transform duration-200',
-                                    isSgExpanded ? 'rotate-0' : (isRtl ? 'rotate-90' : '-rotate-90')
-                                  )}
-                                />
-                              </button>
-
-                              {isSgExpanded && (
-                                <div className="flex flex-col gap-0.5 mt-0.5 ms-3 ps-2 border-s border-sidebar-border/40">
-                                  {sg.items.map((item) => {
-                                    const Icon = item.icon
-                                    const active = activeModule === item.key
-                                    return (
-                                      <button
-                                        key={item.key}
-                                        onClick={() => handleItemClick(item.key)}
-                                        className={cn(
-                                          'group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs transition-colors w-full',
-                                          isRtl ? 'text-right' : 'text-left',
-                                          active
-                                            ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-sm font-semibold'
-                                            : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground font-normal'
-                                        )}
-                                      >
-                                        <Icon className={cn('size-3 shrink-0', active ? 'text-sidebar-primary-foreground' : 'text-muted-foreground group-hover:text-sidebar-accent-foreground')} />
-                                        <span className={cn('truncate flex-1', isRtl ? 'text-right' : 'text-left')}>{t(item.labelKey)}</span>
-                                      </button>
-                                    )
-                                  })}
-                                </div>
-                              )}
-                            </div>
-                          )
-                        })
-                      : group.items?.map((item) => {
-                          const Icon = item.icon
-                          const active = activeModule === item.key
-                          return (
+                        return (
+                          <div key={sg.labelKey} className="my-0.5">
                             <button
-                              key={item.key}
-                              onClick={() => handleItemClick(item.key)}
+                              onClick={() => toggleSubGroup(sg.labelKey)}
                               className={cn(
-                                'group flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-sm transition-colors w-full',
+                                'group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors w-full',
                                 isRtl ? 'text-right' : 'text-left',
-                                active
-                                  ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-sm font-medium'
-                                  : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground font-normal'
+                                hasSgActiveChild
+                                  ? 'text-primary font-bold'
+                                  : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground'
                               )}
                             >
-                              <Icon className={cn('size-3.5 shrink-0', active ? 'text-sidebar-primary-foreground' : 'text-muted-foreground group-hover:text-sidebar-accent-foreground')} />
-                              <span className={cn('truncate flex-1', isRtl ? 'text-right' : 'text-left')}>{t(item.labelKey)}</span>
+                              <SgIcon className={cn('size-3.5 shrink-0', hasSgActiveChild ? 'text-primary' : 'text-muted-foreground')} />
+                              <span className={cn('truncate flex-1', isRtl ? 'text-right' : 'text-left')}>{t(sg.labelKey)}</span>
+                              <ChevronDown
+                                className={cn(
+                                  'size-3.5 shrink-0 text-muted-foreground/70 transition-transform duration-200',
+                                  isSgExpanded ? 'rotate-0' : (isRtl ? 'rotate-90' : '-rotate-90')
+                                )}
+                              />
                             </button>
-                          )
-                        })}
+
+                            {isSgExpanded && (
+                              <div className="flex flex-col gap-0.5 mt-0.5 ms-3 ps-2 border-s border-sidebar-border/40">
+                                {sg.items.map((item) => {
+                                  const Icon = item.icon
+                                  const active = activeModule === item.key
+                                  return (
+                                    <button
+                                      key={item.key}
+                                      onClick={() => handleItemClick(item.key)}
+                                      className={cn(
+                                        'group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs transition-colors w-full',
+                                        isRtl ? 'text-right' : 'text-left',
+                                        active
+                                          ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-sm font-semibold'
+                                          : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground font-normal'
+                                      )}
+                                    >
+                                      <Icon className={cn('size-3 shrink-0', active ? 'text-sidebar-primary-foreground' : 'text-muted-foreground group-hover:text-sidebar-accent-foreground')} />
+                                      <span className={cn('truncate flex-1', isRtl ? 'text-right' : 'text-left')}>{t(item.labelKey)}</span>
+                                    </button>
+                                  )
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })
+                      : group.items?.map((item) => {
+                        const Icon = item.icon
+                        const active = activeModule === item.key
+                        return (
+                          <button
+                            key={item.key}
+                            onClick={() => handleItemClick(item.key)}
+                            className={cn(
+                              'group flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-sm transition-colors w-full',
+                              isRtl ? 'text-right' : 'text-left',
+                              active
+                                ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-sm font-medium'
+                                : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground font-normal'
+                            )}
+                          >
+                            <Icon className={cn('size-3.5 shrink-0', active ? 'text-sidebar-primary-foreground' : 'text-muted-foreground group-hover:text-sidebar-accent-foreground')} />
+                            <span className={cn('truncate flex-1', isRtl ? 'text-right' : 'text-left')}>{t(item.labelKey)}</span>
+                          </button>
+                        )
+                      })}
                   </div>
                 )}
               </div>
