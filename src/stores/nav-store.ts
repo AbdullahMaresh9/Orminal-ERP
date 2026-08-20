@@ -32,6 +32,18 @@ export type ModuleKey =
   | 'employees' | 'departments' | 'attendance' | 'leave-requests' | 'payroll-runs' | 'activities'
   // Reports
   | 'reports'
+  | 'reports-dashboard'
+  | 'account-statement' | 'general-journal' | 'trial-balance' | 'balance-sheet' | 'income' | 'cash-flow'
+  | 'account-movement' | 'opening-balances-rep' | 'posted-unposted-entries' | 'debit-credit-notes'
+  | 'receipt-vouchers' | 'payment-vouchers' | 'cash-count-rep' | 'chart-of-accounts-rep' | 'cost-center-report'
+  | 'customers-list' | 'customer-balances-rep' | 'customer-statement' | 'customer-debts' | 'ar-aging-rep' | 'customer-collections' | 'customer-adjustments-rep'
+  | 'suppliers-list' | 'supplier-balances-rep' | 'supplier-statement' | 'supplier-payables' | 'ap-aging-rep' | 'supplier-payments-rep' | 'supplier-adjustments-rep'
+  | 'sales-quotations-rep' | 'sales-orders-rep' | 'tax-invoices' | 'sales-returns-rep' | 'sales-credit-notes-rep' | 'net-sales' | 'sales-by-customer' | 'sales-by-product' | 'sales-by-branch' | 'sales-by-rep' | 'profit-margin'
+  | 'purchase-requests-rep' | 'purchase-orders-rep' | 'goods-receipts-rep' | 'purchase-invoices-rep' | 'purchase-returns-rep' | 'purchase-credit-notes-rep' | 'net-purchases' | 'purchases-by-supplier' | 'purchases-by-product' | 'purchases-by-branch'
+  | 'current-stock' | 'stock-moves-rep' | 'inventory-value' | 'stock-takes-rep' | 'inventory-adjustments-rep' | 'incoming-outgoing' | 'stock-transfers-rep' | 'stock-turnover' | 'dead-stock' | 'low-stock' | 'product-movement'
+  | 'pos-daily-sales' | 'pos-invoices' | 'pos-returns' | 'pos-payment-methods' | 'pos-performance' | 'shift-closing'
+  | 'employees-directory' | 'attendance-summary' | 'leave-summary' | 'payroll-summary' | 'hr-overview'
+  | 'assets-register' | 'assets-valuation' | 'asset-depreciation-rep' | 'asset-transfers-rep' | 'asset-disposals-rep'
   // Document Templates
   | 'document-templates'
 

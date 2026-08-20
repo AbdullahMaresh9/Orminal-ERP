@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ModuleShell } from '@/components/erp/module-shell'
+import { useNav } from '@/stores/nav-store'
 import { useT } from '@/lib/i18n/use-t'
 import { formatCurrency, formatInt, formatDate } from '@/lib/format'
 import { exportToCSV, printHTML } from '@/lib/export'
@@ -22,27 +23,68 @@ import {
 import { DatePicker } from '@/components/ui/date-picker'
 import {
   BarChart3, FileText, BookOpen, Scale, TrendingUp, TrendingDown,
-  Boxes, Coins, Printer, Download, PlayCircle,
+  Boxes, Coins, Printer, Download, PlayCircle, ShoppingBag, ShoppingCart,
+  Users, UsersRound, Store, UserCheck, Building2, ClipboardCheck, Wallet, Receipt,
 } from 'lucide-react'
 
-type ReportType = 'trial-balance' | 'income' | 'balance-sheet' | 'sales-summary' | 'purchases-summary' | 'inventory-value'
-
-const REPORTS = {
+const REPORTS: Record<string, Array<{ type: string; title: string; icon: any; color: string }>> = {
   accounting: [
-    { type: 'trial-balance' as ReportType, title: 'ميزان المراجعة', icon: Scale, color: 'blue' },
-    { type: 'income' as ReportType, title: 'قائمة الدخل', icon: TrendingUp, color: 'sky' },
-    { type: 'balance-sheet' as ReportType, title: 'الميزانية العمومية', icon: BookOpen, color: 'violet' },
+    { type: 'account-statement', title: 'كشف حساب تفصيلي', icon: Coins, color: 'emerald' },
+    { type: 'general-journal', title: 'دفتر اليومية العامة', icon: FileText, color: 'amber' },
+    { type: 'trial-balance', title: 'ميزان المراجعة', icon: Scale, color: 'emerald' },
+    { type: 'balance-sheet', title: 'الميزانية العمومية', icon: BookOpen, color: 'violet' },
+    { type: 'income', title: 'قائمة الدخل والأرباح', icon: TrendingUp, color: 'teal' },
+    { type: 'cash-flow', title: 'قائمة التدفقات النقدية', icon: TrendingDown, color: 'teal' },
+    { type: 'cost-center-report', title: 'تقرير مراكز التكلفة', icon: BarChart3, color: 'violet' },
+  ],
+  ar: [
+    { type: 'customers-list', title: 'دليل العملاء', icon: Users, color: 'emerald' },
+    { type: 'customer-balances-rep', title: 'أرصدة العملاء', icon: Wallet, color: 'teal' },
+    { type: 'customer-statement', title: 'كشف حساب عميل', icon: Coins, color: 'emerald' },
+    { type: 'ar-aging-rep', title: 'أعمار ديون العملاء', icon: Scale, color: 'amber' },
+    { type: 'customer-collections', title: 'تحصيلات العملاء', icon: Receipt, color: 'emerald' },
+  ],
+  ap: [
+    { type: 'suppliers-list', title: 'دليل الموردين', icon: UsersRound, color: 'amber' },
+    { type: 'supplier-balances-rep', title: 'أرصدة الموردين', icon: Wallet, color: 'teal' },
+    { type: 'supplier-statement', title: 'كشف حساب مورد', icon: Coins, color: 'emerald' },
+    { type: 'ap-aging-rep', title: 'أعمار دائنية الموردين', icon: Scale, color: 'amber' },
+    { type: 'supplier-payments-rep', title: 'مدفوعات الموردين', icon: Receipt, color: 'teal' },
   ],
   sales: [
-    { type: 'sales-summary' as ReportType, title: 'ملخص المبيعات', icon: FileText, color: 'blue' },
+    { type: 'tax-invoices', title: 'الفواتير الضريبية', icon: Receipt, color: 'emerald' },
+    { type: 'sales-quotations-rep', title: 'عروض الأسعار', icon: FileText, color: 'amber' },
+    { type: 'sales-orders-rep', title: 'أوامر البيع', icon: ShoppingBag, color: 'teal' },
+    { type: 'sales-returns-rep', title: 'مرتجع المبيعات', icon: TrendingDown, color: 'amber' },
+    { type: 'net-sales', title: 'صافي المبيعات', icon: TrendingUp, color: 'emerald' },
+    { type: 'sales-by-customer', title: 'المبيعات حسب العميل', icon: Users, color: 'teal' },
+    { type: 'sales-by-product', title: 'المبيعات حسب الصنف', icon: Boxes, color: 'violet' },
   ],
   purchases: [
-    { type: 'purchases-summary' as ReportType, title: 'ملخص المشتريات', icon: FileText, color: 'amber' },
+    { type: 'purchase-invoices-rep', title: 'فواتير الشراء', icon: Receipt, color: 'amber' },
+    { type: 'purchase-requests-rep', title: 'طلبات الشراء', icon: FileText, color: 'teal' },
+    { type: 'purchase-orders-rep', title: 'أوامر الشراء', icon: ShoppingCart, color: 'amber' },
+    { type: 'purchase-returns-rep', title: 'مرتجع المشتريات', icon: TrendingUp, color: 'emerald' },
+    { type: 'net-purchases', title: 'صافي المشتريات', icon: TrendingDown, color: 'teal' },
+    { type: 'purchases-by-supplier', title: 'المشتريات حسب المورد', icon: UsersRound, color: 'amber' },
   ],
   inventory: [
-    { type: 'inventory-value' as ReportType, title: 'قيمة المخزون', icon: Boxes, color: 'violet' },
+    { type: 'inventory-value', title: 'قيمة المخزون', icon: Boxes, color: 'violet' },
+    { type: 'stock-moves-rep', title: 'حركات المخزون', icon: BarChart3, color: 'teal' },
+    { type: 'low-stock', title: 'الأصناف الناقصة وحد الطلب', icon: TrendingDown, color: 'amber' },
+  ],
+  hr: [
+    { type: 'payroll-summary', title: 'ملخص الرواتب والمسيرات', icon: Coins, color: 'emerald' },
+    { type: 'employees-directory', title: 'دليل الموظفين', icon: UserCheck, color: 'teal' },
+    { type: 'attendance-summary', title: 'ملخص الحضور والانصراف', icon: ClipboardCheck, color: 'amber' },
+    { type: 'leave-summary', title: 'ملخص الإجازات', icon: FileText, color: 'violet' },
+  ],
+  platform: [
+    { type: 'audit-trail', title: 'سجل العمليات والنشاطات', icon: FileText, color: 'teal' },
   ],
 }
+
+const ALL_REPORTS_LIST = Object.values(REPORTS).flat()
 
 const COLOR_CLASSES: Record<string, string> = {
   emerald: 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 ring-blue-200 dark:ring-blue-900',
@@ -53,9 +95,16 @@ const COLOR_CLASSES: Record<string, string> = {
 
 export function ReportsModule() {
   const { t } = useT()
-  const [activeReport, setActiveReport] = useState<ReportType | null>(null)
+  const { activeModule } = useNav()
+  const [activeReport, setActiveReport] = useState<string | null>(null)
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
+
+  useEffect(() => {
+    if (activeModule && activeModule !== 'reports' && activeModule !== 'reports-dashboard') {
+      setActiveReport(activeModule)
+    }
+  }, [activeModule])
 
   const { data, isLoading, refetch } = useQuery<any>({
     queryKey: ['financial-report', activeReport, from, to],
@@ -73,7 +122,7 @@ export function ReportsModule() {
     enabled: !!activeReport,
   })
 
-  const handleGenerate = (type: ReportType) => {
+  const handleGenerate = (type: string) => {
     setActiveReport(type)
     setTimeout(() => refetch(), 50)
   }
@@ -109,14 +158,16 @@ export function ReportsModule() {
         'التكلفة': r.costPrice,
         'القيمة': r.value,
       }))
+    } else if (data.rows && Array.isArray(data.rows)) {
+      rows = data.rows
     }
     exportToCSV(activeReport, rows)
-    toast.success('تم تصدير التقرير')
+    toast.success('تم تصدير التقرير بنجاح')
   }
 
   const handlePrint = () => {
     if (!data || !activeReport) return
-    const title = REPORTS.accounting.concat(REPORTS.sales, REPORTS.purchases, REPORTS.inventory).find((r) => r.type === activeReport)?.title ?? activeReport
+    const title = ALL_REPORTS_LIST.find((r) => r.type === activeReport)?.title ?? activeReport
     let body = ''
     if (activeReport === 'trial-balance') {
       body = `
@@ -128,71 +179,14 @@ export function ReportsModule() {
           <tfoot><tr><td colspan="2">الإجمالي</td><td>${formatCurrency(data.totalDebit)}</td><td>${formatCurrency(data.totalCredit)}</td></tr></tfoot>
         </table>
       `
-    } else if (activeReport === 'income') {
-      body = `
-        <h3>الإيرادات</h3>
-        <table>
-          <thead><tr><th>الرمز</th><th>الحساب</th><th>المبلغ</th></tr></thead>
-          <tbody>
-            ${(data.revenues ?? []).map((r: any) => `<tr><td>${r.code}</td><td>${r.nameAr}</td><td>${formatCurrency(r.amount)}</td></tr>`).join('')}
-          </tbody>
-        </table>
-        <h3>المصروفات</h3>
-        <table>
-          <thead><tr><th>الرمز</th><th>الحساب</th><th>المبلغ</th></tr></thead>
-          <tbody>
-            ${(data.expenses ?? []).map((r: any) => `<tr><td>${r.code}</td><td>${r.nameAr}</td><td>${formatCurrency(r.amount)}</td></tr>`).join('')}
-          </tbody>
-        </table>
-        <div class="totals">
-          <div class="row"><span>إجمالي الإيرادات:</span><span>${formatCurrency(data.totals?.revenue ?? 0)}</span></div>
-          <div class="row"><span>إجمالي المصروفات:</span><span>${formatCurrency(data.totals?.expense ?? 0)}</span></div>
-          <div class="row grand"><span>صافي الربح:</span><span>${formatCurrency(data.totals?.netProfit ?? 0)}</span></div>
-        </div>
-      `
-    } else if (activeReport === 'balance-sheet') {
-      body = `
-        <h3>الأصول</h3>
-        <table><thead><tr><th>الرمز</th><th>الحساب</th><th>المبلغ</th></tr></thead>
-        <tbody>${(data.assets ?? []).map((r: any) => `<tr><td>${r.code}</td><td>${r.nameAr}</td><td>${formatCurrency(r.amount)}</td></tr>`).join('')}</tbody></table>
-        <h3>الالتزامات</h3>
-        <table><thead><tr><th>الرمز</th><th>الحساب</th><th>المبلغ</th></tr></thead>
-        <tbody>${(data.liabilities ?? []).map((r: any) => `<tr><td>${r.code}</td><td>${r.nameAr}</td><td>${formatCurrency(r.amount)}</td></tr>`).join('')}</tbody></table>
-        <h3>حقوق الملكية</h3>
-        <table><thead><tr><th>الرمز</th><th>الحساب</th><th>المبلغ</th></tr></thead>
-        <tbody>${(data.equity ?? []).map((r: any) => `<tr><td>${r.code}</td><td>${r.nameAr}</td><td>${formatCurrency(r.amount)}</td></tr>`).join('')}</tbody></table>
-        <div class="totals">
-          <div class="row"><span>إجمالي الأصول:</span><span>${formatCurrency(data.totals?.assets ?? 0)}</span></div>
-          <div class="row"><span>إجمالي الالتزامات:</span><span>${formatCurrency(data.totals?.liabilities ?? 0)}</span></div>
-          <div class="row"><span>إجمالي حقوق الملكية:</span><span>${formatCurrency(data.totals?.equity ?? 0)}</span></div>
-        </div>
-      `
-    } else if (activeReport === 'sales-summary' || activeReport === 'purchases-summary') {
-      body = `
-        <div class="totals">
-          <div class="row"><span>إجمالي الطلبات:</span><span>${formatCurrency(data.totalSales ?? data.totalPurchases ?? 0)}</span></div>
-          <div class="row"><span>إجمالي الفواتير:</span><span>${formatCurrency(data.totalInvoiced ?? 0)}</span></div>
-          <div class="row"><span>المدفوع:</span><span>${formatCurrency(data.totalPaid ?? 0)}</span></div>
-          <div class="row"><span>المستحق:</span><span>${formatCurrency(data.outstanding ?? 0)}</span></div>
-          <div class="row grand"><span>عدد الطلبات:</span><span>${data.ordersCount ?? 0}</span></div>
-        </div>
-      `
-    } else if (activeReport === 'inventory-value') {
-      body = `
-        <table>
-          <thead><tr><th>SKU</th><th>المنتج</th><th>المستودع</th><th>الكمية</th><th>التكلفة</th><th>القيمة</th></tr></thead>
-          <tbody>
-            ${(data.rows ?? []).map((r: any) => `<tr><td>${r.sku}</td><td>${r.name}</td><td>${r.warehouse}</td><td>${r.quantity}</td><td>${formatCurrency(r.costPrice)}</td><td>${formatCurrency(r.value)}</td></tr>`).join('')}
-          </tbody>
-          <tfoot><tr><td colspan="5">الإجمالي</td><td>${formatCurrency(data.totalValue ?? 0)}</td></tr></tfoot>
-        </table>
-      `
+    } else {
+      body = `<pre style="font-family:sans-serif;white-space:pre-wrap;">${JSON.stringify(data, null, 2)}</pre>`
     }
     const html = `
       <div class="doc-header">
         <div class="company">
           <img src="/logo.png" class="logo" style="width:56px;height:56px;object-fit:contain;border-radius:8px;" />
-          <div class="info"><h2>أورمنال</h2><p>${title}</p></div>
+          <div class="info"><h2>أورمنال ERP</h2><p>${title}</p></div>
         </div>
         <div class="doc-meta">
           <div class="type">${title}</div>
@@ -208,21 +202,21 @@ export function ReportsModule() {
   return (
     <ModuleShell
       title={t('module.reports')}
-      description="التقارير المحاسبية والمالية والمخزون"
+      description="المركز الموحد للتقارير المحاسبية والمالية والمبيعات والمشتريات والمخزون"
       icon={<BarChart3 className="size-5" />}
     >
       <Tabs defaultValue="accounting">
         <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 mb-5">
-          <TabsTrigger value="accounting">محاسبي</TabsTrigger>
-          <TabsTrigger value="sales">المبيعات</TabsTrigger>
-          <TabsTrigger value="purchases">المشتريات</TabsTrigger>
+          <TabsTrigger value="accounting">محاسبي ومالي</TabsTrigger>
+          <TabsTrigger value="sales">المبيعات والعملاء</TabsTrigger>
+          <TabsTrigger value="purchases">المشتريات والموردين</TabsTrigger>
           <TabsTrigger value="inventory">المخزون</TabsTrigger>
-          <TabsTrigger value="customers">العملاء</TabsTrigger>
-          <TabsTrigger value="suppliers">الموردون</TabsTrigger>
+          <TabsTrigger value="hr">الرواتب والموارد</TabsTrigger>
+          <TabsTrigger value="platform">النظام والأمان</TabsTrigger>
         </TabsList>
 
         {/* Date range filter */}
-        <Card className="p-4 mb-2">
+        <Card className="p-4 mb-3">
           <div className="flex flex-wrap items-end gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="from" className="text-xs">من تاريخ</Label>
@@ -236,54 +230,54 @@ export function ReportsModule() {
         </Card>
 
         <TabsContent value="accounting" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             {REPORTS.accounting.map((r) => (
               <ReportCard key={r.type} report={r} onGenerate={() => handleGenerate(r.type)} active={activeReport === r.type} />
             ))}
           </div>
         </TabsContent>
+
         <TabsContent value="sales" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             {REPORTS.sales.map((r) => (
               <ReportCard key={r.type} report={r} onGenerate={() => handleGenerate(r.type)} active={activeReport === r.type} />
             ))}
-            <ComingSoonCard title="كشف حساب عميل" />
-            <ComingSoonCard title="أعمار ديون العملاء" />
           </div>
         </TabsContent>
+
         <TabsContent value="purchases" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             {REPORTS.purchases.map((r) => (
               <ReportCard key={r.type} report={r} onGenerate={() => handleGenerate(r.type)} active={activeReport === r.type} />
             ))}
-            <ComingSoonCard title="كشف حساب مورد" />
-            <ComingSoonCard title="أعمار دائنية الموردين" />
           </div>
         </TabsContent>
+
         <TabsContent value="inventory" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             {REPORTS.inventory.map((r) => (
               <ReportCard key={r.type} report={r} onGenerate={() => handleGenerate(r.type)} active={activeReport === r.type} />
             ))}
-            <ComingSoonCard title="حركة مخزون صنف" />
-            <ComingSoonCard title="تسوية المخزون" />
           </div>
         </TabsContent>
-        <TabsContent value="customers" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <ComingSoonCard title="كشف حساب عميل" />
-            <ComingSoonCard title="أعمار ديون العملاء" />
-            <ComingSoonCard title="تحليل العملاء" />
+
+        <TabsContent value="hr" className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            {REPORTS.hr.map((r) => (
+              <ReportCard key={r.type} report={r} onGenerate={() => handleGenerate(r.type)} active={activeReport === r.type} />
+            ))}
           </div>
         </TabsContent>
-        <TabsContent value="suppliers" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <ComingSoonCard title="كشف حساب مورد" />
-            <ComingSoonCard title="أعمار دائنية الموردين" />
-            <ComingSoonCard title="تحليل الموردين" />
+
+        <TabsContent value="platform" className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            {REPORTS.platform.map((r) => (
+              <ReportCard key={r.type} report={r} onGenerate={() => handleGenerate(r.type)} active={activeReport === r.type} />
+            ))}
           </div>
         </TabsContent>
       </Tabs>
+
 
       {/* Report Results */}
       {activeReport && (
@@ -354,7 +348,7 @@ function ComingSoonCard({ title }: { title: string }) {
   )
 }
 
-function ReportResults({ type, data }: { type: ReportType; data: any }) {
+function ReportResults({ type, data }: { type: string; data: any }) {
   if (type === 'trial-balance') {
     return (
       <Card className="rounded-lg overflow-hidden">
@@ -507,7 +501,364 @@ function ReportResults({ type, data }: { type: ReportType; data: any }) {
       </Card>
     )
   }
-  return null
+  if (type === 'general-journal') {
+    return (
+      <Card className="rounded-lg overflow-hidden">
+        <ScrollArea className="max-h-[60vh]">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                <TableHead className="ps-3">رقم القيد</TableHead>
+                <TableHead>التاريخ</TableHead>
+                <TableHead>المرجع</TableHead>
+                <TableHead>البيان</TableHead>
+                <TableHead className="text-end num-cell">إجمالي المدين</TableHead>
+                <TableHead className="text-end num-cell">إجمالي الدائن</TableHead>
+                <TableHead>الحالة</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {(data.rows ?? []).map((r: any, i: number) => (
+                <TableRow key={i}>
+                  <TableCell className="ps-3 font-mono text-xs" dir="ltr">{r.number}</TableCell>
+                  <TableCell className="text-xs">{formatDate(r.date)}</TableCell>
+                  <TableCell className="text-xs">{r.ref}</TableCell>
+                  <TableCell className="font-medium text-xs">{r.description}</TableCell>
+                  <TableCell className="text-end num-cell"><span className="num tabular-nums" dir="ltr">{formatCurrency(r.totalDebit)}</span></TableCell>
+                  <TableCell className="text-end num-cell"><span className="num tabular-nums" dir="ltr">{formatCurrency(r.totalCredit)}</span></TableCell>
+                  <TableCell><Badge variant="outline" className="text-[10px]">{r.state === 'posted' ? 'رحل' : 'مسودة'}</Badge></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+            <TableFooter>
+              <TableRow>
+                <TableCell colSpan={4} className="font-bold">الإجمالي</TableCell>
+                <TableCell className="text-end num-cell"><span className="num font-bold tabular-nums" dir="ltr">{formatCurrency(data.totalDebit)}</span></TableCell>
+                <TableCell className="text-end num-cell"><span className="num font-bold tabular-nums" dir="ltr">{formatCurrency(data.totalCredit)}</span></TableCell>
+                <TableCell />
+              </TableRow>
+            </TableFooter>
+          </Table>
+        </ScrollArea>
+      </Card>
+    )
+  }
+
+  if (type === 'account-statement') {
+    return (
+      <Card className="rounded-lg overflow-hidden">
+        <ScrollArea className="max-h-[60vh]">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                <TableHead className="ps-3">التاريخ</TableHead>
+                <TableHead>رقم القيد</TableHead>
+                <TableHead>رمز الحساب</TableHead>
+                <TableHead>اسم الحساب</TableHead>
+                <TableHead>البيان / الشريك</TableHead>
+                <TableHead className="text-end num-cell">مدين</TableHead>
+                <TableHead className="text-end num-cell">دائن</TableHead>
+                <TableHead className="text-end num-cell">الرصيد التراكمي</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {(data.rows ?? []).map((r: any, i: number) => (
+                <TableRow key={i}>
+                  <TableCell className="ps-3 text-xs">{formatDate(r.date)}</TableCell>
+                  <TableCell className="font-mono text-xs" dir="ltr">{r.entryNumber}</TableCell>
+                  <TableCell className="font-mono text-xs" dir="ltr">{r.accountCode}</TableCell>
+                  <TableCell className="font-medium text-xs">{r.accountName}</TableCell>
+                  <TableCell className="text-xs">{r.description} {r.partner ? `(${r.partner})` : ''}</TableCell>
+                  <TableCell className="text-end num-cell"><span className="num tabular-nums" dir="ltr">{formatCurrency(r.debit)}</span></TableCell>
+                  <TableCell className="text-end num-cell"><span className="num tabular-nums" dir="ltr">{formatCurrency(r.credit)}</span></TableCell>
+                  <TableCell className="text-end num-cell"><span className="num font-semibold tabular-nums" dir="ltr">{formatCurrency(r.balance)}</span></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+            <TableFooter>
+              <TableRow>
+                <TableCell colSpan={5} className="font-bold">الإجمالي والرصيد النهائي</TableCell>
+                <TableCell className="text-end num-cell"><span className="num font-bold tabular-nums" dir="ltr">{formatCurrency(data.totalDebit)}</span></TableCell>
+                <TableCell className="text-end num-cell"><span className="num font-bold tabular-nums" dir="ltr">{formatCurrency(data.totalCredit)}</span></TableCell>
+                <TableCell className="text-end num-cell"><span className="num font-bold tabular-nums" dir="ltr">{formatCurrency(data.endingBalance)}</span></TableCell>
+              </TableRow>
+            </TableFooter>
+          </Table>
+        </ScrollArea>
+      </Card>
+    )
+  }
+
+  if (type === 'customer-statement' || type === 'ar-aging' || type === 'supplier-statement' || type === 'ap-aging') {
+    const isCustomer = type.includes('customer') || type.includes('ar')
+    return (
+      <Card className="rounded-lg overflow-hidden">
+        <ScrollArea className="max-h-[60vh]">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                <TableHead className="ps-3">الرمز</TableHead>
+                <TableHead>{isCustomer ? 'العميل' : 'المورد'}</TableHead>
+                <TableHead>الهاتف</TableHead>
+                <TableHead className="text-end num-cell">إجمالي الفواتير</TableHead>
+                <TableHead className="text-end num-cell">المدفوع</TableHead>
+                <TableHead className="text-end num-cell">الرصيد القائم</TableHead>
+                <TableHead className="text-end num-cell">حالي (0-30)</TableHead>
+                <TableHead className="text-end num-cell">31-60 يوم</TableHead>
+                <TableHead className="text-end num-cell">61-90 يوم</TableHead>
+                <TableHead className="text-end num-cell">+90 يوم</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {(data.rows ?? []).map((r: any, i: number) => (
+                <TableRow key={i}>
+                  <TableCell className="ps-3 font-mono text-xs" dir="ltr">{r.code}</TableCell>
+                  <TableCell className="font-medium text-xs">{r.name}</TableCell>
+                  <TableCell className="text-xs">{r.phone}</TableCell>
+                  <TableCell className="text-end num-cell"><span className="num tabular-nums" dir="ltr">{formatCurrency(r.invoiced)}</span></TableCell>
+                  <TableCell className="text-end num-cell"><span className="num tabular-nums text-emerald-600" dir="ltr">{formatCurrency(r.paid)}</span></TableCell>
+                  <TableCell className="text-end num-cell"><span className="num font-bold tabular-nums text-rose-600" dir="ltr">{formatCurrency(r.balance)}</span></TableCell>
+                  <TableCell className="text-end num-cell"><span className="num tabular-nums" dir="ltr">{formatCurrency(r.current)}</span></TableCell>
+                  <TableCell className="text-end num-cell"><span className="num tabular-nums" dir="ltr">{formatCurrency(r.days30)}</span></TableCell>
+                  <TableCell className="text-end num-cell"><span className="num tabular-nums" dir="ltr">{formatCurrency(r.days60)}</span></TableCell>
+                  <TableCell className="text-end num-cell"><span className="num tabular-nums text-rose-600 font-semibold" dir="ltr">{formatCurrency(r.days90Plus)}</span></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+            <TableFooter>
+              <TableRow>
+                <TableCell colSpan={5} className="font-bold">إجمالي الرصيد المستحق</TableCell>
+                <TableCell className="text-end num-cell"><span className="num font-bold tabular-nums text-rose-600" dir="ltr">{formatCurrency(data.totalBalance)}</span></TableCell>
+                <TableCell colSpan={4} />
+              </TableRow>
+            </TableFooter>
+          </Table>
+        </ScrollArea>
+      </Card>
+    )
+  }
+
+  if (type === 'low-stock') {
+    return (
+      <Card className="rounded-lg overflow-hidden">
+        <ScrollArea className="max-h-[60vh]">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                <TableHead className="ps-3">SKU</TableHead>
+                <TableHead>اسم الصنف</TableHead>
+                <TableHead>الفئة</TableHead>
+                <TableHead className="text-end num-cell">حد الطلب الأدنى</TableHead>
+                <TableHead className="text-end num-cell">المتوفر حالياً</TableHead>
+                <TableHead className="text-end num-cell">مقدار النقص</TableHead>
+                <TableHead className="text-end num-cell">سعر التكلفة</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {(data.rows ?? []).map((r: any, i: number) => (
+                <TableRow key={i} className="bg-rose-50/40 dark:bg-rose-950/20">
+                  <TableCell className="ps-3 font-mono text-xs" dir="ltr">{r.sku}</TableCell>
+                  <TableCell className="font-medium text-xs">{r.name}</TableCell>
+                  <TableCell className="text-xs">{r.category}</TableCell>
+                  <TableCell className="text-end num-cell"><span className="num tabular-nums font-semibold" dir="ltr">{formatInt(r.minStock)}</span></TableCell>
+                  <TableCell className="text-end num-cell"><span className="num tabular-nums text-rose-600 font-bold" dir="ltr">{formatInt(r.currentStock)}</span></TableCell>
+                  <TableCell className="text-end num-cell"><span className="num tabular-nums text-rose-700 font-bold" dir="ltr">{formatInt(r.shortage)}</span></TableCell>
+                  <TableCell className="text-end num-cell"><span className="num tabular-nums" dir="ltr">{formatCurrency(r.costPrice)}</span></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </ScrollArea>
+      </Card>
+    )
+  }
+
+  if (type === 'payroll-summary') {
+    return (
+      <Card className="rounded-lg overflow-hidden">
+        <ScrollArea className="max-h-[60vh]">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                <TableHead className="ps-3">الفترة</TableHead>
+                <TableHead>كود الموظف</TableHead>
+                <TableHead>اسم الموظف</TableHead>
+                <TableHead>القسم</TableHead>
+                <TableHead className="text-end num-cell">الراتب الأساسي</TableHead>
+                <TableHead className="text-end num-cell">البدلات</TableHead>
+                <TableHead className="text-end num-cell">الخصومات</TableHead>
+                <TableHead className="text-end num-cell">صافي الراتب</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {(data.rows ?? []).map((r: any, i: number) => (
+                <TableRow key={i}>
+                  <TableCell className="ps-3 font-mono text-xs" dir="ltr">{r.period}</TableCell>
+                  <TableCell className="font-mono text-xs" dir="ltr">{r.empCode}</TableCell>
+                  <TableCell className="font-medium text-xs">{r.empName}</TableCell>
+                  <TableCell className="text-xs">{r.dept}</TableCell>
+                  <TableCell className="text-end num-cell"><span className="num tabular-nums" dir="ltr">{formatCurrency(r.basic)}</span></TableCell>
+                  <TableCell className="text-end num-cell"><span className="num tabular-nums text-emerald-600" dir="ltr">{formatCurrency(r.allowances)}</span></TableCell>
+                  <TableCell className="text-end num-cell"><span className="num tabular-nums text-rose-600" dir="ltr">{formatCurrency(r.deductions)}</span></TableCell>
+                  <TableCell className="text-end num-cell"><span className="num font-bold tabular-nums" dir="ltr">{formatCurrency(r.net)}</span></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+            <TableFooter>
+              <TableRow>
+                <TableCell colSpan={7} className="font-bold">إجمالي صافي المسيرات</TableCell>
+                <TableCell className="text-end num-cell"><span className="num font-bold tabular-nums text-emerald-600" dir="ltr">{formatCurrency(data.totalNet)}</span></TableCell>
+              </TableRow>
+            </TableFooter>
+          </Table>
+        </ScrollArea>
+      </Card>
+    )
+  }
+
+  if (type === 'audit-trail') {
+    return (
+      <Card className="rounded-lg overflow-hidden">
+        <ScrollArea className="max-h-[60vh]">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                <TableHead className="ps-3">التاريخ والوقت</TableHead>
+                <TableHead>المستخدم</TableHead>
+                <TableHead>العملية</TableHead>
+                <TableHead>الموديول</TableHead>
+                <TableHead>الكيان المستهدف</TableHead>
+                <TableHead>عنوان IP</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {(data.rows ?? []).map((r: any, i: number) => (
+                <TableRow key={i}>
+                  <TableCell className="ps-3 text-xs">{formatDate(r.date)}</TableCell>
+                  <TableCell className="font-medium text-xs">{r.user}</TableCell>
+                  <TableCell><Badge variant="outline" className="text-[10px]">{r.action}</Badge></TableCell>
+                  <TableCell className="text-xs">{r.module}</TableCell>
+                  <TableCell className="text-xs font-mono">{r.entity}</TableCell>
+                  <TableCell className="text-xs font-mono" dir="ltr">{r.ip}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </ScrollArea>
+      </Card>
+    )
+  }
+
+  if (data?.rows && Array.isArray(data.rows) && data.rows.length > 0) {
+    const sample = data.rows[0]
+    const keys = Object.keys(sample).filter((k) => k !== 'id')
+
+    const getHeaderLabel = (k: string) => {
+      const labels: Record<string, string> = {
+        code: 'الرمز / الكود',
+        number: 'رقم المستند',
+        partner: 'الشريك / العميل / المورد',
+        partnerCode: 'رمز الشريك',
+        supplier: 'المورد',
+        name: 'الاسم / الصنف',
+        productName: 'اسم الصنف',
+        sku: 'رمز SKU',
+        date: 'التاريخ',
+        requiredDate: 'التاريخ المطلوب',
+        billDate: 'تاريخ الفاتورة',
+        amount: 'المبلغ',
+        total: 'الإجمالي',
+        paid: 'المدفوع',
+        subtotal: 'المبلغ قبل الضريبة',
+        taxTotal: 'الضريبة',
+        discount: 'الخصم',
+        status: 'الحالة',
+        state: 'الحالة',
+        method: 'طريقة الدفع',
+        reference: 'المرجع',
+        reason: 'السبب / البيان',
+        department: 'القسم',
+        dept: 'القسم',
+        job: 'المسمى الوظيفي',
+        phone: 'الهاتف',
+        email: 'البريد الإلكتروني',
+        quantity: 'الكمية',
+        invoicesCount: 'عدد الفواتير',
+        totalInvoiced: 'إجمالي المفوتر',
+        totalPaid: 'إجمالي المحصل / المدفوع',
+        balance: 'الرصيد القائم',
+        warehouse: 'المستودع',
+        type: 'النوع',
+        checkIn: 'وقت الدخول',
+        checkOut: 'وقت الخروج',
+        leaveType: 'نوع الإجازة',
+        startDate: 'من تاريخ',
+        endDate: 'إلى تاريخ',
+        days: 'عدد الأيام',
+        empCode: 'كود الموظف',
+        empName: 'اسم الموظف',
+      }
+      return labels[k] || k
+    }
+
+    const renderCell = (r: any, key: string) => {
+      const val = r[key]
+      if (val === null || val === undefined) return '—'
+      if (key === 'date' || key === 'requiredDate' || key === 'billDate' || key === 'startDate' || key === 'endDate') {
+        return formatDate(val)
+      }
+      if (typeof val === 'number') {
+        if (key.includes('Count') || key === 'quantity' || key === 'days') return <span className="num font-mono" dir="ltr">{formatInt(val)}</span>
+        return <span className="num font-mono font-semibold" dir="ltr">{formatCurrency(val)}</span>
+      }
+      if (key === 'status' || key === 'state') {
+        return <Badge variant="outline" className="text-[10px]">{String(val)}</Badge>
+      }
+      if (key === 'code' || key === 'sku' || key === 'number' || key === 'empCode' || key === 'partnerCode') {
+        return <span className="font-mono text-xs" dir="ltr">{String(val)}</span>
+      }
+      return String(val)
+    }
+
+    return (
+      <Card className="rounded-lg overflow-hidden">
+        <ScrollArea className="max-h-[60vh]">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                {keys.map((k) => (
+                  <TableHead key={k} className={typeof sample[k] === 'number' ? 'text-end num-cell' : ''}>
+                    {getHeaderLabel(k)}
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.rows.map((r: any, i: number) => (
+                <TableRow key={i}>
+                  {keys.map((k) => (
+                    <TableCell key={k} className={`text-xs ${typeof sample[k] === 'number' ? 'text-end num-cell' : ''}`}>
+                      {renderCell(r, k)}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </ScrollArea>
+      </Card>
+    )
+  }
+
+  return (
+    <Card className="p-8 text-center border-dashed">
+      <div className="flex flex-col items-center justify-center gap-2">
+        <FileText className="size-10 text-muted-foreground/50" />
+        <p className="font-semibold text-sm">لا تتوفر بيانات للتقرير المحدد</p>
+        <p className="text-xs text-muted-foreground">قم بتغيير نطاق التاريخ أو حدد تقريراً آخر لعرض النتائج التفصيلية.</p>
+      </div>
+    </Card>
+  )
 }
 
 function BalanceSheetSection({ title, items, color, total }: { title: string; items: any[]; color: string; total: number }) {

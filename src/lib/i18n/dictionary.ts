@@ -81,6 +81,18 @@ export const dictionary = {
   'nav.group.hr': { ar: 'الموارد البشرية', en: 'Human Resources' },
   'nav.group.reports': { ar: 'التقارير', en: 'Reports' },
   'nav.group.pos': { ar: 'نقطة البيع', en: 'Point of Sale' },
+  // Reports Subgroups
+  'nav.subgroup.reports-dashboard': { ar: 'لوحة التقارير', en: 'Reports Dashboard' },
+  'nav.subgroup.reports-finance': { ar: 'تقارير الحسابات والمالية', en: 'Accounts & Finance Reports' },
+  'nav.subgroup.reports-ar': { ar: 'تقارير العملاء والذمم المدينة', en: 'Customers & AR Reports' },
+  'nav.subgroup.reports-ap': { ar: 'تقارير الموردين والذمم الدائنة', en: 'Suppliers & AP Reports' },
+  'nav.subgroup.reports-sales': { ar: 'تقارير المبيعات', en: 'Sales Reports' },
+  'nav.subgroup.reports-procurement': { ar: 'تقارير المشتريات', en: 'Procurement Reports' },
+  'nav.subgroup.reports-inventory': { ar: 'تقارير المخزون', en: 'Inventory Reports' },
+  'nav.subgroup.reports-pos': { ar: 'تقارير نقاط البيع', en: 'POS Reports' },
+  'nav.subgroup.reports-hr': { ar: 'تقارير الموارد البشرية', en: 'HR Reports' },
+  'nav.subgroup.reports-assets': { ar: 'تقارير الأصول الثابتة', en: 'Fixed Assets Reports' },
+
   // Legacy group keys (kept for backward compatibility)
   'nav.group.purchases': { ar: 'المشتريات', en: 'Purchases' },
   'nav.group.accounting': { ar: 'المحاسبة', en: 'Accounting' },
