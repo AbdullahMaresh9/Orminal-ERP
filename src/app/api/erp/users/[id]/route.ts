@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import {
   ok, badRequest, notFound, serverError, forbidden,
 } from '@/lib/erp/api-response'
+import { hashPassword } from '@/lib/auth/password'
 
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -60,7 +61,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     if (body.locale !== undefined) data.locale = body.locale
     if (body.timezone !== undefined) data.timezone = body.timezone
     if (body.password) {
-      data.passwordHash = `hashed$${Buffer.from(body.password).toString('base64')}`
+      data.passwordHash = await hashPassword(body.password)
     }
 
     const updated = await db.user.update({

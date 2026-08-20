@@ -1,34 +1,48 @@
+// =============================================================================
+// Legacy settings endpoint — kept for the existing settings UI and for
+// app-wide reads (lib/export.ts fetches printing settings for every user).
+//
+// Hardened:
+// - GET stays available to any AUTHENTICATED user (print/export needs it),
+//   but secret values are masked — they are never returned in clear.
+// - PUT/POST derive the acting user from the SESSION (previously: whatever
+//   `db.user.findFirst({active:true})` returned — audit rows were fiction)
+//   and require config capabilities.
+// - All writes flow through the validated, audited write path (saveConfig).
+// New tooling should prefer /api/erp/config.
+// =============================================================================
+
 import { db } from '@/lib/db'
-import { ok, badRequest, serverError, list } from '@/lib/erp/api-response'
-import { saveSettings, seedDefaultSettings, DEFAULT_SETTINGS } from '@/lib/erp/settings-service'
+import { ok, badRequest, serverError } from '@/lib/erp/api-response'
+import { requireAuth, isAuthFailure } from '@/lib/erp/rbac'
+import { requireConfigCapability } from '@/lib/config/permissions'
+import { getConfigDef, SECRET_KEYS } from '@/lib/config/registry'
+import { saveConfig, seedConfigDefaults } from '@/lib/config/service'
+import { maskSecret, decryptSecret } from '@/lib/config/crypto'
+import { GLOBAL_SCOPE } from '@/lib/config/types'
 
 export async function GET(req: Request) {
   try {
+    const auth = await requireAuth()
+    if (isAuthFailure(auth)) return auth
+
     const url = new URL(req.url)
     const category = url.searchParams.get('category')
 
-    // If settings count is less than defaults, or if metadata is missing (e.g. seeded with key/value only), run sync
-    const count = await db.setting.count()
-    const needsSync = await db.setting.findFirst({
-      where: {
-        OR: [
-          { label: null },
-          { labelEn: null }
-        ]
-      }
+    // Sync DB rows with the registry (idempotent, cheap when in sync)
+    const count = await db.setting.count({
+      where: { companyId: GLOBAL_SCOPE, branchId: GLOBAL_SCOPE },
     })
-    if (count < DEFAULT_SETTINGS.length || needsSync) {
-      await seedDefaultSettings()
-    }
+    if (count < 1) await seedConfigDefaults()
 
     const where = category ? { category } : {}
     const settings = await db.setting.findMany({ where, orderBy: { category: 'asc' } })
 
-    // Return as flat key-value map + metadata
-    const result: Record<string, any> = {}
+    const result: Record<string, unknown> = {}
     for (const s of settings) {
+      const secret = SECRET_KEYS.has(s.key)
       result[s.key] = {
-        value: s.value,
+        value: secret ? maskSecret(decryptSecret(s.value)) : s.value,
         category: s.category,
         label: s.label,
         labelEn: s.labelEn,
@@ -38,48 +52,83 @@ export async function GET(req: Request) {
         isSystem: s.isSystem,
       }
     }
-
     return ok(result)
-  } catch (e: any) {
-    return serverError(e.message)
+  } catch (e) {
+    return serverError(e instanceof Error ? e.message : 'unexpected error')
   }
 }
 
 export async function PUT(req: Request) {
   try {
-    const body = await req.json()
-    const { settings, reason } = body as { settings: Record<string, string>; reason?: string }
-
-    if (!settings || typeof settings !== 'object') {
+    const body = (await req.json()) as { settings: Record<string, string>; reason?: string }
+    if (!body.settings || typeof body.settings !== 'object') {
       return badRequest('Invalid settings payload')
     }
 
-    // Get user from session (simplified — in production use NextAuth)
-    const user = await db.user.findFirst({ where: { active: true } })
+    let needsSystem = false
+    let needsSecret = false
+    for (const key of Object.keys(body.settings)) {
+      const def = getConfigDef(key)
+      if (!def) return badRequest(`الإعداد «${key}» غير معرَّف في سجل النظام`, 'UNKNOWN_KEY')
+      if (def.isSystem) needsSystem = true
+      if (def.secret) needsSecret = true
+    }
+    const auth = await requireConfigCapability(
+      needsSecret ? 'CONFIG_SECRET' : needsSystem ? 'CONFIG_SYSTEM' : 'CONFIG',
+      'canUpdate'
+    )
+    if (isAuthFailure(auth)) return auth
 
-    await saveSettings(settings, user?.id, reason)
-
-    return ok({ success: true, count: Object.keys(settings).length })
-  } catch (e: any) {
-    return serverError(e.message)
+    const result = await saveConfig(
+      body.settings,
+      { companyId: GLOBAL_SCOPE, branchId: GLOBAL_SCOPE },
+      {
+        userId: auth.userId,
+        reason: body.reason,
+        ipAddress:
+          req.headers.get('x-real-ip') ??
+          req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+          undefined,
+        userAgent: req.headers.get('user-agent') ?? undefined,
+      }
+    )
+    if (!result.ok) {
+      return badRequest(
+        result.errors?.map((e) => e.messageAr).join('؛ ') ??
+          result.ruleErrors?.map((e) => e.messageAr).join('؛ ') ??
+          'فشل التحقق من الإعدادات',
+        'VALIDATION_FAILED'
+      )
+    }
+    return ok({ success: true, count: result.saved })
+  } catch (e) {
+    return serverError(e instanceof Error ? e.message : 'unexpected error')
   }
 }
 
 // Reset a single setting to its default value
 export async function POST(req: Request) {
   try {
-    const { key } = await req.json()
+    const { key } = (await req.json()) as { key?: string }
     if (!key) return badRequest('Key is required')
 
-    const setting = await db.setting.findUnique({ where: { key } })
-    if (!setting) return badRequest('Setting not found')
-    if (!setting.defaultValue) return badRequest('No default value defined')
+    const def = getConfigDef(key)
+    if (!def) return badRequest('Setting not found')
 
-    const user = await db.user.findFirst({ where: { active: true } })
-    await saveSettings({ [key]: setting.defaultValue }, user?.id, 'Reset to default')
+    const auth = await requireConfigCapability(
+      def.secret ? 'CONFIG_SECRET' : def.isSystem ? 'CONFIG_SYSTEM' : 'CONFIG',
+      'canUpdate'
+    )
+    if (isAuthFailure(auth)) return auth
 
-    return ok({ key, value: setting.defaultValue })
-  } catch (e: any) {
-    return serverError(e.message)
+    const result = await saveConfig(
+      { [key]: def.defaultValue },
+      { companyId: GLOBAL_SCOPE, branchId: GLOBAL_SCOPE },
+      { userId: auth.userId, reason: 'Reset to default' }
+    )
+    if (!result.ok) return badRequest('تعذّرت إعادة التعيين', 'RESET_FAILED')
+    return ok({ key, value: def.defaultValue })
+  } catch (e) {
+    return serverError(e instanceof Error ? e.message : 'unexpected error')
   }
 }

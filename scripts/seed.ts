@@ -360,7 +360,11 @@ async function main() {
     { key: 'doc.footerNote', value: 'شكراً لتعاملكم معنا' },
   ]
   for (const s of settings) {
-    await db.setting.upsert({ where: { key: s.key }, update: {}, create: s })
+    await db.setting.upsert({
+      where: { key_companyId_branchId: { key: s.key, companyId: '*', branchId: '*' } },
+      update: {},
+      create: s,
+    })
   }
 
   // === Opening Journal Entry ===

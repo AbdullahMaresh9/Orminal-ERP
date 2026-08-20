@@ -182,6 +182,7 @@ export const dictionary = {
   'module.users': { ar: 'المستخدمون', en: 'Users' },
   'module.roles': { ar: 'الأدوار', en: 'Roles' },
   'module.settings': { ar: 'الإعدادات', en: 'Settings' },
+  'module.system-config': { ar: 'تهيئة النظام', en: 'System Configuration' },
   'module.document-templates': { ar: 'قوالب المستندات', en: 'Document Templates' },
   'module.audit-logs': { ar: 'سجل التدقيق', en: 'Audit Logs' },
   'module.notifications': { ar: 'الإشعارات', en: 'Notifications' },

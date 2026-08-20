@@ -129,6 +129,7 @@ const RolesModule = lazy(() => import('@/components/modules/roles-module'))
 const AuditLogsModule = lazy(() => import('@/components/modules/audit-logs-module'))
 const NotificationsModule = lazy(() => import('@/components/modules/notifications-module'))
 const SettingsModule = lazy(() => import('@/components/modules/settings-module'))
+const SystemConfigModule = lazy(() => import('@/components/modules/system-config-module'))
 const ProfileModule = lazy(() => import('@/components/modules/profile-module'))
 const DocumentTemplatesModule = lazy(() => import('@/components/modules/document-templates-module'))
 
@@ -316,6 +317,7 @@ export const moduleRegistry: Record<ModuleKey, React.ComponentType> = {
   'audit-logs': AuditLogsModule,
   notifications: NotificationsModule,
   settings: SettingsModule,
+  'system-config': SystemConfigModule,
   profile: ProfileModule,
   'document-templates': DocumentTemplatesModule,
 }

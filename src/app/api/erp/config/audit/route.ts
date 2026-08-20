@@ -1,5 +1,4 @@
-// Legacy settings audit endpoint — now capability-gated (CONFIG_AUDIT canRead).
-// New tooling should prefer /api/erp/config/audit.
+// System Configuration — audit log reader (CONFIG_AUDIT canRead).
 import { db } from '@/lib/db'
 import { list, serverError } from '@/lib/erp/api-response'
 import { requireConfigCapability } from '@/lib/config/permissions'
@@ -25,7 +24,23 @@ export async function GET(req: Request) {
       take: limit,
     })
 
-    return list(logs, logs.length)
+    // Resolve usernames without trusting the client for identity
+    const userIds = [...new Set(logs.map((l) => l.userId).filter((v): v is string => !!v))]
+    const users = userIds.length
+      ? await db.user.findMany({
+          where: { id: { in: userIds } },
+          select: { id: true, username: true, nameAr: true },
+        })
+      : []
+    const byId = new Map(users.map((u) => [u.id, u]))
+
+    return list(
+      logs.map((l) => ({
+        ...l,
+        user: l.userId ? (byId.get(l.userId) ?? null) : null,
+      })),
+      logs.length
+    )
   } catch (e) {
     return serverError(e instanceof Error ? e.message : 'unexpected error')
   }

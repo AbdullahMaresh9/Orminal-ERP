@@ -313,7 +313,13 @@ model NumberSequence {
 
 model Setting {
   id           String   @id @default(cuid())
-  key          String   @unique
+  key          String
+  // Scope: '*' means "all" at that level (NULL would break the unique
+  // constraint — Postgres treats NULLs as distinct; same rationale as
+  // AccountRoleMapping / ADR-CoA-001).
+  // Resolution at read time: (companyId, branchId) → (companyId, '*') → ('*','*') → registry default.
+  companyId    String   @default("*")
+  branchId     String   @default("*")
   value        String
   category     String   @default("general") // general|company|accounting|inventory|sales|purchases|taxes|numbering|printing|notifications|zatca|email|import_export|backup|security|appearance|system
   label        String? // display label (Arabic)
@@ -327,7 +333,9 @@ model Setting {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  @@unique([key, companyId, branchId])
   @@index([category])
+  @@index([companyId, branchId])
 }
 
 model SettingAuditLog {
@@ -336,9 +344,12 @@ model SettingAuditLog {
   oldValue   String?
   newValue   String?
   userId     String?
+  companyId  String?
+  branchId   String?
   category   String
   reason     String?
   ipAddress  String?
+  userAgent  String?
   createdAt  DateTime @default(now())
 
   @@index([settingKey])
