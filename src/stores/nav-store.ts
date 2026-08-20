@@ -5,7 +5,7 @@ import { persist } from 'zustand/middleware'
 
 export type ModuleKey =
   //  Platform
-  | 'dashboard' | 'profile' | 'users' | 'roles' | 'audit-logs' | 'notifications' | 'settings'
+  | 'dashboard' | 'profile' | 'users' | 'roles' | 'audit-logs' | 'notifications' | 'settings' | 'system-config'
   // Master Data
   | 'products' | 'categories' | 'warehouses' | 'branches' | 'customers' | 'suppliers'
   // Finance & Accounts

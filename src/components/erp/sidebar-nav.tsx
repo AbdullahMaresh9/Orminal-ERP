@@ -16,6 +16,7 @@ import {
   FileCheck, Search, DollarSign, ClipboardCheck, FileInput, FileOutput,
   Store, RefreshCcw, LayoutList, Copy, Coins, Scale, Percent, Archive, AlertTriangle,
   RotateCw, UserCheck, CreditCard, Lock, Calendar, ArrowUpRight, ArrowDownRight,
+  SlidersHorizontal,
   type LucideIcon,
 } from 'lucide-react'
 import { RoleBadge } from './role-badge'
@@ -388,6 +389,7 @@ const NAV: NavGroup[] = [
       { key: 'audit-logs', labelKey: 'module.audit-logs', icon: ScrollText },
       { key: 'notifications', labelKey: 'module.notifications', icon: Bell },
       { key: 'document-templates', labelKey: 'module.document-templates', icon: Copy },
+      { key: 'system-config', labelKey: 'module.system-config', icon: SlidersHorizontal },
       { key: 'settings', labelKey: 'module.settings', icon: Settings },
       { key: 'profile', labelKey: 'module.profile', icon: UserCog },
     ],
