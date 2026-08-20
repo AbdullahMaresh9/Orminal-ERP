@@ -3,6 +3,7 @@ import {
   list, created, badRequest, serverError,
   parsePagination, parseSearch,
 } from '@/lib/erp/api-response'
+import { hashPassword } from '@/lib/auth/password'
 
 export async function GET(req: Request) {
   try {
@@ -86,8 +87,9 @@ export async function POST(req: Request) {
       return badRequest('البريد الإلكتروني مستخدم بالفعل', 'DUPLICATE_EMAIL')
     }
 
-    // NOTE: production would use bcrypt; sandbox uses a simple obfuscation
-    const passwordHash = `hashed$${Buffer.from(body.password).toString('base64')}`
+    // scrypt — the only format verifyPassword accepts. The previous base64
+    // "obfuscation" was reversible AND locked created users out of login.
+    const passwordHash = await hashPassword(body.password)
 
     const created_ = await db.user.create({
       data: {
