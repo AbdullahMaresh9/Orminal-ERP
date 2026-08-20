@@ -16,7 +16,8 @@
     "test": "node --import ./tests/alias-hook.mjs --test tests/**/*.test.ts",
     "coa:migrate": "node scripts/migrate-chart-of-accounts.mjs",
     "coa:migrate:dry": "node scripts/migrate-chart-of-accounts.mjs --dry-run",
-    "db:backup": "node scripts/backup-database.mjs"
+    "db:backup": "node scripts/backup-database.mjs",
+    "test:config": "node --import ./tests/alias-hook.mjs --test tests/config-governance.test.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
