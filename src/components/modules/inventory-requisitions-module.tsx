@@ -356,8 +356,8 @@ export function InventoryRequisitionsModule() {
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" className="gap-1.5 font-medium border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
               <Download className="size-4 text-emerald-600 dark:text-emerald-400" />
-              <span>{isRTL ? 'التصدير' : 'Export'}</span>
-              <ChevronDown className="size-4 text-slate-400 ms-0.5" />
+              <span>{isRTL ? 'تصدير' : 'Export'}</span>
+
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align={isRTL ? 'start' : 'end'} sideOffset={6} className="w-30 z-50">

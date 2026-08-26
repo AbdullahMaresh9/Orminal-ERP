@@ -343,7 +343,7 @@ export const moduleRegistry: Record<ModuleKey, React.ComponentType> = {
   'config-general-defs': SystemConfigModule,
   'config-currencies': SystemConfigModule,
   'config-fiscal-periods': SystemConfigModule,
-  'config-org-structure': SystemConfigModule,
+  'config-org-structure': OrgStructureModule,
   'config-subledgers-naming': SystemConfigModule,
   'config-doc-types': SystemConfigModule,
   'config-doc-sequences': SystemConfigModule,

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -10,6 +10,8 @@ import {
   Plus,
   Trash2,
   FileSpreadsheet,
+  FileText,
+  Download,
   Printer,
   RotateCw,
   Search,
@@ -52,6 +54,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuCheckboxItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
@@ -328,31 +331,65 @@ export default function OrgStructureModule({
   const queryClient = useQueryClient()
   const [viewMode, setViewMode] = useState<'list' | 'form'>('list')
   const [editingItem, setEditingItem] = useState<OrgStructureItem | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [pageSize, setPageSize] = useState(10)
   const [currentPage, setCurrentPage] = useState(1)
 
-  // Expanded Column visibility controls matching user request
-  const [visibleCols, setVisibleCols] = useState({
-    code: true,
-    name: true,
-    parentCode: true,
-    parentName: true,
-    type: true,
-    level: true,
-    notes: true,
-    createdAt: true,
-    isSuspended: true,
-    suspendedBy: false,
-    suspendedAt: false,
-    suspensionReason: false,
-    suspensionCount: false,
-    createdBy: false,
-    updatedBy: false,
-    updatedAt: false,
-    modificationCount: false,
-    printCount: false,
-  })
+  // Expanded Column visibility controls matching user request (Persisted in localStorage)
+  const VISIBLE_COLS_STORAGE_KEY = 'orminal_erp_org_structure_visible_cols'
+
+  const DEFAULT_VISIBLE_COLS = useMemo(
+    () => ({
+      code: true,
+      name: true,
+      parentCode: true,
+      parentName: true,
+      type: true,
+      level: true,
+      notes: true,
+      createdAt: true,
+      isSuspended: true,
+      suspendedBy: false,
+      suspendedAt: false,
+      suspensionReason: false,
+      suspensionCount: false,
+      createdBy: false,
+      updatedBy: false,
+      updatedAt: false,
+      modificationCount: false,
+      printCount: false,
+    }),
+    []
+  )
+
+  const [visibleCols, setVisibleCols] = useState(DEFAULT_VISIBLE_COLS)
+  const [isColsLoaded, setIsColsLoaded] = useState(false)
+
+  // Hydrate user column preferences from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(VISIBLE_COLS_STORAGE_KEY)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        setVisibleCols((prev) => ({ ...prev, ...parsed }))
+      }
+    } catch (e) {
+      console.error('Error reading column preferences:', e)
+    } finally {
+      setIsColsLoaded(true)
+    }
+  }, [])
+
+  // Persist column preferences to localStorage whenever changed
+  useEffect(() => {
+    if (!isColsLoaded) return
+    try {
+      localStorage.setItem(VISIBLE_COLS_STORAGE_KEY, JSON.stringify(visibleCols))
+    } catch (e) {
+      console.error('Error saving column preferences:', e)
+    }
+  }, [visibleCols, isColsLoaded])
 
   // Form State
   const [formData, setFormData] = useState<{
@@ -514,6 +551,313 @@ export default function OrgStructureModule({
     const start = (currentPage - 1) * pageSize
     return filteredItems.slice(start, start + pageSize)
   }, [filteredItems, currentPage, pageSize])
+
+  // Currently Selected Item in grid
+  const selectedItem = useMemo(() => {
+    return items.find((i) => i.id === selectedId) || null
+  }, [items, selectedId])
+
+
+
+  // Export handlers (CSV, Excel, Word, PDF)
+  const handleExportCSV = () => {
+    const headers = [
+      L('رقم الهيكل', 'Code'),
+      L('اسم الهيكل', 'Structure Name'),
+      L('الهيكل الأعلى', 'Parent Code'),
+      L('اسم الهيكل الأعلى', 'Parent Name'),
+      L('نوع الهيكل', 'Structure Type'),
+      L('المستوى', 'Level'),
+      L('التوقيف', 'Status'),
+      L('مدخل البيانات', 'Created By'),
+      L('تاريخ بدء الإدخال', 'Created At'),
+    ]
+
+    const rows = filteredItems.map((item) => [
+      item.code,
+      isRTL ? item.nameAr : (item.nameEn || item.nameAr),
+      item.parent?.code || '-',
+      isRTL ? (item.parent?.nameAr || '-') : (item.parent?.nameEn || item.parent?.nameAr || '-'),
+      item.type,
+      item.level ?? 1,
+      item.isSuspended ? L('موقوف', 'Suspended') : L('نشط', 'Active'),
+      item.createdBy || 'admin',
+      item.createdAt || '-',
+    ])
+
+    let csvContent = '\uFEFF'
+    csvContent += headers.map((h) => `"${h.replace(/"/g, '""')}"`).join(',') + '\r\n'
+    rows.forEach((row) => {
+      csvContent += row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(',') + '\r\n'
+    })
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.setAttribute('href', url)
+    link.setAttribute('download', `org_structure_${new Date().toISOString().slice(0, 10)}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    toast.success(L('تم تصدير البيانات إلى ملف CSV بنجاح', 'Exported to CSV successfully'))
+  }
+
+  const handleExportExcel = () => {
+    const title = L('جدول الهيكل التنظيمي', 'Organization Structure Data')
+    const headers = [
+      L('رقم الهيكل', 'Code'),
+      L('اسم الهيكل', 'Structure Name'),
+      L('الهيكل الأعلى', 'Parent Code'),
+      L('اسم الهيكل الأعلى', 'Parent Name'),
+      L('نوع الهيكل', 'Structure Type'),
+      L('المستوى', 'Level'),
+      L('التوقيف', 'Status'),
+      L('مدخل البيانات', 'Created By'),
+      L('تاريخ بدء الإدخال', 'Created At'),
+    ]
+
+    let tableHtml = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+      <head>
+        <meta charset="utf-8" />
+        <!--[if gte mso 9]>
+        <xml>
+          <x:ExcelWorkbook>
+            <x:ExcelWorksheets>
+              <x:ExcelWorksheet>
+                <x:Name>${title}</x:Name>
+                <x:WorksheetOptions>
+                  <x:DisplayRightToLeft/>
+                </x:WorksheetOptions>
+              </x:ExcelWorksheet>
+            </x:ExcelWorksheets>
+          </x:ExcelWorkbook>
+        </xml>
+        <![endif]-->
+        <style>
+          body { font-family: Arial, Tahoma, 'Segoe UI', sans-serif; direction: rtl; text-align: right; }
+          table { border-collapse: collapse; width: 100%; direction: rtl; }
+          th { background-color: #2b5ba9; color: #ffffff; font-weight: bold; border: 1px solid #1a3c75; padding: 12px 14px; text-align: center; font-size: 28px; }
+          td { border: 1px solid #cbd5e1; padding: 10px 12px; text-align: right; font-size: 24px; font-family: Arial, Tahoma, 'Segoe UI', sans-serif; }
+          tr:nth-child(even) { background-color: #b22045ff; }
+          .header-title { font-size: 24px; font-weight: bold; text-align: center; background-color: #0952c6ff; color: #ffffff; padding: 16px; }
+        </style>
+      </head>
+      <body dir="rtl">
+        <table>
+          <thead>
+            <tr>
+              <th colspan="${headers.length}" class="header-title">${title} - ${new Date().toLocaleDateString('ar-SA')}</th>
+            </tr>
+            <tr>
+              ${headers.map((h) => `<th>${h}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${filteredItems
+        .map(
+          (item) => `
+              <tr>
+                <td style="text-align:center; font-weight:bold; color:#2563eb;">${item.code}</td>
+                <td>${isRTL ? item.nameAr : (item.nameEn || item.nameAr)}</td>
+                <td style="text-align:center;">${item.parent?.code || '-'}</td>
+                <td>${isRTL ? (item.parent?.nameAr || '-') : (item.parent?.nameEn || item.parent?.nameAr || '-')}</td>
+                <td style="text-align:center;">${item.type}</td>
+                <td style="text-align:center;">${item.level ?? 1}</td>
+                <td style="text-align:center;">${item.isSuspended ? L('موقوف', 'Suspended') : L('نشط', 'Active')}</td>
+                <td>${item.createdBy || 'admin'}</td>
+                <td style="text-align:center;">${item.createdAt || '-'}</td>
+              </tr>
+            `
+        )
+        .join('')}
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `
+
+    const blob = new Blob(['\uFEFF' + tableHtml], { type: 'application/vnd.ms-excel;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.setAttribute('href', url)
+    link.setAttribute('download', `org_structure_${new Date().toISOString().slice(0, 10)}.xls`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    toast.success(L('تم تصدير البيانات إلى Excel بنجاح', 'Exported to Excel successfully'))
+  }
+
+  const handleExportWord = () => {
+    const title = L('تقرير الهيكل التنظيمي - نظام أورمينال ERP', 'Org Structure Report - Orminal ERP')
+    const headers = [
+      L('رقم الهيكل', 'Code'),
+      L('اسم الهيكل', 'Structure Name'),
+      L('الهيكل الأعلى', 'Parent Code'),
+      L('اسم الهيكل الأعلى', 'Parent Name'),
+      L('نوع الهيكل', 'Structure Type'),
+      L('المستوى', 'Level'),
+      L('التوقيف', 'Status'),
+      L('مدخل البيانات', 'Created By'),
+      L('تاريخ بدء الإدخال', 'Created At'),
+    ]
+
+    let docHtml = `
+      <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+      <head>
+        <meta charset='utf-8'>
+        <title>${title}</title>
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; direction: rtl; text-align: right; padding: 25px; }
+          h1 { color: #2b5ba9; text-align: center; margin-bottom: 5px; font-size: 24px; border-bottom: 2px solid #2b5ba9; padding-bottom: 10px; }
+          p.subtitle { text-align: center; color: #64748b; margin-bottom: 25px; font-size: 15px; }
+          table { border-collapse: collapse; width: 100%; margin-top: 15px; direction: rtl; }
+          th { background-color: #2b5ba9; color: #ffffff; border: 1px solid #1a3c75; padding: 10px; font-size: 16px; text-align: center; }
+          td { border: 1px solid #cbd5e1; padding: 8px 10px; font-size: 14px; text-align: right; }
+          tr:nth-child(even) { background-color: #f8fafc; }
+          .footer { margin-top: 40px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 12px; }
+        </style>
+      </head>
+      <body dir='rtl'>
+        <h1>${title}</h1>
+        <p class="subtitle">${L('تاريخ التصدير:', 'Export Date:')} ${new Date().toLocaleDateString('ar-SA')} | ${L('إجمالي السجلات:', 'Total Records:')} ${filteredItems.length}</p>
+        <table>
+          <thead>
+            <tr>
+              ${headers.map((h) => `<th>${h}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${filteredItems
+        .map(
+          (item) => `
+              <tr>
+                <td style="text-align:center; font-weight:bold; color:#2563eb;">${item.code}</td>
+                <td>${isRTL ? item.nameAr : (item.nameEn || item.nameAr)}</td>
+                <td style="text-align:center;">${item.parent?.code || '-'}</td>
+                <td>${isRTL ? (item.parent?.nameAr || '-') : (item.parent?.nameEn || item.parent?.nameAr || '-')}</td>
+                <td style="text-align:center;">${item.type}</td>
+                <td style="text-align:center;">${item.level ?? 1}</td>
+                <td style="text-align:center;">${item.isSuspended ? L('موقوف', 'Suspended') : L('نشط', 'Active')}</td>
+                <td>${item.createdBy || 'admin'}</td>
+                <td style="text-align:center;">${item.createdAt || '-'}</td>
+              </tr>
+            `
+        )
+        .join('')}
+          </tbody>
+        </table>
+        <div class="footer">${L('تم التصدير تلقائياً بواسطة نظام أورمينال ERP', 'Exported automatically by Orminal ERP')}</div>
+      </body>
+      </html>
+    `
+
+    const blob = new Blob(['\uFEFF' + docHtml], { type: 'application/msword;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.setAttribute('href', url)
+    link.setAttribute('download', `org_structure_${new Date().toISOString().slice(0, 10)}.doc`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    toast.success(L('تم تصدير البيانات إلى Word بنجاح', 'Exported to Word successfully'))
+  }
+
+  const handleExportPDF = () => {
+    const printWin = window.open('', '_blank')
+    if (!printWin) {
+      toast.error(L('تعذر فتح نافذة التصدير. يرجى السماح بالنوافذ المنبثقة للطلب.', 'Could not open print window. Allow popups.'))
+      return
+    }
+
+    const title = L('تقرير الهيكل التنظيمي', 'Organization Structure Report')
+    const headers = [
+      L('رقم الهيكل', 'Code'),
+      L('اسم الهيكل', 'Structure Name'),
+      L('الهيكل الأعلى', 'Parent Code'),
+      L('اسم الهيكل الأعلى', 'Parent Name'),
+      L('نوع الهيكل', 'Structure Type'),
+      L('المستوى', 'Level'),
+      L('التوقيف', 'Status'),
+      L('مدخل البيانات', 'Created By'),
+      L('تاريخ بدء الإدخال', 'Created At'),
+    ]
+
+    const content = `
+      <!DOCTYPE html>
+      <html dir="rtl" lang="ar">
+      <head>
+        <meta charset="utf-8" />
+        <title>${title}</title>
+        <style>
+          @page { size: A4 landscape; margin: 12mm; }
+          body { font-family: 'Segoe UI', Tahoma, system-ui, sans-serif; direction: rtl; text-align: right; color: #0f172a; margin: 0; padding: 20px; background: #fff; }
+          .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2b5ba9; padding-bottom: 12px; margin-bottom: 20px; }
+          .logo { font-size: 22px; font-weight: bold; color: #2b5ba9; }
+          .info { font-size: 12px; color: #475569; }
+          h2 { font-size: 18px; color: #1e293b; margin: 0 0 15px 0; text-align: center; }
+          table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 15px; }
+          th { background-color: #2b5ba9; color: white; padding: 8px 10px; border: 1px solid #1d4ed8; text-align: center; font-weight: 600; }
+          td { padding: 6px 8px; border: 1px solid #cbd5e1; text-align: right; }
+          tr:nth-child(even) { background-color: #f8fafc; }
+          .badge { padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; display: inline-block; }
+          .badge-active { background-color: #dcfce7; color: #166534; }
+          .badge-suspended { background-color: #fee2e2; color: #991b1b; }
+          .footer { margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 10px; text-align: center; font-size: 10px; color: #94a3b8; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="logo">أورمينال تك - ORMINAL ERP</div>
+          <div class="info">${L('تاريخ التقرير:', 'Report Date:')} ${new Date().toLocaleDateString('ar-SA')} | ${new Date().toLocaleTimeString('ar-SA')}</div>
+        </div>
+        <h2>${title}</h2>
+        <table>
+          <thead>
+            <tr>
+              ${headers.map((h) => `<th>${h}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${filteredItems
+        .map(
+          (item) => `
+              <tr>
+                <td style="text-align:center; font-weight:bold; color:#2563eb;">${item.code}</td>
+                <td>${isRTL ? item.nameAr : (item.nameEn || item.nameAr)}</td>
+                <td style="text-align:center;">${item.parent?.code || '-'}</td>
+                <td>${isRTL ? (item.parent?.nameAr || '-') : (item.parent?.nameEn || item.parent?.nameAr || '-')}</td>
+                <td style="text-align:center;">${item.type}</td>
+                <td style="text-align:center;">${item.level ?? 1}</td>
+                <td style="text-align:center;">
+                  <span class="badge ${item.isSuspended ? 'badge-suspended' : 'badge-active'}">
+                    ${item.isSuspended ? L('موقوف', 'Suspended') : L('نشط', 'Active')}
+                  </span>
+                </td>
+                <td>${item.createdBy || 'admin'}</td>
+                <td style="text-align:center;">${item.createdAt || '-'}</td>
+              </tr>
+            `
+        )
+        .join('')}
+          </tbody>
+        </table>
+        <div class="footer">${L('تم إنشاء المستند تلقائياً عبر نظام Orminal ERP', 'Document generated by Orminal ERP System')}</div>
+        <script>
+          window.onload = function() {
+            window.print();
+            setTimeout(function() { window.close(); }, 500);
+          };
+        </script>
+      </body>
+      </html>
+    `
+
+    printWin.document.write(content)
+    printWin.document.close()
+    toast.success(L('جارٍ فتح نافذة الطباعة/تخصيص PDF…', 'Opening PDF print view…'))
+  }
+
 
   // Get Type Badge styling
   const getTypeBadge = (type: string) => {
@@ -712,6 +1056,17 @@ export default function OrgStructureModule({
                   <DropdownMenuCheckboxItem checked={visibleCols.printCount} onCheckedChange={(v) => setVisibleCols((p) => ({ ...p, printCount: !!v }))}>
                     {L('مرات الطباعة', 'Print Count')}
                   </DropdownMenuCheckboxItem>
+
+                  <DropdownMenuSeparator className="my-1" />
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setVisibleCols(DEFAULT_VISIBLE_COLS)
+                      toast.success(L('تم إعادة ضبط الأعمدة إلى الوضع الافتراضي', 'Columns reset to default'))
+                    }}
+                    className="text-xs font-semibold text-blue-600 dark:text-blue-400 cursor-pointer justify-center py-1.5"
+                  >
+                    {L('إعادة ضبط الأعمدة الافتراضية', 'Reset Default Columns')}
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 
@@ -737,27 +1092,49 @@ export default function OrgStructureModule({
 
             {/* Toolbar Action Icons matching screenshot */}
             <div className="flex items-center gap-1 flex-wrap">
-              {/* Excel */}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
-                onClick={() => toast.info(L('جارٍ تصدير جدول الهيكل التنظيمي إلى Excel…', 'Exporting Org Structure to Excel…'))}
-                title={L('تصدير Excel', 'Export Excel')}
-              >
-                <FileSpreadsheet className="size-4" />
-              </Button>
+              {/* Export Dropdown (Excel, CSV, Word, PDF) */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 cursor-pointer"
+                    title={L('خيارات التصدير (Excel, CSV, Word, PDF)', 'Export Options (Excel, CSV, Word, PDF)')}
+                  >
+                    <FileSpreadsheet className="size-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align={isRTL ? 'start' : 'end'} sideOffset={6} className="w-52 shadow-xl border-slate-200 dark:border-slate-800 z-50">
+                  <DropdownMenuItem onClick={handleExportExcel} className="gap-2.5 text-xs font-medium cursor-pointer py-2">
+                    <FileSpreadsheet className="size-4 text-emerald-600 shrink-0" />
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">{L('Excel', 'Excel')}</span>
 
-              {/* Grid Toggle / View */}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0 text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
-                onClick={() => refetch()}
-                title={L('تحديث الجدول', 'Refresh Grid')}
-              >
-                <Grid className="size-4" />
-              </Button>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportCSV} className="gap-2.5 text-xs font-medium cursor-pointer py-2">
+                    <Columns className="size-4 text-blue-600 shrink-0" />
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">{L('CSV', 'CSV')}</span>
+
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportWord} className="gap-2.5 text-xs font-medium cursor-pointer py-2">
+                    <FileText className="size-4 text-indigo-600 shrink-0" />
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">{L('Word', 'Word')}</span>
+
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportPDF} className="gap-2.5 text-xs font-medium cursor-pointer py-2">
+                    <Printer className="size-4 text-red-600 shrink-0" />
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">{L('PDF', 'PDF')}</span>
+
+                    </div>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
               {/* Layout Switch */}
               <Button
@@ -794,8 +1171,19 @@ export default function OrgStructureModule({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0 text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800"
-                title={L('قفل / توقيف السجل', 'Lock/Suspend Record')}
+                disabled={!selectedItem}
+                className={cn(
+                  "h-8 w-8 p-0 transition-all",
+                  selectedItem
+                    ? "text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800 shadow-xs hover:scale-105"
+                    : "text-slate-400 opacity-40 cursor-not-allowed"
+                )}
+                onClick={() => {
+                  if (selectedItem) {
+                    toast.info(L(`تغيير حالة قفل الشاشة `, `Lock status toggled `))
+                  }
+                }}
+                title={selectedItem ? L(`قفل الشاشة`, `Lock Screen: `) : L('اختر صفي من الجدول أولاً', 'Select a row to lock')}
               >
                 <Lock className="size-4" />
               </Button>
@@ -804,13 +1192,19 @@ export default function OrgStructureModule({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40"
+                disabled={!selectedItem}
+                className={cn(
+                  "h-8 w-8 p-0 transition-all",
+                  selectedItem
+                    ? "text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 shadow-xs hover:scale-105"
+                    : "text-red-300 opacity-40 cursor-not-allowed"
+                )}
                 onClick={() => {
-                  if (paginatedItems.length > 0 && confirm(L('هل تريد حذف العنصر المحدد؟', 'Delete selected item?'))) {
-                    deleteMutation.mutate(paginatedItems[0].id)
+                  if (selectedItem && confirm(L(`هل تريد حذف الهيكل «${selectedItem.nameAr}»؟`, `Delete "${selectedItem.nameAr}"?`))) {
+                    deleteMutation.mutate(selectedItem.id)
                   }
                 }}
-                title={L('حذف', 'Delete')}
+                title={selectedItem ? L(`حذف`, `Delete `) : L('اختر صفي من الجدول للحذف', 'Select a row to delete')}
               >
                 <Trash2 className="size-4" />
               </Button>
@@ -819,11 +1213,17 @@ export default function OrgStructureModule({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40"
+                disabled={!selectedItem}
+                className={cn(
+                  "h-8 w-8 p-0 transition-all",
+                  selectedItem
+                    ? "text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 shadow-xs hover:scale-105"
+                    : "text-amber-300 opacity-40 cursor-not-allowed"
+                )}
                 onClick={() => {
-                  if (paginatedItems.length > 0) handleEdit(paginatedItems[0])
+                  if (selectedItem) handleEdit(selectedItem)
                 }}
-                title={L('تعديل', 'Edit')}
+                title={selectedItem ? L(`تعديل`, `Edit `) : L('اختر صفي من الجدول للتعديل', 'Select a row to edit')}
               >
                 <Edit2 className="size-4" />
               </Button>
@@ -832,11 +1232,17 @@ export default function OrgStructureModule({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+                disabled={!selectedItem}
+                className={cn(
+                  "h-8 w-8 p-0 transition-all",
+                  selectedItem
+                    ? "text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40  shadow-xs hover:scale-105"
+                    : "text-emerald-300 opacity-40 cursor-not-allowed"
+                )}
                 onClick={() => {
-                  if (paginatedItems.length > 0) handleEdit(paginatedItems[0])
+                  if (selectedItem) handleEdit(selectedItem)
                 }}
-                title={L('عرض التفاصيل', 'View Details')}
+                title={selectedItem ? L(`عرض`, `View `) : L('اختر صفي من الجدول أولاً للعرض', 'Select a row to view')}
               >
                 <Eye className="size-4" />
               </Button>
@@ -846,7 +1252,7 @@ export default function OrgStructureModule({
                 size="sm"
                 onClick={handleAddNew}
                 className="bg-blue-600 hover:bg-blue-700 text-white h-8 w-8 p-0 rounded-md shadow-sm"
-                title={L('إضافة هيكل جديد', 'Add New Structure')}
+                title={L('إضافة ', 'Add ')}
               >
                 <Plus className="size-4" />
               </Button>
@@ -993,8 +1399,6 @@ export default function OrgStructureModule({
                       <span>{L('مرات الطباعة', 'Print Count')}</span>
                     </TableHead>
                   )}
-
-                  <TableHead className="w-16 max-w-[70px] text-center py-1.5 px-1">{L('الإجراءات', 'Actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1017,12 +1421,22 @@ export default function OrgStructureModule({
                     const updatedByText = item.updatedBy || 'admin'
                     const updatedAtText = item.updatedAt || '14:04:46.069 17/08/2026'
 
+                    const isSelected = selectedId === item.id
+
                     return (
                       <TableRow
                         key={item.id}
-                        onClick={() => handleEdit(item)}
-                        className="h-8 hover:bg-blue-50/80 dark:hover:bg-blue-950/40 cursor-pointer border-b transition-colors select-none"
-                        title={L('انقر لتعديل هذا الهيكل التنظيمي', 'Click to edit this organizational structure')}
+                        data-selected={isSelected || undefined}
+                        onClick={() => setSelectedId(item.id)}
+                        onDoubleClick={() => handleEdit(item)}
+                        className={cn(
+                          "h-8 select-none cursor-pointer border-b border-slate-200 dark:border-slate-700",
+                          isSelected
+                            ? "!bg-[#d0e2f7] dark:!bg-[#1e3a5f] !border-l-[3px] !border-l-blue-600 dark:!border-l-blue-400"
+                            : "bg-white dark:bg-slate-950 hover:bg-slate-50 dark:hover:bg-slate-900/60"
+                        )}
+                        style={isSelected ? { backgroundColor: '#a0ccff50' } : undefined}
+
                       >
 
                         {visibleCols.code && (
@@ -1169,37 +1583,6 @@ export default function OrgStructureModule({
                             {item.printCount ?? 0}
                           </TableCell>
                         )}
-
-                        <TableCell className="w-16 max-w-[70px] text-center py-1 px-1" onClick={(e) => e.stopPropagation()}>
-                          <div className="flex items-center justify-center gap-0.5">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleEdit(item)
-                              }}
-                              className="h-6 w-6 p-0 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40"
-                              title={L('تعديل', 'Edit')}
-                            >
-                              <Edit2 className="size-3" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                if (confirm(L(`هل أنت تأكد من حذف الهيكل «${item.nameAr}»؟`, `Are you sure you want to delete "${item.nameAr}"?`))) {
-                                  deleteMutation.mutate(item.id)
-                                }
-                              }}
-                              className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10"
-                              title={L('حذف', 'Delete')}
-                            >
-                              <Trash2 className="size-3" />
-                            </Button>
-                          </div>
-                        </TableCell>
                       </TableRow>
                     )
                   })
@@ -1296,7 +1679,7 @@ export default function OrgStructureModule({
         <form onSubmit={handleSubmitForm} className="flex flex-col gap-4">
 
           {/* TOP RECORD NAVIGATION & ACTIONS TOOLBAR */}
-          <div className="p-2 sm:p-2.5 bg-slate-900/95 dark:bg-slate-950/95 text-white border border-slate-800 rounded-lg flex flex-wrap items-center justify-between gap-2.5 shadow-md backdrop-blur-sm">
+          <div className="p-2 sm:p-2.5 bg-gradient-to-r rtl:bg-gradient-to-l from-blue-50 to-[#E6F0FF]  dark:bg-none dark:bg-blue-700/80  border-b border-blue-100 dark:border-blue-700/40 rounded-lg flex flex-wrap items-center justify-between gap-2.5 shadow-md backdrop-blur-sm">
             {/* Left Section: Action & Record Dropdowns */}
             <div className="flex items-center gap-2 flex-wrap">
               {/* السجل Dropdown */}
@@ -1305,25 +1688,25 @@ export default function OrgStructureModule({
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-8 px-3 text-xs font-semibold gap-1.5 bg-slate-800/90 hover:bg-slate-700 text-slate-100 border-slate-700/80 hover:border-slate-600 transition-all rounded-md shadow-xs cursor-pointer"
+                    className="h-8 px-3 text-xs font-semibold gap-1 bg-blue-700/80  dark:bg-blue-600 hover:bg-blue-500 text-slate-100 border-blue-300/80 dark:border-blue-500/90 hover:border-slate-200 transition-all rounded-md shadow-xs cursor-pointer"
                   >
-                    <FolderTree className="size-3.5 text-blue-400 shrink-0" />
+                    <FolderTree className="size-4 text-white-400 shrink-0" />
                     <span>{L('السجل', 'Record')}</span>
-                    <BreadcrumbChevron className="size-3 text-slate-400 shrink-0" />
+                    <BreadcrumbChevron className="size-3.5 text-white-400 shrink-0" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align={isRTL ? 'start' : 'end'} className="w-48 shadow-lg border-slate-200 dark:border-slate-800">
+                <DropdownMenuContent align={isRTL ? 'start' : 'end'} sideOffset={6} className="w-30 z-50">
                   <DropdownMenuItem onClick={handleAddNew} className="gap-2 text-xs font-medium cursor-pointer">
                     <Plus className="size-3.5 text-blue-500" />
                     <span>{L('سجل جديد', 'New Record')}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setViewMode('list')} className="gap-2 text-xs font-medium cursor-pointer">
                     <Grid className="size-3.5 text-emerald-500" />
-                    <span>{L('عرض الكل (القائمة)', 'View All (List)')}</span>
+                    <span>{L('عرض الكل', 'View All ')}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => refetch()} className="gap-2 text-xs font-medium cursor-pointer">
                     <RotateCw className="size-3.5 text-amber-500" />
-                    <span>{L('تحديث البيانات', 'Refresh Data')}</span>
+                    <span>{L('تحديث', 'Refresh')}</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -1334,21 +1717,21 @@ export default function OrgStructureModule({
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-8 px-3 text-xs font-semibold gap-1.5 bg-slate-800/90 hover:bg-slate-700 text-slate-100 border-slate-700/80 hover:border-slate-600 transition-all rounded-md shadow-xs cursor-pointer"
+                    className="h-8 px-3 text-xs font-semibold gap-1.5 bg-blue-700/80  dark:bg-blue-600 hover:bg-blue-500 text-slate-100 border-blue-300/80 dark:border-blue-500/90 hover:border-slate-200 transition-all rounded-md shadow-xs cursor-pointer"
                   >
-                    <Sliders className="size-3.5 text-purple-400 shrink-0" />
+                    <Sliders className="size-3.5 text-blue-100 shrink-0" />
                     <span>{L('الإجراء', 'Action')}</span>
-                    <BreadcrumbChevron className="size-3 text-slate-400 shrink-0" />
+                    <BreadcrumbChevron className="size-3.5 text-white-400 shrink-0" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align={isRTL ? 'start' : 'end'} className="w-48 shadow-lg border-slate-200 dark:border-slate-800">
+                <DropdownMenuContent align={isRTL ? 'start' : 'end'} sideOffset={6} className="w-30 z-50">
                   <DropdownMenuItem onClick={handleSubmitForm} className="gap-2 text-xs font-medium cursor-pointer">
                     <Save className="size-3.5 text-emerald-500" />
-                    <span>{L('حفظ البيانات', 'Save Data')}</span>
+                    <span>{L('حفظ', 'Save')}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => window.print()} className="gap-2 text-xs font-medium cursor-pointer">
                     <Printer className="size-3.5 text-blue-500" />
-                    <span>{L('طباعة السجل', 'Print Record')}</span>
+                    <span>{L('طباعة', 'Print')}</span>
                   </DropdownMenuItem>
                   {editingItem && (
                     <DropdownMenuItem
@@ -1360,38 +1743,14 @@ export default function OrgStructureModule({
                       }}
                     >
                       <Trash2 className="size-3.5" />
-                      <span>{L('حذف السجل الحالي', 'Delete Current Record')}</span>
+                      <span>{L('حذف', 'Delete')}</span>
                     </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
 
-            {/* Right Section: Save & Cancel Buttons */}
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setViewMode('list')
-                  setEditingItem(null)
-                }}
-                className="h-8 px-3.5 text-xs font-medium text-slate-300 hover:text-white border-slate-700/80 bg-slate-800/60 hover:bg-slate-700/80 transition-all rounded-md cursor-pointer gap-1"
-              >
-                <X className="size-3.5" />
-                <span>{L('إلغاء', 'Cancel')}</span>
-              </Button>
-              <Button
-                type="submit"
-                size="sm"
-                disabled={saveMutation.isPending}
-                className="h-8 px-4 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 shadow-sm hover:shadow transition-all rounded-md gap-1.5 cursor-pointer border border-emerald-500/40"
-              >
-                <Save className="size-3.5" />
-                <span>{editingItem ? L('تحديث الهيكل', 'Update Structure') : L('حفظ الهيكل', 'Save Structure')}</span>
-              </Button>
-            </div>
+
           </div>
 
           {/* MAIN FORM CARD */}
@@ -1475,7 +1834,7 @@ export default function OrgStructureModule({
                       .filter((i) => i.id !== editingItem?.id)
                       .map((parent) => (
                         <SelectItem key={parent.id} value={parent.id}>
-                          {parent.code} - {isRTL ? parent.nameAr : (parent.nameEn || parent.nameAr)} ({L('المستوى', 'Level')} {parent.level})
+                          {parent.code} - {isRTL ? parent.nameAr : (parent.nameEn || parent.nameAr)}
                         </SelectItem>
                       ))}
                   </SelectContent>
@@ -1495,11 +1854,11 @@ export default function OrgStructureModule({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent align={isRTL ? 'start' : 'end'}>
-                    <SelectItem value="قطاع">{L('قطاع (Sector)', 'Sector')}</SelectItem>
-                    <SelectItem value="إدارة عامة">{L('إدارة عامة (General Directorate)', 'General Directorate')}</SelectItem>
-                    <SelectItem value="إدارة">{L('إدارة (Department)', 'Department')}</SelectItem>
-                    <SelectItem value="قسم">{L('قسم (Section)', 'Section')}</SelectItem>
-                    <SelectItem value="وحدة">{L('وحدة (Unit)', 'Unit')}</SelectItem>
+                    <SelectItem value="قطاع">{L('قطاع ', 'Sector')}</SelectItem>
+                    <SelectItem value="إدارة عامة">{L('إدارة عامة ', 'General Directorate')}</SelectItem>
+                    <SelectItem value="إدارة">{L('إدارة', 'Department')}</SelectItem>
+                    <SelectItem value="قسم">{L('قسم', 'Section')}</SelectItem>
+                    <SelectItem value="وحدة">{L('وحدة', 'Unit')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1548,7 +1907,7 @@ export default function OrgStructureModule({
                 className="bg-blue-600 hover:bg-blue-700 text-white gap-2 font-semibold"
               >
                 <Save className="size-4" />
-                <span>{editingItem ? L('حفظ التعديلات', 'Save Changes') : L('إضافة الهيكل', 'Add Structure')}</span>
+                <span>{editingItem ? L('حفظ التعديلات', 'Save Changes') : L('حفظ', 'Save')}</span>
               </Button>
             </div>
           </Card>
