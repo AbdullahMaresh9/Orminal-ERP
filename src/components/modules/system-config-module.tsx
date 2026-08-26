@@ -14,10 +14,11 @@
 // pretending. The governance test keeps these claims true.
 // =============================================================================
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ModuleShell } from '@/components/erp/module-shell'
 import { useT } from '@/lib/i18n/use-t'
+import { CONFIG_TREE } from '@/lib/config/tree'
 import { useNav, type ModuleKey } from '@/stores/nav-store'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -51,6 +52,8 @@ const ICONS: Record<string, LucideIcon> = {
   Store, Bell, Printer, Database, Plug, GitBranch,
 }
 
+import OrgStructureModule from '@/components/modules/org-structure-module'
+
 // Leaves whose data is managed by an existing master-data module
 const LEAF_MODULE_LINKS: Record<string, ModuleKey> = {
   fiscal_periods: 'fiscal-periods',
@@ -60,6 +63,7 @@ const LEAF_MODULE_LINKS: Record<string, ModuleKey> = {
   items: 'categories',
   payment_methods: 'payment-methods',
   document_types: 'document-templates',
+  org_structure: 'org-structure',
 }
 
 // ---- API types (mirror of /api/erp/config GET) ----
@@ -115,11 +119,157 @@ async function fetchBundle(): Promise<ConfigBundle> {
   return j.data ?? j
 }
 
+const MODULE_TO_CONFIG_LEAF: Record<string, { sectionId: string; leafId: string }> = {
+  // General
+  'config-general': { sectionId: 'general', leafId: 'general' },
+  'config-company': { sectionId: 'general', leafId: 'company' },
+  'config-general-vars': { sectionId: 'general', leafId: 'general' },
+  'config-general-defs': { sectionId: 'general', leafId: 'general' },
+  'config-currencies': { sectionId: 'general', leafId: 'currencies' },
+  'config-fiscal-periods': { sectionId: 'general', leafId: 'fiscal_periods' },
+  'config-org-structure': { sectionId: 'general', leafId: 'org_structure' },
+  'config-subledgers-naming': { sectionId: 'general', leafId: 'general' },
+  'config-doc-types': { sectionId: 'general', leafId: 'document_types' },
+  'config-doc-sequences': { sectionId: 'general', leafId: 'numbering' },
+  'config-languages': { sectionId: 'general', leafId: 'general' },
+  'config-datetime': { sectionId: 'general', leafId: 'datetime' },
+  'config-payment-methods': { sectionId: 'general', leafId: 'payment_methods' },
+
+  // Finance
+  'config-finance': { sectionId: 'finance', leafId: 'accounting' },
+  'config-general-accounting': { sectionId: 'finance', leafId: 'accounting' },
+  'config-posting-settings': { sectionId: 'finance', leafId: 'posting' },
+  'config-opening-balances': { sectionId: 'finance', leafId: 'opening_balances' },
+  'config-closing-settings': { sectionId: 'finance', leafId: 'closing' },
+  'config-currencies-accounting': { sectionId: 'finance', leafId: 'multi_currency' },
+  'config-cost-centers': { sectionId: 'finance', leafId: 'cost_centers' },
+  'config-analytic-accounts': { sectionId: 'finance', leafId: 'analytic_accounts' },
+
+  // Sales
+  'config-sales': { sectionId: 'sales', leafId: 'sales' },
+  'config-sales-general': { sectionId: 'sales', leafId: 'sales' },
+  'config-payment-terms': { sectionId: 'sales', leafId: 'payment_terms' },
+  'config-quotations-validity': { sectionId: 'sales', leafId: 'sales' },
+  'config-discounts': { sectionId: 'sales', leafId: 'pricing' },
+  'config-credit-limits': { sectionId: 'sales', leafId: 'credit' },
+  'config-below-cost-sale': { sectionId: 'sales', leafId: 'sales' },
+  'config-sales-invoices': { sectionId: 'sales', leafId: 'sales_invoicing' },
+  'config-price-levels': { sectionId: 'sales', leafId: 'pricing' },
+  'config-sales-outlets': { sectionId: 'sales', leafId: 'sales' },
+
+  // Procurement
+  'config-procurement': { sectionId: 'purchasing', leafId: 'purchases' },
+  'config-procurement-general': { sectionId: 'purchasing', leafId: 'purchases' },
+  'config-purchase-requests': { sectionId: 'purchasing', leafId: 'purchases' },
+  'config-purchase-orders': { sectionId: 'purchasing', leafId: 'purchases' },
+  'config-three-way-matching': { sectionId: 'purchasing', leafId: 'purchase_matching' },
+  'config-price-qty-variance': { sectionId: 'purchasing', leafId: 'purchase_matching' },
+  'config-auto-posting-procurement': { sectionId: 'purchasing', leafId: 'purchases' },
+  'config-purchase-expenses': { sectionId: 'purchasing', leafId: 'landed_costs' },
+  'config-supplier-price-lists': { sectionId: 'purchasing', leafId: 'supplier_pricing' },
+
+  // Inventory
+  'config-inventory': { sectionId: 'inventory', leafId: 'inventory' },
+  'config-inventory-general': { sectionId: 'inventory', leafId: 'inventory' },
+  'config-valuation-method': { sectionId: 'inventory', leafId: 'valuation' },
+  'config-inventory-accounts': { sectionId: 'inventory', leafId: 'inventory' },
+  'config-warehouses-setup': { sectionId: 'inventory', leafId: 'warehouses_cfg' },
+  'config-warehouse-groups': { sectionId: 'inventory', leafId: 'warehouses_cfg' },
+  'config-uom': { sectionId: 'inventory', leafId: 'uom' },
+  'config-item-categories': { sectionId: 'inventory', leafId: 'items' },
+  'config-item-definitions': { sectionId: 'inventory', leafId: 'items' },
+  'config-barcodes': { sectionId: 'inventory', leafId: 'barcode' },
+  'config-electronic-scales': { sectionId: 'inventory', leafId: 'barcode' },
+  'config-inventory-expenses': { sectionId: 'inventory', leafId: 'inventory' },
+
+  // Taxes & E-invoicing
+  'config-taxes-einvoicing': { sectionId: 'tax', leafId: 'taxes' },
+  'config-taxes': { sectionId: 'tax', leafId: 'taxes' },
+  'config-tax-categories': { sectionId: 'tax', leafId: 'taxes' },
+  'config-tax-registration': { sectionId: 'tax', leafId: 'taxes' },
+  'config-einvoicing': { sectionId: 'tax', leafId: 'zatca' },
+  'config-zatca': { sectionId: 'tax', leafId: 'zatca' },
+  'config-qr-code': { sectionId: 'tax', leafId: 'zatca' },
+  'config-digital-signature': { sectionId: 'tax', leafId: 'zatca' },
+  'config-e-integration': { sectionId: 'tax', leafId: 'zatca' },
+
+  // HR
+  'config-hr': { sectionId: 'hr', leafId: 'hr_general' },
+  'config-hr-departments': { sectionId: 'hr', leafId: 'hr_general' },
+  'config-hr-job-titles': { sectionId: 'hr', leafId: 'hr_general' },
+  'config-hr-schedules': { sectionId: 'hr', leafId: 'hr_time' },
+  'config-hr-leaves': { sectionId: 'hr', leafId: 'hr_time' },
+  'config-hr-payroll': { sectionId: 'hr', leafId: 'hr_payroll' },
+  'config-hr-contracts': { sectionId: 'hr', leafId: 'hr_payroll' },
+
+  // Manufacturing
+  'config-manufacturing': { sectionId: 'manufacturing', leafId: 'mfg_general' },
+  'config-mfg-general': { sectionId: 'manufacturing', leafId: 'mfg_general' },
+  'config-mfg-accounts': { sectionId: 'manufacturing', leafId: 'mfg_accounts' },
+  'config-mfg-boms': { sectionId: 'manufacturing', leafId: 'mfg_bom' },
+  'config-mfg-work-centers': { sectionId: 'manufacturing', leafId: 'mfg_bom' },
+  'config-mfg-production-orders': { sectionId: 'manufacturing', leafId: 'mfg_general' },
+
+  // POS
+  'config-pos': { sectionId: 'pos', leafId: 'pos_general' },
+  'config-pos-general': { sectionId: 'pos', leafId: 'pos_general' },
+  'config-pos-sessions': { sectionId: 'pos', leafId: 'pos_sessions' },
+  'config-pos-invoices': { sectionId: 'pos', leafId: 'pos_sessions' },
+  'config-pos-outlets': { sectionId: 'pos', leafId: 'pos_general' },
+  'config-pos-payment-methods': { sectionId: 'pos', leafId: 'pos_payments' },
+  'config-pos-print-templates': { sectionId: 'pos', leafId: 'pos_general' },
+
+  // Notifications
+  'config-notifications-comm': { sectionId: 'notifications', leafId: 'notifications' },
+  'config-notif-settings': { sectionId: 'notifications', leafId: 'notifications' },
+  'config-smtp': { sectionId: 'notifications', leafId: 'email' },
+  'config-sms': { sectionId: 'notifications', leafId: 'sms_whatsapp' },
+  'config-whatsapp': { sectionId: 'notifications', leafId: 'sms_whatsapp' },
+  'config-reminders': { sectionId: 'notifications', leafId: 'notifications' },
+  'config-comm-channels': { sectionId: 'notifications', leafId: 'notifications' },
+
+  // Printing & Docs
+  'config-printing-docs': { sectionId: 'printing', leafId: 'printing' },
+  'config-print-settings': { sectionId: 'printing', leafId: 'printing' },
+  'config-doc-templates-setup': { sectionId: 'printing', leafId: 'printing' },
+  'config-company-logo': { sectionId: 'printing', leafId: 'printing' },
+  'config-signatures': { sectionId: 'printing', leafId: 'printing' },
+  'config-document-footer': { sectionId: 'printing', leafId: 'printing' },
+  'config-pdf-settings': { sectionId: 'printing', leafId: 'printing' },
+  'config-export-settings': { sectionId: 'printing', leafId: 'export' },
+
+  // Backup
+  'config-backup': { sectionId: 'backup', leafId: 'backup' },
+  'config-manual-backup': { sectionId: 'backup', leafId: 'backup' },
+  'config-backup-schedule': { sectionId: 'backup', leafId: 'backup' },
+  'config-retention-policy': { sectionId: 'backup', leafId: 'backup' },
+  'config-restore': { sectionId: 'backup', leafId: 'backup' },
+  'config-cloud-storage': { sectionId: 'backup', leafId: 'backup' },
+
+  // Integrations
+  'config-integrations': { sectionId: 'integrations', leafId: 'api_keys' },
+  'config-api-keys': { sectionId: 'integrations', leafId: 'api_keys' },
+  'config-webhooks': { sectionId: 'integrations', leafId: 'webhooks' },
+  'config-aws': { sectionId: 'integrations', leafId: 'ext_services' },
+  'config-email-integration': { sectionId: 'integrations', leafId: 'ext_services' },
+  'config-payment-gateways': { sectionId: 'integrations', leafId: 'ext_services' },
+  'config-external-systems': { sectionId: 'integrations', leafId: 'ext_services' },
+
+  // Workflow & Approvals
+  'config-workflow-approval': { sectionId: 'workflow', leafId: 'approvals' },
+  'config-approval-policies': { sectionId: 'workflow', leafId: 'approvals' },
+  'config-approval-routes': { sectionId: 'workflow', leafId: 'approvals' },
+  'config-approval-levels': { sectionId: 'workflow', leafId: 'approvals' },
+  'config-approval-rules': { sectionId: 'workflow', leafId: 'approvals' },
+  'config-approval-conditions': { sectionId: 'workflow', leafId: 'approvals' },
+  'config-device-approval': { sectionId: 'workflow', leafId: 'security' },
+}
+
 export default function SystemConfigModule() {
   const { isRTL, locale } = useT()
   const L = (ar: string, en: string) => (isRTL ? ar : en)
   const qc = useQueryClient()
-  const { setActiveModule } = useNav()
+  const { activeModule, setActiveModule } = useNav()
 
   const [activeLeaf, setActiveLeaf] = useState<string>('general')
   const [openSections, setOpenSections] = useState<Set<string>>(new Set(['general']))
@@ -128,6 +278,14 @@ export default function SystemConfigModule() {
   const [reason, setReason] = useState('')
   const [showAudit, setShowAudit] = useState(false)
   const [confirmSave, setConfirmSave] = useState(false)
+
+  useEffect(() => {
+    if (activeModule && MODULE_TO_CONFIG_LEAF[activeModule]) {
+      const { sectionId, leafId } = MODULE_TO_CONFIG_LEAF[activeModule]
+      setActiveLeaf(leafId)
+      setOpenSections((prev) => new Set(prev).add(sectionId))
+    }
+  }, [activeModule])
 
   const { data, isLoading, error } = useQuery({ queryKey: ['system-config'], queryFn: fetchBundle })
 
@@ -259,8 +417,26 @@ export default function SystemConfigModule() {
         )}
         icon={<SettingsIconSafe />}
         actions={
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="gap-1 hidden sm:inline-flex">
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            {/* Search Input placed in header toolbar (Green location) */}
+            <div className="relative w-48 sm:w-64">
+              <Search className={cn('absolute top-2.5 size-4 text-muted-foreground', isRTL ? 'right-2.5' : 'left-2.5')} />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={L('بحث في الإعدادات…', 'Search settings…')}
+                className={cn('h-9 text-xs bg-background', isRTL ? 'pr-8 pl-7' : 'pl-8 pr-7')}
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch('')}
+                  className={cn('absolute top-2.5 text-muted-foreground hover:text-foreground', isRTL ? 'left-2.5' : 'right-2.5')}
+                >
+                  <X className="size-4" />
+                </button>
+              )}
+            </div>
+            <Badge variant="outline" className="gap-1 hidden sm:inline-flex shrink-0">
               <ShieldCheck className="size-3.5 text-emerald-600" />
               {L(`${enforcedTotal} إعداد نافذ`, `${enforcedTotal} enforced`)}
             </Badge>
@@ -268,7 +444,7 @@ export default function SystemConfigModule() {
               variant={showAudit ? 'default' : 'outline'}
               size="sm"
               onClick={() => setShowAudit((v) => !v)}
-              className="gap-1.5"
+              className="gap-1.5 shrink-0"
             >
               <History className="size-4" />
               {L('سجل التدقيق', 'Audit log')}
@@ -284,93 +460,14 @@ export default function SystemConfigModule() {
         ) : showAudit ? (
           <AuditPanel rows={auditQuery.data ?? []} loading={auditQuery.isLoading} L={L} locale={locale} />
         ) : (
-          <div className="flex flex-col lg:flex-row gap-4 items-start">
-            {/* ---------------- Tree ---------------- */}
-            <Card className="w-full lg:w-72 shrink-0 p-2 lg:sticky lg:top-4">
-              <div className="relative mb-2">
-                <Search className={cn('absolute top-2.5 size-4 text-muted-foreground', isRTL ? 'right-2.5' : 'left-2.5')} />
-                <Input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder={L('بحث في الإعدادات…', 'Search settings…')}
-                  className={cn('h-9', isRTL ? 'pr-8' : 'pl-8')}
-                />
-                {search && (
-                  <button
-                    onClick={() => setSearch('')}
-                    className={cn('absolute top-2.5 text-muted-foreground hover:text-foreground', isRTL ? 'left-2.5' : 'right-2.5')}
-                  >
-                    <X className="size-4" />
-                  </button>
-                )}
-              </div>
-              <ScrollArea className="lg:h-[calc(100vh-16rem)]">
-                <nav className="flex flex-col gap-0.5 pe-2">
-                  {(data?.tree ?? []).map((section) => {
-                    const Icon = ICONS[section.icon] ?? Settings
-                    const open = openSections.has(section.id)
-                    const sectionKeyCount = section.leaves.reduce(
-                      (n, l) => n + (defsByLeaf.get(l.id)?.length ?? 0), 0)
-                    return (
-                      <div key={section.id}>
-                        <button
-                          onClick={() =>
-                            setOpenSections((prev) => {
-                              const next = new Set(prev)
-                              if (next.has(section.id)) next.delete(section.id)
-                              else next.add(section.id)
-                              return next
-                            })
-                          }
-                          className="w-full flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium hover:bg-accent transition-colors"
-                        >
-                          <Icon className="size-4 text-primary shrink-0" />
-                          <span className="flex-1 text-start truncate">
-                            {L(section.labelAr, section.labelEn)}
-                          </span>
-                          {sectionKeyCount > 0 && (
-                            <span className="text-[10px] text-muted-foreground tabular-nums">{sectionKeyCount}</span>
-                          )}
-                          <ChevronDown className={cn('size-3.5 text-muted-foreground transition-transform', open && 'rotate-180')} />
-                        </button>
-                        {open && (
-                          <div className={cn('flex flex-col gap-0.5 py-0.5', isRTL ? 'pr-5' : 'pl-5')}>
-                            {section.leaves.map((leaf) => {
-                              const count = defsByLeaf.get(leaf.id)?.length ?? 0
-                              const leafDirty = (defsByLeaf.get(leaf.id) ?? []).some((d) => d.key in dirty)
-                              return (
-                                <button
-                                  key={leaf.id}
-                                  onClick={() => { setActiveLeaf(leaf.id); setSearch('') }}
-                                  className={cn(
-                                    'flex items-center gap-2 rounded-md px-2.5 py-1.5 text-[13px] transition-colors text-start',
-                                    activeLeaf === leaf.id && !search
-                                      ? 'bg-primary/10 text-primary font-medium'
-                                      : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-                                  )}
-                                >
-                                  <span className="flex-1 truncate">{L(leaf.labelAr, leaf.labelEn)}</span>
-                                  {leafDirty && <span className="size-1.5 rounded-full bg-amber-500 shrink-0" />}
-                                  {count === 0 && <CircleDashed className="size-3 shrink-0 opacity-50" />}
-                                </button>
-                              )
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-                </nav>
-              </ScrollArea>
-            </Card>
-
-            {/* ---------------- Content ---------------- */}
+          <div className="w-full flex flex-col gap-4">
+            {/* ---------------- Main Content ---------------- */}
             <div className="flex-1 min-w-0 flex flex-col gap-4 w-full">
               {searchResults ? (
                 <FieldsCard
                   title={L(`نتائج البحث (${searchResults.length})`, `Search results (${searchResults.length})`)}
                   defs={searchResults}
-                  data={data!}
+                  data={data}
                   dirty={dirty}
                   currentValue={currentValue}
                   setValue={setValue}
@@ -381,7 +478,7 @@ export default function SystemConfigModule() {
               ) : (
                 <LeafContent
                   leafId={activeLeaf}
-                  data={data!}
+                  data={data}
                   defs={defsByLeaf.get(activeLeaf) ?? []}
                   dirty={dirty}
                   currentValue={currentValue}
@@ -460,7 +557,7 @@ function SettingsIconSafe() {
 
 function LeafContent(props: {
   leafId: string
-  data: ConfigBundle
+  data?: ConfigBundle
   defs: Definition[]
   dirty: Record<string, string>
   currentValue: (d: Definition) => string
@@ -471,8 +568,13 @@ function LeafContent(props: {
   isRTL: boolean
 }) {
   const { leafId, data, defs, L } = props
-  const leaf = data.tree.flatMap((s) => s.leaves).find((l) => l.id === leafId)
+  const tree = (data?.tree && data.tree.length > 0) ? data.tree : CONFIG_TREE
+  const leaf = tree.flatMap((s) => s.leaves).find((l) => l.id === leafId)
   const moduleLink = LEAF_MODULE_LINKS[leafId]
+
+  if (leafId === 'org_structure') {
+    return <OrgStructureModule embedded={true} />
+  }
 
   if (!defs.length) {
     return (
@@ -518,7 +620,7 @@ function LeafContent(props: {
 function FieldsCard(props: {
   title: string
   defs: Definition[]
-  data: ConfigBundle
+  data?: ConfigBundle
   dirty: Record<string, string>
   currentValue: (d: Definition) => string
   setValue: (k: string, v: string) => void
@@ -544,7 +646,7 @@ function FieldsCard(props: {
             key={def.key}
             def={def}
             value={currentValue(def)}
-            serverEntry={data.values[def.key]}
+            serverEntry={data?.values?.[def.key]}
             isDirty={def.key in dirty}
             onChange={(v) => setValue(def.key, v)}
             onReset={() => onReset(def.key)}

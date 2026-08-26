@@ -92,6 +92,27 @@ model Branch {
   @@index([managerId])
 }
 
+model OrgStructure {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  nameAr      String
+  nameEn      String?
+  parentId    String?
+  type        String   @default("إدارة")
+  level       Int      @default(1)
+  notes       String?
+  companyId   String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  parent   OrgStructure?  @relation("OrgHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children OrgStructure[] @relation("OrgHierarchy")
+
+  @@index([parentId])
+  @@index([code])
+}
+
 model User {
   id               String    @id @default(cuid())
   username         String    @unique

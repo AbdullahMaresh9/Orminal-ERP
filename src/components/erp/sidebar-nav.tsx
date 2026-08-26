@@ -383,15 +383,227 @@ const NAV: NavGroup[] = [
   {
     labelKey: 'nav.group.platform',
     icon: Settings,
+    subGroups: [
+      {
+        labelKey: 'nav.subgroup.permissions-mgmt',
+        icon: ShieldCheck,
+        items: [
+          { key: 'user-groups', labelKey: 'module.user-groups', icon: UsersRound },
+          { key: 'user-data', labelKey: 'module.user-data', icon: UserCircle },
+          { key: 'transaction-privileges', labelKey: 'module.transaction-privileges', icon: FileCheck },
+          { key: 'screen-privileges', labelKey: 'module.screen-privileges', icon: LayoutList },
+          { key: 'input-privileges', labelKey: 'module.input-privileges', icon: FileInput },
+          { key: 'view-privileges', labelKey: 'module.view-privileges', icon: Search },
+          { key: 'audit-control', labelKey: 'module.audit-control', icon: ScrollText },
+        ],
+      },
+    ],
     items: [
       { key: 'users', labelKey: 'module.users', icon: Users },
       { key: 'roles', labelKey: 'module.roles', icon: ShieldCheck },
       { key: 'audit-logs', labelKey: 'module.audit-logs', icon: ScrollText },
       { key: 'notifications', labelKey: 'module.notifications', icon: Bell },
       { key: 'document-templates', labelKey: 'module.document-templates', icon: Copy },
-      { key: 'system-config', labelKey: 'module.system-config', icon: SlidersHorizontal },
-      { key: 'settings', labelKey: 'module.settings', icon: Settings },
+      { key: 'system-settings', labelKey: 'module.system-settings', icon: Settings },
       { key: 'profile', labelKey: 'module.profile', icon: UserCog },
+      { key: 'sequence-doc-types', labelKey: 'module.sequence-doc-types', icon: FileText },
+      { key: 'transaction-sequences', labelKey: 'module.transaction-sequences', icon: FileSpreadsheet },
+      { key: 'system-alerts', labelKey: 'module.system-alerts', icon: AlertTriangle },
+      { key: 'default-transaction-data', labelKey: 'module.default-transaction-data', icon: ClipboardList },
+    ],
+  },
+
+  // ── System Configuration (تهيئة النظام) ─────────────────────
+  {
+    labelKey: 'nav.group.system-config',
+    icon: SlidersHorizontal,
+    subGroups: [
+      {
+        labelKey: 'nav.subgroup.config-general',
+        icon: Settings,
+        items: [
+          { key: 'config-company', labelKey: 'module.config-company', icon: Building2 },
+          { key: 'config-general-vars', labelKey: 'module.config-general-vars', icon: SlidersHorizontal },
+          { key: 'config-general-defs', labelKey: 'module.config-general-defs', icon: LayoutList },
+          { key: 'config-currencies', labelKey: 'module.config-currencies', icon: Coins },
+          { key: 'config-fiscal-periods', labelKey: 'module.config-fiscal-periods', icon: CalendarClock },
+          { key: 'config-org-structure', labelKey: 'module.config-org-structure', icon: GitBranch },
+          { key: 'config-subledgers-naming', labelKey: 'module.config-subledgers-naming', icon: ScrollText },
+          { key: 'config-doc-types', labelKey: 'module.config-doc-types', icon: FileText },
+          { key: 'config-doc-sequences', labelKey: 'module.config-doc-sequences', icon: FileSpreadsheet },
+          { key: 'config-languages', labelKey: 'module.config-languages', icon: Activity },
+          { key: 'config-datetime', labelKey: 'module.config-datetime', icon: CalendarDays },
+          { key: 'config-payment-methods', labelKey: 'module.config-payment-methods', icon: Receipt },
+        ],
+      },
+      {
+        labelKey: 'nav.subgroup.config-finance',
+        icon: BookOpen,
+        items: [
+          { key: 'config-general-accounting', labelKey: 'module.config-general-accounting', icon: BookOpen },
+          { key: 'config-posting-settings', labelKey: 'module.config-posting-settings', icon: FileCheck },
+          { key: 'config-opening-balances', labelKey: 'module.config-opening-balances', icon: FileSpreadsheet },
+          { key: 'config-closing-settings', labelKey: 'module.config-closing-settings', icon: Lock },
+          { key: 'config-currencies-accounting', labelKey: 'module.config-currencies-accounting', icon: Coins },
+          { key: 'config-cost-centers', labelKey: 'module.config-cost-centers', icon: GitBranch },
+          { key: 'config-analytic-accounts', labelKey: 'module.config-analytic-accounts', icon: FolderTree },
+        ],
+      },
+      {
+        labelKey: 'nav.subgroup.config-sales',
+        icon: ShoppingBag,
+        items: [
+          { key: 'config-sales-general', labelKey: 'module.config-sales-general', icon: ShoppingBag },
+          { key: 'config-payment-terms', labelKey: 'module.config-payment-terms', icon: CalendarClock },
+          { key: 'config-quotations-validity', labelKey: 'module.config-quotations-validity', icon: FileText },
+          { key: 'config-discounts', labelKey: 'module.config-discounts', icon: Percent },
+          { key: 'config-credit-limits', labelKey: 'module.config-credit-limits', icon: Wallet },
+          { key: 'config-below-cost-sale', labelKey: 'module.config-below-cost-sale', icon: AlertTriangle },
+          { key: 'config-sales-invoices', labelKey: 'module.config-sales-invoices', icon: Receipt },
+          { key: 'config-price-levels', labelKey: 'module.config-price-levels', icon: TrendingUp },
+          { key: 'config-sales-outlets', labelKey: 'module.config-sales-outlets', icon: Store },
+        ],
+      },
+      {
+        labelKey: 'nav.subgroup.config-procurement',
+        icon: Truck,
+        items: [
+          { key: 'config-procurement-general', labelKey: 'module.config-procurement-general', icon: Truck },
+          { key: 'config-purchase-requests', labelKey: 'module.config-purchase-requests', icon: ClipboardList },
+          { key: 'config-purchase-orders', labelKey: 'module.config-purchase-orders', icon: FileText },
+          { key: 'config-three-way-matching', labelKey: 'module.config-three-way-matching', icon: FileCheck },
+          { key: 'config-price-qty-variance', labelKey: 'module.config-price-qty-variance', icon: Scale },
+          { key: 'config-auto-posting-procurement', labelKey: 'module.config-auto-posting-procurement', icon: RotateCw },
+          { key: 'config-purchase-expenses', labelKey: 'module.config-purchase-expenses', icon: DollarSign },
+          { key: 'config-supplier-price-lists', labelKey: 'module.config-supplier-price-lists', icon: LayoutList },
+        ],
+      },
+      {
+        labelKey: 'nav.subgroup.config-inventory',
+        icon: Boxes,
+        items: [
+          { key: 'config-inventory-general', labelKey: 'module.config-inventory-general', icon: Boxes },
+          { key: 'config-valuation-method', labelKey: 'module.config-valuation-method', icon: Scale },
+          { key: 'config-inventory-accounts', labelKey: 'module.config-inventory-accounts', icon: BookOpen },
+          { key: 'config-warehouses-setup', labelKey: 'module.config-warehouses-setup', icon: Warehouse },
+          { key: 'config-warehouse-groups', labelKey: 'module.config-warehouse-groups', icon: FolderTree },
+          { key: 'config-uom', labelKey: 'module.config-uom', icon: Package },
+          { key: 'config-item-categories', labelKey: 'module.config-item-categories', icon: LayoutList },
+          { key: 'config-item-definitions', labelKey: 'module.config-item-definitions', icon: PackageCheck },
+          { key: 'config-barcodes', labelKey: 'module.config-barcodes', icon: Copy },
+          { key: 'config-electronic-scales', labelKey: 'module.config-electronic-scales', icon: Scale },
+          { key: 'config-inventory-expenses', labelKey: 'module.config-inventory-expenses', icon: TrendingDown },
+        ],
+      },
+      {
+        labelKey: 'nav.subgroup.config-taxes-einvoicing',
+        icon: Receipt,
+        items: [
+          { key: 'config-taxes', labelKey: 'module.config-taxes', icon: Percent },
+          { key: 'config-tax-categories', labelKey: 'module.config-tax-categories', icon: FolderTree },
+          { key: 'config-tax-registration', labelKey: 'module.config-tax-registration', icon: FileCheck },
+          { key: 'config-einvoicing', labelKey: 'module.config-einvoicing', icon: Receipt },
+          { key: 'config-zatca', labelKey: 'module.config-zatca', icon: ShieldCheck },
+          { key: 'config-qr-code', labelKey: 'module.config-qr-code', icon: Copy },
+          { key: 'config-digital-signature', labelKey: 'module.config-digital-signature', icon: ScrollText },
+          { key: 'config-e-integration', labelKey: 'module.config-e-integration', icon: ArrowLeftRight },
+        ],
+      },
+      {
+        labelKey: 'nav.subgroup.config-hr',
+        icon: Users,
+        items: [
+          { key: 'config-hr-departments', labelKey: 'module.config-hr-departments', icon: UsersRound },
+          { key: 'config-hr-job-titles', labelKey: 'module.config-hr-job-titles', icon: UserCheck },
+          { key: 'config-hr-schedules', labelKey: 'module.config-hr-schedules', icon: CalendarCheck },
+          { key: 'config-hr-leaves', labelKey: 'module.config-hr-leaves', icon: CalendarDays },
+          { key: 'config-hr-payroll', labelKey: 'module.config-hr-payroll', icon: Banknote },
+          { key: 'config-hr-contracts', labelKey: 'module.config-hr-contracts', icon: FileText },
+        ],
+      },
+      {
+        labelKey: 'nav.subgroup.config-manufacturing',
+        icon: Factory,
+        items: [
+          { key: 'config-mfg-general', labelKey: 'module.config-mfg-general', icon: Factory },
+          { key: 'config-mfg-accounts', labelKey: 'module.config-mfg-accounts', icon: BookOpen },
+          { key: 'config-mfg-boms', labelKey: 'module.config-mfg-boms', icon: ClipboardList },
+          { key: 'config-mfg-work-centers', labelKey: 'module.config-mfg-work-centers', icon: Cog },
+          { key: 'config-mfg-production-orders', labelKey: 'module.config-mfg-production-orders', icon: LayoutList },
+        ],
+      },
+      {
+        labelKey: 'nav.subgroup.config-pos',
+        icon: Store,
+        items: [
+          { key: 'config-pos-general', labelKey: 'module.config-pos-general', icon: Store },
+          { key: 'config-pos-sessions', labelKey: 'module.config-pos-sessions', icon: CalendarClock },
+          { key: 'config-pos-invoices', labelKey: 'module.config-pos-invoices', icon: Receipt },
+          { key: 'config-pos-outlets', labelKey: 'module.config-pos-outlets', icon: Building2 },
+          { key: 'config-pos-payment-methods', labelKey: 'module.config-pos-payment-methods', icon: CreditCard },
+          { key: 'config-pos-print-templates', labelKey: 'module.config-pos-print-templates', icon: Copy },
+        ],
+      },
+      {
+        labelKey: 'nav.subgroup.config-notifications-comm',
+        icon: Bell,
+        items: [
+          { key: 'config-notif-settings', labelKey: 'module.config-notif-settings', icon: Bell },
+          { key: 'config-smtp', labelKey: 'module.config-smtp', icon: ScrollText },
+          { key: 'config-sms', labelKey: 'module.config-sms', icon: FileText },
+          { key: 'config-whatsapp', labelKey: 'module.config-whatsapp', icon: Activity },
+          { key: 'config-reminders', labelKey: 'module.config-reminders', icon: CalendarClock },
+          { key: 'config-comm-channels', labelKey: 'module.config-comm-channels', icon: ArrowLeftRight },
+        ],
+      },
+      {
+        labelKey: 'nav.subgroup.config-printing-docs',
+        icon: Copy,
+        items: [
+          { key: 'config-print-settings', labelKey: 'module.config-print-settings', icon: Copy },
+          { key: 'config-doc-templates-setup', labelKey: 'module.config-doc-templates-setup', icon: FileText },
+          { key: 'config-company-logo', labelKey: 'module.config-company-logo', icon: Building2 },
+          { key: 'config-signatures', labelKey: 'module.config-signatures', icon: ScrollText },
+          { key: 'config-document-footer', labelKey: 'module.config-document-footer', icon: LayoutList },
+          { key: 'config-pdf-settings', labelKey: 'module.config-pdf-settings', icon: FileSpreadsheet },
+          { key: 'config-export-settings', labelKey: 'module.config-export-settings', icon: ArrowUpDown },
+        ],
+      },
+      {
+        labelKey: 'nav.subgroup.config-backup',
+        icon: Archive,
+        items: [
+          { key: 'config-manual-backup', labelKey: 'module.config-manual-backup', icon: Archive },
+          { key: 'config-backup-schedule', labelKey: 'module.config-backup-schedule', icon: CalendarClock },
+          { key: 'config-retention-policy', labelKey: 'module.config-retention-policy', icon: ShieldCheck },
+          { key: 'config-restore', labelKey: 'module.config-restore', icon: RotateCw },
+          { key: 'config-cloud-storage', labelKey: 'module.config-cloud-storage', icon: Warehouse },
+        ],
+      },
+      {
+        labelKey: 'nav.subgroup.config-integrations',
+        icon: ArrowLeftRight,
+        items: [
+          { key: 'config-api-keys', labelKey: 'module.config-api-keys', icon: Lock },
+          { key: 'config-webhooks', labelKey: 'module.config-webhooks', icon: ArrowLeftRight },
+          { key: 'config-aws', labelKey: 'module.config-aws', icon: Building2 },
+          { key: 'config-email-integration', labelKey: 'module.config-email-integration', icon: ScrollText },
+          { key: 'config-payment-gateways', labelKey: 'module.config-payment-gateways', icon: CreditCard },
+          { key: 'config-external-systems', labelKey: 'module.config-external-systems', icon: GitBranch },
+        ],
+      },
+      {
+        labelKey: 'nav.subgroup.config-workflow-approval',
+        icon: GitBranch,
+        items: [
+          { key: 'config-approval-policies', labelKey: 'module.config-approval-policies', icon: ShieldCheck },
+          { key: 'config-approval-routes', labelKey: 'module.config-approval-routes', icon: GitBranch },
+          { key: 'config-approval-levels', labelKey: 'module.config-approval-levels', icon: LayoutList },
+          { key: 'config-approval-rules', labelKey: 'module.config-approval-rules', icon: FileCheck },
+          { key: 'config-approval-conditions', labelKey: 'module.config-approval-conditions', icon: SlidersHorizontal },
+          { key: 'config-device-approval', labelKey: 'module.config-device-approval', icon: UserCheck },
+        ],
+      },
     ],
   },
 ]
@@ -425,7 +637,7 @@ export function SidebarNav() {
       const hasItem = group.items?.some((item) => item.key === activeModule)
       const hasSubItem = group.subGroups?.some((sg) => sg.items.some((i) => i.key === activeModule))
       if (hasItem || hasSubItem) initial.add(group.labelKey)
-      if (group.items?.length === 1) initial.add(group.labelKey)
+      if (!group.subGroups && group.items?.length === 1) initial.add(group.labelKey)
     }
     return initial
   })
@@ -453,7 +665,8 @@ export function SidebarNav() {
             setExpandedSubGroups((prev) => new Set(prev).add(sg.labelKey))
           }
         }
-      } else if (group.items?.some((i) => i.key === activeModule)) {
+      }
+      if (group.items?.some((i) => i.key === activeModule)) {
         setExpandedGroups((prev) => new Set(prev).add(group.labelKey))
       }
     }
@@ -499,9 +712,8 @@ export function SidebarNav() {
             const GroupIcon = group.icon
             const isExpanded = expandedGroups.has(group.labelKey)
             const hasSubGroups = !!group.subGroups && group.subGroups.length > 0
-            const hasActiveChild = hasSubGroups
-              ? group.subGroups!.some((sg) => sg.items.some((i) => i.key === activeModule))
-              : group.items?.some((item) => item.key === activeModule)
+            const hasActiveChild = (hasSubGroups && group.subGroups!.some((sg) => sg.items.some((i) => i.key === activeModule))) ||
+              (group.items?.some((item) => item.key === activeModule) ?? false)
             const isSingleItem = !hasSubGroups && group.items?.length === 1
 
             if (isSingleItem && group.items) {
@@ -551,8 +763,8 @@ export function SidebarNav() {
                 {isExpanded && (
                   <div className="flex flex-col gap-0.5 mt-0.5 ms-3 ps-2 border-s border-sidebar-border/60">
                     {/* Render subGroups if present */}
-                    {hasSubGroups
-                      ? group.subGroups!.map((sg) => {
+                    {hasSubGroups &&
+                      group.subGroups!.map((sg) => {
                         const SgIcon = sg.icon || BookOpen
                         const isSgExpanded = expandedSubGroups.has(sg.labelKey)
                         const hasSgActiveChild = sg.items.some((i) => i.key === activeModule)
@@ -605,27 +817,27 @@ export function SidebarNav() {
                             )}
                           </div>
                         )
-                      })
-                      : group.items?.map((item) => {
-                        const Icon = item.icon
-                        const active = activeModule === item.key
-                        return (
-                          <button
-                            key={item.key}
-                            onClick={() => handleItemClick(item.key)}
-                            className={cn(
-                              'group flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-sm transition-colors w-full',
-                              isRtl ? 'text-right' : 'text-left',
-                              active
-                                ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-sm font-medium'
-                                : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground font-normal'
-                            )}
-                          >
-                            <Icon className={cn('size-3.5 shrink-0', active ? 'text-sidebar-primary-foreground' : 'text-muted-foreground group-hover:text-sidebar-accent-foreground')} />
-                            <span className={cn('truncate flex-1', isRtl ? 'text-right' : 'text-left')}>{t(item.labelKey)}</span>
-                          </button>
-                        )
                       })}
+                    {group.items?.map((item) => {
+                      const Icon = item.icon
+                      const active = activeModule === item.key
+                      return (
+                        <button
+                          key={item.key}
+                          onClick={() => handleItemClick(item.key)}
+                          className={cn(
+                            'group flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-sm transition-colors w-full',
+                            isRtl ? 'text-right' : 'text-left',
+                            active
+                              ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-sm font-medium'
+                              : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground font-normal'
+                          )}
+                        >
+                          <Icon className={cn('size-3.5 shrink-0', active ? 'text-sidebar-primary-foreground' : 'text-muted-foreground group-hover:text-sidebar-accent-foreground')} />
+                          <span className={cn('truncate flex-1', isRtl ? 'text-right' : 'text-left')}>{t(item.labelKey)}</span>
+                        </button>
+                      )
+                    })}
                   </div>
                 )}
               </div>
