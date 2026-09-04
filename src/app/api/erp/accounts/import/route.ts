@@ -504,7 +504,8 @@ export async function POST(req: Request) {
     })
 
     return ok({ success: true, rows: normalized.length, created: createdCount, updated: updatedCount })
-  } catch (e: any) {
-    return serverError(e.message)
+  } catch (e: unknown) {
+    console.error('[v0] Account import failed:', e)
+    return serverError('تعذر استيراد الدليل المحاسبي. تحقق من ملف Excel وإعدادات قاعدة البيانات ثم حاول مرة أخرى.')
   }
 }
