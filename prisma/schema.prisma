@@ -2448,6 +2448,27 @@ model PurchaseCreditNoteLine {
 
 // =============================================================================
 // GENERAL DEFINITIONS / LOOKUPS (Book 1 Shared Kernel)
-// Note: GeneralDefinition model is defined once above (Book 3 §3.8 section).
 // =============================================================================
+
+model GeneralDefinition {
+  id          String   @id @default(cuid())
+  companyId   String   @default("*")
+  typeCode    String
+  code        String
+  nameAr      String
+  nameEn      String?
+  description String?
+  sortOrder   Int      @default(0)
+  isSystem    Boolean  @default(false)
+  active      Boolean  @default(true)
+  meta        String?
+  createdBy   String?
+  updatedBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([companyId, typeCode, code])
+  @@index([companyId, typeCode])
+  @@index([active])
+}
 
