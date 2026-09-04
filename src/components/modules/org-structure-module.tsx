@@ -1,12 +1,12 @@
 'use client'
 
 import React, { useState, useMemo, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useT } from '@/lib/i18n/use-t'
 import { useNav } from '@/stores/nav-store'
 import {
+  LayoutGrid,
   Plus,
   Trash2,
   FileSpreadsheet,
@@ -36,6 +36,12 @@ import {
   ArrowLeft,
   CheckCircle2,
   XCircle,
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
+  RotateCcw,
+  ChevronsDown,
+  ChevronsUp,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -76,6 +82,13 @@ export interface OrgStructureItem {
   parent?: { id: string; code: string; nameAr: string; nameEn?: string | null } | null
   type: string
   level: number
+  path?: string | null
+  status?: string | null
+  costCenterId?: string | null
+  costCenter?: { id: string; code: string; nameAr: string; nameEn?: string | null } | null
+  managerId?: string | null
+  manager?: { id: string; employeeNo: string; nameAr: string; nameEn?: string | null } | null
+  _count?: { employees?: number; children?: number }
   notes?: string | null
   active?: boolean
   // Extended Enterprise Audit & Suspension Fields
@@ -323,21 +336,26 @@ export default function OrgStructureModule({
   embedded?: boolean
   onNavigateToDashboard?: () => void
 }) {
-  const router = useRouter()
   const setActiveModule = useNav((s) => s.setActiveModule)
   const { isRTL, locale } = useT()
   const L = (ar: string, en: string) => (isRTL ? ar : en)
 
   const queryClient = useQueryClient()
-  const [viewMode, setViewMode] = useState<'list' | 'form'>('list')
+  const [viewMode, setViewMode] = useState<'list' | 'tree' | 'form' | 'audit'>('list')
   const [editingItem, setEditingItem] = useState<OrgStructureItem | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'SUSPENDED' | 'ARCHIVED'>('ALL')
   const [pageSize, setPageSize] = useState(10)
   const [currentPage, setCurrentPage] = useState(1)
 
+  // Suspension Modal state
+  const [suspendDialogOpen, setSuspendDialogOpen] = useState(false)
+  const [targetSuspendItem, setTargetSuspendItem] = useState<OrgStructureItem | null>(null)
+  const [suspensionReasonInput, setSuspensionReasonInput] = useState('')
+
   // Expanded Column visibility controls matching user request (Persisted in localStorage)
-  const VISIBLE_COLS_STORAGE_KEY = 'orminal_erp_org_structure_visible_cols'
+  const VISIBLE_COLS_STORAGE_KEY = 'orminal_erp_org_structure_visible_cols_v2'
 
   const DEFAULT_VISIBLE_COLS = useMemo(
     () => ({
@@ -347,6 +365,9 @@ export default function OrgStructureModule({
       parentName: true,
       type: true,
       level: true,
+      costCenter: true,
+      manager: true,
+      employeeCount: true,
       notes: true,
       createdAt: true,
       isSuspended: true,
@@ -391,6 +412,77 @@ export default function OrgStructureModule({
     }
   }, [visibleCols, isColsLoaded])
 
+  // Interactive Column Resizing State (Excel-style drag-to-resize columns)
+  const COL_WIDTHS_STORAGE_KEY = 'orminal_erp_org_structure_col_widths_v2'
+  const DEFAULT_COL_WIDTHS = useMemo<Record<string, number>>(
+    () => ({
+      code: 100,
+      name: 180,
+      parentCode: 110,
+      parentName: 180,
+      type: 130,
+      level: 80,
+      notes: 190,
+      createdAt: 160,
+      isSuspended: 100,
+      suspendedBy: 140,
+      suspendedAt: 160,
+      suspensionReason: 190,
+      suspensionCount: 110,
+      createdBy: 130,
+      updatedBy: 130,
+      updatedAt: 160,
+      modificationCount: 110,
+      printCount: 110,
+    }),
+    []
+  )
+
+  const [colWidths, setColWidths] = useState<Record<string, number>>(DEFAULT_COL_WIDTHS)
+  const [isResizingMode, setIsResizingMode] = useState(false)
+
+  // Hydrate custom column widths from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(COL_WIDTHS_STORAGE_KEY)
+      if (saved) {
+        setColWidths((prev) => ({ ...prev, ...JSON.parse(saved) }))
+      }
+    } catch (e) {
+      console.error('Error reading column width preferences:', e)
+    }
+  }, [])
+
+  // Persist column widths to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(COL_WIDTHS_STORAGE_KEY, JSON.stringify(colWidths))
+    } catch (e) {
+      console.error('Error saving column width preferences:', e)
+    }
+  }, [colWidths])
+
+  const handleResizeStart = (colKey: string, e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const startX = e.clientX
+    const startWidth = colWidths[colKey] || DEFAULT_COL_WIDTHS[colKey] || 120
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      const deltaX = isRTL ? startX - moveEvent.clientX : moveEvent.clientX - startX
+      const newWidth = Math.max(50, startWidth + deltaX)
+      setColWidths((prev) => ({ ...prev, [colKey]: newWidth }))
+    }
+
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove)
+      document.removeEventListener('mouseup', onMouseUp)
+    }
+
+    document.addEventListener('mousemove', onMouseMove)
+    document.addEventListener('mouseup', onMouseUp)
+  }
+
   // Form State
   const [formData, setFormData] = useState<{
     code: string
@@ -398,6 +490,9 @@ export default function OrgStructureModule({
     nameEn: string
     parentId: string
     type: string
+    costCenterId: string
+    managerId: string
+    status: string
     notes: string
     isSuspended: boolean
     suspensionReason: string
@@ -407,12 +502,15 @@ export default function OrgStructureModule({
     nameEn: '',
     parentId: '',
     type: 'إدارة',
+    costCenterId: '',
+    managerId: '',
+    status: 'ACTIVE',
     notes: '',
     isSuspended: false,
     suspensionReason: '',
   })
 
-  // Fetch API data
+  // Fetch API data (Org Structure)
   const { data: items = INITIAL_SEED_DATA, isLoading, refetch } = useQuery({
     queryKey: ['org-structure'],
     queryFn: async () => {
@@ -422,6 +520,45 @@ export default function OrgStructureModule({
       return (json.data && json.data.length > 0) ? json.data : INITIAL_SEED_DATA
     },
   })
+
+  // Fetch Cost Centers for Master Data selector
+  const { data: costCenters = [] } = useQuery({
+    queryKey: ['cost-centers-lookup'],
+    queryFn: async () => {
+      const res = await fetch('/api/erp/cost-centers?pageSize=500')
+      if (!res.ok) return []
+      const json = await res.json()
+      return json.data || []
+    },
+  })
+
+  // Fetch Employees for Manager selector
+  const { data: employees = [] } = useQuery({
+    queryKey: ['employees-lookup'],
+    queryFn: async () => {
+      const res = await fetch('/api/erp/employees?pageSize=500')
+      if (!res.ok) return []
+      const json = await res.json()
+      return json.data || []
+    },
+  })
+
+  // Helper function to get all child/grandchild IDs of a node to prevent circular selection
+  const invalidParentIds = useMemo(() => {
+    if (!editingItem) return new Set<string>()
+    const forbidden = new Set<string>([editingItem.id])
+
+    const findChildren = (parentId: string) => {
+      items.forEach((item) => {
+        if (item.parentId === parentId && !forbidden.has(item.id)) {
+          forbidden.add(item.id)
+          findChildren(item.id)
+        }
+      })
+    }
+    findChildren(editingItem.id)
+    return forbidden
+  }, [editingItem, items])
 
   // Save Mutation
   const saveMutation = useMutation({
@@ -470,6 +607,32 @@ export default function OrgStructureModule({
     onError: (err: Error) => toast.error(err.message),
   })
 
+  // Suspend/Reactivate Mutation
+  const suspendMutation = useMutation({
+    mutationFn: async ({ id, isSuspended, suspensionReason }: { id: string; isSuspended: boolean; suspensionReason?: string }) => {
+      const res = await fetch('/api/erp/org-structure', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, isSuspended, suspensionReason }),
+      })
+      const json = await res.json()
+      if (!res.ok || !json.ok) throw new Error(json.message || L('فشل تغيير حالة التوقيف', 'Failed to update suspension status'))
+      return json.data
+    },
+    onSuccess: (_, variables) => {
+      toast.success(
+        variables.isSuspended
+          ? L('تم توقيف الهيكل التنظيمي بنجاح', 'Org Structure suspended successfully')
+          : L('تم إلغاء التوقيف وتفعيل الهيكل بنجاح', 'Org Structure activated successfully')
+      )
+      queryClient.invalidateQueries({ queryKey: ['org-structure'] })
+      setSuspendDialogOpen(false)
+      setTargetSuspendItem(null)
+      setSuspensionReasonInput('')
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+
   // Open Form for Adding New Record
   const handleAddNew = () => {
     const maxCode = items.reduce((acc, curr) => {
@@ -484,6 +647,9 @@ export default function OrgStructureModule({
       nameEn: '',
       parentId: '',
       type: 'إدارة',
+      costCenterId: '',
+      managerId: '',
+      status: 'ACTIVE',
       notes: '',
       isSuspended: false,
       suspensionReason: '',
@@ -501,6 +667,9 @@ export default function OrgStructureModule({
       nameEn: item.nameEn || '',
       parentId: item.parentId || '',
       type: item.type || 'إدارة',
+      costCenterId: item.costCenterId || '',
+      managerId: item.managerId || '',
+      status: item.status || (item.isSuspended ? 'SUSPENDED' : 'ACTIVE'),
       notes: item.notes || '',
       isSuspended: !!item.isSuspended,
       suspensionReason: item.suspensionReason || '',
@@ -530,20 +699,30 @@ export default function OrgStructureModule({
 
   // Filtered List items
   const filteredItems = useMemo(() => {
-    if (!search.trim()) return items
-    const q = search.toLowerCase().trim()
-    return items.filter(
-      (item) =>
+    return items.filter((item) => {
+      // Status Filter
+      if (statusFilter === 'ACTIVE' && (item.isSuspended || item.status === 'SUSPENDED' || item.status === 'ARCHIVED')) return false
+      if (statusFilter === 'SUSPENDED' && !item.isSuspended && item.status !== 'SUSPENDED') return false
+      if (statusFilter === 'ARCHIVED' && item.status !== 'ARCHIVED') return false
+
+      if (!search.trim()) return true
+      const q = search.toLowerCase().trim()
+      return (
         item.code.toLowerCase().includes(q) ||
         item.nameAr.toLowerCase().includes(q) ||
         (item.nameEn && item.nameEn.toLowerCase().includes(q)) ||
         (item.parent?.nameAr && item.parent.nameAr.toLowerCase().includes(q)) ||
+        (item.costCenter?.nameAr && item.costCenter.nameAr.toLowerCase().includes(q)) ||
+        (item.costCenter?.code && item.costCenter.code.toLowerCase().includes(q)) ||
+        (item.manager?.nameAr && item.manager.nameAr.toLowerCase().includes(q)) ||
+        (item.manager?.employeeNo && item.manager.employeeNo.toLowerCase().includes(q)) ||
         item.type.toLowerCase().includes(q) ||
         (item.notes && item.notes.toLowerCase().includes(q)) ||
         (item.createdBy && item.createdBy.toLowerCase().includes(q)) ||
         (item.updatedBy && item.updatedBy.toLowerCase().includes(q))
-    )
-  }, [items, search])
+      )
+    })
+  }, [items, search, statusFilter])
 
   // Pagination calculation
   const totalPages = Math.ceil(filteredItems.length / pageSize) || 1
@@ -891,81 +1070,113 @@ export default function OrgStructureModule({
     <div className={cn('w-full flex flex-col gap-3 font-sans', isRTL ? 'text-right' : 'text-left', embedded ? '' : 'p-3 md:p-5 max-w-[1800px] mx-auto')}>
 
       {/* ---------------- BREADCRUMB HEADER BAR (Matching Screenshot) ---------------- */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-[#2b5ba9] text-white p-2.5 sm:px-4 rounded-t-lg shadow-sm">
-        <div className="flex items-center gap-1.5 text-xs sm:text-sm font-medium">
-          <Grid className="size-4 shrink-0 text-blue-200" />
+      <div className="flex flex-wrap items-center justify-between gap-2.5 bg-primary dark:bg-blue-600/90 text-white p-2.5 sm:px-4 rounded-t-lg shadow-sm">
+        <div className="flex items-center gap-1.5 text-xs sm:text-sm font-medium flex-wrap w-full md:w-auto">
+          <div className="flex items-center gap-1 shrink-0 overflow-x-auto max-w-full py-0.5 scrollbar-none">
+            <LayoutGrid className="size-4 shrink-0 text-white" />
 
-          {/* 1. الرئيسية: عند النقر يتم التحول إلى شاشة لوحة التحكم */}
-          <button
-            type="button"
-            onClick={() => {
-              setActiveModule('dashboard')
-              if (onNavigateToDashboard) {
-                onNavigateToDashboard()
-              }
-              try {
-                router.push('/dashboard')
-              } catch { }
-            }}
-            className="hover:bg-white/15 px-2 py-1 rounded-md transition-all text-blue-100 hover:text-white flex items-center gap-1 cursor-pointer font-medium"
-            title={L('التحول إلى شاشة لوحة التحكم', 'Navigate to Dashboard')}
-          >
-            <span>{L('الرئيسية', 'Home')}</span>
-          </button>
+            {/* 1. الرئيسية: عند النقر يتم التحول إلى شاشة لوحة التحكم */}
+            <button
+              type="button"
+              onClick={() => {
+                setActiveModule('dashboard')
+                if (onNavigateToDashboard) {
+                  onNavigateToDashboard()
+                }
+              }}
+              className="hover:bg-white/15 px-2 py-1 rounded-md transition-all text-blue-100 hover:text-white flex items-center gap-1 cursor-pointer font-medium text-xs sm:text-sm shrink-0"
+              title={L('الرئيسية', 'Dashboard')}
+            >
+              <span>{L('الرئيسية', 'Home')}</span>
+            </button>
 
-          <BreadcrumbChevron className="size-3 text-blue-300 shrink-0" />
+            <BreadcrumbChevron className="size-3 text-blue-300 shrink-0" />
 
-          {/* 2. الهيكل التنظيمي: عند النقر تفتح شاشة تعديل الهيكل */}
-          <button
-            type="button"
-            onClick={() => {
-              if (!editingItem && items.length > 0) {
-                handleEdit(items[0])
-              } else if (!editingItem) {
-                handleAddNew()
-              } else {
-                setViewMode('form')
-              }
-            }}
-            className={cn(
-              "px-2 py-1 rounded-md transition-all font-semibold cursor-pointer",
-              viewMode === 'form'
-                ? "bg-white/20 text-white shadow-sm ring-1 ring-white/30"
-                : "text-blue-100 hover:bg-white/15 hover:text-white"
-            )}
-            title={L('فتح شاشة تعديل الهيكل التنظيمي', 'Open Org Structure Edit Screen')}
-          >
-            {L('الهيكل التنظيمي', 'Organizational Structure')}
-          </button>
+            {/* 2. الهيكل التنظيمي: عند النقر تفتح شاشة تعديل الهيكل */}
+            <button
+              type="button"
+              onClick={() => {
+                if (!editingItem && items.length > 0) {
+                  handleEdit(items[0])
+                } else if (!editingItem) {
+                  handleAddNew()
+                } else {
+                  setViewMode('form')
+                }
+              }}
+              className={cn(
+                "px-2 py-1 rounded-md transition-all font-semibold cursor-pointer text-xs sm:text-sm shrink-0",
+                viewMode === 'form'
+                  ? "bg-white/20 text-white shadow-sm ring-1 ring-white/30"
+                  : "text-blue-100 hover:bg-white/15 hover:text-white"
+              )}
+              title={L(' شاشة تعديل الهيكل التنظيمي', ' Org Structure Edit Screen')}
+            >
+              {L('الهيكل التنظيمي', 'Organizational Structure')}
+            </button>
 
-          <BreadcrumbChevron className="size-3 text-blue-300 shrink-0" />
+            <BreadcrumbChevron className="size-3 text-blue-300 shrink-0 hidden sm:inline-block" />
+          </div>
 
-          {/* 3. الكل: عند النقر يتم التحول إلى الشاشة التي فيها الجدول */}
-          <button
-            type="button"
-            onClick={() => setViewMode('list')}
-            className={cn(
-              "px-2 py-0.5 rounded-md text-[11px] font-semibold transition-all cursor-pointer",
-              viewMode === 'list'
-                ? "bg-white/25 text-white shadow-sm ring-1 ring-white/40 font-bold"
-                : "bg-white/10 text-blue-100 hover:bg-white/20 hover:text-white"
-            )}
-            title={L('التحول إلى شاشة الجدول (القائمة)', 'Switch to Table Grid View')}
-          >
-            {L('الكل', 'All')}
-          </button>
+          {/* 3. تنقل بين أنماط العرض */}
+          <div className="flex items-center gap-0.5 sm:gap-1 bg-black/25 p-0.5 rounded-lg border border-white/10 w-full sm:w-auto justify-between sm:justify-start">
+            <button
+              type="button"
+              onClick={() => setViewMode('list')}
+              className={cn(
+                "px-2 sm:px-2.5 py-1 rounded-md text-[11px] sm:text-xs font-semibold transition-all cursor-pointer flex items-center gap-1 flex-1 sm:flex-none justify-center",
+                viewMode === 'list'
+                  ? "bg-white text-blue-900 shadow-sm font-bold"
+                  : "text-blue-100 hover:bg-white/15 hover:text-white"
+              )}
+              title={L('جدول الهيكل التنظيمي', 'Org Structure Data Table')}
+            >
+              <Grid className="size-3.5" />
+              <span>{L('الجدول', 'Table')}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setViewMode('tree')}
+              className={cn(
+                "px-2 sm:px-2.5 py-1 rounded-md text-[11px] sm:text-xs font-semibold transition-all cursor-pointer flex items-center gap-1 flex-1 sm:flex-none justify-center",
+                viewMode === 'tree'
+                  ? "bg-white text-blue-900 shadow-sm font-bold"
+                  : "text-blue-100 hover:bg-white/15 hover:text-white"
+              )}
+              title={L('المخطط التنظيمي الشجري التفاعلي', 'Interactive Org Chart Tree')}
+            >
+              <FolderTree className="size-3.5" />
+              <span className="truncate">{L('الشجرة التنظيمية', 'Org Tree')}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setViewMode('audit')}
+              className={cn(
+                "px-2 sm:px-2.5 py-1 rounded-md text-[11px] sm:text-xs font-semibold transition-all cursor-pointer flex items-center gap-1 flex-1 sm:flex-none justify-center",
+                viewMode === 'audit'
+                  ? "bg-white text-blue-900 shadow-sm font-bold"
+                  : "text-blue-100 hover:bg-white/15 hover:text-white"
+              )}
+              title={L('سجل التدقيق والتغييرات الحرج', 'System Audit & History Log')}
+            >
+              <BarChart2 className="size-3.5" />
+              <span className="truncate">{L('سجل التدقيق', 'Audit Log')}</span>
+            </button>
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
-          {viewMode === 'form' && (
+          {viewMode !== 'list' && (
             <Button
               size="sm"
               variant="secondary"
               onClick={() => setViewMode('list')}
-              className="h-7 gap-1 text-xs bg-white/20 hover:bg-white/30 text-white border-0 cursor-pointer"
+              className="h-7 px-2.5 gap-1 text-xs bg-white/20 hover:bg-white/30 text-white border border-white/25 cursor-pointer"
             >
               <ArrowIcon className="size-3.5" />
-              {L('العودة إلى القائمة', 'Back to List')}
+              <span>{L('العودة إلى القائمة', 'Back to List')}</span>
             </Button>
           )}
         </div>
@@ -1071,12 +1282,12 @@ export default function OrgStructureModule({
               </DropdownMenu>
 
               {/* Search Box */}
-              <div className="relative w-full sm:w-56">
+              <div className="relative w-full sm:w-52">
                 <Search className={cn('size-3.5 absolute top-2.5 text-muted-foreground', isRTL ? 'right-2.5' : 'left-2.5')} />
                 <Input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder={L('بحث', 'Search')}
+                  placeholder={L('بحث في الهياكل…', 'Search structures…')}
                   className={cn('h-8 text-xs bg-background', isRTL ? 'pr-7 pl-6' : 'pl-7 pr-6')}
                 />
                 {search && (
@@ -1087,6 +1298,42 @@ export default function OrgStructureModule({
                     <X className="size-3.5" />
                   </button>
                 )}
+              </div>
+
+              {/* Status Filter Pills */}
+              <div className="flex items-center bg-slate-200/70 dark:bg-slate-800 p-0.5 rounded-md border border-slate-300/50 dark:border-slate-700">
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('ALL')}
+                  className={cn(
+                    "px-2 py-0.5 rounded text-[11px] font-medium transition-all",
+                    statusFilter === 'ALL' ? "bg-white dark:bg-slate-900 text-foreground font-bold shadow-xs" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {L('الكل', 'All')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('ACTIVE')}
+                  className={cn(
+                    "px-2 py-0.5 rounded text-[11px] font-medium transition-all flex items-center gap-1",
+                    statusFilter === 'ACTIVE' ? "bg-emerald-600 text-white font-bold shadow-xs" : "text-muted-foreground hover:text-emerald-600"
+                  )}
+                >
+                  <span className="size-1.5 rounded-full bg-emerald-400" />
+                  {L('نشط', 'Active')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('SUSPENDED')}
+                  className={cn(
+                    "px-2 py-0.5 rounded text-[11px] font-medium transition-all flex items-center gap-1",
+                    statusFilter === 'SUSPENDED' ? "bg-red-600 text-white font-bold shadow-xs" : "text-muted-foreground hover:text-red-600"
+                  )}
+                >
+                  <span className="size-1.5 rounded-full bg-red-400" />
+                  {L('موقوف', 'Suspended')}
+                </button>
               </div>
             </div>
 
@@ -1136,22 +1383,15 @@ export default function OrgStructureModule({
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {/* Layout Switch */}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40"
-                title={L('تغيير نمط العرض', 'Toggle View Layout')}
-              >
-                <Sliders className="size-4" />
-              </Button>
 
-              {/* Chart */}
+
+              {/* Chart: فتح المخطط التنظيمي البياني الشجري */}
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40"
-                title={L('المخطط التنظيمي البياني', 'Org Chart')}
+                onClick={() => setViewMode('tree')}
+                className="h-8 w-8 p-0 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 cursor-pointer transition-all"
+                title={L(' المخطط التنظيمي البياني ', 'Org Chart')}
               >
                 <BarChart2 className="size-4" />
               </Button>
@@ -1259,144 +1499,445 @@ export default function OrgStructureModule({
             </div>
           </div>
 
+
+
           {/* MAIN GRID TABLE WITH HORIZONTAL SCROLLBAR */}
           <div className="overflow-x-auto min-h-[420px] w-full">
             <Table className="min-w-[1500px] border-collapse text-[11px] table-fixed">
               <TableHeader className="bg-slate-100/90 dark:bg-slate-900 border-b">
                 <TableRow className="h-8 hover:bg-transparent text-slate-700 dark:text-slate-200">
-
                   {visibleCols.code && (
-                    <TableHead className={cn('w-20 max-w-[80px] font-bold py-1.5 px-2 border-r border-slate-200 dark:border-slate-800 whitespace-nowrap', isRTL ? 'text-right' : 'text-left')}>
+                    <TableHead
+                      style={{ width: `${colWidths.code || 100}px`, minWidth: `${colWidths.code || 100}px`, maxWidth: `${colWidths.code || 100}px` }}
+                      className={cn(
+                        'font-bold py-1.5 px-2 border-r border-slate-200 dark:border-slate-800 whitespace-nowrap relative select-none group',
+                        isRTL ? 'text-right' : 'text-left'
+                      )}
+                    >
                       <div className="flex items-center justify-between gap-1">
                         <span className="truncate">{L('رقم الهيكل', 'Code')}</span>
                         <span className="text-[10px] text-muted-foreground font-mono shrink-0">≡</span>
+                      </div>
+                      <div
+                        onMouseDown={(e) => handleResizeStart('code', e)}
+                        onDoubleClick={() => setColWidths((p) => ({ ...p, code: DEFAULT_COL_WIDTHS.code }))}
+                        className={cn(
+                          "absolute top-0 bottom-0 w-3 z-30 cursor-col-resize hover:bg-blue-500/80 transition-colors flex items-center justify-center group/handle",
+                          isRTL ? "-left-1.5" : "-right-1.5",
+                          isResizingMode ? "bg-blue-400/40 animate-pulse" : "bg-transparent"
+                        )}
+                        title={L('سحب لتغيير عرض العمود (انقر مرتين للإعادة)', 'Drag to resize column (Double click to reset)')}
+                      >
+                        <div className="w-[2px] h-4/5 bg-slate-300 dark:bg-slate-700 group-hover/handle:bg-white rounded-full" />
                       </div>
                     </TableHead>
                   )}
 
                   {visibleCols.name && (
-                    <TableHead className={cn('w-36 max-w-[140px] font-bold py-1.5 px-2 border-r border-slate-200 dark:border-slate-800 whitespace-nowrap', isRTL ? 'text-right' : 'text-left')}>
+                    <TableHead
+                      style={{ width: `${colWidths.name || 180}px`, minWidth: `${colWidths.name || 180}px`, maxWidth: `${colWidths.name || 180}px` }}
+                      className={cn(
+                        'font-bold py-1.5 px-2 border-r border-slate-200 dark:border-slate-800 whitespace-nowrap relative select-none group',
+                        isRTL ? 'text-right' : 'text-left'
+                      )}
+                    >
                       <div className="flex items-center justify-between gap-1">
                         <span className="truncate">{L('اسم الهيكل', 'Structure Name')}</span>
                         <span className="text-[10px] text-muted-foreground font-mono shrink-0">≡</span>
+                      </div>
+                      <div
+                        onMouseDown={(e) => handleResizeStart('name', e)}
+                        onDoubleClick={() => setColWidths((p) => ({ ...p, name: DEFAULT_COL_WIDTHS.name }))}
+                        className={cn(
+                          "absolute top-0 bottom-0 w-3 z-30 cursor-col-resize hover:bg-blue-500/80 transition-colors flex items-center justify-center group/handle",
+                          isRTL ? "-left-1.5" : "-right-1.5",
+                          isResizingMode ? "bg-blue-400/40 animate-pulse" : "bg-transparent"
+                        )}
+                        title={L('سحب لتغيير عرض العمود (انقر مرتين للإعادة)', 'Drag to resize column (Double click to reset)')}
+                      >
+                        <div className="w-[2px] h-4/5 bg-slate-300 dark:bg-slate-700 group-hover/handle:bg-white rounded-full" />
                       </div>
                     </TableHead>
                   )}
 
                   {visibleCols.parentCode && (
-                    <TableHead className={cn('w-20 max-w-[80px] font-bold py-1.5 px-2 border-r border-slate-200 dark:border-slate-800 whitespace-nowrap', isRTL ? 'text-right' : 'text-left')}>
+                    <TableHead
+                      style={{ width: `${colWidths.parentCode || 110}px`, minWidth: `${colWidths.parentCode || 110}px`, maxWidth: `${colWidths.parentCode || 110}px` }}
+                      className={cn(
+                        'font-bold py-1.5 px-2 border-r border-slate-200 dark:border-slate-800 whitespace-nowrap relative select-none group',
+                        isRTL ? 'text-right' : 'text-left'
+                      )}
+                    >
                       <div className="flex items-center justify-between gap-1">
                         <span className="truncate">{L('الهيكل الأعلى', 'Parent Code')}</span>
                         <span className="text-[10px] text-muted-foreground font-mono shrink-0">≡</span>
+                      </div>
+                      <div
+                        onMouseDown={(e) => handleResizeStart('parentCode', e)}
+                        onDoubleClick={() => setColWidths((p) => ({ ...p, parentCode: DEFAULT_COL_WIDTHS.parentCode }))}
+                        className={cn(
+                          "absolute top-0 bottom-0 w-3 z-30 cursor-col-resize hover:bg-blue-500/80 transition-colors flex items-center justify-center group/handle",
+                          isRTL ? "-left-1.5" : "-right-1.5",
+                          isResizingMode ? "bg-blue-400/40 animate-pulse" : "bg-transparent"
+                        )}
+                        title={L('سحب لتغيير عرض العمود (انقر مرتين للإعادة)', 'Drag to resize column (Double click to reset)')}
+                      >
+                        <div className="w-[2px] h-4/5 bg-slate-300 dark:bg-slate-700 group-hover/handle:bg-white rounded-full" />
                       </div>
                     </TableHead>
                   )}
 
                   {visibleCols.parentName && (
-                    <TableHead className={cn('w-36 max-w-[140px] font-bold py-1.5 px-2 border-r border-slate-200 dark:border-slate-800 whitespace-nowrap', isRTL ? 'text-right' : 'text-left')}>
+                    <TableHead
+                      style={{ width: `${colWidths.parentName || 180}px`, minWidth: `${colWidths.parentName || 180}px`, maxWidth: `${colWidths.parentName || 180}px` }}
+                      className={cn(
+                        'font-bold py-1.5 px-2 border-r border-slate-200 dark:border-slate-800 whitespace-nowrap relative select-none group',
+                        isRTL ? 'text-right' : 'text-left'
+                      )}
+                    >
                       <div className="flex items-center justify-between gap-1">
                         <span className="truncate">{L('اسم الهيكل الأعلى', 'Parent Name')}</span>
                         <span className="text-[10px] text-muted-foreground font-mono shrink-0">≡</span>
+                      </div>
+                      <div
+                        onMouseDown={(e) => handleResizeStart('parentName', e)}
+                        onDoubleClick={() => setColWidths((p) => ({ ...p, parentName: DEFAULT_COL_WIDTHS.parentName }))}
+                        className={cn(
+                          "absolute top-0 bottom-0 w-3 z-30 cursor-col-resize hover:bg-blue-500/80 transition-colors flex items-center justify-center group/handle",
+                          isRTL ? "-left-1.5" : "-right-1.5",
+                          isResizingMode ? "bg-blue-400/40 animate-pulse" : "bg-transparent"
+                        )}
+                        title={L('سحب لتغيير عرض العمود (انقر مرتين للإعادة)', 'Drag to resize column (Double click to reset)')}
+                      >
+                        <div className="w-[2px] h-4/5 bg-slate-300 dark:bg-slate-700 group-hover/handle:bg-white rounded-full" />
                       </div>
                     </TableHead>
                   )}
 
                   {visibleCols.type && (
-                    <TableHead className={cn('w-28 max-w-[110px] font-bold py-1.5 px-2 border-r border-slate-200 dark:border-slate-800 whitespace-nowrap', isRTL ? 'text-right' : 'text-left')}>
+                    <TableHead
+                      style={{ width: `${colWidths.type || 130}px`, minWidth: `${colWidths.type || 130}px`, maxWidth: `${colWidths.type || 130}px` }}
+                      className={cn(
+                        'font-bold py-1.5 px-2 border-r border-slate-200 dark:border-slate-800 whitespace-nowrap relative select-none group',
+                        isRTL ? 'text-right' : 'text-left'
+                      )}
+                    >
                       <div className="flex items-center justify-between gap-1">
                         <span className="truncate">{L('نوع الهيكل', 'Type')}</span>
                         <span className="text-[10px] text-muted-foreground font-mono shrink-0">≡</span>
+                      </div>
+                      <div
+                        onMouseDown={(e) => handleResizeStart('type', e)}
+                        onDoubleClick={() => setColWidths((p) => ({ ...p, type: DEFAULT_COL_WIDTHS.type }))}
+                        className={cn(
+                          "absolute top-0 bottom-0 w-3 z-30 cursor-col-resize hover:bg-blue-500/80 transition-colors flex items-center justify-center group/handle",
+                          isRTL ? "-left-1.5" : "-right-1.5",
+                          isResizingMode ? "bg-blue-400/40 animate-pulse" : "bg-transparent"
+                        )}
+                        title={L('سحب لتغيير عرض العمود (انقر مرتين للإعادة)', 'Drag to resize column (Double click to reset)')}
+                      >
+                        <div className="w-[2px] h-4/5 bg-slate-300 dark:bg-slate-700 group-hover/handle:bg-white rounded-full" />
                       </div>
                     </TableHead>
                   )}
 
                   {visibleCols.level && (
-                    <TableHead className="w-16 max-w-[65px] font-bold py-1.5 px-2 border-r border-slate-200 dark:border-slate-800 text-center whitespace-nowrap">
+                    <TableHead
+                      style={{ width: `${colWidths.level || 80}px`, minWidth: `${colWidths.level || 80}px`, maxWidth: `${colWidths.level || 80}px` }}
+                      className="font-bold py-1.5 px-2 border-r border-slate-200 dark:border-slate-800 text-center whitespace-nowrap relative select-none group"
+                    >
                       <div className="flex items-center justify-center gap-1">
                         <span>{L('المستوى', 'Level')}</span>
                         <span className="text-[10px] text-muted-foreground font-mono shrink-0">≡</span>
+                      </div>
+                      <div
+                        onMouseDown={(e) => handleResizeStart('level', e)}
+                        onDoubleClick={() => setColWidths((p) => ({ ...p, level: DEFAULT_COL_WIDTHS.level }))}
+                        className={cn(
+                          "absolute top-0 bottom-0 w-3 z-30 cursor-col-resize hover:bg-blue-500/80 transition-colors flex items-center justify-center group/handle",
+                          isRTL ? "-left-1.5" : "-right-1.5",
+                          isResizingMode ? "bg-blue-400/40 animate-pulse" : "bg-transparent"
+                        )}
+                        title={L('سحب لتغيير عرض العمود (انقر مرتين للإعادة)', 'Drag to resize column (Double click to reset)')}
+                      >
+                        <div className="w-[2px] h-4/5 bg-slate-300 dark:bg-slate-700 group-hover/handle:bg-white rounded-full" />
                       </div>
                     </TableHead>
                   )}
 
                   {visibleCols.notes && (
-                    <TableHead className={cn('w-40 max-w-[160px] font-bold py-1.5 px-2 border-r border-slate-200 dark:border-slate-800 whitespace-nowrap', isRTL ? 'text-right' : 'text-left')}>
+                    <TableHead
+                      style={{ width: `${colWidths.notes || 190}px`, minWidth: `${colWidths.notes || 190}px`, maxWidth: `${colWidths.notes || 190}px` }}
+                      className={cn(
+                        'font-bold py-1.5 px-2 border-r border-slate-200 dark:border-slate-800 whitespace-nowrap relative select-none group',
+                        isRTL ? 'text-right' : 'text-left'
+                      )}
+                    >
                       <div className="flex items-center justify-between gap-1">
                         <span className="truncate">{L('ملاحظات', 'Notes')}</span>
                         <span className="text-[10px] text-muted-foreground font-mono shrink-0">≡</span>
+                      </div>
+                      <div
+                        onMouseDown={(e) => handleResizeStart('notes', e)}
+                        onDoubleClick={() => setColWidths((p) => ({ ...p, notes: DEFAULT_COL_WIDTHS.notes }))}
+                        className={cn(
+                          "absolute top-0 bottom-0 w-3 z-30 cursor-col-resize hover:bg-blue-500/80 transition-colors flex items-center justify-center group/handle",
+                          isRTL ? "-left-1.5" : "-right-1.5",
+                          isResizingMode ? "bg-blue-400/40 animate-pulse" : "bg-transparent"
+                        )}
+                        title={L('سحب لتغيير عرض العمود (انقر مرتين للإعادة)', 'Drag to resize column (Double click to reset)')}
+                      >
+                        <div className="w-[2px] h-4/5 bg-slate-300 dark:bg-slate-700 group-hover/handle:bg-white rounded-full" />
                       </div>
                     </TableHead>
                   )}
 
                   {visibleCols.createdAt && (
-                    <TableHead className={cn('w-36 max-w-[140px] font-bold py-1.5 px-2 border-r border-slate-200 dark:border-slate-800 whitespace-nowrap', isRTL ? 'text-right' : 'text-left')}>
+                    <TableHead
+                      style={{ width: `${colWidths.createdAt || 160}px`, minWidth: `${colWidths.createdAt || 160}px`, maxWidth: `${colWidths.createdAt || 160}px` }}
+                      className={cn(
+                        'font-bold py-1.5 px-2 border-r border-slate-200 dark:border-slate-800 whitespace-nowrap relative select-none group',
+                        isRTL ? 'text-right' : 'text-left'
+                      )}
+                    >
                       <div className="flex items-center justify-between gap-1">
                         <span className="truncate">{L('تاريخ الإدخال', 'Entry Date')}</span>
                         <span className="text-[10px] text-muted-foreground font-mono shrink-0">≡</span>
+                      </div>
+                      <div
+                        onMouseDown={(e) => handleResizeStart('createdAt', e)}
+                        onDoubleClick={() => setColWidths((p) => ({ ...p, createdAt: DEFAULT_COL_WIDTHS.createdAt }))}
+                        className={cn(
+                          "absolute top-0 bottom-0 w-3 z-30 cursor-col-resize hover:bg-blue-500/80 transition-colors flex items-center justify-center group/handle",
+                          isRTL ? "-left-1.5" : "-right-1.5",
+                          isResizingMode ? "bg-blue-400/40 animate-pulse" : "bg-transparent"
+                        )}
+                        title={L('سحب لتغيير عرض العمود (انقر مرتين للإعادة)', 'Drag to resize column (Double click to reset)')}
+                      >
+                        <div className="w-[2px] h-4/5 bg-slate-300 dark:bg-slate-700 group-hover/handle:bg-white rounded-full" />
                       </div>
                     </TableHead>
                   )}
 
                   {visibleCols.isSuspended && (
-                    <TableHead className="w-20 max-w-[80px] font-bold py-1.5 px-2 border-r border-slate-200 dark:border-slate-800 text-center whitespace-nowrap">
+                    <TableHead
+                      style={{ width: `${colWidths.isSuspended || 100}px`, minWidth: `${colWidths.isSuspended || 100}px`, maxWidth: `${colWidths.isSuspended || 100}px` }}
+                      className="font-bold py-1.5 px-2 border-r border-slate-200 dark:border-slate-800 text-center whitespace-nowrap relative select-none group"
+                    >
                       <div className="flex items-center justify-center gap-1">
                         <span>{L('التوقيف', 'Suspension')}</span>
                         <span className="text-[10px] text-muted-foreground font-mono shrink-0">≡</span>
+                      </div>
+                      <div
+                        onMouseDown={(e) => handleResizeStart('isSuspended', e)}
+                        onDoubleClick={() => setColWidths((p) => ({ ...p, isSuspended: DEFAULT_COL_WIDTHS.isSuspended }))}
+                        className={cn(
+                          "absolute top-0 bottom-0 w-3 z-30 cursor-col-resize hover:bg-blue-500/80 transition-colors flex items-center justify-center group/handle",
+                          isRTL ? "-left-1.5" : "-right-1.5",
+                          isResizingMode ? "bg-blue-400/40 animate-pulse" : "bg-transparent"
+                        )}
+                        title={L('سحب لتغيير عرض العمود (انقر مرتين للإعادة)', 'Drag to resize column (Double click to reset)')}
+                      >
+                        <div className="w-[2px] h-4/5 bg-slate-300 dark:bg-slate-700 group-hover/handle:bg-white rounded-full" />
                       </div>
                     </TableHead>
                   )}
 
                   {visibleCols.suspendedBy && (
-                    <TableHead className={cn('w-28 max-w-[110px] font-bold py-1.5 px-2 border-r border-slate-200 dark:border-slate-800 whitespace-nowrap', isRTL ? 'text-right' : 'text-left')}>
+                    <TableHead
+                      style={{ width: `${colWidths.suspendedBy || 140}px`, minWidth: `${colWidths.suspendedBy || 140}px`, maxWidth: `${colWidths.suspendedBy || 140}px` }}
+                      className={cn(
+                        'font-bold py-1.5 px-2 border-r border-slate-200 dark:border-slate-800 whitespace-nowrap relative select-none group',
+                        isRTL ? 'text-right' : 'text-left'
+                      )}
+                    >
                       <span className="truncate">{L('المستخدم الموقف', 'Suspended By')}</span>
+                      <div
+                        onMouseDown={(e) => handleResizeStart('suspendedBy', e)}
+                        onDoubleClick={() => setColWidths((p) => ({ ...p, suspendedBy: DEFAULT_COL_WIDTHS.suspendedBy }))}
+                        className={cn(
+                          "absolute top-0 bottom-0 w-3 z-30 cursor-col-resize hover:bg-blue-500/80 transition-colors flex items-center justify-center group/handle",
+                          isRTL ? "-left-1.5" : "-right-1.5",
+                          isResizingMode ? "bg-blue-400/40 animate-pulse" : "bg-transparent"
+                        )}
+                      >
+                        <div className="w-[2px] h-4/5 bg-slate-300 dark:bg-slate-700 group-hover/handle:bg-white rounded-full" />
+                      </div>
                     </TableHead>
                   )}
 
                   {visibleCols.suspendedAt && (
-                    <TableHead className={cn('w-36 max-w-[140px] font-bold py-1.5 px-2 border-r border-slate-200 dark:border-slate-800 whitespace-nowrap', isRTL ? 'text-right' : 'text-left')}>
+                    <TableHead
+                      style={{ width: `${colWidths.suspendedAt || 160}px`, minWidth: `${colWidths.suspendedAt || 160}px`, maxWidth: `${colWidths.suspendedAt || 160}px` }}
+                      className={cn(
+                        'font-bold py-1.5 px-2 border-r border-slate-200 dark:border-slate-800 whitespace-nowrap relative select-none group',
+                        isRTL ? 'text-right' : 'text-left'
+                      )}
+                    >
                       <span className="truncate">{L('تاريخ التوقيف', 'Suspension Date')}</span>
+                      <div
+                        onMouseDown={(e) => handleResizeStart('suspendedAt', e)}
+                        onDoubleClick={() => setColWidths((p) => ({ ...p, suspendedAt: DEFAULT_COL_WIDTHS.suspendedAt }))}
+                        className={cn(
+                          "absolute top-0 bottom-0 w-3 z-30 cursor-col-resize hover:bg-blue-500/80 transition-colors flex items-center justify-center group/handle",
+                          isRTL ? "-left-1.5" : "-right-1.5",
+                          isResizingMode ? "bg-blue-400/40 animate-pulse" : "bg-transparent"
+                        )}
+                      >
+                        <div className="w-[2px] h-4/5 bg-slate-300 dark:bg-slate-700 group-hover/handle:bg-white rounded-full" />
+                      </div>
                     </TableHead>
                   )}
 
                   {visibleCols.suspensionReason && (
-                    <TableHead className={cn('w-40 max-w-[160px] font-bold py-1.5 px-2 border-r border-slate-200 dark:border-slate-800 whitespace-nowrap', isRTL ? 'text-right' : 'text-left')}>
+                    <TableHead
+                      style={{ width: `${colWidths.suspensionReason || 190}px`, minWidth: `${colWidths.suspensionReason || 190}px`, maxWidth: `${colWidths.suspensionReason || 190}px` }}
+                      className={cn(
+                        'font-bold py-1.5 px-2 border-r border-slate-200 dark:border-slate-800 whitespace-nowrap relative select-none group',
+                        isRTL ? 'text-right' : 'text-left'
+                      )}
+                    >
                       <span className="truncate">{L('سبب التوقيف', 'Suspension Reason')}</span>
+                      <div
+                        onMouseDown={(e) => handleResizeStart('suspensionReason', e)}
+                        onDoubleClick={() => setColWidths((p) => ({ ...p, suspensionReason: DEFAULT_COL_WIDTHS.suspensionReason }))}
+                        className={cn(
+                          "absolute top-0 bottom-0 w-3 z-30 cursor-col-resize hover:bg-blue-500/80 transition-colors flex items-center justify-center group/handle",
+                          isRTL ? "-left-1.5" : "-right-1.5",
+                          isResizingMode ? "bg-blue-400/40 animate-pulse" : "bg-transparent"
+                        )}
+                      >
+                        <div className="w-[2px] h-4/5 bg-slate-300 dark:bg-slate-700 group-hover/handle:bg-white rounded-full" />
+                      </div>
                     </TableHead>
                   )}
 
                   {visibleCols.suspensionCount && (
-                    <TableHead className="w-20 max-w-[80px] font-bold py-1.5 px-2 border-r border-slate-200 dark:border-slate-800 text-center whitespace-nowrap">
+                    <TableHead
+                      style={{ width: `${colWidths.suspensionCount || 110}px`, minWidth: `${colWidths.suspensionCount || 110}px`, maxWidth: `${colWidths.suspensionCount || 110}px` }}
+                      className="font-bold py-1.5 px-2 border-r border-slate-200 dark:border-slate-800 text-center whitespace-nowrap relative select-none group"
+                    >
                       <span>{L('مرات التوقيف', 'Suspension Count')}</span>
+                      <div
+                        onMouseDown={(e) => handleResizeStart('suspensionCount', e)}
+                        onDoubleClick={() => setColWidths((p) => ({ ...p, suspensionCount: DEFAULT_COL_WIDTHS.suspensionCount }))}
+                        className={cn(
+                          "absolute top-0 bottom-0 w-3 z-30 cursor-col-resize hover:bg-blue-500/80 transition-colors flex items-center justify-center group/handle",
+                          isRTL ? "-left-1.5" : "-right-1.5",
+                          isResizingMode ? "bg-blue-400/40 animate-pulse" : "bg-transparent"
+                        )}
+                      >
+                        <div className="w-[2px] h-4/5 bg-slate-300 dark:bg-slate-700 group-hover/handle:bg-white rounded-full" />
+                      </div>
                     </TableHead>
                   )}
 
                   {visibleCols.createdBy && (
-                    <TableHead className={cn('w-28 max-w-[110px] font-bold py-1.5 px-2 border-r border-slate-200 dark:border-slate-800 whitespace-nowrap', isRTL ? 'text-right' : 'text-left')}>
+                    <TableHead
+                      style={{ width: `${colWidths.createdBy || 130}px`, minWidth: `${colWidths.createdBy || 130}px`, maxWidth: `${colWidths.createdBy || 130}px` }}
+                      className={cn(
+                        'font-bold py-1.5 px-2 border-r border-slate-200 dark:border-slate-800 whitespace-nowrap relative select-none group',
+                        isRTL ? 'text-right' : 'text-left'
+                      )}
+                    >
                       <span className="truncate">{L('مدخل البيانات', 'Entered By')}</span>
+                      <div
+                        onMouseDown={(e) => handleResizeStart('createdBy', e)}
+                        onDoubleClick={() => setColWidths((p) => ({ ...p, createdBy: DEFAULT_COL_WIDTHS.createdBy }))}
+                        className={cn(
+                          "absolute top-0 bottom-0 w-3 z-30 cursor-col-resize hover:bg-blue-500/80 transition-colors flex items-center justify-center group/handle",
+                          isRTL ? "-left-1.5" : "-right-1.5",
+                          isResizingMode ? "bg-blue-400/40 animate-pulse" : "bg-transparent"
+                        )}
+                      >
+                        <div className="w-[2px] h-4/5 bg-slate-300 dark:bg-slate-700 group-hover/handle:bg-white rounded-full" />
+                      </div>
                     </TableHead>
                   )}
 
                   {visibleCols.updatedBy && (
-                    <TableHead className={cn('w-28 max-w-[110px] font-bold py-1.5 px-2 border-r border-slate-200 dark:border-slate-800 whitespace-nowrap', isRTL ? 'text-right' : 'text-left')}>
+                    <TableHead
+                      style={{ width: `${colWidths.updatedBy || 130}px`, minWidth: `${colWidths.updatedBy || 130}px`, maxWidth: `${colWidths.updatedBy || 130}px` }}
+                      className={cn(
+                        'font-bold py-1.5 px-2 border-r border-slate-200 dark:border-slate-800 whitespace-nowrap relative select-none group',
+                        isRTL ? 'text-right' : 'text-left'
+                      )}
+                    >
                       <span className="truncate">{L('أخر معدل للبيانات', 'Last Editor')}</span>
+                      <div
+                        onMouseDown={(e) => handleResizeStart('updatedBy', e)}
+                        onDoubleClick={() => setColWidths((p) => ({ ...p, updatedBy: DEFAULT_COL_WIDTHS.updatedBy }))}
+                        className={cn(
+                          "absolute top-0 bottom-0 w-3 z-30 cursor-col-resize hover:bg-blue-500/80 transition-colors flex items-center justify-center group/handle",
+                          isRTL ? "-left-1.5" : "-right-1.5",
+                          isResizingMode ? "bg-blue-400/40 animate-pulse" : "bg-transparent"
+                        )}
+                      >
+                        <div className="w-[2px] h-4/5 bg-slate-300 dark:bg-slate-700 group-hover/handle:bg-white rounded-full" />
+                      </div>
                     </TableHead>
                   )}
 
                   {visibleCols.updatedAt && (
-                    <TableHead className={cn('w-36 max-w-[140px] font-bold py-1.5 px-2 border-r border-slate-200 dark:border-slate-800 whitespace-nowrap', isRTL ? 'text-right' : 'text-left')}>
+                    <TableHead
+                      style={{ width: `${colWidths.updatedAt || 160}px`, minWidth: `${colWidths.updatedAt || 160}px`, maxWidth: `${colWidths.updatedAt || 160}px` }}
+                      className={cn(
+                        'font-bold py-1.5 px-2 border-r border-slate-200 dark:border-slate-800 whitespace-nowrap relative select-none group',
+                        isRTL ? 'text-right' : 'text-left'
+                      )}
+                    >
                       <span className="truncate">{L('تاريخ أخر تعديل', 'Last Modified Date')}</span>
+                      <div
+                        onMouseDown={(e) => handleResizeStart('updatedAt', e)}
+                        onDoubleClick={() => setColWidths((p) => ({ ...p, updatedAt: DEFAULT_COL_WIDTHS.updatedAt }))}
+                        className={cn(
+                          "absolute top-0 bottom-0 w-3 z-30 cursor-col-resize hover:bg-blue-500/80 transition-colors flex items-center justify-center group/handle",
+                          isRTL ? "-left-1.5" : "-right-1.5",
+                          isResizingMode ? "bg-blue-400/40 animate-pulse" : "bg-transparent"
+                        )}
+                      >
+                        <div className="w-[2px] h-4/5 bg-slate-300 dark:bg-slate-700 group-hover/handle:bg-white rounded-full" />
+                      </div>
                     </TableHead>
                   )}
 
                   {visibleCols.modificationCount && (
-                    <TableHead className="w-20 max-w-[80px] font-bold py-1.5 px-2 border-r border-slate-200 dark:border-slate-800 text-center whitespace-nowrap">
+                    <TableHead
+                      style={{ width: `${colWidths.modificationCount || 110}px`, minWidth: `${colWidths.modificationCount || 110}px`, maxWidth: `${colWidths.modificationCount || 110}px` }}
+                      className="font-bold py-1.5 px-2 border-r border-slate-200 dark:border-slate-800 text-center whitespace-nowrap relative select-none group"
+                    >
                       <span>{L('مرات التعديل', 'Modification Count')}</span>
+                      <div
+                        onMouseDown={(e) => handleResizeStart('modificationCount', e)}
+                        onDoubleClick={() => setColWidths((p) => ({ ...p, modificationCount: DEFAULT_COL_WIDTHS.modificationCount }))}
+                        className={cn(
+                          "absolute top-0 bottom-0 w-3 z-30 cursor-col-resize hover:bg-blue-500/80 transition-colors flex items-center justify-center group/handle",
+                          isRTL ? "-left-1.5" : "-right-1.5",
+                          isResizingMode ? "bg-blue-400/40 animate-pulse" : "bg-transparent"
+                        )}
+                      >
+                        <div className="w-[2px] h-4/5 bg-slate-300 dark:bg-slate-700 group-hover/handle:bg-white rounded-full" />
+                      </div>
                     </TableHead>
                   )}
 
                   {visibleCols.printCount && (
-                    <TableHead className="w-20 max-w-[80px] font-bold py-1.5 px-2 border-r border-slate-200 dark:border-slate-800 text-center whitespace-nowrap">
+                    <TableHead
+                      style={{ width: `${colWidths.printCount || 110}px`, minWidth: `${colWidths.printCount || 110}px`, maxWidth: `${colWidths.printCount || 110}px` }}
+                      className="font-bold py-1.5 px-2 border-r border-slate-200 dark:border-slate-800 text-center whitespace-nowrap relative select-none group"
+                    >
                       <span>{L('مرات الطباعة', 'Print Count')}</span>
+                      <div
+                        onMouseDown={(e) => handleResizeStart('printCount', e)}
+                        onDoubleClick={() => setColWidths((p) => ({ ...p, printCount: DEFAULT_COL_WIDTHS.printCount }))}
+                        className={cn(
+                          "absolute top-0 bottom-0 w-3 z-30 cursor-col-resize hover:bg-blue-500/80 transition-colors flex items-center justify-center group/handle",
+                          isRTL ? "-left-1.5" : "-right-1.5",
+                          isResizingMode ? "bg-blue-400/40 animate-pulse" : "bg-transparent"
+                        )}
+                      >
+                        <div className="w-[2px] h-4/5 bg-slate-300 dark:bg-slate-700 group-hover/handle:bg-white rounded-full" />
+                      </div>
                     </TableHead>
                   )}
                 </TableRow>
@@ -1436,11 +1977,12 @@ export default function OrgStructureModule({
                             : "bg-white dark:bg-slate-950 hover:bg-slate-50 dark:hover:bg-slate-900/60"
                         )}
                         style={isSelected ? { backgroundColor: '#a0ccff50' } : undefined}
-
                       >
-
                         {visibleCols.code && (
-                          <TableCell className="w-20 max-w-[80px] font-semibold text-blue-600 dark:text-blue-400 font-mono border-r border-slate-100 dark:border-slate-800 py-1 px-2">
+                          <TableCell
+                            style={{ width: `${colWidths.code || 100}px`, minWidth: `${colWidths.code || 100}px`, maxWidth: `${colWidths.code || 100}px` }}
+                            className="font-semibold text-blue-600 dark:text-blue-400 font-mono border-r border-slate-100 dark:border-slate-800 py-1 px-2 overflow-hidden"
+                          >
                             <span className="truncate block w-full cursor-default" title={item.code}>
                               {item.code}
                             </span>
@@ -1448,7 +1990,10 @@ export default function OrgStructureModule({
                         )}
 
                         {visibleCols.name && (
-                          <TableCell className="w-36 max-w-[140px] font-medium text-foreground border-r border-slate-100 dark:border-slate-800 py-1 px-2">
+                          <TableCell
+                            style={{ width: `${colWidths.name || 180}px`, minWidth: `${colWidths.name || 180}px`, maxWidth: `${colWidths.name || 180}px` }}
+                            className="font-medium text-foreground border-r border-slate-100 dark:border-slate-800 py-1 px-2 overflow-hidden"
+                          >
                             <span className="truncate block w-full cursor-default" title={nameText}>
                               {nameText}
                             </span>
@@ -1456,7 +2001,10 @@ export default function OrgStructureModule({
                         )}
 
                         {visibleCols.parentCode && (
-                          <TableCell className="w-20 max-w-[80px] font-mono text-slate-600 dark:text-slate-400 border-r border-slate-100 dark:border-slate-800 py-1 px-2">
+                          <TableCell
+                            style={{ width: `${colWidths.parentCode || 110}px`, minWidth: `${colWidths.parentCode || 110}px`, maxWidth: `${colWidths.parentCode || 110}px` }}
+                            className="font-mono text-slate-600 dark:text-slate-400 border-r border-slate-100 dark:border-slate-800 py-1 px-2 overflow-hidden"
+                          >
                             <span className="truncate block w-full cursor-default" title={item.parent?.code || item.parentId || '-'}>
                               {item.parent?.code || item.parentId || '-'}
                             </span>
@@ -1464,7 +2012,10 @@ export default function OrgStructureModule({
                         )}
 
                         {visibleCols.parentName && (
-                          <TableCell className="w-36 max-w-[140px] text-slate-700 dark:text-slate-300 border-r border-slate-100 dark:border-slate-800 py-1 px-2">
+                          <TableCell
+                            style={{ width: `${colWidths.parentName || 180}px`, minWidth: `${colWidths.parentName || 180}px`, maxWidth: `${colWidths.parentName || 180}px` }}
+                            className="text-slate-700 dark:text-slate-300 border-r border-slate-100 dark:border-slate-800 py-1 px-2 overflow-hidden"
+                          >
                             <span className="truncate block w-full cursor-default" title={parentNameText}>
                               {parentNameText}
                             </span>
@@ -1472,7 +2023,10 @@ export default function OrgStructureModule({
                         )}
 
                         {visibleCols.type && (
-                          <TableCell className="w-28 max-w-[110px] border-r border-slate-100 dark:border-slate-800 py-1 px-2">
+                          <TableCell
+                            style={{ width: `${colWidths.type || 130}px`, minWidth: `${colWidths.type || 130}px`, maxWidth: `${colWidths.type || 130}px` }}
+                            className="border-r border-slate-100 dark:border-slate-800 py-1 px-2 overflow-hidden"
+                          >
                             <div className="truncate block w-full" title={item.type}>
                               {getTypeBadge(item.type)}
                             </div>
@@ -1480,7 +2034,10 @@ export default function OrgStructureModule({
                         )}
 
                         {visibleCols.level && (
-                          <TableCell className="w-16 max-w-[65px] text-center border-r border-slate-100 dark:border-slate-800 py-1 px-2">
+                          <TableCell
+                            style={{ width: `${colWidths.level || 80}px`, minWidth: `${colWidths.level || 80}px`, maxWidth: `${colWidths.level || 80}px` }}
+                            className="text-center border-r border-slate-100 dark:border-slate-800 py-1 px-2 overflow-hidden"
+                          >
                             <span className="font-mono font-bold">
                               {item.level}
                             </span>
@@ -1488,7 +2045,10 @@ export default function OrgStructureModule({
                         )}
 
                         {visibleCols.notes && (
-                          <TableCell className="w-40 max-w-[160px] text-muted-foreground border-r border-slate-100 dark:border-slate-800 py-1 px-2">
+                          <TableCell
+                            style={{ width: `${colWidths.notes || 190}px`, minWidth: `${colWidths.notes || 190}px`, maxWidth: `${colWidths.notes || 190}px` }}
+                            className="text-muted-foreground border-r border-slate-100 dark:border-slate-800 py-1 px-2 overflow-hidden"
+                          >
                             <span className="truncate block w-full cursor-default" title={notesText}>
                               {notesText}
                             </span>
@@ -1496,7 +2056,10 @@ export default function OrgStructureModule({
                         )}
 
                         {visibleCols.createdAt && (
-                          <TableCell className="w-36 max-w-[140px] font-mono text-[10px] text-slate-600 dark:text-slate-400 border-r border-slate-100 dark:border-slate-800 py-1 px-2">
+                          <TableCell
+                            style={{ width: `${colWidths.createdAt || 160}px`, minWidth: `${colWidths.createdAt || 160}px`, maxWidth: `${colWidths.createdAt || 160}px` }}
+                            className="font-mono text-[10px] text-slate-600 dark:text-slate-400 border-r border-slate-100 dark:border-slate-800 py-1 px-2 overflow-hidden"
+                          >
                             <span className="truncate block w-full cursor-default" title={createdAtText}>
                               {createdAtText}
                             </span>
@@ -1504,7 +2067,10 @@ export default function OrgStructureModule({
                         )}
 
                         {visibleCols.isSuspended && (
-                          <TableCell className="w-20 max-w-[80px] text-center border-r border-slate-100 dark:border-slate-800 py-1 px-2">
+                          <TableCell
+                            style={{ width: `${colWidths.isSuspended || 100}px`, minWidth: `${colWidths.isSuspended || 100}px`, maxWidth: `${colWidths.isSuspended || 100}px` }}
+                            className="text-center border-r border-slate-100 dark:border-slate-800 py-1 px-2 overflow-hidden"
+                          >
                             {item.isSuspended ? (
                               <Badge variant="destructive" className="gap-1 text-[9px] py-0 px-1">
                                 <XCircle className="size-2.5" />
@@ -1519,7 +2085,10 @@ export default function OrgStructureModule({
                         )}
 
                         {visibleCols.suspendedBy && (
-                          <TableCell className="w-28 max-w-[110px] text-slate-600 dark:text-slate-400 border-r border-slate-100 dark:border-slate-800 py-1 px-2">
+                          <TableCell
+                            style={{ width: `${colWidths.suspendedBy || 140}px`, minWidth: `${colWidths.suspendedBy || 140}px`, maxWidth: `${colWidths.suspendedBy || 140}px` }}
+                            className="text-slate-600 dark:text-slate-400 border-r border-slate-100 dark:border-slate-800 py-1 px-2 overflow-hidden"
+                          >
                             <span className="truncate block w-full cursor-default" title={suspendedByText}>
                               {suspendedByText}
                             </span>
@@ -1527,7 +2096,10 @@ export default function OrgStructureModule({
                         )}
 
                         {visibleCols.suspendedAt && (
-                          <TableCell className="w-36 max-w-[140px] font-mono text-[10px] text-slate-600 dark:text-slate-400 border-r border-slate-100 dark:border-slate-800 py-1 px-2">
+                          <TableCell
+                            style={{ width: `${colWidths.suspendedAt || 160}px`, minWidth: `${colWidths.suspendedAt || 160}px`, maxWidth: `${colWidths.suspendedAt || 160}px` }}
+                            className="font-mono text-[10px] text-slate-600 dark:text-slate-400 border-r border-slate-100 dark:border-slate-800 py-1 px-2 overflow-hidden"
+                          >
                             <span className="truncate block w-full cursor-default" title={suspendedAtText}>
                               {suspendedAtText}
                             </span>
@@ -1535,7 +2107,10 @@ export default function OrgStructureModule({
                         )}
 
                         {visibleCols.suspensionReason && (
-                          <TableCell className="w-40 max-w-[160px] text-slate-600 dark:text-slate-400 border-r border-slate-100 dark:border-slate-800 py-1 px-2">
+                          <TableCell
+                            style={{ width: `${colWidths.suspensionReason || 190}px`, minWidth: `${colWidths.suspensionReason || 190}px`, maxWidth: `${colWidths.suspensionReason || 190}px` }}
+                            className="text-slate-600 dark:text-slate-400 border-r border-slate-100 dark:border-slate-800 py-1 px-2 overflow-hidden"
+                          >
                             <span className="truncate block w-full cursor-default" title={suspensionReasonText}>
                               {suspensionReasonText}
                             </span>
@@ -1543,13 +2118,19 @@ export default function OrgStructureModule({
                         )}
 
                         {visibleCols.suspensionCount && (
-                          <TableCell className="w-20 max-w-[80px] text-center font-mono border-r border-slate-100 dark:border-slate-800 py-1 px-2">
+                          <TableCell
+                            style={{ width: `${colWidths.suspensionCount || 110}px`, minWidth: `${colWidths.suspensionCount || 110}px`, maxWidth: `${colWidths.suspensionCount || 110}px` }}
+                            className="text-center font-mono border-r border-slate-100 dark:border-slate-800 py-1 px-2 overflow-hidden"
+                          >
                             {item.suspensionCount ?? 0}
                           </TableCell>
                         )}
 
                         {visibleCols.createdBy && (
-                          <TableCell className="w-28 max-w-[110px] text-slate-600 dark:text-slate-400 border-r border-slate-100 dark:border-slate-800 py-1 px-2">
+                          <TableCell
+                            style={{ width: `${colWidths.createdBy || 130}px`, minWidth: `${colWidths.createdBy || 130}px`, maxWidth: `${colWidths.createdBy || 130}px` }}
+                            className="text-slate-600 dark:text-slate-400 border-r border-slate-100 dark:border-slate-800 py-1 px-2 overflow-hidden"
+                          >
                             <span className="truncate block w-full cursor-default" title={createdByText}>
                               {createdByText}
                             </span>
@@ -1557,7 +2138,10 @@ export default function OrgStructureModule({
                         )}
 
                         {visibleCols.updatedBy && (
-                          <TableCell className="w-28 max-w-[110px] text-slate-600 dark:text-slate-400 border-r border-slate-100 dark:border-slate-800 py-1 px-2">
+                          <TableCell
+                            style={{ width: `${colWidths.updatedBy || 130}px`, minWidth: `${colWidths.updatedBy || 130}px`, maxWidth: `${colWidths.updatedBy || 130}px` }}
+                            className="text-slate-600 dark:text-slate-400 border-r border-slate-100 dark:border-slate-800 py-1 px-2 overflow-hidden"
+                          >
                             <span className="truncate block w-full cursor-default" title={updatedByText}>
                               {updatedByText}
                             </span>
@@ -1565,7 +2149,10 @@ export default function OrgStructureModule({
                         )}
 
                         {visibleCols.updatedAt && (
-                          <TableCell className="w-36 max-w-[140px] font-mono text-[10px] text-slate-600 dark:text-slate-400 border-r border-slate-100 dark:border-slate-800 py-1 px-2">
+                          <TableCell
+                            style={{ width: `${colWidths.updatedAt || 160}px`, minWidth: `${colWidths.updatedAt || 160}px`, maxWidth: `${colWidths.updatedAt || 160}px` }}
+                            className="font-mono text-[10px] text-slate-600 dark:text-slate-400 border-r border-slate-100 dark:border-slate-800 py-1 px-2 overflow-hidden"
+                          >
                             <span className="truncate block w-full cursor-default" title={updatedAtText}>
                               {updatedAtText}
                             </span>
@@ -1573,13 +2160,19 @@ export default function OrgStructureModule({
                         )}
 
                         {visibleCols.modificationCount && (
-                          <TableCell className="w-20 max-w-[80px] text-center font-mono border-r border-slate-100 dark:border-slate-800 py-1 px-2">
+                          <TableCell
+                            style={{ width: `${colWidths.modificationCount || 110}px`, minWidth: `${colWidths.modificationCount || 110}px`, maxWidth: `${colWidths.modificationCount || 110}px` }}
+                            className="text-center font-mono border-r border-slate-100 dark:border-slate-800 py-1 px-2 overflow-hidden"
+                          >
                             {item.modificationCount ?? 0}
                           </TableCell>
                         )}
 
                         {visibleCols.printCount && (
-                          <TableCell className="w-20 max-w-[80px] text-center font-mono border-r border-slate-100 dark:border-slate-800 py-1 px-2">
+                          <TableCell
+                            style={{ width: `${colWidths.printCount || 110}px`, minWidth: `${colWidths.printCount || 110}px`, maxWidth: `${colWidths.printCount || 110}px` }}
+                            className="text-center font-mono border-r border-slate-100 dark:border-slate-800 py-1 px-2 overflow-hidden"
+                          >
                             {item.printCount ?? 0}
                           </TableCell>
                         )}
@@ -1688,7 +2281,7 @@ export default function OrgStructureModule({
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-8 px-3 text-xs font-semibold gap-1 bg-blue-700/80  dark:bg-blue-600 hover:bg-blue-500 text-slate-100 border-blue-300/80 dark:border-blue-500/90 hover:border-slate-200 transition-all rounded-md shadow-xs cursor-pointer"
+                    className="h-8 px-3 text-xs font-semibold gap-1 bg-primary dark:bg-blue-600/90 hover:bg-blue-500 text-slate-100 border-blue-300/80 dark:border-blue-500/90 hover:border-slate-200 transition-all rounded-md shadow-xs cursor-pointer"
                   >
                     <FolderTree className="size-4 text-white-400 shrink-0" />
                     <span>{L('السجل', 'Record')}</span>
@@ -1717,7 +2310,7 @@ export default function OrgStructureModule({
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-8 px-3 text-xs font-semibold gap-1.5 bg-blue-700/80  dark:bg-blue-600 hover:bg-blue-500 text-slate-100 border-blue-300/80 dark:border-blue-500/90 hover:border-slate-200 transition-all rounded-md shadow-xs cursor-pointer"
+                    className="h-8 px-3 text-xs font-semibold gap-1.5 bg-primary dark:bg-blue-600/90 hover:bg-blue-500 text-slate-100 border-blue-300/80 dark:border-blue-500/90 hover:border-slate-200 transition-all rounded-md shadow-xs cursor-pointer"
                   >
                     <Sliders className="size-3.5 text-blue-100 shrink-0" />
                     <span>{L('الإجراء', 'Action')}</span>
@@ -1749,7 +2342,6 @@ export default function OrgStructureModule({
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-
 
           </div>
 
@@ -1816,7 +2408,7 @@ export default function OrgStructureModule({
                 />
               </div>
 
-              {/* الهيكل الأعلى */}
+              {/* الهيكل الأعلى مع حماية العلاقات الدائرية */}
               <div className="space-y-2">
                 <Label htmlFor="parentId" className="text-xs font-medium">
                   {L('الهيكل الأعلى (التابع له)', 'Parent Structure')}
@@ -1829,14 +2421,15 @@ export default function OrgStructureModule({
                     <SelectValue placeholder={L('اختر الهيكل الأعلى…', 'Select Parent Structure…')} />
                   </SelectTrigger>
                   <SelectContent align={isRTL ? 'start' : 'end'}>
-                    <SelectItem value="none">{L(' الهيكل الأعلى', 'Parent Structure')}</SelectItem>
-                    {items
-                      .filter((i) => i.id !== editingItem?.id)
-                      .map((parent) => (
-                        <SelectItem key={parent.id} value={parent.id}>
-                          {parent.code} - {isRTL ? parent.nameAr : (parent.nameEn || parent.nameAr)}
+                    <SelectItem value="none">{L('بدون هيكل أعلى (وحدة رئيسية)', 'No Parent (Root Unit)')}</SelectItem>
+                    {items.map((parent) => {
+                      const isForbidden = invalidParentIds.has(parent.id)
+                      return (
+                        <SelectItem key={parent.id} value={parent.id} disabled={isForbidden}>
+                          {parent.code} - {isRTL ? parent.nameAr : (parent.nameEn || parent.nameAr)} {isForbidden ? `(${L('غير متاح - مرجع دائي', 'Forbidden - Cycle')})` : ''}
                         </SelectItem>
-                      ))}
+                      )
+                    })}
                   </SelectContent>
                 </Select>
               </div>
@@ -1854,11 +2447,77 @@ export default function OrgStructureModule({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent align={isRTL ? 'start' : 'end'}>
-                    <SelectItem value="قطاع">{L('قطاع ', 'Sector')}</SelectItem>
-                    <SelectItem value="إدارة عامة">{L('إدارة عامة ', 'General Directorate')}</SelectItem>
+                    <SelectItem value="قطاع">{L('قطاع', 'Sector')}</SelectItem>
+                    <SelectItem value="إدارة عامة">{L('إدارة عامة', 'General Directorate')}</SelectItem>
                     <SelectItem value="إدارة">{L('إدارة', 'Department')}</SelectItem>
                     <SelectItem value="قسم">{L('قسم', 'Section')}</SelectItem>
                     <SelectItem value="وحدة">{L('وحدة', 'Unit')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* مركز التكلفة المرتبط */}
+              <div className="space-y-2">
+                <Label htmlFor="costCenterId" className="text-xs font-medium">
+                  {L('مركز التكلفة المرتبط (المحاسبة)', 'Linked Cost Center')}
+                </Label>
+                <Select
+                  value={formData.costCenterId || 'none'}
+                  onValueChange={(val) => setFormData((p) => ({ ...p, costCenterId: val === 'none' ? '' : val }))}
+                >
+                  <SelectTrigger id="costCenterId" className="h-10 text-sm">
+                    <SelectValue placeholder={L('اختر مركز التكلفة…', 'Select Cost Center…')} />
+                  </SelectTrigger>
+                  <SelectContent align={isRTL ? 'start' : 'end'}>
+                    <SelectItem value="none">{L('بدون مركز تكلفة', 'No Cost Center')}</SelectItem>
+                    {costCenters.map((cc: any) => (
+                      <SelectItem key={cc.id} value={cc.id}>
+                        {cc.code} - {isRTL ? cc.nameAr : (cc.nameEn || cc.nameAr)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* مدير الهيكل / المسند له */}
+              <div className="space-y-2">
+                <Label htmlFor="managerId" className="text-xs font-medium">
+                  {L('مدير الهيكل التنظيمي', 'Structure Manager')}
+                </Label>
+                <Select
+                  value={formData.managerId || 'none'}
+                  onValueChange={(val) => setFormData((p) => ({ ...p, managerId: val === 'none' ? '' : val }))}
+                >
+                  <SelectTrigger id="managerId" className="h-10 text-sm">
+                    <SelectValue placeholder={L('اختر مدير الهيكل…', 'Select Manager…')} />
+                  </SelectTrigger>
+                  <SelectContent align={isRTL ? 'start' : 'end'}>
+                    <SelectItem value="none">{L('بدون مدير مسند', 'Unassigned Manager')}</SelectItem>
+                    {employees.map((emp: any) => (
+                      <SelectItem key={emp.id} value={emp.id}>
+                        {emp.employeeNo} - {isRTL ? emp.nameAr : (emp.nameEn || emp.nameAr)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* الحالة الإدارية */}
+              <div className="space-y-2">
+                <Label htmlFor="status" className="text-xs font-medium">
+                  {L('الحالة التشغيلية', 'Operational Status')}
+                </Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(val) => setFormData((p) => ({ ...p, status: val, isSuspended: val === 'SUSPENDED' }))}
+                >
+                  <SelectTrigger id="status" className="h-10 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent align={isRTL ? 'start' : 'end'}>
+                    <SelectItem value="ACTIVE">{L('نشط (مفعل)', 'Active')}</SelectItem>
+                    <SelectItem value="SUSPENDED">{L('موقوف (مؤقتاً)', 'Suspended')}</SelectItem>
+                    <SelectItem value="ARCHIVED">{L('مؤرشف', 'Archived')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1915,6 +2574,459 @@ export default function OrgStructureModule({
         </form>
       )}
 
+      {/* ========================================================================= */}
+      {/*                              VIEW 3: TREE VIEW                            */}
+      {/* ========================================================================= */}
+      {viewMode === 'tree' && (
+        <Card className="p-4 border border-border shadow-sm rounded-b-lg bg-card min-h-[500px]">
+          <div className="flex items-center justify-between border-b pb-3 mb-4 flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <FolderTree className="size-5 text-blue-600" />
+              <h3 className="font-bold text-base text-foreground">
+                {L('المخطط التنظيمي الشجري التفاعلي', 'Interactive Organizational Tree')}
+              </h3>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" onClick={handleAddNew} className="h-8 gap-1 text-xs">
+                <Plus className="size-3.5" />
+                {L('إضافة وحدة إدارية', 'Add Unit')}
+              </Button>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto p-4 bg-slate-50/50 dark:bg-slate-900/30 rounded-lg border border-slate-200/60 dark:border-slate-800">
+            <OrgTreeVisualizer
+              items={items}
+              isRTL={isRTL}
+              L={L}
+              getTypeBadge={getTypeBadge}
+              onEdit={handleEdit}
+              onSuspend={(item) => {
+                setTargetSuspendItem(item)
+                setSuspensionReasonInput(item.suspensionReason || '')
+                setSuspendDialogOpen(true)
+              }}
+            />
+          </div>
+        </Card>
+      )}
+
+      {/* ========================================================================= */}
+      {/*                              VIEW 4: AUDIT LOG VIEW                       */}
+      {/* ========================================================================= */}
+      {viewMode === 'audit' && (
+        <Card className="p-4 border border-border shadow-sm rounded-b-lg bg-card">
+          <div className="flex items-center justify-between border-b pb-3 mb-4 flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <BarChart2 className="size-5 text-purple-600" />
+              <h3 className="font-bold text-base text-foreground">
+                {L('سجل تدقيق وتغييرات الهيكل التنظيمي (Audit Logs)', 'Org Structure System Audit Log')}
+              </h3>
+            </div>
+            <Badge variant="outline" className="text-xs">
+              {L('سجل حرج غير قابل للتعديل', 'Immutable Audit History')}
+            </Badge>
+          </div>
+
+          <div className="overflow-x-auto">
+            <Table className="text-xs">
+              <TableHeader className="bg-slate-100 dark:bg-slate-900">
+                <TableRow>
+                  <TableHead className="font-bold">{L('رقم الهيكل', 'Code')}</TableHead>
+                  <TableHead className="font-bold">{L('اسم الهيكل', 'Name')}</TableHead>
+
+                  <TableHead className="font-bold">{L('مدخل البيانات', 'Created By')}</TableHead>
+                  <TableHead className="font-bold">{L('تاريخ الإدخال', 'Created At')}</TableHead>
+                  <TableHead className="font-bold text-center">{L('عدد التعديلات', 'Modifications')}</TableHead>
+                  <TableHead className="font-bold">{L('حالة التوقيف', 'Suspension')}</TableHead>
+                  <TableHead className="font-bold">{L('سبب التوقيف', 'Suspension Reason')}</TableHead>
+                  <TableHead className="font-bold text-center">{L('مرات الطباعة', 'Print Count')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {items.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell className="font-mono font-bold text-blue-600">{item.code}</TableCell>
+                    <TableCell className="font-medium">{isRTL ? item.nameAr : (item.nameEn || item.nameAr)}</TableCell>
+
+                    <TableCell>{item.createdBy || 'admin'}</TableCell>
+                    <TableCell className="font-mono text-[11px]">{item.createdAt || '-'}</TableCell>
+                    <TableCell className="text-center font-bold">{item.modificationCount ?? 0}</TableCell>
+                    <TableCell>
+                      {item.isSuspended ? (
+                        <Badge variant="destructive" className="text-[10px]">{L('موقوف', 'Suspended')}</Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-300">{L('نشط', 'Active')}</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-slate-600 dark:text-slate-400">{item.suspensionReason || '-'}</TableCell>
+                    <TableCell className="text-center font-mono">{item.printCount ?? 0}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </Card>
+      )}
+
+      {/* ========================================================================= */}
+      {/*                       SUSPENSION REASON MODAL DIALOG                     */}
+      {/* ========================================================================= */}
+      {suspendDialogOpen && targetSuspendItem && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <Card className="w-full max-w-md p-5 bg-card border shadow-xl space-y-4 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between border-b pb-3">
+              <div className="flex items-center gap-2">
+                <XCircle className="size-5 text-red-600" />
+                <h4 className="font-bold text-base">
+                  {targetSuspendItem.isSuspended
+                    ? L(`تفعيل الهيكل «${targetSuspendItem.nameAr}»`, `Activate Structure "${targetSuspendItem.nameAr}"`)
+                    : L(`توقيف الهيكل «${targetSuspendItem.nameAr}»`, `Suspend Structure "${targetSuspendItem.nameAr}"`)}
+                </h4>
+              </div>
+              <button onClick={() => setSuspendDialogOpen(false)} className="text-muted-foreground hover:text-foreground">
+                <X className="size-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              {targetSuspendItem.isSuspended
+                ? L('سيؤدي إلغاء التوقيف إلى تفعيل الإدارة وإعادة إدراجها في قائمة التشغيل والعمليات الهيكلية.', 'Re-activating will make this structure operational for transactional assignment.')
+                : L('تنبيه: سيؤدي التوقيف إلى تعليق جميع العمليات الإدارية الخاصة بهذا الهيكل التنظيمي.', 'Warning: Suspending will halt administrative assignments for this organizational unit.')}
+            </p>
+
+            {!targetSuspendItem.isSuspended && (
+              <div className="space-y-1.5">
+                <Label htmlFor="suspensionReasonInput" className="text-xs font-bold">
+                  {L('سبب التوقيف الإداري', 'Suspension Reason')}
+                </Label>
+                <Input
+                  id="suspensionReasonInput"
+                  value={suspensionReasonInput}
+                  onChange={(e) => setSuspensionReasonInput(e.target.value)}
+                  placeholder={L('أدخل سبب التوقيف الإداري…', 'Enter administrative suspension reason…')}
+                  className="h-9 text-xs"
+                />
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t">
+              <Button size="sm" variant="outline" onClick={() => setSuspendDialogOpen(false)}>
+                {L('إلغاء', 'Cancel')}
+              </Button>
+              <Button
+                size="sm"
+                variant={targetSuspendItem.isSuspended ? 'default' : 'destructive'}
+                disabled={suspendMutation.isPending}
+                onClick={() => {
+                  suspendMutation.mutate({
+                    id: targetSuspendItem.id,
+                    isSuspended: !targetSuspendItem.isSuspended,
+                    suspensionReason: suspensionReasonInput,
+                  })
+                }}
+              >
+                {targetSuspendItem.isSuspended ? L('تأكيد التفعيل', 'Confirm Activation') : L('تأكيد التوقيف', 'Confirm Suspension')}
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+    </div>
+  )
+}
+
+// Sub-component: Recursive Visual Tree Renderer with Interactive Zoom & Pan Controls
+function OrgTreeVisualizer({
+  items,
+  isRTL,
+  L,
+  getTypeBadge,
+  onEdit,
+  onSuspend,
+}: {
+  items: OrgStructureItem[]
+  isRTL: boolean
+  L: (ar: string, en: string) => string
+  getTypeBadge: (type: string) => React.ReactNode
+  onEdit: (item: OrgStructureItem) => void
+  onSuspend: (item: OrgStructureItem) => void
+}) {
+  const [zoom, setZoom] = useState(1.0)
+  const [allCollapsed, setAllCollapsed] = useState(false)
+  const [collapsedMap, setCollapsedMap] = useState<Record<string, boolean>>({})
+
+  const handleZoomIn = () => setZoom((prev) => Math.min(Number((prev + 0.15).toFixed(2)), 2.0))
+  const handleZoomOut = () => setZoom((prev) => Math.max(Number((prev - 0.15).toFixed(2)), 0.35))
+  const handleResetZoom = () => setZoom(1.0)
+  const handleFitScreen = () => setZoom(0.65) // Auto scale to fit all horizontal branches
+
+  const toggleCollapseAll = () => {
+    if (allCollapsed) {
+      setCollapsedMap({})
+      setAllCollapsed(false)
+    } else {
+      const map: Record<string, boolean> = {}
+      items.forEach((item) => {
+        if (items.some((child) => child.parentId === item.id)) {
+          map[item.id] = true
+        }
+      })
+      setCollapsedMap(map)
+      setAllCollapsed(true)
+    }
+  }
+
+  const toggleNodeCollapse = (id: string) => {
+    setCollapsedMap((prev) => ({ ...prev, [id]: !prev[id] }))
+  }
+
+  const rootNodes = useMemo(() => items.filter((i) => !i.parentId), [items])
+
+  return (
+    <div className="flex flex-col w-full relative group">
+      {/* Floating Interactive Zoom & Control Toolbar */}
+      <div className="sticky top-2 z-20 self-center flex items-center gap-1 sm:gap-1.5 p-1 sm:p-1.5 bg-background/95 dark:bg-slate-950/95 border border-slate-300 dark:border-slate-800 rounded-xl shadow-lg backdrop-blur-md transition-all max-w-[95vw] overflow-x-auto scrollbar-none justify-center">
+        {/* Zoom Out Button (-) */}
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={handleZoomOut}
+          className="h-8 w-8 p-0 border-slate-300 dark:border-slate-700 hover:bg-blue-50 dark:hover:bg-blue-950 text-slate-700 dark:text-slate-300 cursor-pointer shrink-0"
+          title={L('تصغير (-) ', 'Zoom Out (-)')}
+        >
+          <ZoomOut className="size-4" />
+        </Button>
+
+        {/* Zoom Percentage Display */}
+        <div className="h-8 px-2 flex items-center justify-center font-mono font-bold text-xs bg-slate-100 dark:bg-slate-900 rounded-md border border-slate-200 dark:border-slate-800 text-blue-600 dark:text-blue-400 min-w-[48px] sm:min-w-[55px] shrink-0">
+          {Math.round(zoom * 100)}%
+        </div>
+
+        {/* Zoom In Button (+) */}
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={handleZoomIn}
+          className="h-8 w-8 p-0 border-slate-300 dark:border-slate-700 hover:bg-blue-50 dark:hover:bg-blue-950 text-slate-700 dark:text-slate-300 cursor-pointer shrink-0"
+          title={L('تكبير (+)', 'Zoom In (+)')}
+        >
+          <ZoomIn className="size-4" />
+        </Button>
+
+        <div className="h-5 w-[1px] bg-slate-300 dark:bg-slate-800 mx-0.5 shrink-0" />
+
+        {/* Reset Zoom Button */}
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          onClick={handleResetZoom}
+          className="h-8 px-2 text-xs font-medium gap-1 text-slate-600 dark:text-slate-400 hover:text-foreground cursor-pointer shrink-0"
+          title={L('إعادة ضبط (100%)', 'Reset Zoom (100%)')}
+        >
+          <RotateCcw className="size-3.5" />
+          <span className="hidden sm:inline">{L('100%', '100%')}</span>
+        </Button>
+
+        {/* Fit Screen Button */}
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          onClick={handleFitScreen}
+          className="h-8 px-2 text-xs font-medium gap-1 text-slate-600 dark:text-slate-400 hover:text-foreground cursor-pointer shrink-0"
+          title={L('احتواء الشاشة الكاملة', 'Fit Screen')}
+        >
+          <Maximize2 className="size-3.5" />
+          <span className="hidden sm:inline">{L('تلاءم', 'Fit')}</span>
+        </Button>
+
+        <div className="h-5 w-[1px] bg-slate-300 dark:bg-slate-800 mx-0.5 shrink-0" />
+
+        {/* Collapse / Expand All Button */}
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={toggleCollapseAll}
+          className="h-8 px-2 sm:px-2.5 text-xs font-semibold gap-1 sm:gap-1.5 border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 hover:bg-blue-50 text-slate-700 dark:text-slate-300 cursor-pointer shrink-0"
+          title={allCollapsed ? L('توسيع كافة الفروع', 'Expand All') : L('طي كافة الفروع', 'Collapse All')}
+        >
+          {allCollapsed ? <ChevronsDown className="size-3.5 text-blue-600" /> : <ChevronsUp className="size-3.5 text-blue-600" />}
+          <span className="text-[11px] sm:text-xs">{allCollapsed ? L('توسيع الكل', 'Expand All') : L('طي الكل', 'Collapse All')}</span>
+        </Button>
+      </div>
+
+      {/* Scalable Viewport Container */}
+      <div className="w-full overflow-auto min-h-[600px] p-6 flex justify-center items-start border rounded-xl bg-slate-50/50 dark:bg-slate-950/40 border-slate-200 dark:border-slate-800 scrollbar-thin">
+        <div
+          className="transition-transform duration-200 ease-out origin-top flex flex-col gap-10 items-center min-w-max py-4 px-6"
+          style={{ transform: `scale(${zoom})` }}
+        >
+          {rootNodes.map((root) => (
+            <TreeNodeItem
+              key={root.id}
+              item={root}
+              allItems={items}
+              isRTL={isRTL}
+              L={L}
+              getTypeBadge={getTypeBadge}
+              onEdit={onEdit}
+              onSuspend={onSuspend}
+              collapsedMap={collapsedMap}
+              onToggleCollapse={toggleNodeCollapse}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function TreeNodeItem({
+  item,
+  allItems,
+  isRTL,
+  L,
+  getTypeBadge,
+  onEdit,
+  onSuspend,
+  collapsedMap,
+  onToggleCollapse,
+}: {
+  item: OrgStructureItem
+  allItems: OrgStructureItem[]
+  isRTL: boolean
+  L: (ar: string, en: string) => string
+  getTypeBadge: (type: string) => React.ReactNode
+  onEdit: (item: OrgStructureItem) => void
+  onSuspend: (item: OrgStructureItem) => void
+  collapsedMap: Record<string, boolean>
+  onToggleCollapse: (id: string) => void
+}) {
+  const isCollapsed = !!collapsedMap[item.id]
+  const children = useMemo(() => allItems.filter((i) => i.parentId === item.id), [allItems, item.id])
+  const nameText = isRTL ? item.nameAr : (item.nameEn || item.nameAr)
+
+  return (
+    <div className="flex flex-col items-center">
+      {/* Node Card */}
+      <div
+        className={cn(
+          "w-72 p-3.5 rounded-2xl border-2 shadow-md transition-all relative bg-card hover:shadow-xl",
+          item.isSuspended
+            ? "border-red-300 dark:border-red-900 bg-red-50/60 dark:bg-red-950/30 ring-1 ring-red-400/40"
+            : "border-blue-200 dark:border-blue-800/80 hover:border-blue-500 ring-1 ring-blue-500/10"
+        )}
+      >
+        {/* Card Header: Code Badge & Actions */}
+        <div className="flex items-center justify-between border-b pb-2 mb-2.5">
+          <div className="flex items-center gap-1.5">
+            <span className="font-mono text-xs font-bold text-blue-700 dark:text-blue-300 bg-blue-100/80 dark:bg-blue-950 px-2 py-0.5 rounded-md border border-blue-200 dark:border-blue-800">
+              #{item.code}
+            </span>
+            {getTypeBadge(item.type)}
+          </div>
+          <div className="flex items-center gap-1">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 w-7 p-0 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-950/60 cursor-pointer"
+              onClick={() => onEdit(item)}
+              title={L('تعديل الهيكل', 'Edit Structure')}
+            >
+              <Edit2 className="size-3.5 text-amber-600 dark:text-amber-400" />
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 w-7 p-0 rounded-lg hover:bg-red-100 dark:hover:bg-red-950/60 cursor-pointer"
+              onClick={() => onSuspend(item)}
+              title={item.isSuspended ? L('تفعيل الهيكل', 'Activate Structure') : L('توقيف الهيكل', 'Suspend Structure')}
+            >
+              {item.isSuspended ? (
+                <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+              ) : (
+                <XCircle className="size-3.5 text-red-600 dark:text-red-400" />
+              )}
+            </Button>
+          </div>
+        </div>
+
+        {/* Title */}
+        <h4 className="font-bold text-sm text-foreground text-center py-1 truncate" title={nameText}>
+          {nameText}
+        </h4>
+
+        {/* Information Table */}
+        <div className="space-y-1.5 text-xs text-muted-foreground bg-slate-100/90 dark:bg-slate-900/80 p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-800/80 my-2">
+          <div className="flex items-center justify-between text-[11px]">
+            <span className="text-slate-500 font-medium">{L('المدير المسند:', 'Manager:')}</span>
+            <strong className="text-foreground truncate max-w-[130px]" title={item.manager?.nameAr || L('بدون مدير', 'None')}>
+              {item.manager ? item.manager.nameAr : <span className="text-slate-400 font-normal">{L('بدون مدير', 'None')}</span>}
+            </strong>
+          </div>
+
+          <div className="flex items-center justify-between text-[11px]">
+            <span className="text-slate-500 font-medium">{L('مركز التكلفة:', 'Cost Center:')}</span>
+            {item.costCenter ? (
+              <strong className="font-mono text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/80 px-1.5 py-0.5 rounded border border-blue-200 dark:border-blue-800">
+                {item.costCenter.code} - {item.costCenter.nameAr}
+              </strong>
+            ) : (
+              <span className="text-slate-400 font-normal">{L('غير مرتبط', 'Unlinked')}</span>
+            )}
+          </div>
+
+          <div className="flex items-center justify-between text-[11px]">
+            <span className="text-slate-500 font-medium">{L('عدد الموظفين:', 'Employees:')}</span>
+            <Badge variant="secondary" className="font-mono text-[10px] px-2 py-0 h-4 font-bold bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+              {item._count?.employees ?? 0}
+            </Badge>
+          </div>
+        </div>
+
+        {/* Expand / Collapse Button */}
+        {children.length > 0 && (
+          <button
+            onClick={() => onToggleCollapse(item.id)}
+            className="absolute -bottom-3.5 left-1/2 -translate-x-1/2 bg-blue-600 hover:bg-blue-700 text-white rounded-full px-2.5 py-0.5 shadow-lg transition-all flex items-center gap-1 cursor-pointer ring-2 ring-background text-[11px] font-bold"
+            title={isCollapsed ? L('توسيع التفرعات', 'Expand Branch') : L('طي التفرعات', 'Collapse Branch')}
+          >
+            <span>{isCollapsed ? `+${children.length}` : '-'}</span>
+          </button>
+        )}
+      </div>
+
+      {/* Children Branches */}
+      {!isCollapsed && children.length > 0 && (
+        <div className="flex flex-col items-center mt-5 w-full">
+          {/* Vertical Connecting Stem */}
+          <div className="w-0.5 h-5 bg-blue-400 dark:bg-blue-700 shadow-xs" />
+
+          {/* Horizontal Branch Line Container */}
+          <div className="flex gap-8 items-start pt-4 relative border-t-2 border-blue-400 dark:border-blue-700">
+            {children.map((child) => (
+              <TreeNodeItem
+                key={child.id}
+                item={child}
+                allItems={allItems}
+                isRTL={isRTL}
+                L={L}
+                getTypeBadge={getTypeBadge}
+                onEdit={onEdit}
+                onSuspend={onSuspend}
+                collapsedMap={collapsedMap}
+                onToggleCollapse={onToggleCollapse}
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

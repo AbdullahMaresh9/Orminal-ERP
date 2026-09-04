@@ -52,10 +52,15 @@ const ICONS: Record<string, LucideIcon> = {
   Store, Bell, Printer, Database, Plug, GitBranch,
 }
 
+import CurrenciesModule from '@/components/modules/currencies-module'
 import OrgStructureModule from '@/components/modules/org-structure-module'
+import GeneralVarsModule from '@/components/modules/general-vars-module'
+import { GeneralDefsModule } from '@/components/modules/general-defs-module'
 
 // Leaves whose data is managed by an existing master-data module
 const LEAF_MODULE_LINKS: Record<string, ModuleKey> = {
+  currencies: 'currencies',
+  multi_currency: 'currencies',
   fiscal_periods: 'fiscal-periods',
   cost_centers: 'cost-centers',
   analytic_accounts: 'analytic-accounts',
@@ -124,7 +129,7 @@ const MODULE_TO_CONFIG_LEAF: Record<string, { sectionId: string; leafId: string 
   'config-general': { sectionId: 'general', leafId: 'general' },
   'config-company': { sectionId: 'general', leafId: 'company' },
   'config-general-vars': { sectionId: 'general', leafId: 'general' },
-  'config-general-defs': { sectionId: 'general', leafId: 'general' },
+  'config-general-defs': { sectionId: 'general', leafId: 'general_defs' },
   'config-currencies': { sectionId: 'general', leafId: 'currencies' },
   'config-fiscal-periods': { sectionId: 'general', leafId: 'fiscal_periods' },
   'config-org-structure': { sectionId: 'general', leafId: 'org_structure' },
@@ -572,8 +577,20 @@ function LeafContent(props: {
   const leaf = tree.flatMap((s) => s.leaves).find((l) => l.id === leafId)
   const moduleLink = LEAF_MODULE_LINKS[leafId]
 
+  if (leafId === 'currencies' || leafId === 'multi_currency') {
+    return <CurrenciesModule embedded={true} />
+  }
+
   if (leafId === 'org_structure') {
     return <OrgStructureModule embedded={true} />
+  }
+
+  if (leafId === 'general') {
+    return <GeneralVarsModule embedded={true} />
+  }
+
+  if (leafId === 'general_defs') {
+    return <GeneralDefsModule embedded={true} />
   }
 
   if (!defs.length) {
@@ -673,9 +690,9 @@ function FieldRow({
   const numberHint =
     def.type === 'number' && def.number
       ? [
-          def.number.min !== undefined ? `≥ ${def.number.min}` : '',
-          def.number.max !== undefined ? `≤ ${def.number.max}` : '',
-        ].filter(Boolean).join(' ، ')
+        def.number.min !== undefined ? `≥ ${def.number.min}` : '',
+        def.number.max !== undefined ? `≤ ${def.number.max}` : '',
+      ].filter(Boolean).join(' ، ')
       : ''
 
   return (

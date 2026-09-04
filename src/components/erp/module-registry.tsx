@@ -49,6 +49,7 @@ const ProductsModule = lazy(() => import('@/components/modules/products-module')
 const CategoriesModule = lazy(() => import('@/components/modules/categories-module'))
 const WarehousesModule = lazy(() => import('@/components/modules/warehouses-module'))
 const BranchesModule = lazy(() => import('@/components/modules/branches-module'))
+const CurrenciesModule = lazy(() => import('@/components/modules/currencies-module'))
 
 // ============================================================
 // SALES
@@ -175,6 +176,7 @@ export const moduleRegistry: Record<ModuleKey, React.ComponentType> = {
   'inventory-requisitions': InventoryRequisitionsModule,
 
   // Finance & Accounts
+  currencies: CurrenciesModule,
   'chart-of-accounts': ChartOfAccountsModule,
   'analytic-accounts': AnalyticAccountsModule,
   'cost-centers': CostCentersModule,

@@ -31,6 +31,7 @@ export const CONFIG_TREE: ConfigTreeSection[] = [
     icon: 'Settings',
     leaves: [
       { id: 'general', labelAr: 'المتغيرات العامة', labelEn: 'General Variables', legacyCategories: ['general'] },
+      { id: 'general_defs', labelAr: 'التعريفات العامة', labelEn: 'General Definitions' },
       { id: 'company', labelAr: 'إعدادات المؤسسة', labelEn: 'Organization', legacyCategories: ['company'] },
       { id: 'currencies', labelAr: 'العملات', labelEn: 'Currencies' },
       { id: 'fiscal_periods', labelAr: 'الفترات المالية', labelEn: 'Fiscal Periods' },

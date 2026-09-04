@@ -375,15 +375,15 @@ export function SalesInvoicesModule() {
               <span className="hidden sm:inline">{L('تصدير', 'Export')}</span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align={isRTL ? 'start' : 'end'} className="w-44">
+          <DropdownMenuContent align={isRTL ? 'start' : 'end'} className="w-25">
             <DropdownMenuItem onClick={() => handleExport('excel')} className="gap-2 cursor-pointer">
-              <FileSpreadsheet className="size-4 text-emerald-600" /> {L('تصدير Excel', 'Export Excel')}
+              <FileSpreadsheet className="size-4 text-emerald-600" /> {L(' Excel', ' Excel')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleExport('csv')} className="gap-2 cursor-pointer">
-              <FileText className="size-4 text-sky-600" /> {L('تصدير CSV', 'Export CSV')}
+              <FileText className="size-4 text-sky-600" /> {L('CSV', 'CSV')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleExport('pdf')} className="gap-2 cursor-pointer">
-              <FileDown className="size-4 text-rose-600" /> {L('تصدير PDF', 'Export PDF')}
+              <FileDown className="size-4 text-rose-600" /> {L('PDF', 'PDF')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

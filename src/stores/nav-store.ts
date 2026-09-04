@@ -25,7 +25,7 @@ export type ModuleKey =
   | 'config-integrations' | 'config-api-keys' | 'config-webhooks' | 'config-aws' | 'config-email-integration' | 'config-payment-gateways' | 'config-external-systems'
   | 'config-workflow-approval' | 'config-approval-policies' | 'config-approval-routes' | 'config-approval-levels' | 'config-approval-rules' | 'config-approval-conditions' | 'config-device-approval'
   // Master Data
-  | 'products' | 'categories' | 'warehouses' | 'branches' | 'customers' | 'suppliers'
+  | 'products' | 'categories' | 'warehouses' | 'branches' | 'customers' | 'suppliers' | 'currencies'
   // Finance & Accounts
   | 'chart-of-accounts' | 'journal-entries' | 'fiscal-periods' | 'cost-centers' | 'bank-accounts' | 'safes'
   | 'analytic-accounts' | 'closed-periods' | 'opening-balances' | 'financial-statement-designer' | 'payment-methods'

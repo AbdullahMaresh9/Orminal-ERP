@@ -30,35 +30,57 @@ datasource db {
 // =============================================================================
 
 model Company {
-  id                   String   @id @default(cuid())
-  code                 String   @unique
+  id                   String    @id @default(cuid())
+  code                 String    @unique
   nameAr               String
   nameEn               String
+  shortName            String?
   legalName            String?
+  companyType          String?   @default("LLC")
   taxNumber            String?
-  crNumber             String? // Commercial Registration
+  crNumber             String?   // Commercial Registration
   vatNumber            String?
+  nationalId           String?
+  establishedAt        DateTime?
   address              String?
   phone                String?
+  mobile               String?
+  fax                  String?
   email                String?
   website              String?
-  currencyId           String // base currency
-  timezone             String   @default("Asia/Riyadh")
-  locale               String   @default("ar")
-  fiscalYearStartMonth Int      @default(1)
-  active               Boolean  @default(true)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  country              String?   @default("SA")
+  city                 String?
+  district             String?
+  postalCode           String?
+  logoUrl              String?
+  logoPrintUrl         String?
+  faviconUrl           String?
+  currencyId           String    // base currency
+  decimalPrecision     Int       @default(2)
+  taxPolicy            String?   @default("STANDARD")
+  timezone             String    @default("Asia/Riyadh")
+  locale               String    @default("ar")
+  dateFormat           String?   @default("YYYY-MM-DD")
+  weekStartDay         String?   @default("SATURDAY")
+  numberFormat         String?   @default("STANDARD")
+  fiscalYearStartMonth Int       @default(1)
+  mainBranchId         String?
+  active               Boolean   @default(true)
+  createdBy            String?
+  updatedBy            String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
-  currency    Currency     @relation(fields: [currencyId], references: [id])
-  branches    Branch[]
-  users       User[]
-  partners    Partner[]
-  products    Product[]
-  fiscalYears FiscalYear[]
+  currency      Currency       @relation(fields: [currencyId], references: [id])
+  branches      Branch[]
+  users         User[]
+  partners      Partner[]
+  products      Product[]
+  fiscalYears   FiscalYear[]
+  orgStructures OrgStructure[]
   // transactions scoped by company
-  expenses    Expense[]
-  revenues    Revenue[]
+  expenses      Expense[]
+  revenues      Revenue[]
 
   @@index([currencyId])
 }
@@ -78,39 +100,69 @@ model Branch {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  company      Company     @relation(fields: [companyId], references: [id], onDelete: Restrict)
-  manager      User?       @relation("BranchManager", fields: [managerId], references: [id])
-  warehouses   Warehouse[]
-  users        User[]      @relation("BranchUsers")
-  defaultUsers User[]      @relation("UserDefaultBranch")
+  company       Company        @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  manager       User?          @relation("BranchManager", fields: [managerId], references: [id])
+  warehouses    Warehouse[]
+  users         User[]         @relation("BranchUsers")
+  defaultUsers  User[]         @relation("UserDefaultBranch")
+  orgStructures OrgStructure[]
   // transactions scoped by branch
-  activities   Activity[]
-  expenses     Expense[]
-  revenues     Revenue[]
+  activities    Activity[]
+  expenses      Expense[]
+  revenues      Revenue[]
 
   @@index([companyId])
   @@index([managerId])
 }
 
 model OrgStructure {
-  id          String   @id @default(cuid())
-  code        String   @unique
-  nameAr      String
-  nameEn      String?
-  parentId    String?
-  type        String   @default("إدارة")
-  level       Int      @default(1)
-  notes       String?
-  companyId   String?
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                String    @id @default(cuid())
+  code              String    @unique
+  nameAr            String
+  nameEn            String?
+  parentId          String?
+  type              String    @default("إدارة") // قطاع | إدارة عامة | إدارة | قسم | وحدة
+  level             Int       @default(1)
+  path              String?   // materialized path e.g. '/rootId/parentId/thisId'
+  sortOrder         Int       @default(0)
+  companyId         String?
+  branchId          String?
+  costCenterId      String?
+  managerId         String?
+  status            String    @default("active") // draft | active | suspended | archived
+  active            Boolean   @default(true)
+  effectiveFrom     DateTime?
+  effectiveTo       DateTime?
+  notes             String?
 
-  parent   OrgStructure?  @relation("OrgHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
-  children OrgStructure[] @relation("OrgHierarchy")
+  // Enterprise Audit & LifeCycle metadata
+  suspendedBy       String?
+  suspendedAt       DateTime?
+  suspensionReason  String?
+  suspensionCount   Int       @default(0)
+  modificationCount Int       @default(0)
+  printCount        Int       @default(0)
+  createdBy         String?
+  updatedBy         String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  parent     OrgStructure?  @relation("OrgHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children   OrgStructure[] @relation("OrgHierarchy")
+  company    Company?       @relation(fields: [companyId], references: [id])
+  branch     Branch?        @relation(fields: [branchId], references: [id])
+  costCenter CostCenter?    @relation(fields: [costCenterId], references: [id])
+  manager    Employee?      @relation("OrgUnitManager", fields: [managerId], references: [id])
+  employees  Employee[]     @relation("OrgUnitEmployees")
 
   @@index([parentId])
   @@index([code])
+  @@index([companyId])
+  @@index([branchId])
+  @@index([costCenterId])
+  @@index([managerId])
+  @@index([status])
+  @@index([path])
 }
 
 model User {
@@ -380,25 +432,91 @@ model SettingAuditLog {
 }
 
 // =============================================================================
+// GENERAL DEFINITIONS / REFERENCE DATA (Single Source of Truth for Generic Lookups)
+// =============================================================================
+
+model GeneralDefinition {
+  id          String   @id @default(cuid())
+  companyId   String   @default("*")
+  typeCode    String   // e.g. EMPLOYEE_GRADE, EMPLOYMENT_TYPE, QUALIFICATION, TERMINATION_REASON, HEALTH_INSURANCE_CATEGORY, HEALTH_INSURANCE_TIER, SPECIALIZATION, EMPLOYEE_CATEGORY, EMPLOYEE_RANK, EMPLOYEE_CLASSIFICATION, EMPLOYEE_GROUP, RESUME_TYPE, ORG_STRUCTURE_TYPE, CONTRACT_TYPE
+  code        String   // Unique code within (companyId, typeCode)
+  nameAr      String
+  nameEn      String?
+  description String?
+  sortOrder   Int      @default(0)
+  isSystem    Boolean  @default(false)
+  active      Boolean  @default(true)
+  meta        String?  // JSON metadata string
+  createdBy   String?
+  updatedBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([companyId, typeCode, code])
+  @@index([companyId, typeCode, active])
+  @@index([typeCode])
+  @@index([code])
+}
+
+// =============================================================================
 // REFERENCE DATA (Book 3 §3.8 — currencies, UOMs, countries, taxes, etc.)
 // =============================================================================
 
 model Currency {
-  id        String   @id @default(cuid())
-  code      String   @unique // SAR, USD, EUR
-  nameAr    String
-  nameEn    String
-  symbol    String
-  decimals  Int      @default(2)
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
+  id                String   @id @default(cuid())
+  code              String   @unique // SAR, USD, EUR, YER
+  nameAr            String
+  nameEn            String?
+  symbol            String
+  fractionNameAr    String?
+  fractionNameEn    String?
+  decimals          Int      @default(2)
+  exchangeRate      Float    @default(1.0)
+  buyRate           Float?
+  sellRate          Float?
+  minLimit          Float?
+  maxLimit          Float?
+  sortOrder         Int      @default(0)
+  isBase            Boolean  @default(false)
+  isInventory       Boolean  @default(false)
+  status            String   @default("active") // active | suspended | archived
+  active            Boolean  @default(true)
+  suspensionCount   Int      @default(0)
+  suspendedBy       String?
+  suspendedAt       DateTime?
+  notes             String?
+  createdBy         String?
+  updatedBy         String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @default(now()) @updatedAt
 
   companies         Company[]
   exchangeRates     ExchangeRate[]
   baseCurrencyRates ExchangeRate[] @relation("BaseCurrency")
+  denominations     CurrencyDenomination[]
   accounts          Account[]
   bankAccounts      BankAccount[]
   safes             Safe[]
+
+  @@index([code])
+  @@index([status])
+}
+
+model CurrencyDenomination {
+  id          String   @id @default(cuid())
+  currencyId  String
+  code        String
+  nameAr      String
+  nameEn      String?
+  value       Float
+  sortOrder   Int      @default(0)
+  isSuspended Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  currency Currency @relation(fields: [currencyId], references: [id], onDelete: Cascade)
+
+  @@index([currencyId])
 }
 
 model ExchangeRate {
@@ -406,15 +524,25 @@ model ExchangeRate {
   currencyId     String
   baseCurrencyId String
   rate           Float
-  rateDate       DateTime
+  buyRate        Float?
+  sellRate       Float?
+  minLimit       Float?
+  maxLimit       Float?
+  rateDate       DateTime @default(now())
+  effectiveDate  DateTime @default(now())
   rateType       String   @default("spot") // spot|average|period_end
+  status         String   @default("active")
+  notes          String?
+  userId         String?
   createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now()) @updatedAt
 
   currency     Currency @relation(fields: [currencyId], references: [id])
   baseCurrency Currency @relation("BaseCurrency", fields: [baseCurrencyId], references: [id])
 
   @@unique([currencyId, baseCurrencyId, rateDate, rateType])
   @@index([baseCurrencyId])
+  @@index([currencyId])
 }
 
 model UnitOfMeasure {
@@ -1013,6 +1141,7 @@ model CostCenter {
 
   journalLines         JournalLine[]
   purchaseRequestLines PurchaseRequestLine[]
+  orgStructures        OrgStructure[]
 
   @@index([parentId])
 }
@@ -1938,6 +2067,7 @@ model Employee {
   companyId       String
   branchId        String?
   departmentId    String?
+  orgStructureId  String?
   jobPositionId   String?
   partnerId       String? // linked business partner
   hireDate        DateTime?
@@ -1955,17 +2085,20 @@ model Employee {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  user          User?          @relation(fields: [userId], references: [id])
-  department    Department?    @relation(fields: [departmentId], references: [id])
-  jobPosition   JobPosition?   @relation(fields: [jobPositionId], references: [id])
-  contracts     Contract[]
-  attendance    Attendance[]
-  leaveRequests LeaveRequest[]
-  payslips      Payslip[]
+  user            User?          @relation(fields: [userId], references: [id])
+  department      Department?    @relation(fields: [departmentId], references: [id])
+  orgStructure    OrgStructure?  @relation("OrgUnitEmployees", fields: [orgStructureId], references: [id])
+  managedOrgUnits OrgStructure[] @relation("OrgUnitManager")
+  jobPosition     JobPosition?   @relation(fields: [jobPositionId], references: [id])
+  contracts       Contract[]
+  attendance      Attendance[]
+  leaveRequests   LeaveRequest[]
+  payslips        Payslip[]
 
   @@index([companyId])
   @@index([branchId])
   @@index([departmentId])
+  @@index([orgStructureId])
   @@index([jobPositionId])
   @@index([partnerId])
   @@index([status])
@@ -2312,3 +2445,30 @@ model PurchaseCreditNoteLine {
   @@index([creditNoteId])
   @@index([productId])
 }
+
+// =============================================================================
+// GENERAL DEFINITIONS / LOOKUPS (Book 1 Shared Kernel)
+// =============================================================================
+
+model GeneralDefinition {
+  id          String   @id @default(cuid())
+  companyId   String   @default("*")
+  typeCode    String
+  code        String
+  nameAr      String
+  nameEn      String?
+  description String?
+  sortOrder   Int      @default(0)
+  isSystem    Boolean  @default(false)
+  active      Boolean  @default(true)
+  meta        String?
+  createdBy   String?
+  updatedBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([companyId, typeCode, code])
+  @@index([companyId, typeCode])
+  @@index([active])
+}
+

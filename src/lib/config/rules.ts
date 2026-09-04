@@ -87,4 +87,32 @@ export const CONFIG_RULES: ConfigRule[] = [
       return null
     },
   },
+  {
+    id: 'coa-code-length-consistent',
+    keys: ['coa.codeMinLength', 'coa.codeMaxLength'],
+    check(v) {
+      const min = Number(v['coa.codeMinLength'])
+      const max = Number(v['coa.codeMaxLength'])
+      if (!Number.isNaN(min) && !Number.isNaN(max) && min >= max) {
+        return {
+          messageAr: 'الحد الأدنى لطول رمز الحساب يجب أن يكون أصغر من الحد الأقصى',
+          messageEn: 'Account code minimum length must be strictly less than the maximum length',
+        }
+      }
+      return null
+    },
+  },
+  {
+    id: 'ai-key-required-when-enabled',
+    keys: ['ai.enabled', 'ai.googleApiKey'],
+    check(v) {
+      if ((v['ai.enabled'] === 'true') && !v['ai.googleApiKey']?.trim()) {
+        return {
+          messageAr: 'لا يمكن تفعيل خدمات الذكاء الاصطناعي بدون إدخال مفتاح Google AI API',
+          messageEn: 'AI services cannot be enabled without a Google AI API key',
+        }
+      }
+      return null
+    },
+  },
 ]

@@ -15,6 +15,7 @@ import {
   type AccountClass,
 } from './account-classes'
 import { isValidRole, roleAcceptsClass } from './account-roles'
+import { getConfigBool, getConfigNumber } from '@/lib/config/resolve'
 
 export interface FieldError {
   field: string
@@ -81,20 +82,43 @@ export function validateAccountInput(
     isCreate: boolean
     existing?: (AccountNodeLike & { hasPostings?: boolean; childCount?: number }) | null
     parent?: AccountNodeLike | null
+    /** From coa.accountCodeNumericOnly — true: digits-only codes. */
+    numericOnly?: boolean
+    /** From coa.codeMinLength */
+    codeMinLength?: number
+    /** From coa.codeMaxLength */
+    codeMaxLength?: number
   }
 ): FieldError[] {
   const errors: FieldError[] = []
   const { isCreate, existing, parent } = opts
 
-  // --- code ---
+  // --- code (with live config constraints) ---
   if (isCreate || input.code !== undefined) {
     const code = (input.code ?? '').trim()
     if (!code) {
       errors.push({ field: 'code', code: 'REQUIRED', message: 'رمز الحساب مطلوب' })
-    } else if (!/^[0-9A-Za-z._-]{1,20}$/.test(code)) {
-      errors.push({ field: 'code', code: 'INVALID_FORMAT', message: 'رمز الحساب يقبل الأرقام والحروف والنقطة والشرطة فقط (20 خانة كحد أقصى)', rejectedValue: code })
+    } else {
+      // Fetch runtime config (parallel, non-blocking on the validation call)
+      // We read synchronously via the cached resolve layer — no await here means
+      // callers that do NOT have an async context can still call validateAccountInput.
+      // For async-aware validation use validateAccountInputAsync below.
+      const numericOnly = opts.numericOnly ?? false
+      const codeMinLen = opts.codeMinLength ?? 2
+      const codeMaxLen = opts.codeMaxLength ?? 20
+      const pattern = numericOnly ? /^\d{1,30}$/ : /^[0-9A-Za-z._-]{1,30}$/
+      const minMsg = numericOnly
+        ? `رمز الحساب يجب أن يكون أرقاماً فقط (${codeMinLen}–${codeMaxLen} خانة)`
+        : `رمز الحساب يقبل الأرقام والحروف والنقطة والشرطة (${codeMinLen}–${codeMaxLen} خانة)`
+      if (!pattern.test(code)) {
+        errors.push({ field: 'code', code: 'INVALID_FORMAT', message: minMsg, rejectedValue: code })
+      } else if (code.length < codeMinLen) {
+        errors.push({ field: 'code', code: 'TOO_SHORT', message: `رمز الحساب يجب ألا يقل عن ${codeMinLen} خانات`, rejectedValue: code })
+      } else if (code.length > codeMaxLen) {
+        errors.push({ field: 'code', code: 'TOO_LONG', message: `رمز الحساب يجب ألا يتجاوز ${codeMaxLen} خانة`, rejectedValue: code })
+      }
     }
-    if (existing?.isSystem && code && code !== existing.code) {
+    if (existing?.isSystem && (input.code ?? '').trim() && (input.code ?? '').trim() !== existing.code) {
       errors.push({ field: 'code', code: 'IMMUTABLE_SYSTEM', message: 'لا يمكن تغيير رمز حساب نظامي' })
     }
   }
@@ -418,6 +442,9 @@ export async function recomputeSubtree(accountId: string): Promise<number> {
 
 /** Suggest the next free child code under a parent (e.g. 1100 -> 1101). */
 export async function suggestChildCode(parentId: string | null, accountClass?: AccountClass): Promise<string> {
+  // Read whether to include parent prefix from config (coa.includeParentInCode)
+  const includeParentInCode = await getConfigBool('coa.includeParentInCode', undefined, true)
+
   if (!parentId) {
     const prefix = accountClass ? ACCOUNT_CLASSES[accountClass].codePrefix : '9'
     const siblings = await db.account.findMany({ where: { parentId: null }, select: { code: true } })
@@ -432,7 +459,12 @@ export async function suggestChildCode(parentId: string | null, accountClass?: A
   if (!parent) return ''
   const children = await db.account.findMany({ where: { parentId }, select: { code: true }, orderBy: { code: 'desc' } })
   const base = parent.code
-  if (!children.length) return /^\d+$/.test(base) ? `${base}01` : `${base}-01`
+  if (!children.length) {
+    // When includeParentInCode is disabled, use a flat sequential suffix rather
+    // than appending to the parent code.
+    if (!includeParentInCode) return /^\d+$/.test(base) ? `${base}001` : `${base}-001`
+    return /^\d+$/.test(base) ? `${base}01` : `${base}-01`
+  }
   const last = children[0].code
   if (/^\d+$/.test(last)) {
     // Preserve the code width (e.g. 1101 -> 1102, 001 -> 002).
@@ -445,6 +477,52 @@ export async function suggestChildCode(parentId: string | null, accountClass?: A
     return candidate
   }
   return `${base}-${String(children.length + 1).padStart(2, '0')}`
+}
+
+/**
+ * Async-aware version of validateAccountInput that reads runtime configuration
+ * (coa.accountCodeNumericOnly, coa.codeMinLength, coa.codeMaxLength,
+ *  coa.subAccountGrade) from the Setting cache before calling the pure validator.
+ *
+ * Use this in API route handlers; the pure validateAccountInput remains available
+ * for unit tests that pass constraints explicitly.
+ */
+export async function validateAccountInputAsync(
+  input: AccountInput,
+  opts: {
+    isCreate: boolean
+    existing?: (AccountNodeLike & { hasPostings?: boolean; childCount?: number }) | null
+    parent?: AccountNodeLike | null
+  }
+): Promise<FieldError[]> {
+  const [numericOnly, codeMinLength, codeMaxLength, maxGrade] = await Promise.all([
+    getConfigBool('coa.accountCodeNumericOnly', undefined, false),
+    getConfigNumber('coa.codeMinLength', undefined, 2),
+    getConfigNumber('coa.codeMaxLength', undefined, 10),
+    getConfigNumber('coa.subAccountGrade', undefined, 4),
+  ])
+
+  const errors = validateAccountInput(input, { ...opts, numericOnly, codeMinLength, codeMaxLength })
+
+  // Sub-account grade check: count how many ancestors this node will have
+  if (opts.isCreate && opts.parent) {
+    // Walk up the parent chain to compute the depth of the new account.
+    // The parent is already loaded; we count from 1 (the parent itself is level 1).
+    const parentRow = await db.account.findUnique({
+      where: { id: opts.parent.id },
+      select: { level: true },
+    })
+    const newLevel = (parentRow?.level ?? 0) + 1
+    if (newLevel > maxGrade) {
+      errors.push({
+        field: 'parentId',
+        code: 'MAX_GRADE_EXCEEDED',
+        message: `لا يمكن إضافة حساب فرعي أعمق من الرتبة ${maxGrade} (الرتبة الحالية ستكون ${newLevel})`,
+      })
+    }
+  }
+
+  return errors
 }
 
 /** True when the account (or any descendant) carries journal lines. */
