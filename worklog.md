@@ -2,6 +2,20 @@
 
 This file tracks all agent work on the Alostaz-style accounting ERP system built with Next.js 16, Prisma, Tailwind 4, shadcn/ui.
 
+## Deployment Failure Investigation (Confirmed Resolved)
+A Vercel deployment (`HCbEzdHxD...`) failed on branch `revert-15-v0/fix-prisma-duplicate-model`. That branch was a
+revert of PR #15 ("Fix duplicate GeneralDefinition model in Prisma schema and regenerate client"), which
+intentionally reintroduced the duplicate `GeneralDefinition` model in `prisma/schema.prisma` — causing the Prisma
+build step to fail.
+
+Verification performed on `main`:
+- `prisma/schema.prisma` has no duplicate model definitions.
+- `npx next build` completes successfully with no errors.
+- The offending revert branch is not present in `main`'s history; PR #15's fix (commit `1d09476`) is merged in.
+
+Conclusion: `main` is healthy and deployable. The failed deployment shown in the Vercel dashboard belongs to a
+stale/experimental revert branch and does not reflect the state of `main`.
+
 ## Project Goal
 Build a comprehensive Arabic-first (RTL) accounting ERP inspired by الأستاذ (Alostaz) using the CoopStock Pro design architecture: SPA shell with sidebar nav, 24+ modules, automated double-entry accounting engine, bilingual (AR/EN), dark mode, professional printing & export.
 
